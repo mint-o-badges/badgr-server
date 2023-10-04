@@ -31,6 +31,7 @@ services:
   # this container runs mysql (database)
   db:
     image: mysql:5.6.39
+    # platform: linux/amd64 comment in if you are on Apple Silicon
     volumes:
       - badgr_server_dev_db:/var/lib/mysql:rw
       - ./.docker/etc/init.sql:/docker-entrypoint-initdb.d/init.sql
