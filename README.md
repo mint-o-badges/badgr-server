@@ -12,14 +12,14 @@ Badgr was developed by [Concentric Sky](https://concentricsky.com), starting in 
 Badgr-server hosts standard-compliant endpoints that implement the
 [Open Badges 2.0 specification](https://openbadgespec.org). For each of the core Open Badges objects Issuer, BadgeClass
 and Assertion, there is a standards-compliant public JSON endpoint handled by the Django application as well as an image
-redirect path. 
+redirect path.
 
 Each JSON endpoint, such as `/public/assertions/{entity_id}`, performs content negotiation. It will return a
 standardized JSON-LD payload when the path is requested with no `Accept` header or when JSON payloads are requested.
 Additionally, User-Agent detection allows bots attempting to render a preview card for social sharing to access a clean
 HTML response that includes [Open Graph](https://ogp.me/) meta tags. Other clients requesting `text/html` will receive
 a redirect to the corresponding public route on the UI application that runs in parallel to Badgr-server where humans
-can be presented with a representation of the badge data in their browser. 
+can be presented with a representation of the badge data in their browser.
 
 Each image endpoint typically redirects to an image within the associated storage system. The system can convert from
 SVG to PNG and adapt images to a common "wide" radio for the images needed for card-based previews in many social
@@ -34,20 +34,20 @@ Prerequisites:
 
 Copy the example development settings:
   * `cp .docker/etc/settings_local.dev.py.example .docker/etc/settings_local.dev.py`
-    
+
 **NOTE**: you *may* wish to copy and edit the production config. See Running the Django Server in "Production" below for more details.
   * `cp .docker/etc/settings_local.prod.py.example .docker/etc/settings_local.prod.py`
 
 ### Customize local settings to your environment
-    
+
 Edit the `settings_local.dev.py` and/or `settings_local.prod.py` to adjust the following settings:
 * Set `DEFAULT_FROM_EMAIL` to an address, for instance `"noreply@localhost"`
     * The default `EMAIL_BACKEND= 'django.core.mail.backends.console.EmailBackend'` will log email content to console, which is often adequate for development. Other options are available. See Django docs for [sending email](https://docs.djangoproject.com/en/1.11/topics/email/).
 * Set `SECRET_KEY` and `UNSUBSCRIBE_SECRET_KEY` each to (different) cryptographically secure random values.
     * Generate values with: `python -c "import base64; import os; print(base64.b64encode(os.urandom(30)).decode('utf-8'))"`
-* Set `AUTHCODE_SECRET_KEY` to a 32 byte url-safe base64-encoded random string. This key is used for symmetrical encryption of authentication tokens.  If not defined, services like OAuth will not work. 
+* Set `AUTHCODE_SECRET_KEY` to a 32 byte url-safe base64-encoded random string. This key is used for symmetrical encryption of authentication tokens.  If not defined, services like OAuth will not work.
     * Generate a value with: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key())"`
-  
+
 #### Additional configuration options
 Set or adjust these values in your `settings_local.dev.py` and/or `settings_local.prod.py` file to further configure the application to your specific needs.
 * `HELP_EMAIL`:
@@ -62,10 +62,10 @@ Set or adjust these values in your `settings_local.dev.py` and/or `settings_loca
   - Allows you to turn off signup through the API by setting to `False` if you would like to use Badgr for only single-account use or to manually create all users in `/staff`. The default is `True` (signup API is enabled). UX is not well-supported in the `/staff` interface.
 * `DEFAULT_FILE_STORAGE` and `MEDIA_URL`:
   - Django supports various backends for storing media, as applicable for your deployment strategy. See Django docs on the [file storage API](https://docs.djangoproject.com/en/1.11/ref/files/storage/)
- 
+
 ### Running the Django Server in Development
 
-For development, it is usually best to run the project with the builtin django development server. The 
+For development, it is usually best to run the project with the builtin django development server. The
 development server will reload itself in the docker container whenever changes are made to the code in `apps/`.
 
 To run the project with docker in a development mode:
@@ -81,7 +81,7 @@ To run the project with docker in a development mode:
 By default `docker-compose` will look for a `docker-compose.yml` for instructions of what to do. This file
 is the development (and thus default) config for `docker-compose`.
 
-If you'd like to run the project with a more production-like setup, you can specify the `docker-compose.prod.yml` 
+If you'd like to run the project with a more production-like setup, you can specify the `docker-compose.prod.yml`
 file. This setup **copies** the project code in (instead of mirroring) and uses nginx with uwsgi to run django.
 
 * `docker-compose -f docker-compose.prod.yml up -d` - build and get django and other components (production mode)
