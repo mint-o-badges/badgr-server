@@ -24,6 +24,9 @@ jobs:
       - name: ⬇️ Checkout repository
         uses: actions/checkout@v4.1.1
 
+      - name: 🏄 Copy default env vars
+        run: cp .docker/etc/settings_local.prod.py.example ./docker/etc/settings_local.py
+
       - name: 🔑 Log in to the Container registry
         uses: docker/login-action@v3.0.0
         with:
