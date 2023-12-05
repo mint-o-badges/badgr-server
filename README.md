@@ -135,6 +135,11 @@ If your [badgr-ui](https://github.com/concentricsky/badgr-ui) is running on http
     * Name: `Badgr UI`
     * Redirect uris: blank (for Resource owner password-based. You can use this to set up additional OAuth applications that use authorization code token grants as well.)
 
+### Run the tests
+For the tests to run you first need to run docker (`docker-compose up`).
+Then within docker, run `tox`: `docker-compose exec api tox`.
+Note that you might have to run `docker-compose build` once for the new changes to the testing enviornment to take effect.
+
 ### Install and run Badgr UI {#badgr-ui}
 Start in your `badgr` directory and clone badgr-ui source code: `git clone https://github.com/concentricsky/badgr-ui.git badgr-ui`
 
