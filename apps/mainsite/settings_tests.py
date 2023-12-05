@@ -11,7 +11,11 @@ LOGGING = {}
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'badgr_server',
+        'NAME': 'badgr',
+        'USER': 'root',
+        'PASSWORD': 'password',
+        'HOST': 'db',
+        'PORT': '',
         'OPTIONS': {
             "init_command": "SET default_storage_engine=InnoDB",
         },

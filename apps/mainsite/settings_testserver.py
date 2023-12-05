@@ -1,3 +1,5 @@
+# It doesn't seem as if this file is still being used.
+# TODO: Remove if true
 from mainsite.settings import *
 
 DATABASES = {

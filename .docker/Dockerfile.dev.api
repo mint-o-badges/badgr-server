@@ -16,3 +16,5 @@ RUN pip install uwsgi
 
 COPY requirements.txt              /badgr_server
 RUN pip install -r requirements.txt
+
+RUN pip install tox
