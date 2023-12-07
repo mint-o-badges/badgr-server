@@ -38,7 +38,7 @@ provider_list = providers.registry.get_list()
 configured_providers = getattr(settings, 'SOCIALACCOUNT_PROVIDERS', dict()).keys()
 for provider in [p for p in provider_list if p.id in configured_providers]:
     try:
-        prov_mod =importlib.import_module(provider.get_package() + '.urls')
+        prov_mod = importlib.import_module(provider.get_package() + '.urls')
     except ImportError:
         logging.getLogger(__name__).warning(
             'url import failed for %s socialaccount provider' % provider.id,
