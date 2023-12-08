@@ -31,7 +31,8 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
         'name': 'Awesome Issuer',
         'description': 'An issuer of awe-inspiring credentials',
         'url': 'http://example.com',
-        'email': 'contact@example.org'
+        'email': 'contact@example.org',
+        'category': 'Awesome category!'
     }
 
     def setUp(self):
@@ -255,7 +256,8 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
             'name': 'Test Issuer Name',
             'description': 'Test issuer description',
             'url': 'http://example.com/1',
-            'email': 'example1@example.org'
+            'email': 'example1@example.org',
+            'category': 'Awesome category!'
         }
 
         issuer_email_1 = CachedEmailAddress.objects.create(
@@ -268,7 +270,8 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
             'name': 'Test Issuer Name 2',
             'description': 'Test issuer description 2',
             'url': 'http://example.com/2',
-            'email': 'example2@example.org'
+            'email': 'example2@example.org',
+            'category': 'Awesome category 2!'
         }
 
         issuer_email_2 = CachedEmailAddress.objects.create(
@@ -670,7 +673,8 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
             'name': 'Test Issuer Name',
             'description': 'Test issuer description',
             'url': 'http://example.com/1',
-            'email': 'example1@example.org'
+            'email': 'example1@example.org',
+            'category': 'Example category'
         }
 
         response = self.client.post('/v1/issuer/issuers', new_issuer_props)
@@ -703,7 +707,8 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
             'name': 'Test Issuer Name',
             'description': 'Test issuer description',
             'url': 'http://example.com/1',
-            'email': 'an+unknown+email@badgr.test'
+            'email': 'an+unknown+email@badgr.test',
+            'category': 'Awesome category!'
         }
 
         response = self.client.post('/v2/issuers', new_issuer_props)
