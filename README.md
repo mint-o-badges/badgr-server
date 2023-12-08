@@ -142,6 +142,8 @@ Note that you might have to run `docker-compose build` once for the new changes 
 To just run a single test:
 ```bash
 docker-compose exec api python /badgr_server/manage.py test -k <test-name>
+# Example:
+docker-compose exec api python /badgr_server/manage.py test issuer.tests.test_issuer.IssuerTests.test_cant_create_issuer_with_unverified_email_v1
 ```
 
 ### Install and run Badgr UI {#badgr-ui}
