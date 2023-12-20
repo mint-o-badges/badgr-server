@@ -1166,7 +1166,8 @@ class BadgeClassTests(SetupIssuerHelper, BadgrTestCase):
             'name': 'Issuer 1 updated',
             'description': 'test',
             'url': 'http://example.com/',
-            'email': 'example@example.org'
+            'email': 'example@example.org',
+            'category': 'Test category'
         }
         response = self.client.put('/v1/issuer/issuers/{}'.format(test_issuer.entity_id), updated_issuer_props)
         self.assertEqual(response.status_code, 200)
