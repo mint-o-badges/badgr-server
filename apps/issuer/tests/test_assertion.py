@@ -342,8 +342,10 @@ class AssertionTests(SetupIssuerHelper, BadgrTestCase):
             json.dumps({
                 'email': email_two.email,
                 'url': test_issuer.url,
-                'name': test_issuer.name
+                'name': test_issuer.name,
+                'category': test_issuer.category
             }), content_type='application/json')
+        self.assertEqual(response.status_code, 200)
 
         response = self.client.get('/public/assertions/{}?expand=badge&expand=badge.issuer'.format(original_assertion['slug']))
         assertion_data = response.data
