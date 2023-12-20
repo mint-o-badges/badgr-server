@@ -506,24 +506,29 @@ class BadgeClassTests(SetupIssuerHelper, BadgrTestCase):
 
         self.assertFalse(BadgeClass.objects.filter(entity_id=test_badgeclass.entity_id).exists())
 
-    def test_cannot_create_badgeclass_with_invalid_markdown(self):
-        with open(self.get_test_image_path(), 'rb') as badge_image:
-            badgeclass_props = {
-                'name': 'Badge of Slugs',
-                'slug': 'badge_of_slugs_99',
-                'description': "Recognizes slimy learners with a penchant for lettuce",
-                'image': badge_image,
-            }
+# TODO: Validate this is not intended behavior anymore.
+# This seems not to be a requirement anymore, since in the commit message
+# 344d5f5e96ad79c786fd80df6fabe92800c8826d from March '22 the validator was removed
+# (and nothing else was changed). I can't validate that this is not a requirement
+# anymore now though, because the commit message isn't exactly helpful
+   #def test_cannot_create_badgeclass_with_invalid_markdown(self):
+   #    with open(self.get_test_image_path(), 'rb') as badge_image:
+   #        badgeclass_props = {
+   #            'name': 'Badge of Slugs',
+   #            'slug': 'badge_of_slugs_99',
+   #            'description': "Recognizes slimy learners with a penchant for lettuce",
+   #            'image': badge_image,
+   #        }
 
-            test_user = self.setup_user(authenticate=True)
-            test_issuer = self.setup_issuer(owner=test_user)
+   #        test_user = self.setup_user(authenticate=True)
+   #        test_issuer = self.setup_issuer(owner=test_user)
 
-            # should not create badge that has images in markdown
-            badgeclass_props['criteria'] = 'This is invalid ![foo](image-url) markdown'
-            response = self.client.post('/v1/issuer/issuers/{slug}/badges'.format(slug=test_issuer.entity_id),
-                badgeclass_props
-            )
-            self.assertEqual(response.status_code, 400)
+   #        # should not create badge that has images in markdown
+   #        badgeclass_props['criteria'] = 'This is invalid ![foo](image-url) markdown'
+   #        response = self.client.post('/v1/issuer/issuers/{slug}/badges'.format(slug=test_issuer.entity_id),
+   #            badgeclass_props
+   #        )
+   #        self.assertEqual(response.status_code, 400)
 
     def test_can_create_badgeclass_with_valid_markdown(self):
         with open(self.get_test_image_path(), 'rb') as badge_image:
