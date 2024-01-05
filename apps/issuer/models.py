@@ -304,9 +304,17 @@ class Issuer(ResizeUploadedImage,
 
         return ret
 
-    # Note that this does *not* ensure the owner,
-    #  if the role of the staff was the very thing that just changed
     def ensure_owner(self):
+        """Makes sure the issuer has a staff with role owner
+
+        An issuer staff relation is either created with role owner
+        (if none existed), or updated to contain the role
+        ROLE_OWNER. This doesn't work if the created_by_id
+        of the issuer (self) isn't set.
+        Note that this does *not* ensure the owner, if the role
+        of the staff was the very thing that just changed.
+        """
+
         # If the creator is already the owner, nothing is to do
         if self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_OWNER, issuerstaff__user = self.created_by):
             return
