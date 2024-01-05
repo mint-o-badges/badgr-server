@@ -62,6 +62,8 @@ Set or adjust these values in your `settings_local.dev.py` and/or `settings_loca
   - Allows you to turn off signup through the API by setting to `False` if you would like to use Badgr for only single-account use or to manually create all users in `/staff`. The default is `True` (signup API is enabled). UX is not well-supported in the `/staff` interface.
 * `DEFAULT_FILE_STORAGE` and `MEDIA_URL`:
   - Django supports various backends for storing media, as applicable for your deployment strategy. See Django docs on the [file storage API](https://docs.djangoproject.com/en/1.11/ref/files/storage/)
+* `NOUNPROJECT_API_KEY` and `NOURNPROJECT_SECRET`:
+  - Set these values to be able to search for icons with in the badge creation process.
 
 ### Running the Django Server in Development
 
