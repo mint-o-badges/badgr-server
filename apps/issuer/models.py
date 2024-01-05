@@ -184,8 +184,9 @@ class Issuer(ResizeUploadedImage,
              BaseVersionedEntity,
              BaseOpenBadgeObjectModel):
     entity_class_name = 'Issuer'
-    COMPARABLE_PROPERTIES = ('badgrapp_id', 'description', 'email', 'entity_id', 'entity_version', 'name', 'pk',
-                            'updated_at', 'url')
+    COMPARABLE_PROPERTIES = ('badgrapp_id', 'description', 'email',
+                            'entity_id', 'entity_version', 'name',
+                            'pk', 'updated_at', 'url')
 
     staff = models.ManyToManyField(AUTH_USER_MODEL, through='IssuerStaff')
 
@@ -281,8 +282,15 @@ class Issuer(ResizeUploadedImage,
        
         #geocoding if address in model changed
         if self.__original_address:
-            if (self.street != self.__original_address['street'] or self.streetnumber != self.__original_address['streetnumber'] or self.city != self.__original_address['city'] or self.zip != self.__original_address['zip'] or self.country != self.__original_address['country']):
-                addr_string = (self.street if self.street != None else '') +" "+ (str(self.streetnumber) if self.streetnumber != None else '') +" "+ (str(self.zip) if self.zip != None else '')+" "+ (str(self.city) if self.city != None else '') + " Deutschland"
+            if (self.street != self.__original_address['street'] or
+                    self.streetnumber != self.__original_address['streetnumber'] or
+                    self.city != self.__original_address['city'] or
+                    self.zip != self.__original_address['zip'] or
+                    self.country != self.__original_address['country']):
+                addr_string = (self.street if self.street != None else '') + " "
+                + (str(self.streetnumber) if self.streetnumber != None else '') + " "
+                + (str(self.zip) if self.zip != None else '')+ " "
+                + (str(self.city) if self.city != None else '') + " Deutschland"
                 nom = Nominatim(user_agent="myBadges")
                 geoloc = nom.geocode(addr_string)
                 if geoloc:
@@ -291,11 +299,28 @@ class Issuer(ResizeUploadedImage,
         
         ret = super(Issuer, self).save(*args, **kwargs)
 
-        # if no owner staff records exist, create one for created_by
-        if len(self.owners) < 1 and self.created_by_id:
-            IssuerStaff.objects.create(issuer=self, user=self.created_by, role=IssuerStaff.ROLE_OWNER)
+        # The user who created the issuer should always be an owner
+        self.ensure_owner()
 
         return ret
+
+    # Note that this does *not* ensure the owner,
+    #  if the role of the staff was the very thing that just changed
+    def ensure_owner(self):
+        # If the creator is already the owner, nothing is to do
+        if self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_OWNER, issuerstaff__user = self.created_by):
+            return
+        # If I don't have a creator, I can't do anything about it
+        if not self.created_by_id:
+            return
+        # If there already is an IssuerStaff entry I have to edit it
+        if IssuerStaff.objects.filter(user = self.created_by, issuer = self).exists():
+            issuerStaff = IssuerStaff.objects.get(user = self.created_by, issuer = self)
+            issuerStaff.role = IssuerStaff.ROLE_OWNER
+            issuerStaff.save()
+        else:
+            IssuerStaff.objects.create(issuer=self, user=self.created_by, role=IssuerStaff.ROLE_OWNER)
+
 
     def get_absolute_url(self):
         return reverse('issuer_json', kwargs={'entity_id': self.entity_id})
