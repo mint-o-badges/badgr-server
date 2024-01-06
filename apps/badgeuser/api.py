@@ -1,15 +1,17 @@
 import datetime
 import json
 import re
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 import urllib.parse
 
 from allauth.account.adapter import get_adapter
 from allauth.account.models import EmailConfirmationHMAC
 from allauth.account.utils import user_pk_to_url_str, url_str_to_user_pk
-from apispec_drf.decorators import (apispec_get_operation, apispec_put_operation, apispec_post_operation, apispec_operation,
-                                    apispec_delete_operation, apispec_list_operation,)
-from django.conf import settings
+from apispec_drf.decorators import (apispec_get_operation, apispec_put_operation,
+        apispec_post_operation, apispec_operation, apispec_delete_operation,
+        apispec_list_operation,)
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
@@ -24,16 +26,16 @@ from rest_framework import permissions, serializers, status
 from rest_framework.exceptions import ValidationError as RestframeworkValidationError
 from rest_framework.response import Response
 from rest_framework.serializers import BaseSerializer
-from rest_framework.status import (HTTP_302_FOUND, HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_201_CREATED,
-                                   HTTP_400_BAD_REQUEST,)
+from rest_framework.status import (HTTP_302_FOUND, HTTP_200_OK, HTTP_404_NOT_FOUND,
+        HTTP_201_CREATED, HTTP_400_BAD_REQUEST,)
 
 from badgeuser.authcode import authcode_for_accesstoken, decrypt_authcode
 from badgeuser.models import BadgeUser, CachedEmailAddress, TermsVersion
 from badgeuser.permissions import BadgeUserIsAuthenticatedUser
 from badgeuser.serializers_v1 import BadgeUserProfileSerializerV1, BadgeUserTokenSerializerV1
-from badgeuser.serializers_v2 import (BadgeUserTokenSerializerV2, BadgeUserSerializerV2, AccessTokenSerializerV2,
-                                      TermsVersionSerializerV2,)
-from badgeuser.tasks import process_email_verification, process_post_recipient_id_verification_change
+from badgeuser.serializers_v2 import (BadgeUserTokenSerializerV2, BadgeUserSerializerV2,
+        AccessTokenSerializerV2, TermsVersionSerializerV2,)
+from badgeuser.tasks import process_email_verification
 from badgrsocialauth.utils import redirect_to_frontend_error_toast
 import badgrlog
 from entity.api import BaseEntityDetailView, BaseEntityListView
@@ -75,7 +77,7 @@ class BadgeUserDetail(BaseEntityDetailView):
             )
             serializer.is_valid(raise_exception=True)
             try:
-                new_user = serializer.save()
+                serializer.save()
             except DjangoValidationError as e:
                 raise RestframeworkValidationError(e.message)
             return Response(serializer.data, status=HTTP_201_CREATED)

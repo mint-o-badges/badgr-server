@@ -99,7 +99,8 @@ class AssertionTests(SetupIssuerHelper, BadgrTestCase):
         test_assertion.rebake()
         assertion = BadgeInstance.objects.get(entity_id=test_assertion.entity_id)
         self.assertNotEqual(original_image_url, test_assertion.image_url(),
-                            "To ensure downstream caches don't have the old image saved, a new filename is used")
+                            "To ensure downstream caches don't have the old image saved, "
+                            "a new filename is used")
 
         v2_datastr = unbake(assertion.image)
         self.assertTrue(v2_datastr)

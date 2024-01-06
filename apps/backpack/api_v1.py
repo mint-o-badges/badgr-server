@@ -1,11 +1,10 @@
-from rest_framework import permissions, status, serializers
+from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from backpack.models import BackpackCollectionBadgeInstance, BackpackCollection
 from backpack.serializers_v1 import CollectionBadgeSerializerV1
 from issuer.models import BadgeInstance
-from mainsite.permissions import IsOwner
 
 
 class CollectionLocalBadgeInstanceList(APIView):
@@ -57,9 +56,9 @@ class CollectionLocalBadgeInstanceList(APIView):
 
         if new_records == []:
             return Response(
-                "No new records could be added to collection. " +
-                "Check for missing/unknown badge references, unauthorized " +
-                "access, or badges already existing in collection.",
+                "No new records could be added to collection. "
+                + "Check for missing/unknown badge references, unauthorized "
+                + "access, or badges already existing in collection.",
                 status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -79,7 +78,8 @@ class CollectionLocalBadgeInstanceList(APIView):
               type: string
               paramType: path
             - name: badges
-              description: A JSON serialization of all the badges to be included in this collection, replacing the list that currently exists.
+              description: A JSON serialization of all the badges to be
+              included in this collection, replacing the list that currently exists.
               required: true
               paramType: body
         """
@@ -258,5 +258,3 @@ class CollectionGenerateShare(APIView):
         collection.save()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-

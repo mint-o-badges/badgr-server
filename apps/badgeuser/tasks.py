@@ -3,7 +3,6 @@ from django.conf import settings
 
 import badgrlog
 from mainsite.celery import app
-from django.db import connection
 
 logger = get_task_logger(__name__)
 badgrLogger = badgrlog.BadgrLogger()

@@ -1,8 +1,6 @@
-from django.conf import settings
 from django.contrib.auth.hashers import is_password_usable
 from rest_framework import serializers
 from collections import OrderedDict
-from mainsite.models import BadgrApp
 from mainsite.serializers import StripTagsCharField
 from mainsite.validators import PasswordValidator
 from .models import BadgeUser, CachedEmailAddress, TermsVersion
@@ -42,7 +40,8 @@ class BadgeUserProfileSerializerV1(serializers.Serializer):
     url = serializers.ListField(read_only=True, source='cached_verified_urls')
     telephone = serializers.ListField(read_only=True, source='cached_verified_phone_numbers')
     current_password = serializers.CharField(style={'input_type': 'password'}, write_only=True, required=False)
-    password = serializers.CharField(style={'input_type': 'password'}, write_only=True, required=False, validators=[PasswordValidator()])
+    password = serializers.CharField(style={'input_type': 'password'},
+            write_only=True, required=False, validators=[PasswordValidator()])
     slug = serializers.CharField(source='entity_id', read_only=True)
     agreed_terms_version = serializers.IntegerField(required=False)
     marketing_opt_in = serializers.BooleanField(required=False)
@@ -177,4 +176,3 @@ class BadgeUserIdentifierFieldV1(serializers.CharField):
             return BadgeUser.cached.get(pk=value).primary_email
         except BadgeUser.DoesNotExist:
             return None
-

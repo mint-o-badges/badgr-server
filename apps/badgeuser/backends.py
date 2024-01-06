@@ -15,4 +15,3 @@ class CachedModelBackend(ModelBackend):
 
 class CachedAuthenticationBackend(CachedModelBackend, AuthenticationBackend):
     pass
-

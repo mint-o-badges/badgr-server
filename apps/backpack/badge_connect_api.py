@@ -6,7 +6,7 @@ from django.shortcuts import reverse
 from django.utils.dateparse import parse_datetime
 from django.views.generic.base import RedirectView
 from rest_framework import status
-from rest_framework.generics import ListCreateAPIView, GenericAPIView
+from rest_framework.generics import ListCreateAPIView
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -16,7 +16,7 @@ from rest_framework.views import APIView
 from backpack.serializers_bcv1 import BackpackProfilesSerializerBC, BadgeConnectAssertionsSerializer, \
     BadgeConnectImportSerializer, BadgeConnectManifestSerializer
 from badgeuser.models import BadgeUser
-from entity.api import BaseEntityDetailView, BaseEntityListView
+from entity.api import BaseEntityDetailView
 from issuer.models import BadgeInstance
 from issuer.permissions import BadgrOAuthTokenHasScope, VerifiedEmailMatchesRecipientIdentifier
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier
@@ -29,6 +29,7 @@ BADGE_CONNECT_SCOPES = [
     "https://purl.imsglobal.org/spec/ob/v2p1/scope/profile.readonly",
 ]
 
+
 def badge_connect_api_info(domain):
     try:
         badgr_app = BadgrApp.cached.get(cors=domain)
@@ -38,9 +39,9 @@ def badge_connect_api_info(domain):
     return {
         "@context": "https://purl.imsglobal.org/spec/ob/v2p1/ob_v2p1.jsonld",
         "id": '{}{}'.format(
-                settings.HTTP_ORIGIN,
-                reverse('badge_connect_manifest', kwargs={'domain': domain})
-            ),
+            settings.HTTP_ORIGIN,
+            reverse('badge_connect_manifest', kwargs={'domain': domain})
+        ),
         "badgeConnectAPI": [{
             "name": badgr_app.name,
             "image": '{}/images/logo.png'.format(settings.STATIC_URL),
@@ -66,17 +67,16 @@ class BadgeConnectManifestView(APIView):
     permission_classes = [AllowAny]
 
     @apispec_get_operation('BadgeConnectManifest',
-        summary='Fetch Badge Connect Manifest',
-        tags=['BadgeConnect'],
-        parameters=[
-            {
-                "in": "query",
-                'name': 'domain',
-                'type': 'string',
-                'description': 'The CORS domain for the BadgrApp'
-            }
-        ]
-    )
+                           summary='Fetch Badge Connect Manifest',
+                           tags=['BadgeConnect'],
+                           parameters=[{
+                               "in": "query",
+                               'name': 'domain',
+                               'type': 'string',
+                               'description': 'The CORS domain for the BadgrApp'
+                               }
+                           ]
+                           )
     def get(self, request, **kwargs):
         data = badge_connect_api_info(kwargs.get('domain'))
         if data is None:
@@ -97,6 +97,7 @@ class BadgeConnectPagination(LimitOffsetPagination):
         url = replace_query_param(url, self.limit_query_param, self.limit)
 
         return replace_query_param(url, self.offset_query_param, 0)
+
     def get_last_link(self):
         offset = self.count // self.limit
         if offset != 0 and self.count % (offset * self.limit) == 0:
@@ -107,6 +108,7 @@ class BadgeConnectPagination(LimitOffsetPagination):
         url = replace_query_param(url, self.limit_query_param, self.limit)
 
         return replace_query_param(url, self.offset_query_param, offset)
+
     def get_previous_link(self):
         if self.offset <= 0:
             return None
@@ -116,6 +118,7 @@ class BadgeConnectPagination(LimitOffsetPagination):
 
         offset = self.offset - self.limit
         return replace_query_param(url, self.offset_query_param, offset)
+
     def get_paginated_response(self, data):
         links = []
         if self.get_next_link():
@@ -131,7 +134,8 @@ class BadgeConnectPagination(LimitOffsetPagination):
 class BadgeConnectAssertionListView(ListCreateAPIView):
     model = BadgeInstance
     serializer_class = BadgeConnectAssertionsSerializer
-    permission_classes = (AuthenticatedWithVerifiedIdentifier, VerifiedEmailMatchesRecipientIdentifier, BadgrOAuthTokenHasScope)
+    permission_classes = (AuthenticatedWithVerifiedIdentifier,
+            VerifiedEmailMatchesRecipientIdentifier, BadgrOAuthTokenHasScope)
     valid_scopes = {
         'get': ['r:backpack', 'rw:backpack', 'https://purl.imsglobal.org/spec/ob/v2p1/scope/assertion.readonly'],
         'post': ['rw:backpack', 'https://purl.imsglobal.org/spec/ob/v2p1/scope/assertion.create'],
@@ -140,7 +144,8 @@ class BadgeConnectAssertionListView(ListCreateAPIView):
     http_method_names = ('get', 'post')
 
     def get_queryset(self):
-        qs = BadgeInstance.objects.filter(recipient_identifier__in=self.request.user.all_recipient_identifiers).order_by('-updated_at')
+        qs = BadgeInstance.objects.filter(
+                recipient_identifier__in=self.request.user.all_recipient_identifiers).order_by('-updated_at')
         if self.request.query_params.get('since', None):
             qs = qs.filter(updated_at__gte=parse_datetime(self.request.query_params.get('since')))
         return qs
@@ -151,30 +156,32 @@ class BadgeConnectAssertionListView(ListCreateAPIView):
         return super(BadgeConnectAssertionListView, self).get_serializer_class()
 
     @apispec_get_operation('BadgeConnectAssertions',
-       summary='Get a list of Assertions',
-       tags=['BadgeConnect'],
-       parameters=[
-           {
-               "in": "query",
-               'name': 'limit',
-               'type': 'integer',
-               'description': 'Indicate how many results should be retrieved in a single page.'
-           },
-           {
-               "in": "query",
-               'name': 'offset',
-               'type': 'integer',
-               'description': 'Indicate the index of the first record to return (zero indexed).'
-           },
-           {
-               "in": "query",
-               'name': 'limit',
-               'type': 'string',
-               'format': 'date-time',
-               'description': 'Retrieve Assertions that were created or updated after the provided timestamp. Must be an ISO 8601 compatible timestamp with a time zone indicator.'
-           },
-       ]
-    )
+            summary='Get a list of Assertions',
+            tags=['BadgeConnect'],
+            parameters=[
+                {
+                    "in": "query",
+                    'name': 'limit',
+                    'type': 'integer',
+                    'description': 'Indicate how many results should be retrieved in a single page.'
+                    },
+                {
+                    "in": "query",
+                    'name': 'offset',
+                    'type': 'integer',
+                    'description': 'Indicate the index of the first record to return (zero indexed).'
+                    },
+                {
+                    "in": "query",
+                    'name': 'limit',
+                    'type': 'string',
+                    'format': 'date-time',
+                    'description': 'Retrieve Assertions that were created or updated '
+                                   'after the provided timestamp. Must be an ISO 8601 '
+                                   'compatible timestamp with a time zone indicator.'
+                    },
+                ]
+            )
     def get(self, request, **kwargs):
         queryset = self.get_queryset()
         page = self.paginate_queryset(queryset)
@@ -209,9 +216,9 @@ class BadgeConnectProfileView(BaseEntityDetailView):
     }
 
     @apispec_get_operation('BadgeConnectProfiles',
-        summary='Get Badge Connect user profile',
-        tags=['BadgeConnect']
-    )
+            summary='Get Badge Connect user profile',
+            tags=['BadgeConnect']
+            )
     def get(self, request, **kwargs):
         """
         GET a single entity by its identifier
@@ -228,7 +235,7 @@ class BadgeConnectProfileView(BaseEntityDetailView):
             'request': self.request,
             'kwargs': kwargs,
         }
-    
+
     def get_object(self, request, **kwargs):
         self.object = request.user
         return self.object

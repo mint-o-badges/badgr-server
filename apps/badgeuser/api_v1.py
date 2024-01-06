@@ -15,6 +15,7 @@ from mainsite.utils import throttleable
 
 RATE_LIMIT_DELTA = datetime.timedelta(minutes=5)
 
+
 class BadgeUserEmailList(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -61,6 +62,7 @@ class BadgeUserEmailView(APIView):
             return None
         else:
             return email_address
+
 
 class BadgeUserEmailDetail(BadgeUserEmailView):
     model = CachedEmailAddress
@@ -131,13 +133,12 @@ class BadgeUserEmailDetail(BadgeUserEmailView):
                     email_address.set_last_verification_sent_time(datetime.datetime.now())
                 else:
                     remaining_time_obj = RATE_LIMIT_DELTA - (datetime.datetime.now() - last_request_time)
-                    remaining_min = (remaining_time_obj.seconds//60)%60
-                    remaining_sec = remaining_time_obj.seconds%60
+                    remaining_min = (remaining_time_obj.seconds // 60) % 60
+                    remaining_sec = remaining_time_obj.seconds % 60
                     remaining_time_rep = "{} minutes and {} seconds".format(remaining_min, remaining_sec)
 
                     return Response("Will be able to re-send verification email in %s." % (str(remaining_time_rep)),
                      status=status.HTTP_429_TOO_MANY_REQUESTS)
-
 
         serializer = EmailSerializerV1(email_address, context={'request': request})
         serialized = serializer.data

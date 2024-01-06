@@ -92,7 +92,7 @@ class BadgeConnectErrorSerializer(serializers.Serializer):
         self.status_text = kwargs.pop('status_text', 'BAD_REQUEST')
         self.status_code = kwargs.pop('status_code', 400)
         super(BadgeConnectErrorSerializer, self).__init__(*args, **kwargs)
-    
+
     def to_representation(self, instance):
         return {
             "status": {
@@ -199,7 +199,6 @@ class BadgeConnectAssertionSerializer(BadgeConnectBaseEntitySerializer):
         })
 
 
-
 class BadgeConnectAssertionsSerializer(serializers.Serializer):
     status = BadgeConnectStatusSerializer(read_only=True, default={})
     results = BadgeConnectAssertionSerializer(many=True, source='*')
@@ -210,16 +209,17 @@ class BadgeConnectAssertionsSerializer(serializers.Serializer):
                 ('status', {
                     'type': 'object',
                     '$ref': '#/definitions/BadgeConnectStatus'
-                }),
+                    }),
                 ('results', {
                     'type': 'array',
                     'items': {
                         'type': 'object',
                         '$ref': '#/definitions/BadgeConnectAssertion'
-                     }
-                })
-            ])
-        })
+                        }
+                    })
+                ])
+            })
+
 
 class BackpackImportResultSerializerBC(serializers.Serializer):
     status = BadgeConnectStatusSerializer(read_only=True, default={})
@@ -234,6 +234,7 @@ class BackpackImportResultSerializerBC(serializers.Serializer):
             ])
         })
 
+
 class BadgeConnectImportSerializer(serializers.Serializer):
     assertion = serializers.DictField()
 
@@ -246,19 +247,21 @@ class BadgeConnectImportSerializer(serializers.Serializer):
                         'id': {
                             'format': "url",
                             'description': "URL of the Badge to import"
-                        }
-                }})
-            ])
-        })
+                            }
+                        }})
+                    ])
+            })
 
     def create(self, validated_data):
         url = validated_data['assertion']['id']
         try:
-            instance, created = BadgeCheckHelper.get_or_create_assertion(url=url, created_by=self.context['request'].user)
+            instance, created = BadgeCheckHelper.get_or_create_assertion(url=url,
+                    created_by=self.context['request'].user)
             if not created:
                 instance.acceptance = BadgeInstance.ACCEPTANCE_ACCEPTED
                 instance.save()
-                raise RestframeworkValidationError([{'name': "DUPLICATE_BADGE", 'description': "You already have this badge in your backpack"}])
+                raise RestframeworkValidationError([{'name': "DUPLICATE_BADGE",
+                    'description': "You already have this badge in your backpack"}])
         except DjangoValidationError as e:
             raise RestframeworkValidationError(e.messages)
         return instance
@@ -283,7 +286,6 @@ class BaseSerializerBC(serializers.Serializer):
             envelope['results'] = result
 
         return envelope
-
 
 
 class BadgeConnectProfile(BadgeConnectBaseEntitySerializer):
@@ -336,7 +338,7 @@ class BackpackProfilesSerializerBC(serializers.Serializer):
                     'items': {
                         'type': 'object',
                         '$ref': '#/definitions/BadgeConnectProfile'
-                     }
-                })
-            ])
-        })
+                        }
+                    })
+                ])
+            })

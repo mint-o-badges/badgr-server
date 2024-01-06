@@ -46,24 +46,20 @@ class LocalBadgeInstanceUploadSerializerV1(serializers.Serializer):
             self.fields.json = serializers.DictField(read_only=True)
         representation = super(LocalBadgeInstanceUploadSerializerV1, self).to_representation(obj)
 
-        # if isinstance(obj, LocalBadgeInstance):
-        #     representation['json'] = V1InstanceSerializer(obj.json, context=self.context).data
-        #     representation['imagePreview'] = {
-        #         "type": "image",
-        #         "id": "{}{}?type=png".format(OriginSetting.HTTP, reverse('localbadgeinstance_image', kwargs={'slug': obj.slug}))
-        #     }
-        # if isinstance(obj, BadgeInstance):
-
         representation['id'] = obj.entity_id
         representation['json'] = V1BadgeInstanceSerializer(obj, context=self.context).data
         representation['imagePreview'] = {
             "type": "image",
-            "id": "{}{}?type=png".format(OriginSetting.HTTP, reverse('badgeclass_image', kwargs={'entity_id': obj.cached_badgeclass.entity_id}))
+            "id": "{}{}?type=png".format(OriginSetting.HTTP,
+                reverse('badgeclass_image',
+                    kwargs={'entity_id': obj.cached_badgeclass.entity_id}))
         }
         if obj.cached_issuer.image:
             representation['issuerImagePreview'] = {
                 "type": "image",
-                "id": "{}{}?type=png".format(OriginSetting.HTTP, reverse('issuer_image', kwargs={'entity_id': obj.cached_issuer.entity_id}))
+                "id": "{}{}?type=png".format(OriginSetting.HTTP,
+                    reverse('issuer_image',
+                        kwargs={'entity_id': obj.cached_issuer.entity_id}))
             }
 
         if obj.image:
@@ -73,16 +69,6 @@ class LocalBadgeInstanceUploadSerializerV1(serializers.Serializer):
 
         return representation
 
-    # def validate_recipient_identifier(self, data):
-    #     user = self.context.get('request').user
-    #     current_emails = [e.email for e in user.cached_emails()] + [e.email for e in user.cached_email_variants()]
-    #
-    #     if data in current_emails:
-    #         return None
-    #     if user.can_add_variant(data):
-    #         return data
-    #     raise serializers.ValidationError("Requested recipient ID {} is not one of your verified email addresses.")
-    #
     def validate(self, data):
         """
         Ensure only one assertion input field given.
@@ -108,7 +94,10 @@ class LocalBadgeInstanceUploadSerializerV1(serializers.Serializer):
             if not created:
                 if instance.acceptance == BadgeInstance.ACCEPTANCE_ACCEPTED:
                     raise RestframeworkValidationError(
-                        [{'name': "DUPLICATE_BADGE", 'description': "You already have this badge in your backpack"}])
+                        [{
+                            'name': "DUPLICATE_BADGE",
+                            'description': "You already have this badge in your backpack"
+                            }])
                 instance.acceptance = BadgeInstance.ACCEPTANCE_ACCEPTED
                 instance.save()
             owner.publish()  # update BadgeUser.cached_badgeinstances()
@@ -133,8 +122,12 @@ class LocalBadgeInstanceUploadSerializerV1(serializers.Serializer):
 class CollectionBadgesSerializerV1(serializers.ListSerializer):
 
     def to_representation(self, data):
-        filtered_data = [b for b in data if b.cached_badgeinstance.acceptance is not BadgeInstance.ACCEPTANCE_REJECTED and b.cached_badgeinstance.revoked is False]
-        filtered_data = [c for c in filtered_data if c.cached_badgeinstance.recipient_identifier in c.cached_collection.owner.all_verified_recipient_identifiers]
+        filtered_data = [b for b in data
+                if (b.cached_badgeinstance.acceptance is not BadgeInstance.ACCEPTANCE_REJECTED
+                    and b.cached_badgeinstance.revoked is False)]
+        filtered_data = [c for c in filtered_data
+                if (c.cached_badgeinstance.recipient_identifier
+                    in c.cached_collection.owner.all_verified_recipient_identifiers)]
 
         representation = super(CollectionBadgesSerializerV1, self).to_representation(filtered_data)
         return representation
@@ -161,7 +154,8 @@ class CollectionBadgesSerializerV1(serializers.ListSerializer):
 
 class CollectionBadgeSerializerV1(serializers.ModelSerializer):
     id = serializers.RelatedField(queryset=BadgeInstance.objects.all())
-    collection = serializers.RelatedField(queryset=BackpackCollection.objects.all(), write_only=True, required=False)
+    collection = serializers.RelatedField(queryset=BackpackCollection.objects.all(),
+            write_only=True, required=False)
 
     class Meta:
         model = BackpackCollectionBadgeInstance
@@ -191,7 +185,8 @@ class CollectionBadgeSerializerV1(serializers.ModelSerializer):
         except BadgeInstance.DoesNotExist:
             raise RestframeworkValidationError("Assertion not found")
         if badgeinstance.recipient_identifier not in collection.owner.all_verified_recipient_identifiers:
-            raise serializers.ValidationError("Cannot add badge to a collection created by a different recipient.")
+            raise serializers.ValidationError(
+                    "Cannot add badge to a collection created by a different recipient.")
 
         collect, created = BackpackCollectionBadgeInstance.objects.get_or_create(
             collection=collection,
@@ -208,7 +203,8 @@ class CollectionBadgeSerializerV1(serializers.ModelSerializer):
 class CollectionSerializerV1(serializers.Serializer):
     name = StripTagsCharField(required=True, max_length=128)
     slug = StripTagsCharField(required=False, max_length=128, source='entity_id')
-    description = StripTagsCharField(required=False, allow_blank=True, allow_null=True, max_length=255)
+    description = StripTagsCharField(required=False, allow_blank=True,
+            allow_null=True, max_length=255)
     share_hash = serializers.CharField(read_only=True)
     share_url = serializers.CharField(read_only=True, max_length=1024)
     badges = CollectionBadgeSerializerV1(
@@ -272,7 +268,8 @@ class CollectionSerializerV1(serializers.Serializer):
 ##
 #
 # the below exists to prop up V1BadgeInstanceSerializer for /v1/ backwards compatability
-# in LocalBadgeInstanceUploadSerializer.  it was taken from composition/format.py and verifier/serializers/fields.py
+# in LocalBadgeInstanceUploadSerializer.
+# It was taken from composition/format.py and verifier/serializers/fields.py
 # before those apps were deprecated
 #
 # [Wiggins June 2017]
@@ -415,7 +412,7 @@ class V1IssuerSerializer(serializers.Serializer):
     description = BadgeStringField(required=False)
     image = BadgeImageURLField(required=False)
     email = BadgeEmailField(required=False)
-    slug = serializers.CharField(required=False)    
+    slug = serializers.CharField(required=False)
 
 
 class V1BadgeClassSerializer(serializers.Serializer):

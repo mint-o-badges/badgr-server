@@ -25,14 +25,16 @@ from mainsite.utils import fetch_remote_file_to_storage
 
 class ManifestFileTests(BadgrTestCase):
     def test_can_retrieve_manifest_files(self):
-        ba = BadgrApp.objects.create(name='test', cors='some.domain.com')
+        BadgrApp.objects.create(name='test', cors='some.domain.com')
         response = self.client.get('/bcv1/manifest/some.domain.com', headers={'Accept': 'application/json'})
         self.assertEqual(response.status_code, 200)
         data = response.data
         self.assertEqual(data['@context'], 'https://w3id.org/openbadges/badgeconnect/v1')
-        self.assertIn('https://purl.imsglobal.org/spec/ob/v2p1/scope/assertion.readonly', data['badgeConnectAPI'][0]['scopesOffered'])
+        self.assertIn('https://purl.imsglobal.org/spec/ob/v2p1/scope/assertion.readonly',
+                data['badgeConnectAPI'][0]['scopesOffered'])
 
-        response = self.client.get('/bcv1/manifest/some.otherdomain.com', headers={'Accept': 'application/json'})
+        response = self.client.get('/bcv1/manifest/some.otherdomain.com',
+                headers={'Accept': 'application/json'})
         self.assertEqual(response.status_code, 404)
 
         response = self.client.get('/.well-known/badgeconnect.json')
@@ -48,7 +50,7 @@ class ManifestFileTests(BadgrTestCase):
         self.assertEqual(data['badgeConnectAPI'][0]['name'], ba.name)
 
     def test_manifest_file_token_and_registration_values(self):
-        ba = BadgrApp.objects.create(name='test', cors='some.domain.com')
+        BadgrApp.objects.create(name='test', cors='some.domain.com')
         response = self.client.get('/bcv1/manifest/some.domain.com', headers={'Accept': 'application/json'})
         data = response.data
         self.assertIn('o/register', data['badgeConnectAPI'][0]['registrationUrl'])
@@ -143,7 +145,8 @@ class BadgeConnectOAuthTests(BadgrTestCase, SetupIssuerHelper):
 
         # Make sure registration didn't sneak any scopes in and that they were attenuated properly
         registered_scopes = response.data['scope'].split(' ')
-        self.assertEqual(set(requested_scopes) - set(default_requested_scopes), set(requested_scopes) - set(registered_scopes))
+        self.assertEqual(set(requested_scopes) - set(default_requested_scopes),
+                set(requested_scopes) - set(registered_scopes))
 
         self.assertEqual(registration_data['redirect_uris'][0], response.data['redirect_uris'][0])
         for required_property in [
@@ -309,7 +312,7 @@ class BadgeConnectOAuthTests(BadgrTestCase, SetupIssuerHelper):
                 "code"
             ],
         }
-        user = self.setup_user(email='test@example.com', authenticate=True)
+        self.setup_user(email='test@example.com', authenticate=True)
 
         self._register_mock_GET_response_for_logo_uri(registration_data['logo_uri'], self.get_test_image_path())
         response = self.client.post('/o/register', registration_data)
@@ -318,38 +321,38 @@ class BadgeConnectOAuthTests(BadgrTestCase, SetupIssuerHelper):
     @responses.activate
     def register_and_process_logo_uri(self, test_image_path):
         requested_scopes = [
-            "https://purl.imsglobal.org/spec/ob/v2p1/scope/assertion.readonly",
-            "https://purl.imsglobal.org/spec/ob/v2p1/scope/assertion.create",
-            "https://purl.imsglobal.org/spec/ob/v2p1/scope/profile.readonly",
-        ]
+                "https://purl.imsglobal.org/spec/ob/v2p1/scope/assertion.readonly",
+                "https://purl.imsglobal.org/spec/ob/v2p1/scope/assertion.create",
+                "https://purl.imsglobal.org/spec/ob/v2p1/scope/profile.readonly",
+                ]
         registration_data = {
-            "client_name": "Badge Issuer",
-            "client_uri": "https://issuer.example.com",
-            "logo_uri": "https://issuer.example.com/logo.png",
-            "tos_uri": "https://issuer.example.com/terms-of-service",
-            "policy_uri": "https://issuer.example.com/privacy-policy",
-            "software_id": "13dcdc83-fc0d-4c8d-9159-6461da297388",
-            "software_version": "54dfc83-fc0d-4c8d-9159-6461da297388",
-            "redirect_uris": [
-                "https://issuer.example.com/o/redirect"
-            ],
-            "token_endpoint_auth_method": "client_secret_basic",
-            "grant_types": [
-                "authorization_code",
-                "refresh_token"
-            ],
-            "response_types": [
-                "code"
-            ],
-            "scope": ' '.join(requested_scopes)
-        }
+                "client_name": "Badge Issuer",
+                "client_uri": "https://issuer.example.com",
+                "logo_uri": "https://issuer.example.com/logo.png",
+                "tos_uri": "https://issuer.example.com/terms-of-service",
+                "policy_uri": "https://issuer.example.com/privacy-policy",
+                "software_id": "13dcdc83-fc0d-4c8d-9159-6461da297388",
+                "software_version": "54dfc83-fc0d-4c8d-9159-6461da297388",
+                "redirect_uris": [
+                    "https://issuer.example.com/o/redirect"
+                    ],
+                "token_endpoint_auth_method": "client_secret_basic",
+                "grant_types": [
+                    "authorization_code",
+                    "refresh_token"
+                    ],
+                "response_types": [
+                    "code"
+                    ],
+                "scope": ' '.join(requested_scopes)
+                }
 
         self._register_mock_GET_response_for_logo_uri(registration_data['logo_uri'], test_image_path)
 
         return self.client.post('/o/register', registration_data)
 
     def assert_logo_url_was_handled(self, response):
-        logo_url_storage_name = response.data['logo_uri'].split(getattr(settings, 'HTTP_ORIGIN')+"/media/")
+        logo_url_storage_name = response.data['logo_uri'].split(getattr(settings, 'HTTP_ORIGIN') + "/media/")
         self.assertEqual(response.status_code, 201)
         self.assertTrue(default_storage.size(logo_url_storage_name[1]) > 0)
 
@@ -365,7 +368,6 @@ class BadgeConnectOAuthTests(BadgrTestCase, SetupIssuerHelper):
     def test_registration_when_logo_uri_is_not_svg_or_png(self):
         response = self.register_and_process_logo_uri(self.get_test_jpeg_image_path())
         self.assertEqual(response.status_code, 415)
-
 
     def test_reject_different_domains(self):
         registration_data = {
@@ -388,7 +390,7 @@ class BadgeConnectOAuthTests(BadgrTestCase, SetupIssuerHelper):
                 "code"
             ],
         }
-        user = self.setup_user(email='test@example.com', authenticate=True)
+        self.setup_user(email='test@example.com', authenticate=True)
 
         response = self.client.post('/o/register', registration_data)
         self.assertIn("do not match", response.data['error'])
@@ -430,7 +432,7 @@ class BadgeConnectOAuthTests(BadgrTestCase, SetupIssuerHelper):
                 "code"
             ],
         }
-        user = self.setup_user(email='test@example.com', authenticate=True)
+        self.setup_user(email='test@example.com', authenticate=True)
 
         response = self.client.post('/o/register', registration_data)
         self.assertEqual(response.data['error'], "redirect_uris: Must be a valid HTTPS URI")
@@ -479,7 +481,7 @@ class BadgeConnectOAuthTests(BadgrTestCase, SetupIssuerHelper):
             "scope": ' '.join(requested_scopes)
         }
 
-        user = self.setup_user(email='test@example.com', authenticate=True)
+        self.setup_user(email='test@example.com', authenticate=True)
 
         self._register_mock_GET_response_for_logo_uri(registration_data['logo_uri'], self.get_test_image_path())
 
@@ -603,17 +605,23 @@ class BadgeConnectAPITests(BadgrTestCase, SetupIssuerHelper):
         since = parse.quote(DateTimeField().to_representation(assertions[5].created_at))
         response = self.client.get('/bcv1/assertions?limit=10&offset=0&since=' + since)
         self.assertEqual(len(response.data['results']), 10)
-        self.assertTrue('<http://testserver/bcv1/assertions?limit=10&offset=10&since=%s>; rel="next"' % since in response['Link'])
-        self.assertTrue('<http://testserver/bcv1/assertions?limit=10&offset=10&since=%s>; rel="last"' % since in response['Link'])
-        self.assertTrue('<http://testserver/bcv1/assertions?limit=10&offset=0&since=%s>; rel="first"' % since in response['Link'])
+        self.assertTrue('<http://testserver/bcv1/assertions?limit=10&offset=10&since=%s>; rel="next"'
+                % since in response['Link'])
+        self.assertTrue('<http://testserver/bcv1/assertions?limit=10&offset=10&since=%s>; rel="last"'
+                % since in response['Link'])
+        self.assertTrue('<http://testserver/bcv1/assertions?limit=10&offset=0&since=%s>; rel="first"'
+                % since in response['Link'])
         for x in range(0, 10):
             self.assertEqual(response.data['results'][x]['id'], assertions[24 - x].jsonld_id)
 
         response = self.client.get('/bcv1/assertions?limit=10&offset=10&since=' + since)
         self.assertEqual(len(response.data['results']), 10)
         self.assertTrue(response.has_header('Link'))
-        self.assertTrue('<http://testserver/bcv1/assertions?limit=10&offset=10&since=%s>; rel="last"' % since in response['Link'])
-        self.assertTrue('<http://testserver/bcv1/assertions?limit=10&offset=0&since=%s>; rel="first"' % since in response['Link'])
-        self.assertTrue('<http://testserver/bcv1/assertions?limit=10&offset=0&since=%s>; rel="prev"' % since in response['Link'])
+        self.assertTrue('<http://testserver/bcv1/assertions?limit=10&offset=10&since=%s>; rel="last"'
+                % since in response['Link'])
+        self.assertTrue('<http://testserver/bcv1/assertions?limit=10&offset=0&since=%s>; rel="first"'
+                % since in response['Link'])
+        self.assertTrue('<http://testserver/bcv1/assertions?limit=10&offset=0&since=%s>; rel="prev"'
+                % since in response['Link'])
         for x in range(0, 10):
             self.assertEqual(response.data['results'][x]['id'], assertions[24 - (x + 10)].jsonld_id)

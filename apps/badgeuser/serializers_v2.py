@@ -1,4 +1,3 @@
-import base64
 from collections import OrderedDict
 
 from rest_framework import serializers
@@ -41,8 +40,10 @@ class BadgeUserEmailSerializerV2(DetailSerializerV2):
 class BadgeUserSerializerV2(DetailSerializerV2):
     firstName = StripTagsCharField(source='first_name', max_length=30, allow_blank=True)
     lastName = StripTagsCharField(source='last_name', max_length=150, allow_blank=True)
-    password = serializers.CharField(style={'input_type': 'password'}, write_only=True, required=False, validators=[PasswordValidator()])
-    currentPassword = serializers.CharField(style={'input_type': 'password'}, write_only=True, required=False)
+    password = serializers.CharField(style={'input_type': 'password'},
+            write_only=True, required=False, validators=[PasswordValidator()])
+    currentPassword = serializers.CharField(style={'input_type': 'password'},
+            write_only=True, required=False)
     emails = BadgeUserEmailSerializerV2(many=True, source='email_items', required=False)
     url = serializers.ListField(read_only=True, source='cached_verified_urls')
     telephone = serializers.ListField(read_only=True, source='cached_verified_phone_numbers')

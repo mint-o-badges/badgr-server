@@ -3,7 +3,6 @@ import re
 
 import os
 
-from allauth.account.models import EmailConfirmation
 from django.contrib.auth import SESSION_KEY
 from django.core import mail
 from django.core.cache import cache
@@ -23,10 +22,9 @@ from badgeuser.models import (
 from badgeuser.serializers_v1 import BadgeUserProfileSerializerV1
 from badgeuser.serializers_v2 import BadgeUserSerializerV2
 from issuer.models import BadgeClass, Issuer
-from mainsite.models import BadgrApp, ApplicationInfo, AccessTokenProxy
+from mainsite.models import BadgrApp
 from mainsite.tests.base import BadgrTestCase, SetupIssuerHelper
 from mainsite.utils import backoff_cache_key
-
 
 
 class AuthTokenTests(BadgrTestCase):
@@ -87,13 +85,12 @@ class UserCreateTests(BadgrTestCase):
         self.assertIn("signup=true", mail.outbox[0].body)
         self.assertNotIn("source=mozilla", mail.outbox[0].body)
 
-        launch_url = re.search("(?P<url>/v1/[^\s]+)", mail.outbox[0].body).group("url")
+        launch_url = re.search("(?P<url>/v1/[^\\s]+)", mail.outbox[0].body).group("url")
         response = self.client.get(launch_url)
         self.assertEqual(response.status_code, 302)
         redirect_url = response._headers['location'][1]
 
         self.assertIn('/welcome', redirect_url)
-
 
     def test_create_user_from_mozilla(self):
         user_data = {
@@ -114,7 +111,7 @@ class UserCreateTests(BadgrTestCase):
         email = "unclaimed3@example.com"
         first_user = self.setup_user(authenticate=False)
         CachedEmailAddress.objects.create(user=first_user, email=email, primary=False, verified=False)
-        second_user = self.setup_user(email='second@user.fake', authenticate=True)
+        self.setup_user(email='second@user.fake', authenticate=True)
         response = self.client.post('/v1/user/emails', {'email': email})
         self.assertEqual(response.status_code, 201)
         self.assertNotIn("signup=true", mail.outbox[0].body)
@@ -127,7 +124,7 @@ class UserCreateTests(BadgrTestCase):
             'email': email,
             'password': '123456'
         }
-        existing_user = self.setup_user(email=email, authenticate=False, create_email_address=True)
+        self.setup_user(email=email, authenticate=False, create_email_address=True)
 
         response = self.client.post('/v1/user/profile', user_data)
 
@@ -167,21 +164,21 @@ class UserCreateTests(BadgrTestCase):
 
         # the old user should no longer exist
         with self.assertRaises(BadgeUser.DoesNotExist):
-            old_user = BadgeUser.objects.get(pk=existing_user_pk)
+            BadgeUser.objects.get(pk=existing_user_pk)
 
     def test_user_can_add_secondary_email_of_preexisting_unclaimed_email(self):
         email = "unclaimed2@example.com"
         first_user = self.setup_user(authenticate=False)
         CachedEmailAddress.objects.create(user=first_user, email=email, primary=False, verified=False)
 
-        second_user = self.setup_user(email='second@user.fake', authenticate=True)
+        self.setup_user(email='second@user.fake', authenticate=True)
         response = self.client.post('/v1/user/emails', {'email': email})
         self.assertEqual(response.status_code, 201)
 
     def test_can_create_account_with_same_email_since_deleted(self):
         email = 'unclaimed1@example.com'
         new_email = 'newjunkeremail@junk.net'
-        first_user_data = user_data = {
+        user_data = {
             'first_name': 'NEW Test',
             'last_name': 'User',
             'email': email,
@@ -228,7 +225,7 @@ class UserCreateTests(BadgrTestCase):
     def test_shouldnt_error_when_user_exists_with_email(self):
         email = 'existing3@example.test'
 
-        old_user = self.setup_user(email=email, password='secret2')  # password is set because its an existing user
+        self.setup_user(email=email, password='secret2')  # password is set because its an existing user
 
         response = self.client.post('/v1/user/profile', {
             'first_name': 'existing',
@@ -242,7 +239,7 @@ class UserCreateTests(BadgrTestCase):
     def test_autocreated_user_can_signup(self):
         email = 'existing4@example.test'
 
-        old_user = self.setup_user(email=email, password=None, create_email_address=False)  # no password set
+        self.setup_user(email=email, password=None, create_email_address=False)  # no password set
 
         response = self.client.post('/v1/user/profile', {
             'first_name': 'existing',
@@ -288,7 +285,7 @@ class UserCreateTests(BadgrTestCase):
             email='testuser123@example.test'
         )
         user.save()
-        email = CachedEmailAddress.cached.create(user=user, email=user.email, verified=True)
+        CachedEmailAddress.cached.create(user=user, email=user.email, verified=True)
 
         user_data = {
             'first_name': 'Usery',
@@ -300,7 +297,7 @@ class UserCreateTests(BadgrTestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(len(mail.outbox), 1)
 
-        verify_url = re.search("(?P<url>/v2/[^\s]+)", mail.outbox[0].body).group("url")
+        verify_url = re.search("(?P<url>/v2/[^\\s]+)", mail.outbox[0].body).group("url")
         response = self.client.get(verify_url[:-5])
         self.assertEqual(response.status_code, 302)
         self.assertNotIn(user_data['first_name'], response._headers['location'][1])
@@ -390,7 +387,7 @@ class UserEmailTests(BadgrTestCase):
         # Mark email as verified
         email = CachedEmailAddress.cached.get(email='new+email@newemail.com')
         self.assertEqual(len(mail.outbox), 1)
-        verify_url = re.search("(?P<url>/v1/[^\s]+)", mail.outbox[0].body).group("url")
+        verify_url = re.search("(?P<url>/v1/[^\\s]+)", mail.outbox[0].body).group("url")
         response = self.client.get(verify_url)
         self.assertEqual(response.status_code, 302)
 
@@ -399,7 +396,7 @@ class UserEmailTests(BadgrTestCase):
 
     def test_user_cant_register_new_email_verified_by_other(self):
         second_user = self.setup_user(authenticate=False)
-        existing_mail = CachedEmailAddress.objects.create(
+        CachedEmailAddress.objects.create(
             user=self.first_user, email='new+email@newemail.com', verified=True)
 
         response = self.client.get('/v1/user/emails')
@@ -497,7 +494,7 @@ class UserEmailTests(BadgrTestCase):
 
         # receive verification email
         self.assertEqual(len(mail.outbox), 1)
-        verify_url = re.search("(?P<url>/v1/[^\s]+)", mail.outbox[0].body).group("url")
+        verify_url = re.search("(?P<url>/v1/[^\\s]+)", mail.outbox[0].body).group("url")
 
         # verify the email address
         email_address = CachedEmailAddress.objects.filter(verified=False).get()
@@ -519,7 +516,7 @@ class UserEmailTests(BadgrTestCase):
 
         # receive verification email
         self.assertEqual(len(mail.outbox), 1)
-        verify_url = re.search("(?P<url>/v1/[^\s]+)", mail.outbox[0].body).group("url")
+        verify_url = re.search("(?P<url>/v1/[^\\s]+)", mail.outbox[0].body).group("url")
 
         # verify the email address successfully
         response = self.client.get(verify_url)
@@ -609,7 +606,7 @@ class UserEmailTests(BadgrTestCase):
         user_email = 'hundredth.user@newemail.test'
         user = self.setup_user(email=user_email, authenticate=False)
         token, created = Token.objects.get_or_create(user=user)
-        response = self.client.get('/v2/users/self', HTTP_AUTHORIZATION='Token {}'.format(token.key))
+        self.client.get('/v2/users/self', HTTP_AUTHORIZATION='Token {}'.format(token.key))
 
         mocked_logger.assert_called_once()
         self.assertIsNotNone(mocked_logger.call_args[0][0].request.META.get("REMOTE_ADDR", None))
@@ -687,7 +684,7 @@ class UserEmailTests(BadgrTestCase):
         self.assertFalse(new_variant.verified)
 
         verified_emails = [e.email for e in user.emailaddress_set.filter(verified=True)] \
-                          + [e.email for e in user.cached_email_variants() if e.verified]
+                + [e.email for e in user.cached_email_variants() if e.verified]
 
         self.assertTrue(new_variant not in verified_emails)
 
@@ -847,7 +844,8 @@ class UserRecipientIdentifierTests(SetupIssuerHelper, BadgrTestCase):
 
     def test_verified_recipient_receives_assertion(self):
         url = 'http://example.com'
-        self.first_user.userrecipientidentifier_set.create(identifier=url, verified=True, type=UserRecipientIdentifier.IDENTIFIER_TYPE_URL)
+        self.first_user.userrecipientidentifier_set.create(identifier=url,
+                verified=True, type=UserRecipientIdentifier.IDENTIFIER_TYPE_URL)
         self.badgeclass.issue(recipient_id=url, recipient_type=UserRecipientIdentifier.IDENTIFIER_TYPE_URL)
         self.assertEqual(len(self.first_user.cached_badgeinstances()), 1)
 
@@ -859,7 +857,8 @@ class UserRecipientIdentifierTests(SetupIssuerHelper, BadgrTestCase):
 
     def test_verified_recipient_v1_badges_endpoint(self):
         url = 'http://example.com'
-        self.first_user.userrecipientidentifier_set.create(identifier=url, verified=True, type=UserRecipientIdentifier.IDENTIFIER_TYPE_URL)
+        self.first_user.userrecipientidentifier_set.create(identifier=url,
+                verified=True, type=UserRecipientIdentifier.IDENTIFIER_TYPE_URL)
         self.badgeclass.issue(recipient_id=url, recipient_type=UserRecipientIdentifier.IDENTIFIER_TYPE_URL)
 
         response = self.client.get('/v1/earner/badges')
@@ -912,7 +911,7 @@ class UserBadgeTests(BadgrTestCase):
 
     def test_badge_awards_transferred_on_email_verification(self):
         first_user_email = 'first+user@email.test'
-        first_user = self.setup_user(email=first_user_email, authenticate=True)
+        self.setup_user(email=first_user_email, authenticate=True)
 
         response = self.client.get('/v1/user/emails')
         self.assertEqual(response.status_code, 200)
@@ -931,12 +930,12 @@ class UserBadgeTests(BadgrTestCase):
 
         response = self.client.get('/v1/user/emails')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(starting_count+1, len(response.data))
+        self.assertEqual(starting_count + 1, len(response.data))
 
         # Mark email as verified
         email = CachedEmailAddress.cached.get(email='new+email@newemail.com')
-        self.assertEqual(len(mail.outbox), outbox_count+1)
-        verify_url = re.search("(?P<url>/v1/[^\s]+)", mail.outbox[-1].body).group("url")
+        self.assertEqual(len(mail.outbox), outbox_count + 1)
+        verify_url = re.search("(?P<url>/v1/[^\\s]+)", mail.outbox[-1].body).group("url")
         response = self.client.get(verify_url)
         self.assertEqual(response.status_code, 302)
 
@@ -1030,7 +1029,6 @@ class UserProfileTests(BadgrTestCase):
     def test_user_update_ignores_blank_email(self):
         first = 'firsty'
         last = 'lastington'
-        new_password = 'new-password'
         username = 'testinguser'
         original_password = 'password'
 

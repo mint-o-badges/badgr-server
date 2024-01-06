@@ -19,7 +19,7 @@ def notify_on_password_change(user, request=None):
         badgr_app = BadgrApp.objects.get_current(request=request)
     else:
         badgr_app = user.badgrapp
-        
+
     base_context = {
         'user': user,
         'site': get_current_site(request),
@@ -29,8 +29,9 @@ def notify_on_password_change(user, request=None):
         'badgr_app': badgr_app,
     }
 
-    email_context = Context(base_context)
+    Context(base_context)
     get_adapter().send_mail('account/email/password_reset_confirmation', user.primary_email, base_context)
+
 
 def generate_badgr_username(email):
     # md5 hash the email and then encode as base64 to take up only 25 characters

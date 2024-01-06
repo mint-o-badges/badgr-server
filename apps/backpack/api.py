@@ -29,6 +29,7 @@ logger = badgrlog.BadgrLogger()
 _TRUE_VALUES = ['true', 't', 'on', 'yes', 'y', '1', 1, 1.0, True]
 _FALSE_VALUES = ['false', 'f', 'off', 'no', 'n', '0', 0, 0.0, False]
 
+
 def _scrub_boolean(boolean_str, default=None):
     if boolean_str in _TRUE_VALUES:
         return True
@@ -36,12 +37,15 @@ def _scrub_boolean(boolean_str, default=None):
         return False
     return default
 
+
 class BackpackAssertionList(BaseEntityListView):
     model = BadgeInstance
     v1_serializer_class = LocalBadgeInstanceUploadSerializerV1
     v2_serializer_class = BackpackAssertionSerializerV2
     create_event = badgrlog.BadgeUploaded
-    permission_classes = (AuthenticatedWithVerifiedIdentifier, VerifiedEmailMatchesRecipientIdentifier, BadgrOAuthTokenHasScope)
+    permission_classes = (AuthenticatedWithVerifiedIdentifier,
+            VerifiedEmailMatchesRecipientIdentifier,
+            BadgrOAuthTokenHasScope)
     http_method_names = ('get', 'post')
     valid_scopes = {
         'get': ['r:backpack', 'rw:backpack'],
@@ -66,19 +70,20 @@ class BackpackAssertionList(BaseEntityListView):
         ).lower() in ['1', 'true']
 
         def badge_filter(b):
-            if ((b.acceptance == BadgeInstance.ACCEPTANCE_REJECTED) or
-                    (not include_expired and b.expires_at != None and b.expires_at < timezone.now()) or
-                    (not include_revoked and b.revoked) or
-                    (not include_pending and b.pending)):
+            if ((b.acceptance == BadgeInstance.ACCEPTANCE_REJECTED)
+                    or (not include_expired and b.expires_at is not None
+                        and b.expires_at < timezone.now())
+                    or (not include_revoked and b.revoked)
+                    or (not include_pending and b.pending)):
                 return False
             return True
 
         return list(filter(badge_filter, self.request.user.cached_badgeinstances()))
 
     @apispec_list_operation('Assertion',
-        summary="Get a list of Assertions in authenticated user's backpack ",
-        tags=['Backpack']
-    )
+                            summary="Get a list of Assertions in authenticated user's backpack ",
+                            tags=['Backpack']
+                            )
     def get(self, request, **kwargs):
         mykwargs = kwargs.copy()
         mykwargs['expands'] = []
@@ -92,9 +97,9 @@ class BackpackAssertionList(BaseEntityListView):
         return super(BackpackAssertionList, self).get(request, **mykwargs)
 
     @apispec_post_operation('Assertion',
-        summary="Upload a new Assertion to the backpack",
-        tags=['Backpack']
-    )
+                            summary="Upload a new Assertion to the backpack",
+                            tags=['Backpack']
+                            )
     def post(self, request, **kwargs):
         if kwargs.get('version', 'v1') == 'v1':
             try:
@@ -119,12 +124,13 @@ class BackpackAssertionList(BaseEntityListView):
             user_entity_id = user.entity_id
 
         if len(error.detail) <= 1:
-            #grab first error
+            # grab first error
             e = error.detail[0]
             error_name = e.get('name', '')
             error_result = e.get('result', '')
 
-        invalid_badge_upload_report = badgrlog.InvalidBadgeUploadReport(image_data, user_entity_id, error_name, error_result)
+        invalid_badge_upload_report = badgrlog.InvalidBadgeUploadReport(image_data,
+                user_entity_id, error_name, error_result)
         logger.event(badgrlog.InvalidBadgeUploaded(invalid_badge_upload_report))
 
     def get_context_data(self, **kwargs):
@@ -137,7 +143,8 @@ class BackpackAssertionDetail(BaseEntityDetailView):
     model = BadgeInstance
     v1_serializer_class = LocalBadgeInstanceUploadSerializerV1
     v2_serializer_class = BackpackAssertionSerializerV2
-    permission_classes = (AuthenticatedWithVerifiedIdentifier, VerifiedEmailMatchesRecipientIdentifier, BadgrOAuthTokenHasScope)
+    permission_classes = (AuthenticatedWithVerifiedIdentifier,
+            VerifiedEmailMatchesRecipientIdentifier, BadgrOAuthTokenHasScope)
     http_method_names = ('get', 'delete', 'put')
     valid_scopes = {
         'get': ['r:backpack', 'rw:backpack'],
@@ -172,7 +179,8 @@ class BackpackAssertionDetail(BaseEntityDetailView):
                               )
     def delete(self, request, **kwargs):
         obj = self.get_object(request, **kwargs)
-        related_collections = list(BackpackCollection.objects.filter(backpackcollectionbadgeinstance__badgeinstance=obj))
+        related_collections = list(BackpackCollection.objects.filter(
+            backpackcollectionbadgeinstance__badgeinstance=obj))
 
         if obj.source_url is None:
             obj.acceptance = BadgeInstance.ACCEPTANCE_REJECTED
@@ -220,7 +228,7 @@ class BadgesFromUser(BaseEntityListView):
     model = BadgeInstance
     v1_serializer_class = LocalBadgeInstanceUploadSerializerV1
     v2_serializer_class = BackpackAssertionSerializerV2
-    permission_classes =  (IsServerAdmin,)
+    permission_classes = (IsServerAdmin,)
     valid_scopes = {
         'get': ['rw:serverAdmin'],
     }
@@ -230,8 +238,8 @@ class BadgesFromUser(BaseEntityListView):
         try:
             user = BadgeUser.cached.get(email=email)
             return list(user.get_badges_from_user())
-        except: BadgeUser.DoesNotExist
-        raise ValueError('User not found')
+        except BadgeUser.DoesNotExist:
+            raise ValueError('User not found')
 
     @apispec_get_operation(['BadgeInstance'],
                            summary='Get a list of Badges',

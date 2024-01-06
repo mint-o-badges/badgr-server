@@ -6,6 +6,7 @@ from django.db.models import Count
 
 from badgeuser.models import BadgeUser, CachedEmailAddress
 
+
 class Command(BaseCommand):
     def handle(self, *args, **options):
 
@@ -22,7 +23,7 @@ class Command(BaseCommand):
         continue_processing = True
         while continue_processing:
             start = start_index
-            end = start_index+chunk_size
+            end = start_index + chunk_size
 
             # All non-unique emails
             dup_emails = (BadgeUser.objects.values('email')

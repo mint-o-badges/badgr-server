@@ -9,6 +9,8 @@ urlpatterns = [
     url(r'^forgot-password$', BadgeUserForgotPassword.as_view(), name='v1_api_auth_forgot_password'),
     url(r'^emails$', BadgeUserEmailList.as_view(), name='v1_api_user_emails'),
     url(r'^emails/(?P<id>[^/]+)$', BadgeUserEmailDetail.as_view(), name='v1_api_user_email_detail'),
-    url(r'^legacyconfirmemail/(?P<confirm_id>[^/]+)$', BadgeUserEmailConfirm.as_view(), name='legacy_user_email_confirm'),
-    url(r'^confirmemail/(?P<confirm_id>[^/]+)$', BadgeUserEmailConfirm.as_view(), name='v1_api_user_email_confirm')
+    url(r'^legacyconfirmemail/(?P<confirm_id>[^/]+)$',
+        BadgeUserEmailConfirm.as_view(), name='legacy_user_email_confirm'),
+    url(r'^confirmemail/(?P<confirm_id>[^/]+)$', BadgeUserEmailConfirm.as_view(),
+        name='v1_api_user_email_confirm')
 ]

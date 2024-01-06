@@ -1,5 +1,4 @@
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
-from django import forms
 
 from .models import BadgeUser
 
@@ -27,5 +26,3 @@ class BadgeUserChangeForm(UserChangeForm):
     class Meta:
         model = BadgeUser
         exclude = []
-
-

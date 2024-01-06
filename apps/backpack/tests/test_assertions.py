@@ -34,7 +34,7 @@ class TestShareProviders(SetupIssuerHelper, BadgrTestCase):
         test_badgeclass = self.setup_badgeclass(issuer=test_issuer)
         test_assertion = test_badgeclass.issue(recipient_id='new.recipient@email.test')
         share = BackpackBadgeShare(provider=provider, badgeinstance=test_assertion, source='unknown')
-        share_url = share.get_share_url(provider, include_identifier=True)
+        share.get_share_url(provider, include_identifier=True)
 
     def test_pintrest_share_with_ascii_summary(self):
         provider = 'pinterest'
@@ -43,7 +43,7 @@ class TestShareProviders(SetupIssuerHelper, BadgrTestCase):
         test_badgeclass = self.setup_badgeclass(issuer=test_issuer, name=self.badge_class_name_non_ascii)
         test_assertion = test_badgeclass.issue(recipient_id='new.recipient@email.test')
         share = BackpackBadgeShare(provider=provider, badgeinstance=test_assertion, source='unknown')
-        share_url = share.get_share_url(provider, include_identifier=True)
+        share.get_share_url(provider, include_identifier=True)
 
     def test_linked_in_share_with_ascii_summary_and_issuer(self):
         provider = 'linkedin'
@@ -52,7 +52,7 @@ class TestShareProviders(SetupIssuerHelper, BadgrTestCase):
         test_badgeclass = self.setup_badgeclass(issuer=test_issuer, name=self.badge_class_name_non_ascii)
         test_assertion = test_badgeclass.issue(recipient_id='new.recipient@email.test')
         share = BackpackBadgeShare(provider=provider, badgeinstance=test_assertion, source='unknown')
-        share_url = share.get_share_url(provider, include_identifier=True)
+        share.get_share_url(provider, include_identifier=True)
 
     def test_unsupported_share_provider_returns_404(self):
         provider = 'unsupported_share_provider'
@@ -100,7 +100,8 @@ class TestBadgeUploads(BadgrTestCase):
         )
 
         new_instance = BadgeInstance.objects.first()
-        expected_url = "{}{}".format(OriginSetting.HTTP, reverse('badgeinstance_image', kwargs=dict(entity_id=new_instance.entity_id)))
+        expected_url = "{}{}".format(OriginSetting.HTTP, reverse('badgeinstance_image',
+            kwargs=dict(entity_id=new_instance.entity_id)))
         self.assertEqual(get_response.data[0].get('json', {}).get('image', {}).get('id'), expected_url)
 
     @responses.activate
@@ -166,8 +167,10 @@ class TestBadgeUploads(BadgrTestCase):
         )
 
         new_instance = BadgeInstance.objects.first()
-        expected_url = "{}{}".format(OriginSetting.HTTP, reverse('badgeinstance_image', kwargs=dict(entity_id=new_instance.entity_id)))
-        self.assertEqual(get_response.data[0].get('json', {}).get('image', {}).get('id'), expected_url)
+        expected_url = "{}{}".format(OriginSetting.HTTP, reverse('badgeinstance_image',
+            kwargs=dict(entity_id=new_instance.entity_id)))
+        self.assertEqual(get_response.data[0].get('json', {}).get('image', {}).get('id'),
+                expected_url)
 
     @responses.activate
     def test_submit_basic_1_0_badge_via_url_plain_json(self):
@@ -246,7 +249,6 @@ class TestBadgeUploads(BadgrTestCase):
             "The badge in our backpack should report its JSON-LD id as its original OpenBadgeId"
         )
 
-
     @responses.activate
     def test_submit_basic_1_0_badge_image_png(self):
         setup_basic_1_0()
@@ -321,41 +323,46 @@ class TestBadgeUploads(BadgrTestCase):
         setup_resources([
             {'url': OPENBADGES_CONTEXT_V1_URI, 'filename': 'v1_context.json'},
             {'url': OPENBADGES_CONTEXT_V2_URI, 'response_body': json.dumps(OPENBADGES_CONTEXT_V2_DICT)},
-            {'url': "https://openbadgespec.org/extensions/exampleExtension/context.json", 'response_body': json.dumps(
-                {
-                    "@context": {
-                        "obi": "https://w3id.org/openbadges#",
-                        "extensions": "https://w3id.org/openbadges/extensions#",
-                        "exampleProperty": "http://schema.org/text"
-                    },
-                    "obi:validation": [
+            {'url': "https://openbadgespec.org/extensions/exampleExtension/context.json",
+                'response_body': json.dumps(
+                    {
+                        "@context": {
+                            "obi": "https://w3id.org/openbadges#",
+                            "extensions": "https://w3id.org/openbadges/extensions#",
+                            "exampleProperty": "http://schema.org/text"
+                            },
+                        "obi:validation": [
+                            {
+                                "obi:validatesType": "extensions:ExampleExtension",
+                                "obi:validationSchema":
+                                "https://openbadgespec.org/extensions/exampleExtension/schema.json"
+                                }
+                            ]
+                        }
+                    )},
+                {'url': "https://openbadgespec.org/extensions/exampleExtension/schema.json",
+                    'response_body': json.dumps(
                         {
-                            "obi:validatesType": "extensions:ExampleExtension",
-                            "obi:validationSchema": "https://openbadgespec.org/extensions/exampleExtension/schema.json"
-                        }
-                    ]
-                }
-            )},
-            {'url': "https://openbadgespec.org/extensions/exampleExtension/schema.json", 'response_body': json.dumps(
-                {
-                    "$schema": "http://json-schema.org/draft-04/schema#",
-                    "title": "1.1 Open Badge Example Extension",
-                    "description": "An extension that allows you to add a single string exampleProperty to an extension object to represent some of your favorite text.",
-                    "type": "object",
-                    "properties": {
-                        "exampleProperty": {
-                            "type": "string"
-                        }
-                    },
-                    "required": [
-                        "exampleProperty"
-                    ]
-                }
-            )},
-            {'url': 'http://a.com/instance2', 'response_body': json.dumps(assertion_metadata)},
-            {'url': 'http://a.com/badgeclass', 'response_body': json.dumps(badgeclass_metadata)},
-            {'url': 'http://a.com/issuer', 'response_body': json.dumps(issuer_metadata)}
-        ])
+                            "$schema": "http://json-schema.org/draft-04/schema#",
+                            "title": "1.1 Open Badge Example Extension",
+                            "description": "An extension that allows you to add a "
+                            "single string exampleProperty to an extension "
+                            "object to represent some of your favorite text.",
+                            "type": "object",
+                            "properties": {
+                                "exampleProperty": {
+                                    "type": "string"
+                                    }
+                                },
+                            "required": [
+                                "exampleProperty"
+                                ]
+                            }
+                        )},
+                    {'url': 'http://a.com/instance2', 'response_body': json.dumps(assertion_metadata)},
+                    {'url': 'http://a.com/badgeclass', 'response_body': json.dumps(badgeclass_metadata)},
+                    {'url': 'http://a.com/issuer', 'response_body': json.dumps(issuer_metadata)}
+                    ])
         self.setup_user(email='test@example.com', authenticate=True)
 
         self.assertDictEqual(json.loads(unbake(original_image)), assertion_metadata)
@@ -423,7 +430,8 @@ class TestBadgeUploads(BadgrTestCase):
         self.setup_user(email='test@example.com', authenticate=True)
 
         post_input = {
-            'assertion': open(os.path.join(CURRENT_DIRECTORY, 'testfiles/1_0_basic_instance.json'), 'r').read()
+            'assertion': open(os.path.join(CURRENT_DIRECTORY,
+                'testfiles/1_0_basic_instance.json'), 'r').read()
         }
         with mock.patch('mainsite.blacklist.api_query_is_in_blacklist',
                         new=lambda a, b: False):
@@ -471,7 +479,8 @@ class TestBadgeUploads(BadgrTestCase):
             'http://a.com/instance3'
         )
         self.assertEqual(
-            get_response.data[0].get('json', {}).get('recipient', {}).get('@value', {}).get('recipient'), 'TEST@example.com'
+            get_response.data[0].get('json', {}).get('recipient', {}).get('@value', {}).get('recipient'),
+            'TEST@example.com'
         )
 
         email = CachedEmailAddress.objects.get(email='test@example.com')
@@ -529,7 +538,8 @@ class TestBadgeUploads(BadgrTestCase):
 
         responses.add(
             responses.GET, 'http://a.com/instance',
-            body=open(os.path.join(CURRENT_DIRECTORY, 'testfiles/1_0_basic_instance_missing_badge_prop.json'), 'r').read(),
+            body=open(os.path.join(CURRENT_DIRECTORY,
+                'testfiles/1_0_basic_instance_missing_badge_prop.json'), 'r').read(),
             status=200, content_type='application/json'
         )
         setup_resources([
@@ -575,7 +585,7 @@ class TestBadgeUploads(BadgrTestCase):
         get_response = self.client.get('/v1/earner/badges')
         self.assertEqual(get_response.status_code, 200)
         self.assertEqual(get_response.data[0].get('json', {}).get('id'), post_input.get('url'),
-                         "The badge in our backpack should report its JSON-LD id as the original OpenBadgeId")
+                "The badge in our backpack should report its JSON-LD id as the original OpenBadgeId")
 
     @responses.activate
     def test_submit_0_5_badge_upload_by_assertion(self):
@@ -587,7 +597,8 @@ class TestBadgeUploads(BadgrTestCase):
         self.setup_user(email='test@example.com', authenticate=True)
 
         post_input = {
-            'assertion': open(os.path.join(CURRENT_DIRECTORY, 'testfiles', '0_5_basic_instance.json'), 'r').read()
+            'assertion': open(os.path.join(CURRENT_DIRECTORY, 'testfiles',
+                '0_5_basic_instance.json'), 'r').read()
         }
         with mock.patch('mainsite.blacklist.api_query_is_in_blacklist',
                         new=lambda a, b: False):
@@ -627,12 +638,12 @@ class TestBadgeUploads(BadgrTestCase):
         with mock.patch('mainsite.blacklist.api_query_is_in_blacklist',
                         new=lambda a, b: False):
             response2 = self.client.post(
-            '/v1/earner/badges', post2_input
-            )
+                    '/v1/earner/badges', post2_input
+                    )
         self.assertEqual(response2.status_code, 201)
 
-        self.assertEqual(BadgeClass.objects.all().count(), badgeclass_count+1)
-        self.assertEqual(Issuer.objects.all().count(), issuer_count+1)
+        self.assertEqual(BadgeClass.objects.all().count(), badgeclass_count + 1)
+        self.assertEqual(Issuer.objects.all().count(), issuer_count + 1)
 
     def test_shouldnt_access_already_stored_badgeclass_for_validation(self):
         """
@@ -776,7 +787,7 @@ class TestBadgeUploads(BadgrTestCase):
 
         new_instance = BadgeInstance.objects.first()
         expected_url = "{}{}".format(OriginSetting.HTTP,
-                                     reverse('badgeinstance_image', kwargs=dict(entity_id=new_instance.entity_id)))
+                reverse('badgeinstance_image', kwargs=dict(entity_id=new_instance.entity_id)))
         self.assertEqual(get_response.data[0].get('json', {}).get('image', {}).get('id'), expected_url)
 
         response = self.client.delete('/v1/earner/badges/{}'.format(new_instance.entity_id))
@@ -815,6 +826,7 @@ class TestBadgeUploads(BadgrTestCase):
         self.assertEqual(len(get_response.data), 0, "The backpack should be empty")
         self.assertEqual(BadgeInstance.objects.count(), 0)
 
+
 class TestDeleteLocalAssertion(BadgrTestCase, SetupIssuerHelper):
     @responses.activate
     def test_can_delete_local(self):
@@ -822,7 +834,7 @@ class TestDeleteLocalAssertion(BadgrTestCase, SetupIssuerHelper):
         test_issuer = self.setup_issuer(owner=test_issuer_user)
         test_badgeclass = self.setup_badgeclass(issuer=test_issuer)
 
-        test_recipient = self.setup_user(email='test_recipient@email.test', authenticate=True)
+        self.setup_user(email='test_recipient@email.test', authenticate=True)
         with mock.patch('mainsite.blacklist.api_query_is_in_blacklist',
                         new=lambda a, b: False):
             assertion = test_badgeclass.issue(
@@ -885,10 +897,13 @@ class TestDeleteLocalAssertion(BadgrTestCase, SetupIssuerHelper):
             user=test_recipient, identifier='https://twitter.com/testuser1', verified=True,
             type=UserRecipientIdentifier.IDENTIFIER_TYPE_URL
         )
-        assertion_data = """{"@context":"https://w3id.org/openbadges/v2","type":"Assertion","id":"https://gist.githubusercontent.com/badgebotio/456assertion789/raw","recipient":{"type":"url","hashed":false,"identity":"https://twitter.com/testuser1"},"evidence":{"id:":"https://twitter.com/someuser/status/1176267317866635999","narrative":"Issued on Twitter by Badgebot from [@someuser](https://twitter.com/someuser)"},"issuedOn":"2019-10-02T11:29:25-04:00","badge":"https://gist.githubusercontent.com/badgebotio/456badgeclass789/raw","verification":{"type":"hosted"}}"""
-        badgeclass_data = """{"@context":"https://w3id.org/openbadges/v2","type":"BadgeClass","id":"https://gist.githubusercontent.com/badgebotio/456badgeclass789/raw","name":"You Rock! Badge","description":"Inaugural BadgeBot badge! Recipients of this badge are being recognized for making an impact.","image":"https://gist.githubusercontent.com/badgebotio/456badgeclass789/raw/you-rock-badge.svg","criteria":{"narrative":"Awarded on Twitter"},"issuer":"https://gist.githubusercontent.com/badgebotio/456issuer789/raw"}"""
-        badgeclass_image = """<?xml version="1.0" standalone="no"?><svg height="100" width="100"><circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="red" /></svg>"""
-        issuer_data = """{"@context":"https://w3id.org/openbadges/v2","type":"Issuer","id":"https://gist.githubusercontent.com/badgebotio/456issuer789/raw","name":"BadgeBot","url":"https://badgebot.io"}"""
+        assertion_data = """{"@context":"https://w3id.org/openbadges/v2","type":"Assertion","id":"https://gist.githubusercontent.com/badgebotio/456assertion789/raw","recipient":{"type":"url","hashed":false,"identity":"https://twitter.com/testuser1"},"evidence":{"id:":"https://twitter.com/someuser/status/1176267317866635999","narrative":"Issued on Twitter by Badgebot from [@someuser](https://twitter.com/someuser)"},"issuedOn":"2019-10-02T11:29:25-04:00","badge":"https://gist.githubusercontent.com/badgebotio/456badgeclass789/raw","verification":{"type":"hosted"}}"""  # noqa: E501
+        badgeclass_data = """{"@context":"https://w3id.org/openbadges/v2","type":"BadgeClass","id":"https://gist.githubusercontent.com/badgebotio/456badgeclass789/raw","name":"You Rock! Badge","description":"Inaugural BadgeBot badge! Recipients of this badge are being recognized for making an impact.","image":"https://gist.githubusercontent.com/badgebotio/456badgeclass789/raw/you-rock-badge.svg","criteria":{"narrative":"Awarded on Twitter"},"issuer":"https://gist.githubusercontent.com/badgebotio/456issuer789/raw"}"""  # noqa: E501
+
+        badgeclass_image = """<?xml version="1.0" standalone="no"?><svg height="100" width="100"><circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="red" /></svg>"""  # noqa: E501
+
+        issuer_data = """{"@context":"https://w3id.org/openbadges/v2","type":"Issuer","id":"https://gist.githubusercontent.com/badgebotio/456issuer789/raw","name":"BadgeBot","url":"https://badgebot.io"}"""  # noqa: E501
+
         setup_resources([
             {'url': OPENBADGES_CONTEXT_V2_URI, 'response_body': json.dumps(OPENBADGES_CONTEXT_V2_DICT)},
             {'url': json.loads(assertion_data)['id'], 'response_body': assertion_data},
@@ -897,9 +912,9 @@ class TestDeleteLocalAssertion(BadgrTestCase, SetupIssuerHelper):
                 'url': json.loads(badgeclass_data)['image'],
                 'response_body': badgeclass_image,
                 'content_type': 'image/svg+xml'
-             },
+                },
             {'url': json.loads(issuer_data)['id'], 'response_body': issuer_data},
-        ])
+            ])
 
         with mock.patch('mainsite.blacklist.api_query_is_in_blacklist',
                         new=lambda a, b: False):
@@ -915,7 +930,8 @@ class TestAcceptanceHandling(BadgrTestCase, SetupIssuerHelper):
         test_issuer = self.setup_issuer(owner=test_issuer_user)
         test_badgeclass = self.setup_badgeclass(issuer=test_issuer)
 
-        test_recipient = self.setup_user(email='test_recipient@email.test', authenticate=True, token_scope='rw:backpack')
+        self.setup_user(email='test_recipient@email.test',
+                authenticate=True, token_scope='rw:backpack')
         with mock.patch('mainsite.blacklist.api_query_is_in_blacklist',
                         new=lambda a, b: False):
             assertion = test_badgeclass.issue(
@@ -937,7 +953,7 @@ class TestExpandAssertions(BadgrTestCase, SetupIssuerHelper):
         test_issuer = self.setup_issuer(owner=test_user)
         test_badgeclass = self.setup_badgeclass(issuer=test_issuer)
 
-        test_recipient = self.setup_user(email='test_recipient@email.test', authenticate=True)
+        self.setup_user(email='test_recipient@email.test', authenticate=True)
         test_badgeclass.issue(recipient_id='test_recipient@email.test')
 
         response = self.client.get('/v2/backpack/assertions')
@@ -958,14 +974,15 @@ class TestExpandAssertions(BadgrTestCase, SetupIssuerHelper):
         test_issuer = self.setup_issuer(owner=test_user)
         test_badgeclass = self.setup_badgeclass(issuer=test_issuer)
 
-        test_recipient = self.setup_user(email='test_recipient@email.test', authenticate=True)
+        self.setup_user(email='test_recipient@email.test', authenticate=True)
         test_badgeclass.issue(recipient_id='test_recipient@email.test')
 
         response = self.client.get('/v2/backpack/assertions?expand=badgeclass')
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(isinstance(response.data['result'][0]['badgeclass'], collections.OrderedDict))
-        self.assertTrue(not isinstance(response.data['result'][0]['badgeclass']['issuer'], collections.OrderedDict))
+        self.assertTrue(not isinstance(response.data['result'][0]['badgeclass']['issuer'],
+            collections.OrderedDict))
 
         fid = response.data['result'][0]['entityId']
         response = self.client.get('/v2/backpack/assertions/{}?expand=badgeclass&expand=issuer'.format(fid))
@@ -981,7 +998,7 @@ class TestExpandAssertions(BadgrTestCase, SetupIssuerHelper):
         test_issuer = self.setup_issuer(owner=test_user)
         test_badgeclass = self.setup_badgeclass(issuer=test_issuer)
 
-        test_recipient = self.setup_user(email='test_recipient@email.test', authenticate=True)
+        self.setup_user(email='test_recipient@email.test', authenticate=True)
         test_badgeclass.issue(recipient_id='test_recipient@email.test')
 
         responseOne = self.client.get('/v2/backpack/assertions?expand=issuer')
@@ -998,7 +1015,7 @@ class TestExpandAssertions(BadgrTestCase, SetupIssuerHelper):
         test_issuer = self.setup_issuer(owner=test_user)
         test_badgeclass = self.setup_badgeclass(issuer=test_issuer)
 
-        test_recipient = self.setup_user(email='test_recipient@email.test', authenticate=True)
+        self.setup_user(email='test_recipient@email.test', authenticate=True)
         test_badgeclass.issue(recipient_id='test_recipient@email.test')
 
         response = self.client.get('/v2/backpack/assertions?expand=badgeclass&expand=issuer')
@@ -1013,25 +1030,25 @@ class TestExpandAssertions(BadgrTestCase, SetupIssuerHelper):
 
         # define users and issuers
         test_user = self.setup_user(email='test_recipient@email.test', authenticate=True)
-        test_issuer_one = self.setup_issuer(name="Test Issuer 1",owner=test_user)
-        test_issuer_two = self.setup_issuer(name="Test Issuer 2",owner=test_user)
-        test_issuer_three = self.setup_issuer(name="Test Issuer 3",owner=test_user)
+        test_issuer_one = self.setup_issuer(name="Test Issuer 1", owner=test_user)
+        test_issuer_two = self.setup_issuer(name="Test Issuer 2", owner=test_user)
+        test_issuer_three = self.setup_issuer(name="Test Issuer 3", owner=test_user)
 
         # define badgeclasses
-        test_badgeclass_one = self.setup_badgeclass(name='Test Badgeclass 1',issuer=test_issuer_one)
-        test_badgeclass_two = self.setup_badgeclass(name='Test Badgeclass 2',issuer=test_issuer_one)
-        test_badgeclass_three = self.setup_badgeclass(name='Test Badgeclass 3',issuer=test_issuer_two)
-        test_badgeclass_four = self.setup_badgeclass(name='Test Badgeclass 4',issuer=test_issuer_three)
-        test_badgeclass_five = self.setup_badgeclass(name='Test Badgeclass 5',issuer=test_issuer_three)
-        test_badgeclass_six = self.setup_badgeclass(name='Test Badgeclass 6',issuer=test_issuer_three)
+        test_badgeclass_one = self.setup_badgeclass(name='Test Badgeclass 1', issuer=test_issuer_one)
+        test_badgeclass_two = self.setup_badgeclass(name='Test Badgeclass 2', issuer=test_issuer_one)
+        test_badgeclass_three = self.setup_badgeclass(name='Test Badgeclass 3', issuer=test_issuer_two)
+        test_badgeclass_four = self.setup_badgeclass(name='Test Badgeclass 4', issuer=test_issuer_three)
+        test_badgeclass_five = self.setup_badgeclass(name='Test Badgeclass 5', issuer=test_issuer_three)
+        test_badgeclass_six = self.setup_badgeclass(name='Test Badgeclass 6', issuer=test_issuer_three)
 
         # issue badges to user
         test_badgeclass_one.issue(recipient_id='test_recipient@email.test')
-        test_badgeclass_one.issue(recipient_id='test_recipient@email.test')
-        test_badgeclass_one.issue(recipient_id='test_recipient@email.test')
-        test_badgeclass_one.issue(recipient_id='test_recipient@email.test')
-        test_badgeclass_one.issue(recipient_id='test_recipient@email.test')
-        test_badgeclass_one.issue(recipient_id='test_recipient@email.test')
+        test_badgeclass_two.issue(recipient_id='test_recipient@email.test')
+        test_badgeclass_three.issue(recipient_id='test_recipient@email.test')
+        test_badgeclass_four.issue(recipient_id='test_recipient@email.test')
+        test_badgeclass_five.issue(recipient_id='test_recipient@email.test')
+        test_badgeclass_six.issue(recipient_id='test_recipient@email.test')
 
         response = self.client.get('/v2/backpack/assertions?expand=badgeclass')
 
@@ -1045,41 +1062,45 @@ class TestExpandAssertions(BadgrTestCase, SetupIssuerHelper):
 
         # define users and issuers
         test_user = self.setup_user(email='test_recipient@email.test', authenticate=True)
-        test_issuer_one = self.setup_issuer(name="Test Issuer 1",owner=test_user)
-        test_issuer_two = self.setup_issuer(name="Test Issuer 2",owner=test_user)
-        test_issuer_three = self.setup_issuer(name="Test Issuer 3",owner=test_user)
+        test_issuer_one = self.setup_issuer(name="Test Issuer 1", owner=test_user)
+        test_issuer_two = self.setup_issuer(name="Test Issuer 2", owner=test_user)
+        test_issuer_three = self.setup_issuer(name="Test Issuer 3", owner=test_user)
 
         # define badgeclasses
-        test_badgeclass_one = self.setup_badgeclass(name='Test Badgeclass 1',issuer=test_issuer_one)
-        test_badgeclass_two = self.setup_badgeclass(name='Test Badgeclass 2',issuer=test_issuer_one)
-        test_badgeclass_three = self.setup_badgeclass(name='Test Badgeclass 3',issuer=test_issuer_two)
-        test_badgeclass_four = self.setup_badgeclass(name='Test Badgeclass 4',issuer=test_issuer_three)
-        test_badgeclass_five = self.setup_badgeclass(name='Test Badgeclass 5',issuer=test_issuer_three)
-        test_badgeclass_six = self.setup_badgeclass(name='Test Badgeclass 6',issuer=test_issuer_three)
+        test_badgeclass_one = self.setup_badgeclass(name='Test Badgeclass 1', issuer=test_issuer_one)
+        test_badgeclass_two = self.setup_badgeclass(name='Test Badgeclass 2', issuer=test_issuer_one)
+        test_badgeclass_three = self.setup_badgeclass(name='Test Badgeclass 3', issuer=test_issuer_two)
+        test_badgeclass_four = self.setup_badgeclass(name='Test Badgeclass 4', issuer=test_issuer_three)
+        test_badgeclass_five = self.setup_badgeclass(name='Test Badgeclass 5', issuer=test_issuer_three)
+        test_badgeclass_six = self.setup_badgeclass(name='Test Badgeclass 6', issuer=test_issuer_three)
 
         # issue badges to user
         test_badgeclass_one.issue(recipient_id='test_recipient@email.test')
-        test_badgeclass_one.issue(recipient_id='test_recipient@email.test')
-        test_badgeclass_one.issue(recipient_id='test_recipient@email.test')
-        test_badgeclass_one.issue(recipient_id='test_recipient@email.test')
-        test_badgeclass_one.issue(recipient_id='test_recipient@email.test')
-        test_badgeclass_one.issue(recipient_id='test_recipient@email.test')
+        test_badgeclass_two.issue(recipient_id='test_recipient@email.test')
+        test_badgeclass_three.issue(recipient_id='test_recipient@email.test')
+        test_badgeclass_four.issue(recipient_id='test_recipient@email.test')
+        test_badgeclass_five.issue(recipient_id='test_recipient@email.test')
+        test_badgeclass_six.issue(recipient_id='test_recipient@email.test')
 
         response = self.client.get('/v2/backpack/assertions?expand=badgeclass&expand=issuer')
 
         self.assertEqual(len(response.data['result']), 6)
         for i in range(6):
             self.assertTrue(isinstance(response.data['result'][i]['badgeclass'], collections.OrderedDict))
-            self.assertTrue(isinstance(response.data['result'][i]['badgeclass']['issuer'], collections.OrderedDict))
+            self.assertTrue(isinstance(response.data['result'][i]['badgeclass']['issuer'],
+                collections.OrderedDict))
 
 
 class TestPendingBadges(BadgrTestCase, SetupIssuerHelper):
     @responses.activate
     def test_view_badge_i_imported(self):
         setup_resources([
-            {'url': 'http://a.com/assertion-embedded1', 'filename': '2_0_assertion_embedded_badgeclass.json'},
-            {'url': OPENBADGES_CONTEXT_V2_URI, 'response_body': json.dumps(OPENBADGES_CONTEXT_V2_DICT)},
-            {'url': 'http://a.com/badgeclass_image', 'filename': "unbaked_image.png", 'mode': 'rb'},
+            {'url': 'http://a.com/assertion-embedded1',
+                'filename': '2_0_assertion_embedded_badgeclass.json'},
+            {'url': OPENBADGES_CONTEXT_V2_URI,
+                'response_body': json.dumps(OPENBADGES_CONTEXT_V2_DICT)},
+            {'url': 'http://a.com/badgeclass_image',
+                'filename': "unbaked_image.png", 'mode': 'rb'},
         ])
         unverified_email = 'test@example.com'
         test_user = self.setup_user(email='verified@example.com', authenticate=True)
@@ -1125,9 +1146,12 @@ class TestPendingBadges(BadgrTestCase, SetupIssuerHelper):
     @responses.activate
     def test_view_badge_i_imported_with_v1(self):
         setup_resources([
-            {'url': 'http://a.com/assertion-embedded1', 'filename': '2_0_assertion_embedded_badgeclass.json'},
-            {'url': OPENBADGES_CONTEXT_V2_URI, 'response_body': json.dumps(OPENBADGES_CONTEXT_V2_DICT)},
-            {'url': 'http://a.com/badgeclass_image', 'filename': "unbaked_image.png", 'mode': 'rb'},
+            {'url': 'http://a.com/assertion-embedded1',
+                'filename': '2_0_assertion_embedded_badgeclass.json'},
+            {'url': OPENBADGES_CONTEXT_V2_URI,
+                'response_body': json.dumps(OPENBADGES_CONTEXT_V2_DICT)},
+            {'url': 'http://a.com/badgeclass_image',
+                'filename': "unbaked_image.png", 'mode': 'rb'},
         ])
         unverified_email = 'test@example.com'
         test_user = self.setup_user(email='verified@example.com', authenticate=True)
@@ -1153,9 +1177,6 @@ class TestPendingBadges(BadgrTestCase, SetupIssuerHelper):
         del_resp = self.client.delete('/v1/earner/badges/{}'.format(assertion.entity_id))
         self.assertEqual(del_resp.status_code, 204)
 
-    # apps.badgeuser.tests.UserRecipientIdentifierTests.test_verified_recipient_v2_assertions_endpoint
-    # apps.badgeuser.tests.UserRecipientIdentifierTests.test_verified_recipient_v1_badges_endpoint
-
     def test_cant_view_badge_awarded_to_unverified_that_i_did_not_import(self):
         unverified_email = 'test@example.com'
         test_user = self.setup_user(email='verified@example.com', authenticate=True)
@@ -1178,7 +1199,8 @@ class TestInclusionFlags(BadgrTestCase, SetupIssuerHelper):
         test_user = self.setup_user(email='test@example.com', authenticate=True)
         test_issuer_one = self.setup_issuer(name="Test Issuer 1", owner=test_user)
         test_badgeclass_one = self.setup_badgeclass(name='Test Badgeclass 1', issuer=test_issuer_one)
-        revoked_assertion = test_badgeclass_one.issue(recipient_id='test@example.com', recipient_type='email')
+        revoked_assertion = test_badgeclass_one.issue(recipient_id='test@example.com',
+                recipient_type='email')
         revoked_assertion.revoked = True
         revoked_assertion.save()
         test_badgeclass_one.issue(recipient_id='test@example.com', recipient_type='email')
@@ -1247,4 +1269,3 @@ class TestInclusionFlags(BadgrTestCase, SetupIssuerHelper):
         result = self.client.get('/v2/backpack/assertions')
         self.assertEqual(result.status_code, 200)
         self.assertEqual(len(result.data.get('result')), 1)
-

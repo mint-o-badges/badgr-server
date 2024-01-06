@@ -20,7 +20,7 @@ class Command(BaseCommand):
 
         while True:
             start = start_index
-            end = start_index+chunk_size
+            end = start_index + chunk_size
 
             shares = BackpackBadgeShare.objects.order_by('id')[start:end]
             for share in shares:
@@ -28,7 +28,8 @@ class Command(BaseCommand):
                 event = badgrlog.BadgeSharedEvent(share.badgeinstance, share.provider, share.created_at, share.source)
                 logger.event(event)
                 processing_index = processing_index + 1
-            if len(shares) < chunk_size: break
+            if len(shares) < chunk_size:
+                break
             start_index += chunk_size
 
         self.stdout.write("End emit old share events to badgr events log at %s" % datetime.datetime.now())

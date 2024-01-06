@@ -25,7 +25,7 @@ class LegacyCollectionShareRedirectView(RedirectView):
     permanent = True
 
     def get_redirect_url(self, *args, **kwargs):
-        new_pattern_name = self.request.resolver_match.url_name.replace('legacy_','')
+        new_pattern_name = self.request.resolver_match.url_name.replace('legacy_', '')
         kwargs.pop('pk')
         url = reverse(new_pattern_name, args=args, kwargs=kwargs)
         return url
@@ -56,4 +56,3 @@ class LegacyBadgeShareRedirectView(RedirectView):
             raise Http404
 
         return badgeinstance.public_url
-

@@ -28,7 +28,8 @@ class BackpackCollection(BaseAuditedModelDeletedWithUser, BaseVersionedEntity):
     # slug has been deprecated, but keep for legacy collections redirects
     slug = models.CharField(max_length=254, blank=True, null=True, default=None)
 
-    assertions = models.ManyToManyField('issuer.BadgeInstance', blank=True, through='backpack.BackpackCollectionBadgeInstance')
+    assertions = models.ManyToManyField('issuer.BadgeInstance', blank=True,
+            through='backpack.BackpackCollectionBadgeInstance')
 
     cached = SlugOrJsonIdCacheModelManager(slug_kwarg_name='entity_id', slug_field_name='entity_id')
 
@@ -60,7 +61,8 @@ class BackpackCollection(BaseAuditedModelDeletedWithUser, BaseVersionedEntity):
     def cached_collects(self):
         return self.backpackcollectionbadgeinstance_set.filter(
             badgeinstance__revoked=False,
-            badgeinstance__acceptance__in=(BadgeInstance.ACCEPTANCE_ACCEPTED,BadgeInstance.ACCEPTANCE_UNACCEPTED)
+            badgeinstance__acceptance__in=(BadgeInstance.ACCEPTANCE_ACCEPTED,
+                BadgeInstance.ACCEPTANCE_UNACCEPTED)
         )
 
     @property
@@ -84,7 +86,7 @@ class BackpackCollection(BaseAuditedModelDeletedWithUser, BaseVersionedEntity):
     @property
     def share_url(self):
         if self.published:
-            return OriginSetting.HTTP+reverse('collection_json', kwargs={'entity_id': self.share_hash})
+            return OriginSetting.HTTP + reverse('collection_json', kwargs={'entity_id': self.share_hash})
 
     def get_share_url(self, **kwargs):
         return self.share_url
@@ -96,8 +98,10 @@ class BackpackCollection(BaseAuditedModelDeletedWithUser, BaseVersionedEntity):
     @badge_items.setter
     def badge_items(self, value):
         """
-        Update this collection's list of BackpackCollectionBadgeInstance from a list of BadgeInstance EntityRelatedFieldV2 serializer data
-        :param value: list of BadgeInstance instances or list of BadgeInstance entity_id strings.
+        Update this collection's list of BackpackCollectionBadgeInstance
+        from a list of BadgeInstance EntityRelatedFieldV2 serializer data
+        :param value: list of BadgeInstance instances or list of
+        BadgeInstance entity_id strings.
         """
         def _is_in_requested_badges(entity_id):
             if entity_id in value:
@@ -135,7 +139,8 @@ class BackpackCollection(BaseAuditedModelDeletedWithUser, BaseVersionedEntity):
                         badgeinstance=badgeinstance
                     ).delete()
 
-    def get_json(self, obi_version=CURRENT_OBI_VERSION, expand_badgeclass=False, expand_issuer=False, include_extra=True):
+    def get_json(self, obi_version=CURRENT_OBI_VERSION, expand_badgeclass=False,
+            expand_issuer=False, include_extra=True):
         obi_version, context_iri = get_obi_context(obi_version)
 
         json = OrderedDict([
@@ -191,7 +196,8 @@ class BackpackCollectionBadgeInstance(cachemodel.CacheModel):
 
 
 class BaseSharedModel(cachemodel.CacheModel, CreatedUpdatedAt):
-    SHARE_PROVIDERS = [(p.provider_code, p.provider_name) for code,p in list(SharingManager.ManagerProviders.items())]
+    SHARE_PROVIDERS = [(p.provider_code, p.provider_name)
+            for code, p in list(SharingManager.ManagerProviders.items())]
     provider = models.CharField(max_length=254, choices=SHARE_PROVIDERS)
     source = models.CharField(max_length=254, default="unknown")
 

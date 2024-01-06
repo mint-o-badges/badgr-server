@@ -28,4 +28,6 @@ class CollectionAdmin(ModelAdmin):
         CollectionInstanceInline,
     ]
     pass
+
+
 badgr_admin.register(BackpackCollection, CollectionAdmin)

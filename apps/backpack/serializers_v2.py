@@ -8,18 +8,18 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError as RestframeworkValidationError
 
 from backpack.models import BackpackCollection
-from badgeuser.models import BadgeUser
 from entity.serializers import DetailSerializerV2, EntityRelatedFieldV2
 from issuer.helpers import BadgeCheckHelper
 from issuer.models import BadgeInstance, BadgeClass, Issuer
 from issuer.serializers_v2 import BadgeRecipientSerializerV2, EvidenceItemSerializerV2
 from mainsite.drf_fields import ValidImageField
-from mainsite.serializers import DateTimeWithUtcZAtEndField, MarkdownCharField, HumanReadableBooleanField, OriginalJsonSerializerMixin
-from issuer.utils import generate_sha256_hashstring, CURRENT_OBI_VERSION
+from mainsite.serializers import DateTimeWithUtcZAtEndField, MarkdownCharField
+from mainsite.serializers import HumanReadableBooleanField, OriginalJsonSerializerMixin
 
 
 class BackpackAssertionSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixin):
-    acceptance = serializers.ChoiceField(choices=BadgeInstance.ACCEPTANCE_CHOICES, default=BadgeInstance.ACCEPTANCE_ACCEPTED)
+    acceptance = serializers.ChoiceField(choices=BadgeInstance.ACCEPTANCE_CHOICES,
+            default=BadgeInstance.ACCEPTANCE_ACCEPTED)
 
     # badgeinstance
     openBadgeId = serializers.URLField(source='jsonld_id', read_only=True)
@@ -161,9 +161,11 @@ class BackpackAssertionSerializerV2(DetailSerializerV2, OriginalJsonSerializerMi
             instance_data_pointer = representation['result'][0]
 
         if 'badgeclass' in expands:
-            instance_data_pointer['badgeclass'] = instance.cached_badgeclass.get_json(include_extra=True, use_canonical_id=True)
+            instance_data_pointer['badgeclass'] = instance.cached_badgeclass.get_json(
+                    include_extra=True, use_canonical_id=True)
             if 'issuer' in expands:
-                instance_data_pointer['badgeclass']['issuer'] = instance.cached_issuer.get_json(include_extra=True, use_canonical_id=True)
+                instance_data_pointer['badgeclass']['issuer'] = instance.cached_issuer.get_json(
+                        include_extra=True, use_canonical_id=True)
 
         return representation
 
@@ -190,7 +192,8 @@ class BackpackCollectionSerializerV2(DetailSerializerV2):
     shareHash = serializers.CharField(read_only=True, source='share_hash')
     published = serializers.BooleanField(required=False)
 
-    assertions = EntityRelatedFieldV2(many=True, source='badge_items', required=False, queryset=BadgeInstance.cached)
+    assertions = EntityRelatedFieldV2(many=True, source='badge_items',
+            required=False, queryset=BadgeInstance.cached)
 
     class Meta(DetailSerializerV2.Meta):
         model = BackpackCollection
@@ -235,7 +238,8 @@ class BackpackCollectionSerializerV2(DetailSerializerV2):
                 ('shareHash', {
                     'type': "string",
                     'format': "url",
-                    'description': "The share hash that allows construction of a public sharing URL. Read only.",
+                    'description': "The share hash that allows construction of "
+                                   "a public sharing URL. Read only.",
                 }),
                 ('published', {
                     'type': "boolean",
@@ -260,7 +264,8 @@ class BackpackImportSerializerV2(DetailSerializerV2):
     def validate(self, attrs):
         # TODO: when test is run, why is assertion field blank???
         if sum(1 if v else 0 for v in list(attrs.values())) != 1:
-            raise serializers.ValidationError("Must provide only one of 'url', 'image' or 'assertion'.")
+            raise serializers.ValidationError(
+                    "Must provide only one of 'url', 'image' or 'assertion'.")
         return attrs
 
     def create(self, validated_data):
@@ -270,7 +275,8 @@ class BackpackImportSerializerV2(DetailSerializerV2):
             if not created:
                 if instance.acceptance == BadgeInstance.ACCEPTANCE_ACCEPTED:
                     raise RestframeworkValidationError(
-                        [{'name': "DUPLICATE_BADGE", 'description': "You already have this badge in your backpack"}])
+                        [{'name': "DUPLICATE_BADGE",
+                            'description': "You already have this badge in your backpack"}])
                 instance.acceptance = BadgeInstance.ACCEPTANCE_ACCEPTED
                 instance.save()
         except DjangoValidationError as e:

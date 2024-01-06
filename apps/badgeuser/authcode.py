@@ -52,7 +52,7 @@ def decrypt_authcode(cipher, secret_key=None):
 
     try:
         decrypted = crypto.decrypt(cipher.encode('utf-8'))
-    except (cryptography.fernet.InvalidToken, UnicodeEncodeError, UnicodeDecodeError) as e:
+    except (cryptography.fernet.InvalidToken, UnicodeEncodeError, UnicodeDecodeError):
         return None
     message = _unmarshall(decrypted)
     if message and 'expires' in message:

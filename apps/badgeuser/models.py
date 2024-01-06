@@ -1,11 +1,6 @@
-
-
-import base64
-import re
 from itertools import chain
 
 import cachemodel
-import datetime
 from allauth.account.models import EmailAddress, EmailConfirmation
 from basic_models.models import IsActive
 from django.core.cache import cache
@@ -16,7 +11,6 @@ from django.core.mail import send_mail
 from django.core.validators import URLValidator, RegexValidator
 from django.db import models, transaction
 from django.utils.translation import ugettext_lazy as _
-from oauth2_provider.models import Application
 from rest_framework.authtoken.models import Token
 
 from backpack.models import BackpackCollection
@@ -205,7 +199,6 @@ class UserRecipientIdentifier(cachemodel.CacheModel):
         super(UserRecipientIdentifier, self).save(*args, **kwargs)
         process_post_recipient_id_verification_change.delay(self.identifier, self.type, self.verified)
 
-
     def publish(self):
         super(UserRecipientIdentifier, self).publish()
         self.user.publish()
@@ -382,7 +375,6 @@ class BadgeUser(BaseVersionedEntity, AbstractUser, cachemodel.CacheModel):
                 self.email = requested_primary['email']
                 self.save()
 
-
     def cached_email_variants(self):
         return chain.from_iterable(email.cached_variants() for email in self.cached_emails())
 
@@ -498,7 +490,7 @@ class BadgeUser(BaseVersionedEntity, AbstractUser, cachemodel.CacheModel):
     def agreed_terms_version(self, value):
         try:
             value = int(value)
-        except ValueError as e:
+        except ValueError:
             return
 
         if value > self.agreed_terms_version:
@@ -520,7 +512,8 @@ class BadgeUser(BaseVersionedEntity, AbstractUser, cachemodel.CacheModel):
 
         if getattr(settings, 'BADGEUSER_SKIP_LAST_LOGIN_TIME', True):
             # skip saving last_login to the database
-            if 'update_fields' in kwargs and kwargs['update_fields'] is not None and 'last_login' in kwargs['update_fields']:
+            if ('update_fields' in kwargs and kwargs['update_fields'] is not None
+                    and 'last_login' in kwargs['update_fields']):
                 kwargs['update_fields'].remove('last_login')
                 if len(kwargs['update_fields']) < 1:
                     # nothing to do, abort so we dont call .publish()
