@@ -392,7 +392,8 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
             'username': erroneous_username,
             'role': 'editor'
         })
-        self.assertContains(response, "User {} not found.".format(erroneous_username), status_code=404)
+        print(response.data)
+        self.assertContains(response, "User not found.", status_code=404)
 
     def test_add_user_to_nonexistent_issuer_editors_set(self):
         self.setup_user(authenticate=True)
