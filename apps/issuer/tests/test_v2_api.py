@@ -2,7 +2,9 @@
 
 
 import time
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 from urllib.parse import urlparse
 
 from django.urls import reverse
@@ -91,7 +93,7 @@ class AssertionsChangedSinceTests(SetupIssuerHelper, BadgrTestCase):
         self.assertEqual(len(response.data['result']), 0)
 
     def test_application_can_fetch_changed_assertions(self):
-        #as per update in BP-2347, this token should not be able to get anything anymore
+        # as per update in BP-2347, this token should not be able to get anything anymore
         staff = self.setup_user(email='staff@example.com')
         recipient = self.setup_user(email='recipient@example.com', authenticate=False)
         unrelated_recipient = self.setup_user(email='otherrecipient1@example.com')
@@ -116,7 +118,7 @@ class AssertionsChangedSinceTests(SetupIssuerHelper, BadgrTestCase):
             token='abc2', application=app
         )
         # Sanity check that signal was called post AbstractAccessToken save()
-        self.assertEqual(AccessTokenScope.objects.filter(token = token).count(), 3)
+        self.assertEqual(AccessTokenScope.objects.filter(token=token).count(), 3)
 
         unrelated_app = Application.objects.create(
             client_id='clientApp-authcode-2', client_secret='testsecret', authorization_grant_type='authorization-code',

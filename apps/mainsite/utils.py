@@ -11,7 +11,9 @@ import puremagic
 import math
 import re
 import requests
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 import urllib.parse
 import uuid
 
@@ -38,6 +40,7 @@ class ObjectView(object):
 
     Instantiate an ObjectView(source_dict) in the serializer's to_internal_value() method.
     """
+
     def __init__(self, d):
         self.__dict__ = d
 
@@ -87,12 +90,15 @@ class OriginSettingsObject(object):
     def HTTP(self):
         return getattr(settings, 'HTTP_ORIGIN', OriginSettingsObject.DefaultOrigin)
 
+
 OriginSetting = OriginSettingsObject()
 
 
 """
 Cache Utilities
 """
+
+
 def filter_cache_key(key, key_prefix, version):
     generated_key = ':'.join([key_prefix, str(version), key])
     if len(generated_key) > 250:
@@ -163,7 +169,7 @@ def fit_image_to_height(img, aspect_ratio, height=400):
     """
 
     def _fit_dimension(size, desired_height):
-        return int(math.floor((size - desired_height)/2))
+        return int(math.floor((size - desired_height) / 2))
 
     img.thumbnail((height, height))
     new_size = (int(aspect_ratio[0] * height), int(aspect_ratio[1] * height))
@@ -198,7 +204,7 @@ def fetch_remote_file_to_storage(remote_url,
     if _is_data_uri(remote_url):
         # data:[<MIME-type>][;charset=<encoding>][;base64],<data>
         # finds the end of the substring 'base64' adds one more to get the comma as well.
-        base64_image_from_data_uri = remote_url[(re.search('base64', remote_url).end())+1:]
+        base64_image_from_data_uri = remote_url[(re.search('base64', remote_url).end()) + 1:]
         content = decoded_test = base64.b64decode(base64_image_from_data_uri)
         magic_strings = puremagic.magic_string(decoded_test)
         status_code = 200

@@ -56,5 +56,3 @@ class FindBadgeClassTests(SetupIssuerHelper, BadgrTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('slug', response.data)
         self.assertEqual(response.data['slug'], badgeclass.entity_id)
-
-

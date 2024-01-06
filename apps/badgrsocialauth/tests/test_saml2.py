@@ -40,7 +40,8 @@ class SAML2Tests(BadgrTestCase):
     def setUp(self):
         super(SAML2Tests, self).setUp()
         self.test_files_path = os.path.join(TOP_DIR, 'apps', 'badgrsocialauth', 'testfiles')
-        self.idp_metadata_for_sp_config_path = os.path.join(self.test_files_path, 'idp-metadata-for-saml2configuration.xml')
+        self.idp_metadata_for_sp_config_path = os.path.join(
+            self.test_files_path, 'idp-metadata-for-saml2configuration.xml')
 
         with open(self.idp_metadata_for_sp_config_path, 'r') as f:
             metadata_xml = f.read()
@@ -78,15 +79,14 @@ class SAML2Tests(BadgrTestCase):
 
         return self.client.get(url, HTTP_REFERER=badgr_app.ui_login_redirect)
 
-
     def test_signed_authn_request_option_creates_signed_metadata(self):
         self._skip_if_xmlsec_binary_missing()
 
         self.config.use_signed_authn_request = True
         self.config.save()
         with override_settings(
-            SAML_KEY_FILE=self.ipd_key_path,
-            SAML_CERT_FILE=self.ipd_cert_path):
+                SAML_KEY_FILE=self.ipd_key_path,
+                SAML_CERT_FILE=self.ipd_cert_path):
             saml_client, config = saml2_client_for(self.config)
             self.assertTrue(saml_client.authn_requests_signed)
             self.assertNotEqual(saml_client.sec.sec_backend, None)
@@ -96,8 +96,8 @@ class SAML2Tests(BadgrTestCase):
         self.config.use_signed_authn_request = True
         self.config.save()
         with override_settings(
-            SAML_KEY_FILE=self.ipd_key_path,
-            SAML_CERT_FILE=self.ipd_cert_path):
+                SAML_KEY_FILE=self.ipd_key_path,
+                SAML_CERT_FILE=self.ipd_cert_path):
             authn_request = self.config
             url = '/account/sociallogin?provider=' + authn_request.slug
             redirect_url = '/account/saml2/' + authn_request.slug + '/'
@@ -116,7 +116,8 @@ class SAML2Tests(BadgrTestCase):
                 response.content.find(b'<input type="hidden" name="SAMLRequest" value="'), -1)
 
     def test_create_saml2_client(self):
-        Saml2Configuration.objects.create(metadata_conf_url="http://example.com", cached_metadata="<xml></xml>",  slug="saml2.test2")
+        Saml2Configuration.objects.create(metadata_conf_url="http://example.com",
+                                          cached_metadata="<xml></xml>", slug="saml2.test2")
         client = saml2_client_for("saml2.test2")
         self.assertNotEqual(client, None)
 
@@ -672,8 +673,7 @@ class SamlServer(Server):
                 encrypt_cert_advice=encrypt_cert_advice,
                 encrypt_cert_assertion=encrypt_cert_assertion,
                 encrypt_assertion=encrypt_assertion,
-                encrypt_assertion_self_contained
-                =encrypt_assertion_self_contained,
+                encrypt_assertion_self_contained=encrypt_assertion_self_contained,
                 encrypted_advice_attributes=encrypted_advice_attributes,
                 pefim=pefim, **kwargs)
 

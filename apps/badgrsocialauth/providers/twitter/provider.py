@@ -19,4 +19,5 @@ class TwitterProviderWithIdentifier(TwitterProvider):
         common_fields['url'] = 'https://twitter.com/{}'.format(data.get('screen_name'))
         return common_fields
 
+
 providers.registry.register(TwitterProviderWithIdentifier)

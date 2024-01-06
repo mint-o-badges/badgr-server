@@ -1,5 +1,7 @@
 import logging
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 
 from allauth.account.utils import user_email
 from allauth.exceptions import ImmediateHttpResponse
@@ -43,7 +45,8 @@ class BadgrSocialAccountAdapter(DefaultSocialAccountAdapter):
         user = super(BadgrSocialAccountAdapter, self).save_user(request, sociallogin, form)
 
         if sociallogin.account.provider in getattr(settings, 'SOCIALACCOUNT_RECIPIENT_ID_PROVIDERS', ['twitter']):
-            UserRecipientIdentifier.objects.create(user=user, verified=True, identifier=generate_provider_identifier(sociallogin))
+            UserRecipientIdentifier.objects.create(
+                user=user, verified=True, identifier=generate_provider_identifier(sociallogin))
 
         return user
 

@@ -71,6 +71,7 @@ class BadgeConnectOAuthTests(BadgrTestCase, SetupIssuerHelper):
         patching function so upload_to argument points to the testfiles directory.
         This guaranties any uploaded files can be clean up after testing
         """
+
         def patched_fetch_and_process_logo_uri(self, logo_uri):
             return fetch_remote_file_to_storage(logo_uri,
                                                 upload_to=upload_to_path,

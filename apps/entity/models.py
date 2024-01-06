@@ -48,7 +48,7 @@ class _MigratingToBaseVersionedEntity(_AbstractVersionedEntity):
             ]   
        4.) change ExistingModel to subclass from BaseVersionedEntity instead of _MigratingToBaseVersionedEntity
        5.) ./manage.py makemigrations existing_app  # make migration that sets unique=True 
-        
+
     """
     entity_id = models.CharField(max_length=254, blank=False, null=True, default=None)
 

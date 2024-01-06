@@ -13,17 +13,18 @@ class Command(BaseCommand):
 
         self.stdout.write('Deleting AccessTokenScopes')
         AccessTokenScope.objects.all().delete()
-        
+
         self.stdout.write('Bulk creating AccessTokenScope')
         while True:
-            tokens = AccessTokenProxy.objects.filter(expires__gt=timezone.now())[page:page+chunk_size]
+            tokens = AccessTokenProxy.objects.filter(expires__gt=timezone.now())[page:page + chunk_size]
             for t in tokens:
                 scopes = []
                 for s in t.scope.split():
                     scopes.append(AccessTokenScope(scope=s, token=t))
 
                 AccessTokenScope.objects.bulk_create(scopes)
-            if len(tokens) < chunk_size: break
+            if len(tokens) < chunk_size:
+                break
             page += chunk_size
 
         self.stdout.write('All done.')

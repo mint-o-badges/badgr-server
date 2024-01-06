@@ -62,6 +62,7 @@ def is_badgeclass_editor(user, badgeclass):
 def is_badgeclass_staff(user, badgeclass):
     return any(staff.user_id == user.id for staff in badgeclass.cached_issuer.cached_issuerstaff())
 
+
 can_issue_badgeclass = is_badgeclass_owner | is_badgeclass_staff
 can_edit_badgeclass = is_badgeclass_owner | is_badgeclass_editor
 
@@ -104,6 +105,7 @@ class IsOwnerOrStaff(permissions.BasePermission):
     Ensures request user is owner for unsafe operations, or at least
     staff for safe operations.
     """
+
     def has_object_permission(self, request, view, issuer):
         if _is_server_admin(request):
             return True
@@ -154,6 +156,7 @@ class IsStaff(permissions.BasePermission):
     ---
     model: Issuer
     """
+
     def has_object_permission(self, request, view, issuer):
         return _is_server_admin(request) or request.user.has_perm('issuer.is_staff', issuer)
 
@@ -176,6 +179,7 @@ class AuditedModelOwner(permissions.BasePermission):
     ---
     model: BaseAuditedModel
     """
+
     def has_object_permission(self, request, view, obj):
         created_by_id = getattr(obj, 'created_by_id', None)
         return created_by_id and request.user.id == created_by_id
@@ -188,6 +192,7 @@ class VerifiedEmailMatchesRecipientIdentifier(permissions.BasePermission):
     ---
     model: BadgeInstance
     """
+
     def has_object_permission(self, request, view, obj):
         if _is_server_admin(request):
             return True
@@ -229,7 +234,6 @@ class BadgrOAuthTokenHasScope(permissions.BasePermission):
         # we want to check if ANY of valid_scopes are present in the token
         matching_scopes = set(valid_scopes) & set(token.scope.split())
         return not token.is_expired() and len(matching_scopes) > 0
-
 
     @classmethod
     def valid_scopes_for_view(cls, view, method=None):

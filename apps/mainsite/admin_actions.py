@@ -75,6 +75,7 @@ def delete_selected(modeladmin, request, queryset):
         "admin/delete_selected_confirmation.html"
     ], context, current_app=modeladmin.admin_site.name)
 
+
 delete_selected.short_description = ugettext_lazy("Delete selected %(verbose_name_plural)s")
 
 

@@ -76,4 +76,3 @@ class BadgeAssertionRevokedEvent(BaseBadgrEvent):
             'user': self.user,
             'badgeInstance': self.badge_instance.json
         }
-

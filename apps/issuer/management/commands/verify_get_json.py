@@ -9,7 +9,7 @@ from issuer.models import Issuer, BadgeClass, BadgeInstance
 
 
 def sorted_dict(d):
-    return OrderedDict((k,d[k]) for k in sorted(d.keys()))
+    return OrderedDict((k, d[k]) for k in sorted(d.keys()))
 
 
 class Command(BaseCommand):
@@ -28,12 +28,12 @@ class Command(BaseCommand):
             orig_json = obj.old_json
             if cmp(new_json, orig_json) != 0:
                 if self.verbosity > 1:
-                    self.stdout.write("  Jsons don't match! pk={}\n  old: {}\n  new: {}\n\n".format(obj.pk, sorted_dict(orig_json), sorted_dict(new_json)))
+                    self.stdout.write("  Jsons don't match! pk={}\n  old: {}\n  new: {}\n\n".format(
+                        obj.pk, sorted_dict(orig_json), sorted_dict(new_json)))
                 mismatch += 1
             else:
                 correct += 1
 
         if self.verbosity > 0:
-            self.stdout.write("Found {} {}s. {} correct. {} mismatch".format(mismatch+correct, model_cls.__name__, correct, mismatch))
-
-
+            self.stdout.write("Found {} {}s. {} correct. {} mismatch".format(
+                mismatch + correct, model_cls.__name__, correct, mismatch))

@@ -9,11 +9,14 @@ from .utils import custom_settings_filtered_values
 
 
 class Saml2Configuration(models.Model):
-    metadata_conf_url = models.URLField(verbose_name="Metadata Configuration URL", help_text="The URL for the XML configuration for SAML2 flows. Get this from the Identity Provider Application.")
-    cached_metadata = models.TextField(default='', blank=True, help_text="If the XML is provided here we avoid making a network request to the metadata_conf_url.")
+    metadata_conf_url = models.URLField(verbose_name="Metadata Configuration URL",
+                                        help_text="The URL for the XML configuration for SAML2 flows. Get this from the Identity Provider Application.")
+    cached_metadata = models.TextField(
+        default='', blank=True, help_text="If the XML is provided here we avoid making a network request to the metadata_conf_url.")
     slug = models.CharField(max_length=32, unique=True, help_text="This slug must be prefixed with saml2.")
     use_signed_authn_request = models.BooleanField(default=False)
-    custom_settings = models.TextField(default='{}', blank=True, help_text="Valid JSON for claim names accepted for local values like email, first_name, last_name")
+    custom_settings = models.TextField(
+        default='{}', blank=True, help_text="Valid JSON for claim names accepted for local values like email, first_name, last_name")
 
     def __str__(self):
         return self.slug
@@ -55,7 +58,6 @@ class Saml2Account(models.Model):
 
     def __str__(self):
         return "{} on {}".format(self.uuid, self.config)
-
 
     @property
     def uid(self):

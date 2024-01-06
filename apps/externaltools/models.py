@@ -1,7 +1,9 @@
 # encoding: utf-8
 
 
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 
 import cachemodel
 import lti
@@ -150,7 +152,6 @@ class ExternalToolUserActivation(BaseAuditedModel, cachemodel.CacheModel):
     user = models.ForeignKey('badgeuser.BadgeUser',
                              on_delete=models.CASCADE)
     is_active = models.BooleanField(default=True, db_index=True)
-
 
     def publish(self):
         super(ExternalToolUserActivation, self).publish()

@@ -2,7 +2,9 @@
 
 import io
 import json
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 import mock
 import os
 from PIL import Image
@@ -28,6 +30,7 @@ class PublicAPITests(SetupIssuerHelper, BadgrTestCase):
     """
     Tests the ability of an anonymous user to GET one public badge object
     """
+
     def test_get_issuer_object(self):
         test_user = self.setup_user(authenticate=False)
         test_issuer = self.setup_issuer(owner=test_user)
@@ -141,8 +144,6 @@ class PublicAPITests(SetupIssuerHelper, BadgrTestCase):
         response3 = self.client.get('/public/assertions/{}?action=download'.format(assertion.entity_id))
         self.assertEqual(response3.status_code, 404)
 
-
-
     def test_scrapers_get_html_stub(self):
         test_user_email = 'test.user@email.test'
 
@@ -153,15 +154,18 @@ class PublicAPITests(SetupIssuerHelper, BadgrTestCase):
         assertion.pending  # prepopulate cache
 
         # create a shared collection
-        test_collection = BackpackCollection.objects.create(created_by=test_user, name='Test Collection', description="testing")
-        BackpackCollectionBadgeInstance.objects.create(collection=test_collection, badgeinstance=assertion, badgeuser=test_user)  # add assertion to collection
+        test_collection = BackpackCollection.objects.create(
+            created_by=test_user, name='Test Collection', description="testing")
+        BackpackCollectionBadgeInstance.objects.create(
+            collection=test_collection, badgeinstance=assertion, badgeuser=test_user)  # add assertion to collection
         test_collection.published = True
         test_collection.save()
         self.assertIsNotNone(test_collection.share_url)
 
         testcase_headers = [
             # bots/scrapers should get an html stub with opengraph tags
-            {'HTTP_USER_AGENT': 'LinkedInBot/1.0 (compatible; Mozilla/5.0; Jakarta Commons-HttpClient/3.1 +http://www.linkedin.com)'},
+            {'HTTP_USER_AGENT':
+                'LinkedInBot/1.0 (compatible; Mozilla/5.0; Jakarta Commons-HttpClient/3.1 +http://www.linkedin.com)'},
             {'HTTP_USER_AGENT': 'Twitterbot/1.0'},
             {'HTTP_USER_AGENT': 'facebook'},
             {'HTTP_USER_AGENT': 'Facebot'},
@@ -176,7 +180,8 @@ class PublicAPITests(SetupIssuerHelper, BadgrTestCase):
 
                 # should have received an html stub with og meta tags
                 self.assertTrue(response.get('content-type').startswith('text/html'))
-                self.assertContains(response, '<meta property="og:url" content="{}">'.format(assertion.public_url), html=True)
+                self.assertContains(response, '<meta property="og:url" content="{}">'.format(
+                    assertion.public_url), html=True)
                 png_image_url = "{}{}?type=png".format(
                     OriginSetting.HTTP,
                     reverse('badgeclass_image', kwargs={'entity_id': assertion.cached_badgeclass.entity_id})
@@ -189,19 +194,22 @@ class PublicAPITests(SetupIssuerHelper, BadgrTestCase):
                 response = self.client.get(test_collection.share_url, **headers)
                 self.assertEqual(response.status_code, 200)
                 self.assertTrue(response.get('content-type').startswith('text/html'))
-                self.assertContains(response, '<meta property="og:url" content="{}">'.format(test_collection.share_url), html=True)
+                self.assertContains(response, '<meta property="og:url" content="{}">'.format(
+                    test_collection.share_url), html=True)
 
     def test_scraping_empty_backpack_share_returns_html_with_no_image_based_tags(self):
         test_user_email = 'test.user@email.test'
         test_user = self.setup_user(authenticate=False, email=test_user_email)
         # empty backpack
-        test_collection = BackpackCollection.objects.create(created_by=test_user, name='Test Collection', description="testing")
+        test_collection = BackpackCollection.objects.create(
+            created_by=test_user, name='Test Collection', description="testing")
         test_collection.published = True
         test_collection.save()
 
         testcase_headers = [
             # bots/scrapers should get an html stub with opengraph tags
-            {'HTTP_USER_AGENT': 'LinkedInBot/1.0 (compatible; Mozilla/5.0; Jakarta Commons-HttpClient/3.1 +http://www.linkedin.com)'},
+            {'HTTP_USER_AGENT':
+                'LinkedInBot/1.0 (compatible; Mozilla/5.0; Jakarta Commons-HttpClient/3.1 +http://www.linkedin.com)'},
             {'HTTP_USER_AGENT': 'Twitterbot/1.0'},
             {'HTTP_USER_AGENT': 'facebook'},
             {'HTTP_USER_AGENT': 'Facebot'},
@@ -245,7 +253,8 @@ class PublicAPITests(SetupIssuerHelper, BadgrTestCase):
         )
         badgr_app.save()
 
-        badgr_app_two = BadgrApp(cors='stuff.com', is_default=False, signup_redirect='http://stuff.com/signup', public_pages_redirect='http://stuff.com/public')
+        badgr_app_two = BadgrApp(cors='stuff.com', is_default=False,
+                                 signup_redirect='http://stuff.com/signup', public_pages_redirect='http://stuff.com/public')
         badgr_app_two.save()
 
         redirect_accepts = [
@@ -270,7 +279,8 @@ class PublicAPITests(SetupIssuerHelper, BadgrTestCase):
             with self.assertNumQueries(1):
                 response = self.client.get('/public/assertions/{}'.format(assertion.entity_id), **headers)
                 self.assertEqual(response.status_code, 302)
-                self.assertEqual(response.get('Location'), 'http://stuff.com/public/assertions/{}'.format(assertion.entity_id))
+                self.assertEqual(response.get('Location'),
+                                 'http://stuff.com/public/assertions/{}'.format(assertion.entity_id))
 
         for headers in json_accepts:
             with self.assertNumQueries(1):
@@ -352,14 +362,16 @@ class PublicAPITests(SetupIssuerHelper, BadgrTestCase):
         test_badgeclass = self.setup_badgeclass(issuer=test_issuer, name=original_badgeclass_name)
         assertion = test_badgeclass.issue(recipient_id='new.recipient@email.test')
 
-        response = self.client.get('/public/assertions/{}?expand=badge'.format(assertion.entity_id), Accept='application/json')
+        response = self.client.get(
+            '/public/assertions/{}?expand=badge'.format(assertion.entity_id), Accept='application/json')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data.get('badge', {}).get('name', None), original_badgeclass_name)
 
         test_badgeclass.name = new_badgeclass_name
         test_badgeclass.save()
 
-        response = self.client.get('/public/assertions/{}?expand=badge'.format(assertion.entity_id), Accept='application/json')
+        response = self.client.get(
+            '/public/assertions/{}?expand=badge'.format(assertion.entity_id), Accept='application/json')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data.get('badge', {}).get('name', None), new_badgeclass_name)
 
@@ -500,7 +512,8 @@ class PublicReverificationTests(SetupIssuerHelper, BadgrTestCase, Ob2Generators)
             self.assertEqual(BadgeInstance.objects.last().revocation_reason, revocation_reason)
 
             # attempting to revalidate a revoked badge with a new revocation reason does not update the original reason.
-            mock_verify.return_value["graph"][0].update({'revocationReason': 'New reason should not replace original reason'})
+            mock_verify.return_value["graph"][0].update(
+                {'revocationReason': 'New reason should not replace original reason'})
             third_revoked_response = self.client.post('/public/verify', data={'entity_id': assertion.entity_id})
             # still revoked
             self.assertTrue(third_revoked_response.data['result'][0]['revoked'])
@@ -509,4 +522,3 @@ class PublicReverificationTests(SetupIssuerHelper, BadgrTestCase, Ob2Generators)
             # badge instance is revoked, revocation_reason has not changed
             self.assertTrue(BadgeInstance.objects.last().revoked)
             self.assertEqual(BadgeInstance.objects.last().revocation_reason, revocation_reason)
-

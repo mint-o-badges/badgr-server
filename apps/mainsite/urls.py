@@ -1,3 +1,10 @@
+from django.views.generic.base import RedirectView, TemplateView
+from django.conf.urls.static import static
+from mainsite.views import upload, nounproject
+from mainsite.views import info_view, email_unsubscribe, AppleAppSiteAssociation, error404, error500
+from mainsite.views import (SitewideActionFormView, RedirectToUiLogin, DocsAuthorizeRedirect,
+                            LegacyLoginAndObtainAuthToken,)
+from oauth2_provider.urls import base_urlpatterns as oauth2_provider_base_urlpatterns
 from django.apps import apps
 from django.conf import settings
 from django.conf.urls import include, url
@@ -10,19 +17,11 @@ from mainsite.oauth2_api import AuthorizationApiView, TokenView, AuthCodeExchang
 badgr_admin.autodiscover()
 # make sure that any view/model/form imports occur AFTER admin.autodiscover
 
+
 def django2_include(three_tuple_urlconf):
     (urls, app_name, namespace) = three_tuple_urlconf
     return include((urls, app_name), namespace=namespace)
 
-from django.views.generic.base import RedirectView, TemplateView
-from oauth2_provider.urls import base_urlpatterns as oauth2_provider_base_urlpatterns
-
-from mainsite.views import (SitewideActionFormView, RedirectToUiLogin, DocsAuthorizeRedirect,
-                            LegacyLoginAndObtainAuthToken,)
-from mainsite.views import info_view, email_unsubscribe, AppleAppSiteAssociation, error404, error500
-
-from mainsite.views import upload, nounproject
-from django.conf.urls.static import static
 
 urlpatterns = [
     # Backup URLs in case the server isn't serving these directly
@@ -31,7 +30,8 @@ urlpatterns = [
     url(r'^robots\.txt$', RedirectView.as_view(url='%srobots.txt' % settings.STATIC_URL, permanent=True)),
 
     # legacy logo url redirect
-    url(r'^static/images/header-logo-120.png$', RedirectView.as_view(url='{}images/logo.png'.format(settings.STATIC_URL), permanent=True)),
+    url(r'^static/images/header-logo-120.png$',
+        RedirectView.as_view(url='{}images/logo.png'.format(settings.STATIC_URL), permanent=True)),
 
     # Apple app universal URL endpoint
     url(r'^apple-app-site-association', AppleAppSiteAssociation.as_view(), name="apple-app-site-association"),
@@ -71,7 +71,8 @@ urlpatterns = [
     url(r'^json-ld/', include('badgrlog.urls')),
 
     # unversioned public endpoints
-    url(r'^unsubscribe/(?P<email_encoded>[^/]+)/(?P<expiration>[^/]+)/(?P<signature>[^/]+)', email_unsubscribe, name='unsubscribe'),
+    url(r'^unsubscribe/(?P<email_encoded>[^/]+)/(?P<expiration>[^/]+)/(?P<signature>[^/]+)',
+        email_unsubscribe, name='unsubscribe'),
 
     url(r'^public/', include('issuer.public_api_urls'), kwargs={'version': 'v2'}),
 
@@ -141,7 +142,7 @@ if getattr(settings, 'DEBUG_STATIC', True):
 # Serve pattern library view only in debug mode or if explicitly declared
 if getattr(settings, 'DEBUG', True) or getattr(settings, 'SERVE_PATTERN_LIBRARY', False):
     urlpatterns = [
-       url(r'^component-library$', TemplateView.as_view(template_name='component-library.html'), name='component-library')
+        url(r'^component-library$', TemplateView.as_view(template_name='component-library.html'), name='component-library')
     ] + urlpatterns
 
 # serve django debug toolbar if present

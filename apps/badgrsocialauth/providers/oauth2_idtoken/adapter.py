@@ -172,6 +172,8 @@ class IdTokenOAuth2CallbackView(OAuth2CallbackView):
 
 oauth2_login = OAuth2LoginView.adapter_view(IdTokenOAuth2Adapter)
 base_oauth2_callback = IdTokenOAuth2CallbackView.adapter_view(IdTokenOAuth2Adapter)
+
+
 def oauth2_callback(*args, **kwargs):
     with debug_requests():
         return base_oauth2_callback(*args, **kwargs)

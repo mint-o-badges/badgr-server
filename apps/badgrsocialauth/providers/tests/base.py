@@ -126,4 +126,3 @@ class BadgrSocialAuthTestCase(BadgrTestCase):
         self.badgr_app.ui_login_redirect = 'http://test-badgr.io/'
         self.badgr_app.ui_signup_failure_redirect = 'http://test-badgr.io/fail'
         self.badgr_app.save()
-

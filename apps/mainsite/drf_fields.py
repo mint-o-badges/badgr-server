@@ -29,7 +29,8 @@ class Base64FileField(FileField):
 
         try:
             mime, encoded_data = data.replace('data:', '', 1).split(';base64,')
-            extension = self._MIME_MAPPING[mime] if mime in list(self._MIME_MAPPING.keys()) else mimetypes.guess_extension(mime)
+            extension = self._MIME_MAPPING[mime] if mime in list(
+                self._MIME_MAPPING.keys()) else mimetypes.guess_extension(mime)
             if extension is None:
                 raise ValidationError('Invalid MIME type')
             ret = ContentFile(base64.b64decode(encoded_data), name='{name}{extension}'.format(name=str(uuid.uuid4()),

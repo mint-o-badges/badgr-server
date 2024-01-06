@@ -22,6 +22,7 @@ import json
 
 logger = logging.getLogger(__name__)
 
+
 class DjangoCacheDict(MutableMapping):
     """TODO: Fix this class, its broken!"""
     _keymap_cache_key = "DjangoCacheDict_keys"
@@ -33,7 +34,7 @@ class DjangoCacheDict(MutableMapping):
         if id is None:
             id = uuid.uuid4().hexdigest()
         self._id = id
-        self.keymap_cache_key = self._keymap_cache_key+"_"+self._id
+        self.keymap_cache_key = self._keymap_cache_key + "_" + self._id
 
     def build_key(self, *args):
         return "{keymap_cache_key}{namespace}{key}".format(
@@ -89,7 +90,7 @@ class DjangoCacheDict(MutableMapping):
 
     def clear(self):
         self._id = uuid.uuid4().hexdigest()
-        self.keymap_cache_key = self._keymap_cache_key+"_"+self._id
+        self.keymap_cache_key = self._keymap_cache_key + "_" + self._id
 
 
 class OpenBadgesContextCache(BaseCache):
@@ -113,7 +114,8 @@ class OpenBadgesContextCache(BaseCache):
 
     def _set_cached_content(self):
         self.session = requests_cache.CachedSession(backend='memory', expire_after=300)
-        response = self.session.get(self.OPEN_BADGES_CONTEXT_V2_URI, headers={'Accept': 'application/ld+json, application/json'})
+        response = self.session.get(self.OPEN_BADGES_CONTEXT_V2_URI, headers={
+                                    'Accept': 'application/ld+json, application/json'})
         if response.status_code == 200:
             cache.set(
                 self.OPEN_BADGE_CONTEXT_CACHE_KEY,
@@ -207,7 +209,8 @@ class BadgeCheckHelper(object):
                     query = json.dumps(query)
                 except (TypeError, ValueError):
                     raise ValidationError("Could not parse dict to json")
-            response = openbadges.verify(query, recipient_profile=badgecheck_recipient_profile, **cls.badgecheck_options())
+            response = openbadges.verify(
+                query, recipient_profile=badgecheck_recipient_profile, **cls.badgecheck_options())
         except ValueError as e:
             raise ValidationError([{'name': "INVALID_BADGE", 'description': str(e)}])
 
@@ -246,11 +249,13 @@ class BadgeCheckHelper(object):
 
         def commit_new_badge():
             with transaction.atomic():
-                issuer, issuer_created = Issuer.objects.get_or_create_from_ob2(issuer_obo, original_json=original_json.get(issuer_obo.get('id')), image=issuer_image)
-                badgeclass, badgeclass_created = BadgeClass.objects.get_or_create_from_ob2(issuer, badgeclass_obo, original_json=original_json.get(badgeclass_obo.get('id')), image=badgeclass_image)
+                issuer, issuer_created = Issuer.objects.get_or_create_from_ob2(
+                    issuer_obo, original_json=original_json.get(issuer_obo.get('id')), image=issuer_image)
+                badgeclass, badgeclass_created = BadgeClass.objects.get_or_create_from_ob2(
+                    issuer, badgeclass_obo, original_json=original_json.get(badgeclass_obo.get('id')), image=badgeclass_image)
                 if badgeclass_created and (
-                        getattr(settings, 'BADGERANK_NOTIFY_ON_BADGECLASS_CREATE', True) or
-                        getattr(settings, 'BADGERANK_NOTIFY_ON_FIRST_ASSERTION', True)
+                        getattr(settings, 'BADGERANK_NOTIFY_ON_BADGECLASS_CREATE', True)
+                        or getattr(settings, 'BADGERANK_NOTIFY_ON_FIRST_ASSERTION', True)
                 ):
                     from issuer.tasks import notify_badgerank_of_badgeclass
                     notify_badgerank_of_badgeclass.delay(badgeclass_pk=badgeclass.pk)

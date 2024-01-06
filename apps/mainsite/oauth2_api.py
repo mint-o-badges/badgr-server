@@ -155,10 +155,12 @@ httpsUrlValidator = URLValidator(message="Must be a valid HTTPS URI", schemes=['
 
 class RegistrationSerializer(serializers.Serializer):
     client_name = serializers.CharField(required=True, source='name')
-    client_uri = serializers.URLField(required=True, source='applicationinfo.website_url', validators=[httpsUrlValidator])
+    client_uri = serializers.URLField(
+        required=True, source='applicationinfo.website_url', validators=[httpsUrlValidator])
     logo_uri = serializers.URLField(required=True, source='applicationinfo.logo_uri', validators=[httpsUrlValidator])
     tos_uri = serializers.URLField(required=True, source='applicationinfo.terms_uri', validators=[httpsUrlValidator])
-    policy_uri = serializers.URLField(required=True, source='applicationinfo.policy_uri', validators=[httpsUrlValidator])
+    policy_uri = serializers.URLField(required=True, source='applicationinfo.policy_uri',
+                                      validators=[httpsUrlValidator])
     software_id = serializers.CharField(required=True, source='applicationinfo.software_id')
     software_version = serializers.CharField(required=True, source='applicationinfo.software_version')
     redirect_uris = serializers.ListField(child=serializers.URLField(validators=[httpsUrlValidator]), required=True)

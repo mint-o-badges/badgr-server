@@ -39,7 +39,6 @@ from requests_oauthlib import OAuth1
 logger = badgrlog.BadgrLogger()
 
 
-
 ##
 #
 #  Error Handler Views
@@ -70,6 +69,7 @@ def error500(request, *args, **kwargs):
 def info_view(request, *args, **kwargs):
     return redirect(getattr(settings, 'LOGIN_REDIRECT_URL'))
 
+
 @csrf_exempt
 def upload(req):
     if req.method == 'POST':
@@ -81,6 +81,7 @@ def upload(req):
         store.save(final_filename, uploaded_file)
     return JsonResponse({'filename': final_filename})
 
+
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
 @permission_classes([IsAuthenticated])
@@ -89,7 +90,7 @@ def nounproject(req, searchterm, page):
         attempt_num = 0  # keep track of how many times we've retried
         while attempt_num < 4:
             auth = OAuth1(getattr(settings, 'NOUNPROJECT_API_KEY'), getattr(settings, 'NOUNPROJECT_SECRET'))
-            endpoint = "http://api.thenounproject.com/v2/icon?query="+ searchterm +"?limit=10&page="+page
+            endpoint = "http://api.thenounproject.com/v2/icon?query=" + searchterm + "?limit=10&page=" + page
             response = requests.get(endpoint, auth=auth)
             if response.status_code == 200:
                 data = response.json()

@@ -16,6 +16,7 @@ class ValidImageValidator(object):
     """
     Verify a value is file-like and is either a PNG or a SVG
     """
+
     def __call__(self, image):
         if image:
             try:
@@ -34,6 +35,7 @@ class ChoicesValidator(object):
     """
     Verify a value is within a set of choices
     """
+
     def __init__(self, choices, case_sensitive=False):
         self.case_sensitive = case_sensitive
         if self.case_sensitive:
@@ -89,4 +91,3 @@ class PositiveIntegerValidator(object):
                 raise ValidationError(self.message)
         except ValueError:
             raise ValidationError(self.message)
-

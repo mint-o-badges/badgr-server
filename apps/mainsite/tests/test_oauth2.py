@@ -1,5 +1,7 @@
 import base64
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 
 from django.core.cache import cache
 from django.test import override_settings
@@ -69,7 +71,8 @@ class OAuth2TokenTests(SetupIssuerHelper, BadgrTestCase):
         )
 
         # Including query parameters is just wrong for the token claim process.
-        response = self.client.post(set_url_query_params(reverse('oauth2_provider_token'), **request_data), data=request_data)
+        response = self.client.post(set_url_query_params(
+            reverse('oauth2_provider_token'), **request_data), data=request_data)
         self.assertEqual(response.status_code, 400)
 
         # It is not ok to include all the data in query params
@@ -141,7 +144,8 @@ class OAuth2TokenTests(SetupIssuerHelper, BadgrTestCase):
             authorization_grant_type=Application.GRANT_PASSWORD
         )
         ApplicationInfo.objects.create(application=application)
-        accesstoken = AccessTokenProxy.objects.generate_new_token_for_user(user, application=application, scope='r:profile')
+        accesstoken = AccessTokenProxy.objects.generate_new_token_for_user(
+            user, application=application, scope='r:profile')
 
         # can exchange valid authcode for accesstoken
         authcode = authcode_for_accesstoken(accesstoken)

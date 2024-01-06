@@ -59,7 +59,7 @@ def notify_badgerank_of_badgeclass(self, badgeclass_pk):
 def rebake_all_assertions(self, obi_version=CURRENT_OBI_VERSION, limit=None, offset=0, replay=False):
     queryset = BadgeInstance.objects.filter(source_url__isnull=True).order_by("pk")
     if limit:
-        queryset = queryset[offset:offset+limit]
+        queryset = queryset[offset:offset + limit]
     else:
         queryset = queryset[offset:]
     assertions = queryset.only("entity_id")
@@ -70,7 +70,7 @@ def rebake_all_assertions(self, obi_version=CURRENT_OBI_VERSION, limit=None, off
         count += 1
 
     if limit and replay and count >= limit:
-        rebake_all_assertions.delay(obi_version=obi_version, limit=limit, offset=offset+limit, replay=True)
+        rebake_all_assertions.delay(obi_version=obi_version, limit=limit, offset=offset + limit, replay=True)
 
     return {
         'success': True,
@@ -85,7 +85,7 @@ def rebake_all_assertions(self, obi_version=CURRENT_OBI_VERSION, limit=None, off
 def rebake_all_assertions_for_badge_class(self, badge_class_id, obi_version=CURRENT_OBI_VERSION, limit=None, offset=0, replay=False):
     queryset = BadgeInstance.objects.filter(badgeclass_id=badge_class_id, source_url__isnull=True).order_by("pk")
     if limit:
-        queryset = queryset[offset:offset+limit]
+        queryset = queryset[offset:offset + limit]
     else:
         queryset = queryset[offset:]
     assertions = queryset.only("entity_id")
@@ -96,7 +96,8 @@ def rebake_all_assertions_for_badge_class(self, badge_class_id, obi_version=CURR
         count += 1
 
     if limit and replay and count >= limit:
-        rebake_all_assertions_for_badge_class.delay(badge_class_id, obi_version=obi_version, limit=limit, offset=offset+limit, replay=True)
+        rebake_all_assertions_for_badge_class.delay(
+            badge_class_id, obi_version=obi_version, limit=limit, offset=offset + limit, replay=True)
 
     return {
         'success': True,
@@ -217,7 +218,7 @@ def remove_backpack_duplicates(self, limit=None, offset=0, replay=False, report_
 
     queryset = Issuer.objects.filter(source_url__isnull=False).order_by("pk")
     if limit:
-        queryset = queryset[offset:offset+limit]
+        queryset = queryset[offset:offset + limit]
     else:
         queryset = queryset[offset:]
 
@@ -230,7 +231,7 @@ def remove_backpack_duplicates(self, limit=None, offset=0, replay=False, report_
             count += 1
 
     if limit and replay and count >= limit:
-        remove_backpack_duplicates.delay(limit=limit, offset=offset+limit, replay=True, report_only=report_only)
+        remove_backpack_duplicates.delay(limit=limit, offset=offset + limit, replay=True, report_only=report_only)
 
     return {
         'success': True,
@@ -309,8 +310,8 @@ def remove_backpack_duplicate_issuer(self, issuer_entity_id=None, report_only=Fa
 def resend_notifications(self, badgeinstance_entity_ids):
     current = 0
     page = 100
-    while len(badgeinstance_entity_ids[current:current+page]):
-        queryset = BadgeInstance.objects.filter(entity_id__in=badgeinstance_entity_ids[current:current+page])
+    while len(badgeinstance_entity_ids[current:current + page]):
+        queryset = BadgeInstance.objects.filter(entity_id__in=badgeinstance_entity_ids[current:current + page])
         for bi in queryset:
             bi.notify_earner(renotify=True)
         current = current + page

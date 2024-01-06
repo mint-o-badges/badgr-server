@@ -1,5 +1,7 @@
 import json
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 import urllib.parse
 
 # TODO: Revert to library code once library is fixed for python3
@@ -138,6 +140,8 @@ class BadgrAccountConnected(RedirectView):
 SAML2 Authentication Flow
 
 """
+
+
 def saml2_client_for(idp_name=None):
     '''
     Given the name of an Identity Provider look up the Saml2Configuration and build a SAML Client. Return these.

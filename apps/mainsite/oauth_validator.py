@@ -56,4 +56,3 @@ class BadgrRequestValidator(OAuth2Validator):
                 return True
 
         return False
-

@@ -49,12 +49,14 @@ class Command(BaseCommand):
                         self.stdout.write("IOError fetching '{}': {}".format(remote_image_url, str(e)))
                         report['ioerrors'].append((remote_image_url, str(e)))
                     else:
-                        report['status_codes'][status_code] = report['status_codes'].get(status_code, []) + [remote_image_url]
+                        report['status_codes'][status_code] = report['status_codes'].get(
+                            status_code, []) + [remote_image_url]
                         if status_code == 200:
                             badgeclass.image = image
                             badgeclass.save()
                             report['saved'] += 1
-                            self.stdout.write("Saved missing image for badgeclass(pk={}) from '{}'".format(badgeclass.pk, remote_image_url))
+                            self.stdout.write("Saved missing image for badgeclass(pk={}) from '{}'".format(
+                                badgeclass.pk, remote_image_url))
                             continue  # shortcircuit failure handling at end of loop
                         else:
                             self.stdout.write("Http error fetching '{}': {}".format(remote_image_url, status_code))

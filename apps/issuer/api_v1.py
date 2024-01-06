@@ -72,9 +72,9 @@ class IssuerStaffList(VersionedObjectMixin, APIView):
     queryset = Issuer.objects.all()
     model = Issuer
     permission_classes = [
-        IsServerAdmin |
-        (AuthenticatedWithVerifiedIdentifier & IsOwnerOrStaff) |
-        BadgrOAuthTokenHasEntityScope
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsOwnerOrStaff)
+        | BadgrOAuthTokenHasEntityScope
     ]
     valid_scopes = {
         "get": ["rw:issuerOwner:*"],
@@ -255,4 +255,3 @@ class FindBadgeClassDetail(APIView):
 
         serializer = BadgeClassSerializerV1(badge)
         return Response(serializer.data)
-

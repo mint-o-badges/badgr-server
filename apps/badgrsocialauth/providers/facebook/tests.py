@@ -10,7 +10,7 @@ from .provider import VerifiedFacebookProvider
 
 # It doesn't seem as if facebook auth is still used. At least this test fails if activated
 # TODO: Remove if not needed anymore
-#class VerifiedFacebookProviderTests(DoesNotSendVerificationEmailMixin, BadgrOAuth2TestsMixin, BadgrSocialAuthTestCase):
+# class VerifiedFacebookProviderTests(DoesNotSendVerificationEmailMixin, BadgrOAuth2TestsMixin, BadgrSocialAuthTestCase):
 #    provider_id = VerifiedFacebookProvider.id
 #
 #    def get_mocked_response(self):

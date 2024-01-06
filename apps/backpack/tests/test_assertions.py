@@ -340,7 +340,7 @@ class TestBadgeUploads(BadgrTestCase):
                             ]
                         }
                     )},
-                {'url': "https://openbadgespec.org/extensions/exampleExtension/schema.json",
+            {'url': "https://openbadgespec.org/extensions/exampleExtension/schema.json",
                     'response_body': json.dumps(
                         {
                             "$schema": "http://json-schema.org/draft-04/schema#",
@@ -359,9 +359,9 @@ class TestBadgeUploads(BadgrTestCase):
                                 ]
                             }
                         )},
-                    {'url': 'http://a.com/instance2', 'response_body': json.dumps(assertion_metadata)},
-                    {'url': 'http://a.com/badgeclass', 'response_body': json.dumps(badgeclass_metadata)},
-                    {'url': 'http://a.com/issuer', 'response_body': json.dumps(issuer_metadata)}
+            {'url': 'http://a.com/instance2', 'response_body': json.dumps(assertion_metadata)},
+            {'url': 'http://a.com/badgeclass', 'response_body': json.dumps(badgeclass_metadata)},
+            {'url': 'http://a.com/issuer', 'response_body': json.dumps(issuer_metadata)}
                     ])
         self.setup_user(email='test@example.com', authenticate=True)
 

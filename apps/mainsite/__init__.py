@@ -1,3 +1,4 @@
+from .celery import app as celery_app
 import sys
 import os
 import semver
@@ -24,4 +25,3 @@ if APPS_DIR not in sys.path:
 TOP_DIR = os.path.dirname(APPS_DIR)
 
 # import the celery app so INSTALLED_APPS gets autodiscovered
-from .celery import app as celery_app

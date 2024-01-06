@@ -1,3 +1,10 @@
+from oauth2_provider.admin import ApplicationAdmin, AccessTokenAdmin
+from django.contrib.sites.models import Site
+from django.contrib.sites.admin import SiteAdmin
+from django.contrib.auth.models import Group
+from django.contrib.auth.admin import GroupAdmin
+from allauth.socialaccount.admin import SocialApp, SocialAppAdmin, SocialTokenAdmin, SocialAccountAdmin
+from allauth.account.admin import EmailAddressAdmin, EmailConfirmationAdmin
 import requests
 from allauth.socialaccount.models import SocialToken, SocialAccount
 from django.contrib import messages
@@ -66,6 +73,8 @@ class BadgrAppAdmin(ModelAdmin):
         })
     )
     list_display = ('name', 'cors',)
+
+
 badgr_admin.register(BadgrApp, BadgrAppAdmin)
 
 
@@ -73,27 +82,24 @@ class EmailBlacklistAdmin(ModelAdmin):
     readonly_fields = ('email',)
     list_display = ('email',)
     search_fields = ('email',)
+
+
 badgr_admin.register(EmailBlacklist, EmailBlacklistAdmin)
 
 # 3rd party apps
 
 
 class LegacyTokenAdmin(ModelAdmin):
-    list_display = ('obscured_token','user','created')
+    list_display = ('obscured_token', 'user', 'created')
     list_filter = ('created',)
     raw_id_fields = ('user',)
     search_fields = ('user__email', 'user__first_name', 'user__last_name')
     readonly_fields = ('obscured_token', 'created')
     fields = ('obscured_token', 'user', 'created')
+
+
 badgr_admin.register(LegacyTokenProxy, LegacyTokenAdmin)
 
-
-from allauth.account.admin import EmailAddressAdmin, EmailConfirmationAdmin
-from allauth.socialaccount.admin import SocialApp, SocialAppAdmin, SocialTokenAdmin, SocialAccountAdmin
-from django.contrib.auth.admin import GroupAdmin
-from django.contrib.auth.models import Group
-from django.contrib.sites.admin import SiteAdmin
-from django.contrib.sites.models import Site
 
 badgr_admin.register(SocialApp, SocialAppAdmin)
 badgr_admin.register(SocialToken, SocialTokenAdmin)
@@ -105,7 +111,6 @@ badgr_admin.register(Group, GroupAdmin)
 badgr_admin.register(CachedEmailAddress, EmailAddressAdmin)
 badgr_admin.register(ProxyEmailConfirmation, EmailConfirmationAdmin)
 
-from oauth2_provider.admin import ApplicationAdmin, AccessTokenAdmin
 
 Application = get_application_model()
 Grant = get_grant_model()
@@ -159,12 +164,14 @@ class ApplicationInfoAdmin(DjangoObjectActions, ApplicationAdmin):
         if backoff is not None:
             backoff_data = "</li><li>".join(["{ip}: {until} ({count} attempts)".format(
                 ip=key,
-                until=backoff[key].get('until').astimezone(timezone.get_current_timezone()).strftime("%Y-%m-%d %H:%M:%S"),
+                until=backoff[key].get('until').astimezone(
+                    timezone.get_current_timezone()).strftime("%Y-%m-%d %H:%M:%S"),
                 count=backoff[key].get('count')
             ) for key in backoff.keys()])
             return format_html("<ul><li>{}</li></ul>".format(backoff_data))
         return "None"
     login_backoff.allow_tags = True
+
 
 badgr_admin.register(Application, ApplicationInfoAdmin)
 # badgr_admin.register(Grant, GrantAdmin)
@@ -192,4 +199,6 @@ class SecuredAccessTokenAdmin(AccessTokenAdmin):
     inlines = [
         SecuredRefreshTokenInline
     ]
+
+
 badgr_admin.register(AccessTokenProxy, SecuredAccessTokenAdmin)

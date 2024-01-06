@@ -26,7 +26,8 @@ class IssuerExtensionInline(TabularInline):
 
 
 class IssuerAdmin(DjangoObjectActions, ModelAdmin):
-    readonly_fields = ('created_by', 'created_at', 'updated_at', 'old_json', 'source', 'source_url', 'entity_id', 'slug')
+    readonly_fields = ('created_by', 'created_at', 'updated_at', 'old_json',
+                       'source', 'source_url', 'entity_id', 'slug')
     list_display = ('img', 'name', 'entity_id', 'created_by', 'created_at')
     list_display_links = ('img', 'name')
     list_filter = ('created_at',)
@@ -70,13 +71,14 @@ class IssuerAdmin(DjangoObjectActions, ModelAdmin):
     redirect_badgeclasses.label = "BadgeClasses"
     redirect_badgeclasses.short_description = "See this issuer's defined BadgeClasses"
 
+
 badgr_admin.register(Issuer, IssuerAdmin)
 
 
 class BadgeClassAlignmentInline(TabularInline):
     model = BadgeClassAlignment
     extra = 0
-    fields = ('target_name','target_url','target_description', 'target_framework','target_code')
+    fields = ('target_name', 'target_url', 'target_description', 'target_framework', 'target_code')
 
 
 class BadgeClassTagInline(TabularInline):
@@ -92,7 +94,8 @@ class BadgeClassExtensionInline(TabularInline):
 
 
 class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
-    readonly_fields = ('created_by', 'created_at', 'updated_at', 'old_json', 'source', 'source_url', 'entity_id', 'slug')
+    readonly_fields = ('created_by', 'created_at', 'updated_at', 'old_json',
+                       'source', 'source_url', 'entity_id', 'slug')
     list_display = ('badge_image', 'name', 'entity_id', 'issuer_link')
     list_display_links = ('badge_image', 'name',)
     list_filter = ('created_at',)
@@ -133,7 +136,7 @@ class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
 
     def issuer_link(self, obj):
         return mark_safe('<a href="{}">{}</a>'.format(reverse("admin:issuer_issuer_change", args=(obj.issuer.id,)), obj.issuer.name))
-    issuer_link.allow_tags=True
+    issuer_link.allow_tags = True
 
     def redirect_instances(self, request, obj):
         return HttpResponseRedirect(
@@ -148,6 +151,7 @@ class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
         )
     redirect_issuer.label = "Issuer"
     redirect_issuer.short_description = "See this Issuer"
+
 
 badgr_admin.register(BadgeClass, BadgeClassAdmin)
 
@@ -165,7 +169,8 @@ class BadgeInstanceExtensionInline(TabularInline):
 
 
 class BadgeInstanceAdmin(DjangoObjectActions, ModelAdmin):
-    readonly_fields = ('created_at', 'created_by', 'updated_at', 'image', 'entity_id', 'old_json', 'salt', 'entity_id', 'slug', 'source', 'source_url')
+    readonly_fields = ('created_at', 'created_by', 'updated_at', 'image', 'entity_id',
+                       'old_json', 'salt', 'entity_id', 'slug', 'source', 'source_url')
     list_display = ('badge_image', 'recipient_identifier', 'entity_id', 'badgeclass', 'issuer')
     list_display_links = ('badge_image', 'recipient_identifier', )
     list_filter = ('created_at',)
@@ -235,12 +240,14 @@ class BadgeInstanceAdmin(DjangoObjectActions, ModelAdmin):
         obj.rebake(save=False)
         super().save_model(request, obj, form, change)
 
+
 badgr_admin.register(BadgeInstance, BadgeInstanceAdmin)
 
 
 class ExtensionAdmin(ModelAdmin):
     list_display = ('name',)
     search_fields = ('name', 'original_json')
+
 
 badgr_admin.register(IssuerExtension, ExtensionAdmin)
 badgr_admin.register(BadgeClassExtension, ExtensionAdmin)

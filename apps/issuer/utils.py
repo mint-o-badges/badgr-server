@@ -58,6 +58,7 @@ def generate_rebaked_filename(oldname, badgeclass_filename):
     parts.append('rebaked')
     return 'assertion-{}.{}'.format(hashlib.md5(''.join(parts).encode('utf-8')).hexdigest(), ext)
 
+
 def is_probable_url(string):
     earl = re.compile(r'^https?')
     if string is None:

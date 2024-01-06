@@ -2,7 +2,9 @@ import math
 import os
 import re
 import io
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 import urllib.parse
 
 import cairosvg
@@ -64,6 +66,7 @@ class SlugToEntityIdRedirectMixin(object):
         else:
             raise Http404
 
+
 class JSONListView(BaseEntityListView, UncachedPaginatedViewMixin):
     """
     Abstract List Class
@@ -86,6 +89,7 @@ class JSONListView(BaseEntityListView, UncachedPaginatedViewMixin):
             if link_header:
                 headers['Link'] = link_header
         return Response(serializer.data, headers=headers)
+
 
 class JSONComponentView(VersionedObjectMixin, APIView, SlugToEntityIdRedirectMixin):
     """
@@ -181,7 +185,7 @@ class JSONComponentView(VersionedObjectMixin, APIView, SlugToEntityIdRedirectMix
         ret = '{redirect}{path}{query}'.format(
             redirect=redirect,
             path=stripped_path,
-            query='?'+query_string if query_string else '')
+            query='?' + query_string if query_string else '')
         return ret
 
     @staticmethod
@@ -310,7 +314,7 @@ class IssuerBadgesJson(JSONComponentView):
         logger.event(badgrlog.IssuerBadgesRetrievedEvent(obj, self.request))
 
     def get_json(self, request):
-        obi_version=self._get_request_obi_version(request)
+        obi_version = self._get_request_obi_version(request)
 
         return [b.get_json(obi_version=obi_version) for b in self.current_object.cached_badgeclasses()]
 
@@ -365,7 +369,6 @@ class BadgeClassJson(JSONComponentView):
             public_url=self.current_object.public_url,
             image_url=image_url
         )
-
 
 
 class BadgeClassList(JSONListView):
@@ -521,7 +524,6 @@ class BakedBadgeInstanceImage(VersionedObjectMixin, APIView, SlugToEntityIdRedir
         return redirect(redirect_url, permanent=True)
 
 
-
 class OEmbedAPIEndpoint(APIView):
     permission_classes = (permissions.AllowAny,)
 
@@ -614,9 +616,9 @@ class OEmbedAPIEndpoint(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
-
 class VerifyBadgeAPIEndpoint(JSONComponentView):
     permission_classes = (permissions.AllowAny,)
+
     @staticmethod
     def get_object(entity_id):
         try:
@@ -629,7 +631,7 @@ class VerifyBadgeAPIEndpoint(JSONComponentView):
         entity_id = request.data.get('entity_id')
         badge_instance = self.get_object(entity_id)
 
-        #only do badgecheck verify if not a local badge
+        # only do badgecheck verify if not a local badge
         if (badge_instance.source_url):
             recipient_profile = {
                 badge_instance.recipient_type: badge_instance.recipient_identifier
@@ -641,7 +643,8 @@ class VerifyBadgeAPIEndpoint(JSONComponentView):
             }
 
             try:
-                response = openbadges.verify(badge_instance.jsonld_id, recipient_profile=recipient_profile, **badge_check_options)
+                response = openbadges.verify(badge_instance.jsonld_id,
+                                             recipient_profile=recipient_profile, **badge_check_options)
             except ValueError as e:
                 raise ValidationError([{'name': "INVALID_BADGE", 'description': str(e)}])
 
@@ -667,11 +670,13 @@ class VerifyBadgeAPIEndpoint(JSONComponentView):
 
                 badge_instance_obo = first_node_match(graph, dict(id=validation_subject))
                 if not badge_instance_obo:
-                    raise ValidationError([{'name': 'ASSERTION_NOT_FOUND', 'description': 'Unable to find an badge instance'}])
+                    raise ValidationError(
+                        [{'name': 'ASSERTION_NOT_FOUND', 'description': 'Unable to find an badge instance'}])
 
                 badgeclass_obo = first_node_match(graph, dict(id=badge_instance_obo.get('badge', None)))
                 if not badgeclass_obo:
-                    raise ValidationError([{'name': 'ASSERTION_NOT_FOUND', 'description': 'Unable to find a badgeclass'}])
+                    raise ValidationError(
+                        [{'name': 'ASSERTION_NOT_FOUND', 'description': 'Unable to find a badgeclass'}])
 
                 issuer_obo = first_node_match(graph, dict(id=badgeclass_obo.get('issuer', None)))
                 if not issuer_obo:

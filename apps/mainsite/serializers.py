@@ -26,7 +26,8 @@ class ReadOnlyJSONField(serializers.CharField):
         if isinstance(value, (dict, list)):
             return value
         else:
-            raise serializers.ValidationError("WriteableJsonField: Did not get a JSON-serializable datatype from storage for this item: " + str(value))
+            raise serializers.ValidationError(
+                "WriteableJsonField: Did not get a JSON-serializable datatype from storage for this item: " + str(value))
 
 
 class WritableJSONField(ReadOnlyJSONField):
@@ -35,7 +36,8 @@ class WritableJSONField(ReadOnlyJSONField):
             internal_value = json.loads(data)
         except Exception:
             # TODO: this is going to choke on dict input, when it should be allowed in addition to JSON.
-            raise serializers.ValidationError("WriteableJsonField: Could not process input into a python dict for storage " + str(data))
+            raise serializers.ValidationError(
+                "WriteableJsonField: Could not process input into a python dict for storage " + str(data))
 
         return internal_value
 
@@ -59,6 +61,7 @@ class LinkedDataReferenceField(serializers.Serializer):
     Includes their @id by default and any additional identifier keys that are the named
     properties on the instance.
     """
+
     def __init__(self, keys=[], model=None, read_only=True, field_names=None, **kwargs):
         kwargs.pop('many', None)
         super(LinkedDataReferenceField, self).__init__(read_only=read_only, **kwargs)
@@ -88,8 +91,8 @@ class LinkedDataReferenceField(serializers.Serializer):
             return self.model.cached.get_by_id(idstring)
         except AttributeError:
             raise TypeError(
-                "LinkedDataReferenceField model must be declared and use cache " +
-                "manager that implements get_by_id method."
+                "LinkedDataReferenceField model must be declared and use cache "
+                + "manager that implements get_by_id method."
             )
 
 
@@ -106,6 +109,7 @@ class JSONDictField(serializers.DictField):
     """
     A DictField that also accepts JSON strings as input
     """
+
     def to_internal_value(self, data):
         try:
             data = json.loads(data)

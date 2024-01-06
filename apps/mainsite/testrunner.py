@@ -11,6 +11,3 @@ class BadgrRunner(DiscoverRunner):
             badgebook_suite = self.build_suite(('badgebook',))
             extra_tests = badgebook_suite._tests
         return super(BadgrRunner, self).run_tests(test_labels, extra_tests=extra_tests, **kwargs)
-
-
-

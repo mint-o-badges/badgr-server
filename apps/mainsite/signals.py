@@ -9,6 +9,7 @@ from mainsite.utils import netloc_to_domain
 
 CorsModel = apps.get_model(getattr(settings, 'BADGR_CORS_MODEL'))
 
+
 def handle_token_save(sender, instance=None, **kwargs):
     for s in instance.scope.split():
         AccessTokenScope.objects.get_or_create(token=instance, scope=s)

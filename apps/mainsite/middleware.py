@@ -6,6 +6,7 @@ from mainsite import settings
 
 class MaintenanceMiddleware(deprecation.MiddlewareMixin):
     """Serve a temporary redirect to a maintenance url in maintenance mode"""
+
     def process_request(self, request):
         if request.method == 'POST':
             if getattr(settings, 'MAINTENANCE_MODE', False) is True and hasattr(settings, 'MAINTENANCE_URL'):
@@ -19,7 +20,7 @@ class TrailingSlashMiddleware(deprecation.MiddlewareMixin):
         exceptions = ['/staff', '/__debug__']
         if list(filter(request.path.startswith, exceptions)):
             if request.path[-1] != '/':
-                return http.HttpResponsePermanentRedirect(request.path+"/")
+                return http.HttpResponsePermanentRedirect(request.path + "/")
         else:
             if request.path != '/' and request.path[-1] == '/':
                 return http.HttpResponsePermanentRedirect(request.path[:-1])

@@ -198,7 +198,6 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
             issuer_data['badgrDomain'], response.data['result'][0]['badgrDomain'], "badgrDomain has not been changed"
         )
 
-
     def test_put_issuer_detail_with_the_option_to_exclude_staff(self):
         test_user = self.setup_user(authenticate=True)
         test_issuer = self.setup_issuer(owner=test_user, name='1')
@@ -210,8 +209,10 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
         }
 
         staff_get_url = '/v1/issuer/issuers/{slug}/staff'.format(slug=test_issuer.entity_id)
-        url_and_include_staff_false = set_url_query_params('/v2/issuers/{}'.format(test_issuer.entity_id), include_staff='false')
-        url_and_include_staff_true = set_url_query_params('/v2/issuers/{}'.format(test_issuer.entity_id), include_staff='true')
+        url_and_include_staff_false = set_url_query_params(
+            '/v2/issuers/{}'.format(test_issuer.entity_id), include_staff='false')
+        url_and_include_staff_true = set_url_query_params(
+            '/v2/issuers/{}'.format(test_issuer.entity_id), include_staff='true')
         url_no_query_param = '/v2/issuers/{}'.format(test_issuer.entity_id)
 
         staff_response = self.client.get(staff_get_url)
@@ -247,7 +248,6 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
         staff_response2 = self.client.get(staff_get_url)
         final_staff = staff_response2.data[0]['user']
         self.assertTrue(intial_staff == final_staff)
-
 
     def test_can_update_issuer_if_authenticated(self):
         test_user = self.setup_user(authenticate=True)
@@ -369,7 +369,8 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
             'role': 'editor'
         })
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.data, 'User not found. please provide a valid email address, username, url or telephone identifier.')
+        self.assertEqual(
+            response.data, 'User not found. please provide a valid email address, username, url or telephone identifier.')
 
     def test_bad_action_issuer_editors_set(self):
         test_user = self.setup_user(authenticate=True)
@@ -488,7 +489,6 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
         })
         self.assertEqual(unverified_response.status_code, 404)
 
-
     def test_add_a_user_staff_role_by_url_recipient_identifier(self):
         owner = self.setup_user(authenticate=True)
         test_issuer = self.setup_issuer(owner=owner)
@@ -555,7 +555,6 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
         })
         self.assertEqual(unverified_response.status_code, 404)
 
-
     def test_modify_the_staff_role_of_a_user_by_telephone_recipient_identifier(self):
         owner = self.setup_user(authenticate=True)
         test_issuer = self.setup_issuer(owner=owner)
@@ -608,7 +607,6 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
             'role': IssuerStaff.ROLE_EDITOR
         })
         self.assertEqual(unverified_response.status_code, 404)
-
 
     def test_cannot_modify_or_remove_self(self):
         """
@@ -723,7 +721,7 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
         # issuer_email = CachedEmailAddress.objects.create(
         #     user=test_user, email=self.example_issuer_props['email'], verified=True)
 
-        email_staff= self.setup_user()
+        email_staff = self.setup_user()
 
         url_staff = self.setup_user(email="", create_email_address=False)
         url_for_staff = UserRecipientIdentifier.objects.create(type=UserRecipientIdentifier.IDENTIFIER_TYPE_URL,
@@ -743,7 +741,7 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
 
         issuer = self.setup_issuer(owner=test_user)
 
-        #add url user as staff
+        # add url user as staff
         response1 = self.client.post('/v1/issuer/issuers/{slug}/staff'.format(slug=issuer.entity_id), {
             'action': 'add',
             'username': url_staff.username,
@@ -751,7 +749,7 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
         })
         self.assertEqual(response1.status_code, 200)
 
-        #add phone user as editor
+        # add phone user as editor
         response2 = self.client.post('/v1/issuer/issuers/{slug}/staff'.format(slug=issuer.entity_id), {
             'action': 'add',
             'username': phone_staff.username,
@@ -759,7 +757,7 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
         })
         self.assertEqual(response2.status_code, 200)
 
-        #get issuer object and check staff serialization
+        # get issuer object and check staff serialization
         response = self.client.get('/v2/issuers')
         response_issuers = response.data['result']
         self.assertEqual(len(response_issuers), 1)
@@ -767,12 +765,12 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
         self.assertEqual(len(our_issuer['staff']), 3)
         for staff_user in our_issuer['staff']:
             if (staff_user['role'] == IssuerStaff.ROLE_OWNER):
-                #check emails
+                # check emails
                 self.assertEqual(len(staff_user['userProfile']['url']), 0)
                 self.assertEqual(len(staff_user['userProfile']['telephone']), 0)
                 self.assertEqual(len(staff_user['userProfile']['emails']), 1)
             elif (staff_user['role'] == IssuerStaff.ROLE_EDITOR):
-                #check phone
+                # check phone
                 self.assertEqual(len(staff_user['userProfile']['url']), 0)
                 self.assertEqual(len(staff_user['userProfile']['telephone']), 1)
                 self.assertEqual(staff_user['userProfile']['telephone'][0], phone_for_staff.identifier)

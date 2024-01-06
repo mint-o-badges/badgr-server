@@ -23,7 +23,6 @@ class IdTokenProvider(OAuth2Provider):
     def __init__(self, request):
         super(IdTokenProvider, self).__init__(request)
 
-
     def get_default_scope(self):
         return ['openid', 'profile', 'email']
 

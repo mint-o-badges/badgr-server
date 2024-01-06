@@ -1,14 +1,13 @@
 # encoding: utf-8
 
 
-
 import os
 from django.core.files.images import get_image_dimensions
 from django.urls import reverse
 from django.utils import timezone
 from oauth2_provider.models import Application
 
-from badgeuser.models import  TermsVersion
+from badgeuser.models import TermsVersion
 from issuer.models import Issuer, BadgeClass, IssuerStaff
 from mainsite.models import ApplicationInfo, AccessTokenProxy, BadgrApp
 from mainsite.tests import SetupOAuth2ApplicationHelper
@@ -124,7 +123,7 @@ class IssuerAdminTests(BadgrTestCase, SetupIssuerHelper, SetupOAuth2ApplicationH
             'recipient': {'identity': 'test@example.com'}
         }
         response = self.client.post(
-            '/v2/badgeclasses/{}/assertions'.format(badgeclass.entity_id),  award_data, format='json'
+            '/v2/badgeclasses/{}/assertions'.format(badgeclass.entity_id), award_data, format='json'
         )
         self.assertEqual(response.status_code, 201)
 

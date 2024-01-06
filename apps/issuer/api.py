@@ -43,8 +43,8 @@ class IssuerList(BaseEntityListView):
     v1_serializer_class = IssuerSerializerV1
     v2_serializer_class = IssuerSerializerV2
     permission_classes = [
-        IsServerAdmin |
-        (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope & ApprovedIssuersOnly)
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope & ApprovedIssuersOnly)
     ]
     valid_scopes = ["rw:issuer"]
 
@@ -73,9 +73,9 @@ class IssuerDetail(BaseEntityDetailView):
     v1_serializer_class = IssuerSerializerV1
     v2_serializer_class = IssuerSerializerV2
     permission_classes = [
-        IsServerAdmin |
-        (AuthenticatedWithVerifiedIdentifier & IsEditorButOwnerForDelete & BadgrOAuthTokenHasScope) |
-        BadgrOAuthTokenHasEntityScope
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsEditorButOwnerForDelete & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
     ]
     valid_scopes = ["rw:issuer", "rw:issuer:*", "rw:serverAdmin"]
 
@@ -89,7 +89,7 @@ class IssuerDetail(BaseEntityDetailView):
     @apispec_put_operation('Issuer',
        summary="Update a single Issuer",
        tags=["Issuers"],
-   )
+        )
     def put(self, request, **kwargs):
         return super(IssuerDetail, self).put(request, **kwargs)
 
@@ -108,9 +108,9 @@ class AllBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListView):
     """
     model = BadgeClass
     permission_classes = [
-        IsServerAdmin |
-        (AuthenticatedWithVerifiedIdentifier & IsEditor & BadgrOAuthTokenHasScope) |
-        BadgrOAuthTokenHasEntityScope
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsEditor & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
     ]
     v1_serializer_class = BadgeClassSerializerV1
     v2_serializer_class = BadgeClassSerializerV2
@@ -151,9 +151,9 @@ class IssuerBadgeClassList(UncachedPaginatedViewMixin, VersionedObjectMixin, Bas
     """
     model = Issuer  # used by get_object()
     permission_classes = [
-        IsServerAdmin |
-        (AuthenticatedWithVerifiedIdentifier & IsEditor & BadgrOAuthTokenHasScope) |
-        BadgrOAuthTokenHasEntityScope
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsEditor & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
     ]
     v1_serializer_class = BadgeClassSerializerV1
     v2_serializer_class = BadgeClassSerializerV2
@@ -205,9 +205,9 @@ class BadgeClassDetail(BaseEntityDetailView):
     """
     model = BadgeClass
     permission_classes = [
-        IsServerAdmin |
-        (AuthenticatedWithVerifiedIdentifier & MayEditBadgeClass & BadgrOAuthTokenHasScope) |
-        BadgrOAuthTokenHasEntityScope
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & MayEditBadgeClass & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
     ]
     v1_serializer_class = BadgeClassSerializerV1
     v2_serializer_class = BadgeClassSerializerV2
@@ -251,9 +251,9 @@ class BadgeClassDetail(BaseEntityDetailView):
 class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
     model = BadgeClass  # used by .get_object()
     permission_classes = [
-        IsServerAdmin |
-        (AuthenticatedWithVerifiedIdentifier & MayIssueBadgeClass & BadgrOAuthTokenHasScope) |
-        BadgrOAuthTokenHasEntityScope
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & MayIssueBadgeClass & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
     ]
     v1_serializer_class = BadgeInstanceSerializerV1
     v2_serializer_class = BadgeInstanceSerializerV2
@@ -274,7 +274,7 @@ class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
                 "required": True,
                 'schema': {
                     "type": "array",
-                    'items': { '$ref': '#/definitions/Assertion' }
+                    'items': {'$ref': '#/definitions/Assertion'}
                 },
             }
         ]
@@ -317,9 +317,9 @@ class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
 class BatchAssertionsRevoke(VersionedObjectMixin, BaseEntityView):
     model = BadgeInstance
     permission_classes = [
-        IsServerAdmin |
-        (AuthenticatedWithVerifiedIdentifier & MayEditBadgeClass & BadgrOAuthTokenHasScope) |
-        BadgrOAuthTokenHasEntityScope
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & MayEditBadgeClass & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
     ]
     v2_serializer_class = BadgeInstanceSerializerV2
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
@@ -369,7 +369,7 @@ class BatchAssertionsRevoke(VersionedObjectMixin, BaseEntityView):
                 "required": True,
                 'schema': {
                     "type": "array",
-                    'items': { '$ref': '#/definitions/Assertion' }
+                    'items': {'$ref': '#/definitions/Assertion'}
                 },
             }
         ]
@@ -392,9 +392,9 @@ class BadgeInstanceList(UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEn
     """
     model = BadgeClass  # used by get_object()
     permission_classes = [
-        IsServerAdmin |
-        (AuthenticatedWithVerifiedIdentifier & MayIssueBadgeClass & BadgrOAuthTokenHasScope) |
-        BadgrOAuthTokenHasEntityScope
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & MayIssueBadgeClass & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
     ]
     v1_serializer_class = BadgeInstanceSerializerV1
     v2_serializer_class = BadgeInstanceSerializerV2
@@ -471,9 +471,9 @@ class IssuerBadgeInstanceList(UncachedPaginatedViewMixin, VersionedObjectMixin, 
     """
     model = Issuer  # used by get_object()
     permission_classes = [
-        IsServerAdmin |
-        (AuthenticatedWithVerifiedIdentifier & IsStaff & BadgrOAuthTokenHasScope) |
-        BadgrOAuthTokenHasEntityScope
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsStaff & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
     ]
     v1_serializer_class = BadgeInstanceSerializerV1
     v2_serializer_class = BadgeInstanceSerializerV2
@@ -541,9 +541,9 @@ class BadgeInstanceDetail(BaseEntityDetailView):
     """
     model = BadgeInstance
     permission_classes = [
-        IsServerAdmin |
-        (AuthenticatedWithVerifiedIdentifier & MayEditBadgeClass & BadgrOAuthTokenHasScope) |
-        BadgrOAuthTokenHasEntityScope
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & MayEditBadgeClass & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
     ]
     v1_serializer_class = BadgeInstanceSerializerV1
     v2_serializer_class = BadgeInstanceSerializerV2

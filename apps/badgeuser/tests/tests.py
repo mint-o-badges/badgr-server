@@ -356,7 +356,7 @@ class UserEmailTests(BadgrTestCase):
 
         response = self.client.get('/v1/user/emails')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(starting_count+1, len(response.data))
+        self.assertEqual(starting_count + 1, len(response.data))
 
         # Mark email as verified
         email = CachedEmailAddress.cached.get(email='new+email@newemail.com')
@@ -382,7 +382,7 @@ class UserEmailTests(BadgrTestCase):
 
         response = self.client.get('/v1/user/emails')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(starting_count+1, len(response.data))
+        self.assertEqual(starting_count + 1, len(response.data))
 
         # Mark email as verified
         email = CachedEmailAddress.cached.get(email='new+email@newemail.com')
@@ -684,7 +684,7 @@ class UserEmailTests(BadgrTestCase):
         self.assertFalse(new_variant.verified)
 
         verified_emails = [e.email for e in user.emailaddress_set.filter(verified=True)] \
-                + [e.email for e in user.cached_email_variants() if e.verified]
+            + [e.email for e in user.cached_email_variants() if e.verified]
 
         self.assertTrue(new_variant not in verified_emails)
 

@@ -21,4 +21,5 @@ class VerifiedFacebookProvider(FacebookProvider):
                                     primary=True))
         return ret
 
+
 providers.registry.register(VerifiedFacebookProvider)

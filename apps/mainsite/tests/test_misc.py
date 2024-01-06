@@ -8,7 +8,9 @@ import pytz
 import re
 import responses
 import shutil
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 import urllib.parse
 import warnings
 
@@ -47,8 +49,10 @@ class TestDateSerialization(BadgrTestCase):
 
     def test_date_serialization(self):
         utc_date = self.TestHolder(timezone.datetime(2019, 12, 6, 12, 0, tzinfo=pytz.utc))
-        la_date = self.TestHolder(pytz.timezone('America/Los_Angeles').localize(timezone.datetime(2019, 12, 6, 12, 0))) # -8 hours
-        ny_date = self.TestHolder(pytz.timezone('America/New_York').localize(timezone.datetime(2019, 12, 6, 12, 0))) # -5 hours
+        la_date = self.TestHolder(pytz.timezone(
+            'America/Los_Angeles').localize(timezone.datetime(2019, 12, 6, 12, 0)))  # -8 hours
+        ny_date = self.TestHolder(pytz.timezone(
+            'America/New_York').localize(timezone.datetime(2019, 12, 6, 12, 0)))  # -5 hours
 
         utc_serializer = self.TestSerializer(utc_date)
         la_serializer = self.TestSerializer(la_date)
@@ -68,7 +72,7 @@ class TestTokenDenorm(BadgrTestCase, SetupIssuerHelper):
         # Creating an AccessToken (library model) results in correct scopes
         scope_string = 'foo bar'
         scopes = sorted(scope_string.split(' '))
-        app = Application.objects.create(client_id = "app",client_type = "public",authorization_grant_type = "implicit",)
+        app = Application.objects.create(client_id="app", client_type="public", authorization_grant_type="implicit",)
         token = AccessToken.objects.create(
             application=app,
             scope=scope_string,
@@ -232,7 +236,8 @@ class TestBlacklist(BadgrTestCase):
     def setUp(self):
         super(TestBlacklist, self).setUp()
         self.user, _ = BadgeUser.objects.get_or_create(email='test@example.com')
-        self.cached_email, _ = CachedEmailAddress.objects.get_or_create(user=self.user, email='test@example.com', verified=True, primary=True)
+        self.cached_email, _ = CachedEmailAddress.objects.get_or_create(
+            user=self.user, email='test@example.com', verified=True, primary=True)
         self.issuer = Issuer.objects.create(
             name="Open Badges",
             created_at="2015-12-15T15:55:51Z",
@@ -269,7 +274,7 @@ class TestBlacklist(BadgrTestCase):
         id_type, id_value = self.Inputs[0]
 
         responses.add(
-            responses.GET, 'http://example.com?id='+blacklist.generate_hash(id_type, id_value),
+            responses.GET, 'http://example.com?id=' + blacklist.generate_hash(id_type, id_value),
             body="{\"msg\": \"ok\"}", status=200
         )
 
@@ -303,7 +308,7 @@ class TestBlacklist(BadgrTestCase):
         id_type, id_value = self.Inputs[1]
 
         responses.add(
-            responses.GET, 'http://example.com?id='+blacklist.generate_hash(id_type, id_value),
+            responses.GET, 'http://example.com?id=' + blacklist.generate_hash(id_type, id_value),
             body="{\"msg\": \"no\"}", status=404
         )
 
@@ -328,7 +333,8 @@ class TestBlacklist(BadgrTestCase):
         # The generate_hash function implementation should not change; We risk contacting people on the blacklist
         for (id_type, id_value) in self.Inputs:
             got = blacklist.generate_hash(id_type, id_value)
-            expected = "{id_type}$sha256${hash}".format(id_type=id_type, hash=sha256(id_value.encode('utf-8')).hexdigest())
+            expected = "{id_type}$sha256${hash}".format(
+                id_type=id_type, hash=sha256(id_value.encode('utf-8')).hexdigest())
             self.assertEqual(got, expected)
 
 
@@ -422,16 +428,14 @@ class TestRemoteFileToStorage(SetupIssuerHelper, BadgrTestCase):
         )
 
         saved_svg_path = os.path.join('{base_url}/{file_name}'.format(
-            base_url= default_storage.location,
+            base_url=default_storage.location,
             file_name=storage_name)
         )
-            
+
         saved_svg = open(saved_svg_path, 'rb').read()
 
         self.assertNotIn(b'onload', saved_svg)
         self.assertNotIn(b'<script>', saved_svg)
-
-
 
     @responses.activate
     def test_png_without_extension(self):
@@ -525,7 +529,6 @@ class TestRemoteFileToStorage(SetupIssuerHelper, BadgrTestCase):
         self.assertTrue(storage_name.endswith(expected_extension))
         self.assertTrue(default_storage.size(storage_name) > 0)
 
-
     @responses.activate
     def test_jpeg_without_extension(self):
         expected_extension = '.jpeg'
@@ -567,7 +570,6 @@ class TestRemoteFileToStorage(SetupIssuerHelper, BadgrTestCase):
         self.assertTrue(storage_name.endswith(expected_extension))
         self.assertTrue(default_storage.size(storage_name) > 0)
 
-
     @responses.activate
     def test_fetch_remote_file_to_storage_with_an_unsupported_mimetype_throws_UnsupportedMediaType(self):
         responses.add(
@@ -581,5 +583,5 @@ class TestRemoteFileToStorage(SetupIssuerHelper, BadgrTestCase):
             status_code, storage_name = fetch_remote_file_to_storage(
                 self.test_url,
                 upload_to=self.test_uploaded_path,
-                allowed_mime_types= ['image/png', 'image/svg+xml']
+                allowed_mime_types=['image/png', 'image/svg+xml']
             )

@@ -1,3 +1,4 @@
+from cryptography.fernet import Fernet
 import sys
 import os
 
@@ -113,8 +114,6 @@ TEMPLATES = [
 ]
 
 
-
-
 ##
 #
 #  Static Files
@@ -129,7 +128,7 @@ STATICFILES_FINDERS = [
 ]
 
 STATIC_ROOT = os.path.join(TOP_DIR, 'staticfiles')
-STATIC_URL = HTTP_ORIGIN+'/static/'
+STATIC_URL = HTTP_ORIGIN + '/static/'
 STATICFILES_DIRS = [
     os.path.join(TOP_DIR, 'apps', 'mainsite', 'static'),
 ]
@@ -230,7 +229,7 @@ CORS_EXPOSE_HEADERS = (
 
 MEDIA_ROOT = os.path.join(TOP_DIR, 'mediafiles')
 MEDIA_URL = '/media/'
-ADMIN_MEDIA_PREFIX = STATIC_URL+'admin/'
+ADMIN_MEDIA_PREFIX = STATIC_URL + 'admin/'
 
 
 ##
@@ -400,7 +399,7 @@ USE_TZ = True
 ##
 
 MARKDOWNIFY_WHITELIST_TAGS = [
-    'h1','h2','h3','h4','h5','h6',
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
     'a',
     'abbr',
     'acronym',
@@ -421,14 +420,14 @@ MARKDOWNIFY_WHITELIST_TAGS = [
 
 OAUTH2_PROVIDER = {
     'SCOPES': {
-        'r:profile':   'See who you are',
-        'rw:profile':  'Update your own user profile',
-        'r:backpack':  'List assertions in your backpack',
+        'r:profile': 'See who you are',
+        'rw:profile': 'Update your own user profile',
+        'r:backpack': 'List assertions in your backpack',
         'rw:backpack': 'Upload badges into a backpack',
-        'rw:issuer':   'Create and update issuers, create and update badge classes, and award assertions',
+        'rw:issuer': 'Create and update issuers, create and update badge classes, and award assertions',
 
         # private scopes used for integrations
-        'rw:issuer:*':  'Create and update badge classes, and award assertions for a single issuer',
+        'rw:issuer:*': 'Create and update badge classes, and award assertions for a single issuer',
         'rw:serverAdmin': 'Superuser trusted operations on most objects',
         'r:assertions': 'Batch receive assertions',
 
@@ -440,7 +439,7 @@ OAUTH2_PROVIDER = {
     'DEFAULT_SCOPES': ['r:profile'],
 
     'OAUTH2_VALIDATOR_CLASS': 'mainsite.oauth_validator.BadgrRequestValidator',
-    'ACCESS_TOKEN_EXPIRE_SECONDS':  86400
+    'ACCESS_TOKEN_EXPIRE_SECONDS': 86400
 
 }
 OAUTH2_PROVIDER_APPLICATION_MODEL = 'oauth2_provider.Application'
@@ -452,7 +451,8 @@ API_DOCS_EXCLUDED_SCOPES = ['rw:issuer:*', 'r:assertions', 'rw:serverAdmin', '*'
 
 
 BADGR_PUBLIC_BOT_USERAGENTS = [
-    'LinkedInBot',   # 'LinkedInBot/1.0 (compatible; Mozilla/5.0; Jakarta Commons-HttpClient/3.1 +http://www.linkedin.com)'
+    # 'LinkedInBot/1.0 (compatible; Mozilla/5.0; Jakarta Commons-HttpClient/3.1 +http://www.linkedin.com)'
+    'LinkedInBot',
     'Twitterbot',    # 'Twitterbot/1.0'
     'facebook',      # https://developers.facebook.com/docs/sharing/webmasters/crawler
     'Facebot',
@@ -488,13 +488,13 @@ OPERATOR_NAME = None
 OPERATOR_URL = None
 
 # OVERRIDE THESE VALUES WITH YOUR OWN STABLE VALUES IN LOCAL SETTINGS
-from cryptography.fernet import Fernet
 AUTHCODE_SECRET_KEY = Fernet.generate_key()
 
 AUTHCODE_EXPIRES_SECONDS = 600  # needs to be long enough to fetch information from socialauth providers
 
 # SAML Settings
-SAML_EMAIL_KEYS = ['Email', 'email', 'mail', 'emailaddress', 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress']
+SAML_EMAIL_KEYS = ['Email', 'email', 'mail', 'emailaddress',
+    'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress']
 SAML_FIRST_NAME_KEYS = ['FirstName', 'givenName', 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname']
 SAML_LAST_NAME_KEYS = ['LastName', 'sn', 'surname', 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname']
 

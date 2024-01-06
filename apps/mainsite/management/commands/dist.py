@@ -24,4 +24,4 @@ class Command(BaseCommand):
             preamble=os.path.join(dirname, "API_DESCRIPTION_{version}.md"),
             versions=['v1', 'v2', 'bcv1'],
             include_oauth2_security=True
-        )
+                     )

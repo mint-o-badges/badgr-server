@@ -164,6 +164,7 @@ class BadgeClassManager(BaseOpenBadgeObjectManager):
             )
         )
 
+
 class BadgeInstanceEvidenceManager(models.Manager):
     @transaction.atomic
     def create_from_ob2(self, badgeinstance, evidence_obo):
@@ -298,7 +299,7 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
         allow_uppercase=False,
         badgr_app=None,
         **kwargs
-    ):
+               ):
         """
         Convenience method to award a badge to a recipient_id
         :param allow_uppercase: bool
@@ -308,7 +309,8 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
         :type evidence: list of dicts(url=string, narrative=string)
         """
         recipient_identifier = kwargs.pop('recipient_identifier')
-        recipient_identifier = sanitize_id(recipient_identifier, kwargs.get('recipient_type', 'email'), allow_uppercase=allow_uppercase)
+        recipient_identifier = sanitize_id(recipient_identifier, kwargs.get(
+            'recipient_type', 'email'), allow_uppercase=allow_uppercase)
 
         badgeclass = kwargs.pop('badgeclass', None)
         issuer = kwargs.pop('issuer', badgeclass.issuer)

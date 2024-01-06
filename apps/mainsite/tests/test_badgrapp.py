@@ -3,7 +3,6 @@ from mainsite.models import BadgrApp
 from mainsite.tests.base import APITransactionTestCase, CachingTestCase, SetupIssuerHelper, SetupUserHelper
 
 
-
 class TestBadgrApp(SetupUserHelper, SetupIssuerHelper, APITransactionTestCase, CachingTestCase):
     def test_badgr_app_unique_default(self):
         ba_one = BadgrApp.objects.create(
@@ -106,5 +105,6 @@ class TestBadgrApp(SetupUserHelper, SetupIssuerHelper, APITransactionTestCase, C
         cached_badgrapp_b = issuer.cached_badgrapp
         cached_badgrapp_c = BadgrApp.objects.get_by_id_or_default(ba_two.id)
 
-        self.assertNotEqual(cached_badgrapp_a.name, cached_badgrapp_b.name)  # issuer.cached_badgrapp should have updated
+        # issuer.cached_badgrapp should have updated
+        self.assertNotEqual(cached_badgrapp_a.name, cached_badgrapp_b.name)
         self.assertEqual(cached_badgrapp_b.name, cached_badgrapp_c.name)

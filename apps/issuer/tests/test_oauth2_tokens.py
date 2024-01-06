@@ -27,7 +27,6 @@ class PublicAPITests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestC
         ))
         self.assertEqual(response.status_code, 200)
 
-
     def test_can_get_issuer_scoped_token(self):
         # create an oauth2 application
         application_user = self.setup_user(authenticate=False)
@@ -38,7 +37,7 @@ class PublicAPITests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestC
 
         # application can retrieve a token
         response = self.client.post(reverse('oauth2_provider_token'), data=dict(
-            grant_type=application.authorization_grant_type.replace('-','_'),
+            grant_type=application.authorization_grant_type.replace('-', '_'),
             client_id=application.client_id,
             client_secret=application.client_secret,
             scope='rw:issuer:{}'.format(issuer.entity_id)
@@ -53,7 +52,7 @@ class PublicAPITests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestC
 
         # application can retrieve a token
         response = self.client.post(reverse('oauth2_provider_token'), data=dict(
-            grant_type=application.authorization_grant_type.replace('-','_'),
+            grant_type=application.authorization_grant_type.replace('-', '_'),
             client_id=application.client_id,
             client_secret=application.client_secret,
             scope='rw:issuer'
@@ -92,7 +91,7 @@ class PublicAPITests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestC
             response = self.client.get(reverse('v2_api_issuer_detail', kwargs=dict(entity_id=issuer_id)),
                  format="json",
                  Authorization="Bearer {}".format(issuer_token)
-            )
+                                       )
             self.assertEqual(response.status_code, 200)
 
         # ensure that issuer tokens didnt change and still have same expiration
@@ -100,6 +99,3 @@ class PublicAPITests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestC
             updated_access_token = AccessTokenProxy.objects.get(pk=access_token.pk)
             self.assertEqual(updated_access_token.token, access_token.token)
             self.assertEqual(updated_access_token.expires, access_token.expires)
-
-
-

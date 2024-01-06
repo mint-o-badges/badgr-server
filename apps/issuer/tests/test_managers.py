@@ -73,4 +73,3 @@ class BadgeInstanceAndEvidenceManagerTests(SetupIssuerHelper, BadgrTestCase, Ob2
         self.assertEqual(evidence_item.badgeinstance_id, badgeinstance.pk)
         self.assertEqual(evidence_item.evidence_url, assertion_ob2['evidence'])
         self.assertIsNone(evidence_item.narrative)
-

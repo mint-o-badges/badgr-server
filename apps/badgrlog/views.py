@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 
 class BadgrLogContextView(APIView):
     permission_classes = []
+
     def get(self, request):
 
         return Response(
