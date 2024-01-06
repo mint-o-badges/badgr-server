@@ -9,7 +9,6 @@ import cachemodel
 import lti
 from django.core.cache import cache
 from django.db import models
-from lti import LaunchParams
 
 from entity.models import BaseVersionedEntity
 from issuer.models import BaseAuditedModel, BadgeInstance
@@ -139,7 +138,7 @@ class ExternalToolLaunchpoint(cachemodel.CacheModel):
             ))
         if context_id is not None:
             params['custom_context_id'] = context_id
-            context_obj = self.lookup_obj_by_launchpoint(params, user, context_id)
+            self.lookup_obj_by_launchpoint(params, user, context_id)
 
         tool_consumer = self.get_tool_consumer(extra_params=params)
         launch_data = tool_consumer.generate_launch_data()

@@ -3,7 +3,6 @@ from collections import OrderedDict
 import datetime
 
 import dateutil.parser
-from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
 from django.http import Http404
@@ -12,7 +11,7 @@ from oauthlib.oauth2.rfc6749.tokens import random_token_generator
 from rest_framework import status, serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from rest_framework.status import HTTP_404_NOT_FOUND, HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN
+from rest_framework.status import HTTP_404_NOT_FOUND, HTTP_200_OK, HTTP_400_BAD_REQUEST
 
 import badgrlog
 from entity.api import BaseEntityListView, BaseEntityDetailView, VersionedObjectMixin, BaseEntityView, \
@@ -194,7 +193,7 @@ class IssuerBadgeClassList(UncachedPaginatedViewMixin, VersionedObjectMixin, Bas
         tags=["Issuers", "BadgeClasses"],
     )
     def post(self, request, **kwargs):
-        issuer = self.get_object(request, **kwargs)  # trigger a has_object_permissions() check
+        self.get_object(request, **kwargs)  # trigger a has_object_permissions() check
         return super(IssuerBadgeClassList, self).post(request, **kwargs)
 
 
@@ -452,7 +451,7 @@ class BadgeInstanceList(UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEn
     )
     def get(self, request, **kwargs):
         # verify the user has permission to the badgeclass
-        badgeclass = self.get_object(request, **kwargs)
+        self.get_object(request, **kwargs)
         return super(BadgeInstanceList, self).get(request, **kwargs)
 
     @apispec_post_operation('Assertion',
@@ -461,7 +460,7 @@ class BadgeInstanceList(UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEn
     )
     def post(self, request, **kwargs):
         # verify the user has permission to the badgeclass
-        badgeclass = self.get_object(request, **kwargs)
+        self.get_object(request, **kwargs)
         return super(BadgeInstanceList, self).post(request, **kwargs)
 
 
@@ -629,7 +628,7 @@ class IssuerTokensList(BaseEntityListView):
             try:
                 issuer = Issuer.cached.get(entity_id=issuer_entityid)
                 self.check_object_permissions(request, issuer)
-            except Issuer.DoesNotExist as e:
+            except Issuer.DoesNotExist:
                 raise serializers.ValidationError({"issuers": "unknown issuer"})
             else:
                 issuers.append(issuer)
@@ -710,7 +709,7 @@ class AssertionsChangedSince(BaseEntityView):
         if since is not None:
             try:
                 since = dateutil.parser.isoparse(since)
-            except ValueError as e:
+            except ValueError:
                 err = V2ErrorSerializer(
                     data={}, field_errors={'since': ["must be ISO-8601 format with time zone"]},
                     validation_errors=[])
@@ -762,7 +761,7 @@ class BadgeClassesChangedSince(BaseEntityView):
         if since is not None:
             try:
                 since = dateutil.parser.isoparse(since)
-            except ValueError as e:
+            except ValueError:
                 err = V2ErrorSerializer(
                     data={}, field_errors={'since': ["must be ISO-8601 format with time zone"]},
                     validation_errors=[])
@@ -814,7 +813,7 @@ class IssuersChangedSince(BaseEntityView):
         if since is not None:
             try:
                 since = dateutil.parser.isoparse(since)
-            except ValueError as e:
+            except ValueError:
                 err = V2ErrorSerializer(
                     data={}, field_errors={'since': ["must be ISO-8601 format with time zone"]},
                     validation_errors=[])

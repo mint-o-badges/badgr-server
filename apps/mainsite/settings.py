@@ -3,8 +3,6 @@ import sys
 import os
 
 from mainsite import TOP_DIR
-import logging
-
 
 ##
 #

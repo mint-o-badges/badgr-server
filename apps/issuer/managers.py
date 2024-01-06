@@ -21,7 +21,7 @@ def resolve_source_url_referencing_local_object(source_url):
         try:
             match = resolve(urllib.parse.urlparse(source_url).path)
             return match
-        except Resolver404 as e:
+        except Resolver404:
             pass
 
 
@@ -198,7 +198,8 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
         'image/svg+xml',
     ]
 
-    def update_from_ob2(self, badgeclass, assertion_obo, recipient_identifier, recipient_type='email', original_json=None):
+    def update_from_ob2(self, badgeclass, assertion_obo, recipient_identifier,
+            recipient_type='email', original_json=None):
         image = None
         image_url = assertion_obo.get('image', None)
         if isinstance(image_url, dict):
@@ -249,7 +250,8 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
         return image
 
     @transaction.atomic
-    def get_or_create_from_ob2(self, badgeclass, assertion_obo, recipient_identifier, recipient_type='email', source=None, original_json=None, image=None):
+    def get_or_create_from_ob2(self, badgeclass, assertion_obo, recipient_identifier,
+            recipient_type='email', source=None, original_json=None, image=None):
         source_url = assertion_obo.get('id')
         local_object = self.get_local_object(source_url)
         if local_object:

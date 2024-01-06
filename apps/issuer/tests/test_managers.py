@@ -23,11 +23,11 @@ class BadgeInstanceAndEvidenceManagerTests(SetupIssuerHelper, BadgrTestCase, Ob2
         super(BadgeInstanceAndEvidenceManagerTests, self).setUp()
         self.local_owner_user = self.setup_user(authenticate=False)
         self.local_issuer = self.setup_issuer(owner=self.local_owner_user)
-        random_unrelated_badgeclass = self.setup_badgeclass(issuer=self.local_issuer)
+        self.setup_badgeclass(issuer=self.local_issuer)
 
     @responses.activate
     def test_update_from_ob2_basic(self):
-        recipient = self.setup_user(email='recipient1@example.org')
+        self.setup_user(email='recipient1@example.org')
 
         issuer_ob2 = self.generate_issuer_obo2()
         badgeclass_ob2 = self.generate_badgeclass_ob2()

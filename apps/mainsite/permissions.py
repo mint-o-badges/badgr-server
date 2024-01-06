@@ -1,8 +1,6 @@
 import oauth2_provider
 from rest_framework import permissions
 
-from badgeuser.models import CachedEmailAddress
-
 
 class IsOwner(permissions.BasePermission):
     """

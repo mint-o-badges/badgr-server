@@ -1,9 +1,7 @@
 # encoding: utf-8
-
-
 from cryptography.fernet import Fernet
 
-from .settings import *
+from .settings import *  # noqa: F403, F401
 
 # disable logging for tests
 LOGGING = {}

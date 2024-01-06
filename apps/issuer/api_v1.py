@@ -90,7 +90,7 @@ class IssuerStaffList(VersionedObjectMixin, APIView):
         current_issuer = self.get_object(request, **kwargs)
         if not self.has_object_permissions(request, current_issuer):
             return Response(
-                "Issuer %s not found. Authenticated user must have owner, editor or staff rights on the issuer.".format(
+                "Issuer {} not found. Authenticated user must have owner, editor or staff rights on the issuer.".format(
                     kwargs.get('slug')
                 ),
                 status=status.HTTP_404_NOT_FOUND
@@ -122,27 +122,32 @@ class IssuerStaffList(VersionedObjectMixin, APIView):
             - name: action
               type: string
               paramType: form
-              description: The action to perform on the user. Must be one of 'add', 'modify', or 'remove'.
+              description: The action to perform on the user. Must be one of 'add',
+                'modify', or 'remove'.
               required: true
             - name: username
               type: string
               paramType: form
-              description: The username of the user whose role will be added, removed or modified.
+              description: The username of the user whose role will be added,
+                removed or modified.
               required: false
             - name: email
               type: string
               paramType: form
-              description: A verified email address of the user whose role will be added, removed or modified.
+              description: A verified email address of the user whose role will be added,
+                removed or modified.
               required: false
             - name: url
               type: string
               paramType: form
-              description: A verified user recipient identifier of the user whose role will be added, removed or modified. Must be of type url.
+              description: A verified user recipient identifier of the user whose role
+                will be added, removed or modified. Must be of type url.
               required: false
             - name: telephone
               type: string
               paramType: form
-              description: A verified user recipient identifier of the user whose role will be added, removed or modified. Must be of type telephone.
+              description: A verified user recipient identifier of the user whose role
+                will be added, removed or modified. Must be of type telephone.
               required: false
             - name: role
               type: string
@@ -180,7 +185,8 @@ class IssuerStaffList(VersionedObjectMixin, APIView):
         except (get_user_model().DoesNotExist, CachedEmailAddress.DoesNotExist, UserRecipientIdentifier.DoesNotExist):
             error_text = "User not found. Email must correspond to an existing user."
             if user_id is None:
-                error_text = 'User not found. please provide a valid email address, username, url or telephone identifier.'
+                error_text = ('User not found. please provide a valid email address, '
+                        'username, url or telephone identifier.')
             return Response(
                 error_text, status=status.HTTP_404_NOT_FOUND
             )
@@ -243,7 +249,8 @@ class FindBadgeClassDetail(APIView):
                 "in": "query",
                 "name": "identifier",
                 'required': True,
-                "description": "The identifier of the badge possible values: JSONld identifier, BadgeClass.id, or BadgeClass.slug"
+                "description": ("The identifier of the badge possible values: "
+                    "JSONld identifier, BadgeClass.id, or BadgeClass.slug")
             }
         ]
     )

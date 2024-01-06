@@ -8,12 +8,10 @@ import dateutil
 import re
 import uuid
 from collections import OrderedDict
-from itertools import chain
 
 import cachemodel
 import os
 from allauth.account.adapter import get_adapter
-from cachemodel import CACHE_FOREVER_TIMEOUT
 from django.apps import apps
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -29,7 +27,6 @@ from json import dumps as json_dumps
 from jsonfield import JSONField
 from openbadges_bakery import bake
 from django.utils import timezone
-from django.core.cache import cache
 
 import badgrlog
 from entity.models import BaseVersionedEntity
@@ -99,7 +96,7 @@ class OriginalJsonMixin(models.Model):
         if self.original_json:
             try:
                 return json_loads(self.original_json)
-            except (TypeError, ValueError) as e:
+            except (TypeError, ValueError):
                 pass
 
     def get_filtered_json(self, excluded_fields=()):
@@ -200,7 +197,6 @@ class Issuer(ResizeUploadedImage,
 
     name = models.CharField(max_length=1024)
     image = models.FileField(upload_to='uploads/issuers', blank=True, null=True)
-    image_preview = models.FileField(upload_to='uploads/issuers', blank=True, null=True)
     description = models.TextField(blank=True, null=True, default=None)
     url = models.CharField(max_length=254, blank=True, null=True, default=None)
     email = models.CharField(max_length=254, blank=True, null=True, default=None)
@@ -290,10 +286,10 @@ class Issuer(ResizeUploadedImage,
                     or self.city != self.__original_address['city']
                     or self.zip != self.__original_address['zip']
                     or self.country != self.__original_address['country']):
-                addr_string = (self.street if self.street != None else '') + " "
-                + (str(self.streetnumber) if self.streetnumber != None else '') + " "
-                + (str(self.zip) if self.zip != None else '') + " "
-                + (str(self.city) if self.city != None else '') + " Deutschland"
+                addr_string = (self.street if self.street is not None else '') + " "
+                + (str(self.streetnumber) if self.streetnumber is not None else '') + " "
+                + (str(self.zip) if self.zip is not None else '') + " "
+                + (str(self.city) if self.city is not None else '') + " Deutschland"
                 nom = Nominatim(user_agent="myBadges")
                 geoloc = nom.geocode(addr_string)
                 if geoloc:
@@ -466,16 +462,14 @@ class Issuer(ResizeUploadedImage,
     def json(self):
         return self.get_json()
 
-    def get_filtered_json(self, excluded_fields=('@context', 'id', 'type', 'name', 'url', 'description', 'image', 'email')):
+    def get_filtered_json(self, excluded_fields=('@context', 'id', 'type', 'name',
+            'url', 'description', 'image', 'email')):
         return super(Issuer, self).get_filtered_json(excluded_fields=excluded_fields)
 
     @property
     def cached_badgrapp(self):
         id = self.badgrapp_id if self.badgrapp_id else None
         return BadgrApp.objects.get_by_id_or_default(badgrapp_id=id)
-
-    def has_nonrevoked_assertions(self):
-        return self.badgeinstance_set.filter(revoked=False).exists()
 
     def notify_admins(self, badgr_app=None, renotify=False):
         """
@@ -686,7 +680,8 @@ class BadgeClass(ResizeUploadedImage,
         return self.badgeinstances.filter(revoked=False).exists()
 
     """
-    Included for legacy purposes. It is inefficient to routinely call this for badge classes with large numbers of assertions.
+    Included for legacy purposes. It is inefficient to routinely call this for
+    badge classes with large numbers of assertions.
     """
     @property
     def v1_api_recipient_count(self):
@@ -764,7 +759,9 @@ class BadgeClass(ResizeUploadedImage,
     def get_extensions_manager(self):
         return self.badgeclassextension_set
 
-    def issue(self, recipient_id=None, evidence=None, narrative=None, notify=False, created_by=None, allow_uppercase=False, badgr_app=None, recipient_type=RECIPIENT_TYPE_EMAIL, **kwargs):
+    def issue(self, recipient_id=None, evidence=None, narrative=None, notify=False,
+            created_by=None, allow_uppercase=False, badgr_app=None,
+            recipient_type=RECIPIENT_TYPE_EMAIL, **kwargs):
         return BadgeInstance.objects.create(
             badgeclass=self, recipient_identifier=recipient_id, recipient_type=recipient_type,
             narrative=narrative, evidence=evidence,
@@ -850,7 +847,8 @@ class BadgeClass(ResizeUploadedImage,
     def json(self):
         return self.get_json()
 
-    def get_filtered_json(self, excluded_fields=('@context', 'id', 'type', 'name', 'description', 'image', 'criteria', 'issuer')):
+    def get_filtered_json(self, excluded_fields=('@context', 'id', 'type', 'name',
+            'description', 'image', 'criteria', 'issuer')):
         return super(BadgeClass, self).get_filtered_json(excluded_fields=excluded_fields)
 
     @property
@@ -1185,7 +1183,8 @@ class BadgeInstance(BaseAuditedModel,
             pass
         return None
 
-    def get_json(self, obi_version=CURRENT_OBI_VERSION, expand_badgeclass=False, expand_issuer=False, include_extra=True, use_canonical_id=False):
+    def get_json(self, obi_version=CURRENT_OBI_VERSION, expand_badgeclass=False,
+            expand_issuer=False, include_extra=True, use_canonical_id=False):
         obi_version, context_iri = get_obi_context(obi_version)
 
         json = OrderedDict([
@@ -1292,7 +1291,9 @@ class BadgeInstance(BaseAuditedModel,
     def json(self):
         return self.get_json()
 
-    def get_filtered_json(self, excluded_fields=('@context', 'id', 'type', 'uid', 'recipient', 'badge', 'issuedOn', 'image', 'evidence', 'narrative', 'revoked', 'revocationReason', 'verify', 'verification')):
+    def get_filtered_json(self, excluded_fields=('@context', 'id', 'type', 'uid',
+            'recipient', 'badge', 'issuedOn', 'image', 'evidence', 'narrative', 'revoked',
+            'revocationReason', 'verify', 'verification')):
         filtered = super(BadgeInstance, self).get_filtered_json(excluded_fields=excluded_fields)
         # Ensure that the expires date string is in the expected ISO-85601 UTC format
         if filtered is not None and filtered.get('expires', None) and not str(filtered.get('expires')).endswith('Z'):

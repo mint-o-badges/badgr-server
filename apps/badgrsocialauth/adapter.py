@@ -13,7 +13,7 @@ from rest_framework.exceptions import AuthenticationFailed
 
 from badgeuser.authcode import accesstoken_for_authcode
 from badgrsocialauth.utils import set_session_verification_email, get_session_authcode, generate_provider_identifier
-from badgeuser.models import CachedEmailAddress, UserRecipientIdentifier
+from badgeuser.models import UserRecipientIdentifier
 from mainsite.models import BadgrApp
 
 
@@ -84,7 +84,8 @@ class BadgrSocialAccountAdapter(DefaultSocialAccountAdapter):
                     badgr_app = BadgrApp.objects.get_current(self.request)
                     redirect_url = "{url}?authError={message}".format(
                         url=badgr_app.ui_connect_success_redirect,
-                        message=urllib.parse.quote("Could not add social login. This account is already associated with a user."))
+                        message=urllib.parse.quote(
+                            "Could not add social login. This account is already associated with a user."))
                     raise ImmediateHttpResponse(HttpResponseRedirect(redirect_to=redirect_url))
             elif sociallogin.is_existing and len(sociallogin.email_addresses):
                 # See if we should mark an unverified email address as verified

@@ -1,16 +1,17 @@
-import base64
-import urllib.parse
-from allauth.tests import MockedResponse
+# import base64
+# import urllib.parse
+# from allauth.tests import MockedResponse
 
-from badgeuser.models import BadgeUser
-from badgrsocialauth.providers.tests.base import BadgrOAuth2TestsMixin, BadgrSocialAuthTestCase
-from badgrsocialauth.providers.tests.test_third_party import DoesNotSendVerificationEmailMixin
+# from badgeuser.models import BadgeUser
+# from badgrsocialauth.providers.tests.base import BadgrOAuth2TestsMixin, BadgrSocialAuthTestCase
+# from badgrsocialauth.providers.tests.test_third_party import DoesNotSendVerificationEmailMixin
 
-from .provider import VerifiedFacebookProvider
+# from .provider import VerifiedFacebookProvider
 
 # It doesn't seem as if facebook auth is still used. At least this test fails if activated
 # TODO: Remove if not needed anymore
-# class VerifiedFacebookProviderTests(DoesNotSendVerificationEmailMixin, BadgrOAuth2TestsMixin, BadgrSocialAuthTestCase):
+# class VerifiedFacebookProviderTests(DoesNotSendVerificationEmailMixin,
+#       BadgrOAuth2TestsMixin, BadgrSocialAuthTestCase):
 #    provider_id = VerifiedFacebookProvider.id
 #
 #    def get_mocked_response(self):

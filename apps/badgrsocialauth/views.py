@@ -8,19 +8,17 @@ import urllib.parse
 # from saml2.metadata import create_metadata_string
 from .saml2_utils import create_metadata_string
 
-from allauth.account.adapter import get_adapter
 from allauth.socialaccount.providers.base import AuthProcess
 from django.contrib.auth import logout
 from django.core.exceptions import ValidationError, ImproperlyConfigured
 from django.urls import reverse, NoReverseMatch
 from django.http import HttpResponseBadRequest, HttpResponseForbidden, HttpResponse
 from django.views.generic import RedirectView
-from django.shortcuts import redirect, render_to_response
+from django.shortcuts import redirect
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework import status
 
-from saml2 import BINDING_HTTP_POST, BINDING_HTTP_REDIRECT
+from saml2 import BINDING_HTTP_REDIRECT
 
 import logging
 
@@ -196,12 +194,14 @@ def create_saml_config_for(config):
         key_file = getattr(settings, 'SAML_KEY_FILE', None)
         if key_file is None:
             raise ImproperlyConfigured(
-                "Signed Authn request requires the path to a PEM formatted file containing the certificates private key")
+                "Signed Authn request requires the path to a PEM formatted file "
+                "containing the certificates private key")
 
         cert_file = getattr(settings, 'SAML_CERT_FILE', None)
         if cert_file is None:
             raise ImproperlyConfigured(
-                "Signed Authn request requires the path to a PEM formatted file containing the certificates public key")
+                "Signed Authn request requires the path to a PEM formatted file "
+                "containing the certificates public key")
 
         xmlsec_binary_path = getattr(settings, 'XMLSEC_BINARY_PATH', None)
         if xmlsec_binary_path is None:
@@ -295,7 +295,7 @@ class SamlProvisionRedirect(RedirectView):
             first_name = data['first_name']
             last_name = data['last_name']
 
-        except (TypeError, ValueError, AttributeError, KeyError, Saml2Configuration.DoesNotExist,) as e:
+        except (TypeError, ValueError, AttributeError, KeyError, Saml2Configuration.DoesNotExist,):
             return saml2_fail(authError="Could not process Saml2 Response.")
 
         if CachedEmailAddress.cached.filter(email__in=emails).count() > 0:

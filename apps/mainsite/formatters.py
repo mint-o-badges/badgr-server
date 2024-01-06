@@ -1,6 +1,4 @@
 # Created by wiggins@concentricsky.com on 8/27/15.
-
-import logging
 from pythonjsonlogger import jsonlogger
 from django.utils import timezone
 import datetime

@@ -23,7 +23,7 @@ class ValidImageValidator(object):
                 from PIL import Image
                 img = Image.open(image)
                 img.verify()
-            except Exception as e:
+            except Exception:
                 if not verify_svg(image):
                     raise ValidationError('Invalid image.')
             else:

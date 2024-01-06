@@ -1,7 +1,5 @@
 import oauth2_provider
-import rest_framework
 from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
 from rest_framework import permissions
 import rules
 
@@ -50,12 +48,16 @@ rules.add_perm('issuer.is_staff', is_on_staff)
 
 @rules.predicate
 def is_badgeclass_owner(user, badgeclass):
-    return any(staff.role == IssuerStaff.ROLE_OWNER for staff in badgeclass.cached_issuer.cached_issuerstaff() if staff.user_id == user.id)
+    return any(staff.role == IssuerStaff.ROLE_OWNER
+            for staff in badgeclass.cached_issuer.cached_issuerstaff()
+            if staff.user_id == user.id)
 
 
 @rules.predicate
 def is_badgeclass_editor(user, badgeclass):
-    return any(staff.role in [IssuerStaff.ROLE_EDITOR, IssuerStaff.ROLE_OWNER] for staff in badgeclass.cached_issuer.cached_issuerstaff() if staff.user_id == user.id)
+    return any(staff.role in [IssuerStaff.ROLE_EDITOR, IssuerStaff.ROLE_OWNER]
+            for staff in badgeclass.cached_issuer.cached_issuerstaff()
+            if staff.user_id == user.id)
 
 
 @rules.predicate

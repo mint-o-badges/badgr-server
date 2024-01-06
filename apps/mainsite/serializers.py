@@ -27,7 +27,8 @@ class ReadOnlyJSONField(serializers.CharField):
             return value
         else:
             raise serializers.ValidationError(
-                "WriteableJsonField: Did not get a JSON-serializable datatype from storage for this item: " + str(value))
+                "WriteableJsonField: Did not get a JSON-serializable datatype "
+                "from storage for this item: " + str(value))
 
 
 class WritableJSONField(ReadOnlyJSONField):
@@ -167,7 +168,7 @@ class LegacyVerifiedAuthTokenSerializer(AuthTokenSerializer):
             try:
                 email = user.cached_emails()[0]
                 email.send_confirmation()
-            except IndexError as e:
+            except IndexError:
                 pass
             raise ValidationError('You must verify your primary email address before you can sign in.')
         return attrs

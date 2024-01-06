@@ -1,4 +1,3 @@
-from apps import badgrlog
 import os
 import pytz
 import uuid
@@ -13,19 +12,18 @@ from django.core.validators import EmailValidator, URLValidator
 from django.db.models import Q
 from django.utils.html import strip_tags
 from django.utils import timezone
-from django.conf import settings
 from rest_framework import serializers
 
 from . import utils
 from badgeuser.serializers_v1 import BadgeUserProfileSerializerV1, BadgeUserIdentifierFieldV1
 from mainsite.drf_fields import ValidImageField
 from mainsite.models import BadgrApp
-from mainsite.serializers import DateTimeWithUtcZAtEndField, HumanReadableBooleanField, StripTagsCharField, MarkdownCharField, \
-    OriginalJsonSerializerMixin
+from mainsite.serializers import DateTimeWithUtcZAtEndField, HumanReadableBooleanField, \
+        StripTagsCharField, MarkdownCharField, OriginalJsonSerializerMixin
 from mainsite.utils import OriginSetting
-from mainsite.exceptions import BadgrValidationError, BadgrValidationFieldError
 from mainsite.validators import ChoicesValidator, BadgeExtensionValidator, PositiveIntegerValidator, TelephoneValidator
-from .models import Issuer, BadgeClass, IssuerStaff, BadgeInstance, BadgeClassExtension, RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL
+from .models import Issuer, BadgeClass, IssuerStaff, BadgeInstance, BadgeClassExtension, \
+        RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +125,8 @@ class IssuerSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
 
         if not user.is_email_verified(potential_email):
             raise serializers.ValidationError(
-                "Issuer email must be one of your verified addresses. Add this email to your profile and try again.")
+                "Issuer email must be one of your verified addresses. "
+                "Add this email to your profile and try again.")
 
         new_issuer = Issuer(**validated_data)
 
@@ -202,7 +201,8 @@ class IssuerRoleActionSerializerV1(serializers.Serializer):
         identifier_count = len(list(filter(None.__ne__, identifiers)))
         if identifier_count > 1:
             raise serializers.ValidationError(
-                'Please provided only one of the following: a username, email address, url, or telephone recipient identifier.'
+                'Please provided only one of the following: a username, email address, '
+                'url, or telephone recipient identifier.'
             )
         return attrs
 

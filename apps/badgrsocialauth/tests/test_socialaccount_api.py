@@ -49,7 +49,7 @@ class SocialAccountV2APITests(BadgrTestCase, SetupUserHelper):
     def test_can_get_socialaccounts_list_view_and_detail_operations(self):
         user = self.setup_user(authenticate=True)
 
-        socialaccount = SocialAccount.objects.create(
+        SocialAccount.objects.create(
             user=user, provider='twitter', uid='123', extra_data=json.loads(MOCK_TWITTER_PROFILE_RESPONSE)
         )
         samlaccount = Saml2Account.objects.create(
@@ -63,7 +63,7 @@ class SocialAccountV2APITests(BadgrTestCase, SetupUserHelper):
     def test_socialaccount_basic_operations_with_oauth_token_scope(self):
         user = self.setup_user(authenticate=True, token_scope='rw:profile')
 
-        socialaccount = SocialAccount.objects.create(
+        SocialAccount.objects.create(
             user=user, provider='twitter', uid='123', extra_data=json.loads(MOCK_TWITTER_PROFILE_RESPONSE)
         )
 

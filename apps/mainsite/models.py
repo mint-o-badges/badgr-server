@@ -8,14 +8,13 @@ import hmac
 
 from basic_models.models import CreatedUpdatedBy, CreatedUpdatedAt, IsActive
 from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.db import models, transaction
 from django.utils import timezone
 from oauthlib.common import generate_token
 
 import cachemodel
-from django.db.models import Manager
 from django.utils.deconstruct import deconstructible
 from oauth2_provider.models import AccessToken, Application, RefreshToken
 from rest_framework.authtoken.models import Token
@@ -311,7 +310,7 @@ class AccessTokenProxyManager(models.Manager):
         id = re.sub(r'^{}'.format(self.model.fake_entity_id_prefix), '', decoded)
         try:
             pk = int(id)
-        except ValueError as e:
+        except ValueError:
             raise self.model.DoesNotExist()
 
         return self.get(pk=pk)

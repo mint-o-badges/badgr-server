@@ -3,7 +3,7 @@ from django.utils import timezone
 from django.utils.timezone import timedelta
 
 from mainsite.tests.base import BadgrTestCase
-from mainsite.utils import (_expunge_stale_backoffs, clamped_backoff_in_seconds, clear_backoff_count_for_ip,
+from mainsite.utils import (clamped_backoff_in_seconds, clear_backoff_count_for_ip,
                             iterate_backoff_count,)
 
 SETTINGS_OVERRIDE = {

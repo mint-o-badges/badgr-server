@@ -1,6 +1,5 @@
 from allauth.socialaccount.providers.azure.provider import AzureProvider
 from urllib.parse import parse_qs, urlparse
-from allauth.socialaccount.providers.facebook.provider import FacebookProvider
 from allauth.socialaccount.providers.linkedin_oauth2.provider import LinkedInOAuth2Provider
 from allauth.tests import MockedResponse, mocked_response
 
@@ -9,14 +8,16 @@ from django.test import override_settings
 
 from badgeuser.models import CachedEmailAddress
 
-from .base import BadgrOAuth2TestsMixin, BadgrSocialAuthTestCase, DoesNotSendVerificationEmailMixin, SendsVerificationEmailMixin
+from .base import BadgrOAuth2TestsMixin, BadgrSocialAuthTestCase, DoesNotSendVerificationEmailMixin
 
 
-class LinkedInOAuth2ProviderTests(DoesNotSendVerificationEmailMixin, BadgrOAuth2TestsMixin, BadgrSocialAuthTestCase):
+class LinkedInOAuth2ProviderTests(DoesNotSendVerificationEmailMixin,
+        BadgrOAuth2TestsMixin, BadgrSocialAuthTestCase):
     provider_id = LinkedInOAuth2Provider.id
 
     def get_mocked_response(self):
-        email_response = MockedResponse(200, """{"elements": [{"handle": "urn:li:emailAddress:319371470",
+        email_response = MockedResponse(200,
+                """{"elements": [{"handle": "urn:li:emailAddress:319371470",
                "handle~": {"emailAddress": "larry.exampleton@example.com"}}]}""")
         email_response.ok = True
 

@@ -54,7 +54,8 @@ class ValidImageField(Base64FileField):
     def to_internal_value(self, data):
         # Skip http/https urls to avoid overwriting valid data when, for example, a client GETs and subsequently PUTs an
         # entity containing an image URL.
-        if self.skip_http and not isinstance(data, UploadedFile) and urllib.parse.urlparse(data).scheme in ('http', 'https'):
+        if (self.skip_http and not isinstance(data, UploadedFile)
+                and urllib.parse.urlparse(data).scheme in ('http', 'https')):
             raise SkipField()
 
         self.source_attrs = ['image']  # Kind of a dirty hack, because this is failing to stick if set on init.

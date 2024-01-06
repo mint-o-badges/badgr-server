@@ -1,6 +1,5 @@
 # Created by wiggins@concentricsky.com on 4/18/16.
 import cachemodel
-from django.conf import settings
 from django.urls import resolve, Resolver404
 
 from mainsite.utils import OriginSetting
@@ -21,7 +20,7 @@ class SlugOrJsonIdCacheModelManager(cachemodel.CacheModelManager):
             try:
                 r = resolve(path)
                 slug = r.kwargs.get(self.get_slug_kwarg_name())
-            except Resolver404 as e:
+            except Resolver404:
                 raise self.model.DoesNotExist
         return self.get(**{self.slug_field_name: slug})
 
@@ -31,7 +30,7 @@ class SlugOrJsonIdCacheModelManager(cachemodel.CacheModelManager):
             try:
                 r = resolve(path)
                 slug = r.kwargs.get(self.get_slug_kwarg_name())
-            except Resolver404 as e:
+            except Resolver404:
                 raise self.model.DoesNotExist
 
         return self.get_by_slug_or_entity_id(slug)

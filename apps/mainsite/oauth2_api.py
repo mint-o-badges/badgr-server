@@ -84,7 +84,7 @@ class AuthorizationApiView(OAuthLibMixin, APIView):
 
     def get(self, request, *args, **kwargs):
         application = None
-        client_id = request.query_params.get('client_id')
+        request.query_params.get('client_id')
         # Copy/Pasta'd from oauth2_provider.views.BaseAuthorizationView.get
         try:
             scopes, credentials = self.validate_authorization_request(request)

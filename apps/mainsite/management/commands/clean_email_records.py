@@ -26,7 +26,7 @@ class Command(BaseCommand):
                 # handle users who don't have an EmailAddress record
                 if emails.count() < 1 and user.email:
                     try:
-                        existing_email = CachedEmailAddress.objects.get(email=user.email)
+                        CachedEmailAddress.objects.get(email=user.email)
                     except CachedEmailAddress.DoesNotExist:
                         new_primary = CachedEmailAddress(
                             user=user, email=user.email, verified=False, primary=True
@@ -34,7 +34,9 @@ class Command(BaseCommand):
                         new_primary.save()
                         new_primary.send_confirmation(signup="canvas")
                     else:
-                        user.delete()  # User record has no email addresses and email address has been added under another account
+                        # User record has no email addresses and email address
+                        # has been added under another account
+                        user.delete()
                         continue
 
                     emails = CachedEmailAddress.objects.filter(user=user)

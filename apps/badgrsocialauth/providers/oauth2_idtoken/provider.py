@@ -31,7 +31,7 @@ class IdTokenProvider(OAuth2Provider):
         return str(data['sub'])
 
     def extract_common_fields(self, data):
-        logger.debug('{} | IdTokenProvider:extract_common_fields().data |  %s'.format(self.id, str(data)))
+        logger.debug('{} | IdTokenProvider:extract_common_fields().data |  {}'.format(self.id, str(data)))
         return {
             'first_name': data['given_name'],
             'last_name': data['family_name'],

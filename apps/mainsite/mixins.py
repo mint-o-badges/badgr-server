@@ -1,5 +1,4 @@
 import io
-import os
 
 from PIL import Image
 from django.conf import settings
@@ -10,8 +9,7 @@ from resizeimage.resizeimage import resize_contain
 
 from defusedxml.cElementTree import parse as safe_parse
 
-from mainsite.utils import verify_svg, scrubSvgElementTree, hash_for_image, convert_svg_to_png
-from mainsite.utils import verify_svg, scrubSvgElementTree, convert_svg_to_png
+from mainsite.utils import verify_svg, scrubSvgElementTree, hash_for_image
 
 
 def _decompression_bomb_check(image, max_pixels=Image.MAX_IMAGE_PIXELS):

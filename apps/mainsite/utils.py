@@ -291,7 +291,7 @@ def _expunge_stale_backoffs(backoff):
             an_hour_ago = timezone.now() - timezone.timedelta(hours=1)
             if backoff[key]['until'] < an_hour_ago:
                 raise ValueError('This client_ip backoff is expired and can be removed')
-        except (ValueError, TypeError, KeyError,) as e:
+        except (ValueError, TypeError, KeyError,):
             del backoff[key]
 
     if not len(backoff):
@@ -450,7 +450,7 @@ def hash_for_image(imageFileField):
             file_buffer = image_data.read(block_size)
         image_data.seek(0)
         return file_hash.hexdigest()
-    except:
+    except Exception:
         return ''
 
 

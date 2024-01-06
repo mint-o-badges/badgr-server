@@ -5,7 +5,6 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.admin import GroupAdmin
 from allauth.socialaccount.admin import SocialApp, SocialAppAdmin, SocialTokenAdmin, SocialAccountAdmin
 from allauth.account.admin import EmailAddressAdmin, EmailConfirmationAdmin
-import requests
 from allauth.socialaccount.models import SocialToken, SocialAccount
 from django.contrib import messages
 from django.contrib.admin import AdminSite, ModelAdmin, StackedInline, TabularInline

@@ -40,15 +40,16 @@ class _MigratingToBaseVersionedEntity(_AbstractVersionedEntity):
 
     Usage:
        1.) change ExistingModel to subclass from _MigratingToBaseVersionedEntity
-       2.) ./manage.py makemigrations existing_app  # existing_app.ExistingModel should get a migration that adds entity fields, default=None
+       2.) ./manage.py makemigrations existing_app
+           # existing_app.ExistingModel should get a migration that adds entity fields, default=None
        3.) ./manage.py makemigrations existing_app --empty  # build a data migration that will populate the new fields:
        example:
             operations = [
                 entity.db.migrations.PopulateEntityIdsMigration('existing_app', 'ExistingModel'),
-            ]   
-       4.) change ExistingModel to subclass from BaseVersionedEntity instead of _MigratingToBaseVersionedEntity
-       5.) ./manage.py makemigrations existing_app  # make migration that sets unique=True 
-
+            ]
+       4.) change ExistingModel to subclass from BaseVersionedEntity
+           instead of _MigratingToBaseVersionedEntity
+       5.) ./manage.py makemigrations existing_app  # make migration that sets unique=True
     """
     entity_id = models.CharField(max_length=254, blank=False, null=True, default=None)
 

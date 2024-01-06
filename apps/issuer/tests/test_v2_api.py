@@ -124,7 +124,8 @@ class AssertionsChangedSinceTests(SetupIssuerHelper, BadgrTestCase):
             client_id='clientApp-authcode-2', client_secret='testsecret', authorization_grant_type='authorization-code',
             user=None)
         AccessTokenProxy.objects.create(
-            user=unrelated_recipient, scope='rw:issuer r:profile r:backpack', expires=timezone.now() + timedelta(hours=1),
+            user=unrelated_recipient, scope='rw:issuer r:profile r:backpack',
+            expires=timezone.now() + timedelta(hours=1),
             token='abc3', application=unrelated_app
         )
 

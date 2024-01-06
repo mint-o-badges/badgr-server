@@ -6,7 +6,6 @@ from time import sleep
 
 import dateutil.parser
 import json
-from mock import patch
 from openbadges_bakery import unbake
 import png
 import pytz
@@ -807,7 +806,7 @@ class AssertionTests(SetupIssuerHelper, BadgrTestCase):
         test_issuer = self.setup_issuer(owner=test_user)
         test_badgeclass = self.setup_badgeclass(issuer=test_issuer)
 
-        non_editor_user = self.setup_user(authenticate=True)
+        self.setup_user(authenticate=True)
         assertion = {
             "email": "test2@example.com"
         }
@@ -1101,7 +1100,7 @@ class AssertionTests(SetupIssuerHelper, BadgrTestCase):
             issuer=test_issuer.entity_id,
             badge=test_badgeclass.entity_id,
         ))
-        badgeclass_data = response.data
+        response.data
         self.assertEqual(test_badgeclass.badgeinstances.filter(revoked=False).count(), original_recipient_count + 1)
 
     def test_batch_assertions_throws_400(self):
@@ -1353,7 +1352,8 @@ class V2ApiAssertionTests(SetupIssuerHelper, BadgrTestCase):
         ), new_assertion_props, format='json')
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()['fieldErrors']['recipient']['non_field_errors'][0], 'Enter a valid URL.')
-        # TODO this might be nicer if it were just a fieldError for recipient.identity or just was a non_field_error:[str] to begin with
+        # TODO this might be nicer if it were just a fieldError for recipient.identity
+        # or just was a non_field_error:[str] to begin with
 
     def test_v2_issue_by_badgeclassOpenBadgeId_permissions(self):
         test_user = self.setup_user(authenticate=True)
@@ -1626,7 +1626,7 @@ class AllowDuplicatesAPITests(SetupIssuerHelper, BadgrTestCase):
         test_user = self.setup_user(authenticate=True)
         test_issuer = self.setup_issuer(owner=test_user)
         test_badgeclass = self.setup_badgeclass(issuer=test_issuer)
-        existing_assertion = test_badgeclass.issue(
+        test_badgeclass.issue(
             'test3@example.com', expires_at=timezone.now() + timezone.timedelta(days=1)
         )
 
@@ -1645,7 +1645,7 @@ class AllowDuplicatesAPITests(SetupIssuerHelper, BadgrTestCase):
         test_user = self.setup_user(authenticate=True)
         test_issuer = self.setup_issuer(owner=test_user)
         test_badgeclass = self.setup_badgeclass(issuer=test_issuer)
-        existing_assertion = test_badgeclass.issue(
+        test_badgeclass.issue(
             'test3@example.com', expires_at=timezone.now() - timezone.timedelta(days=1)
         )
 

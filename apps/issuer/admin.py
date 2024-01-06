@@ -6,7 +6,6 @@ from django_object_actions import DjangoObjectActions
 from django.utils.safestring import mark_safe
 
 from mainsite.admin import badgr_admin
-from mainsite.mixins import ResizeUploadedImage
 
 from .models import Issuer, BadgeClass, BadgeInstance, BadgeInstanceEvidence, BadgeClassAlignment, BadgeClassTag, \
     BadgeClassExtension, IssuerExtension, BadgeInstanceExtension
@@ -38,7 +37,9 @@ class IssuerAdmin(DjangoObjectActions, ModelAdmin):
             'classes': ("collapse",)
         }),
         (None, {
-            'fields': ('image', 'name', 'url', 'email', 'verified', 'description', 'category', 'street', 'streetnumber', 'zip', 'city', 'badgrapp', 'lat', 'lon')
+            'fields': (
+                'image', 'name', 'url', 'email', 'verified', 'description', 'category',
+                'street', 'streetnumber', 'zip', 'city', 'badgrapp', 'lat', 'lon')
         }),
         ('JSON', {
             'fields': ('old_json',)
@@ -135,7 +136,8 @@ class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
     badge_image.allow_tags = True
 
     def issuer_link(self, obj):
-        return mark_safe('<a href="{}">{}</a>'.format(reverse("admin:issuer_issuer_change", args=(obj.issuer.id,)), obj.issuer.name))
+        return mark_safe('<a href="{}">{}</a>'.format(reverse("admin:issuer_issuer_change",
+            args=(obj.issuer.id,)), obj.issuer.name))
     issuer_link.allow_tags = True
 
     def redirect_instances(self, request, obj):
@@ -185,7 +187,9 @@ class BadgeInstanceAdmin(DjangoObjectActions, ModelAdmin):
             'fields': ('badgeclass', 'issuer')
         }),
         ('Assertion', {
-            'fields': ('entity_id', 'acceptance', 'recipient_type', 'recipient_identifier', 'image', 'issued_on', 'expires_at', 'narrative')
+            'fields': (
+                'entity_id', 'acceptance', 'recipient_type', 'recipient_identifier',
+                'image', 'issued_on', 'expires_at', 'narrative')
         }),
         ('Revocation', {
             'fields': ('revoked', 'revocation_reason')

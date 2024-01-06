@@ -10,8 +10,11 @@ with open(os.path.join(os.path.dirname(__file__), 'README.md')) as readme:
     README = readme.read()
 
 # execute version.py in the local namespace, but dont import the module.
-exec(compile(open(os.path.join(os.path.dirname(__file__), 'apps/mainsite/version.py'), "rb").read(), os.path.join(os.path.dirname(__file__), 'apps/mainsite/version.py'), 'exec'))
-version = ".".join(map(str, VERSION))
+exec(compile(open(os.path.join(os.path.dirname(__file__), 'apps/mainsite/version.py'),
+    "rb").read(), os.path.join(os.path.dirname(__file__), 'apps/mainsite/version.py'),
+    'exec'))
+# TODO: Where is VERSION defined?
+version = ".".join(map(str, VERSION))  # noqa: F821
 
 
 def _clean_version_tag(tag):

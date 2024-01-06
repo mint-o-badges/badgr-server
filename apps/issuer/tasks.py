@@ -2,7 +2,6 @@
 import os
 
 import dateutil
-import itertools
 import requests
 from celery.utils.log import get_task_logger
 from django.conf import settings
@@ -16,7 +15,7 @@ from issuer.managers import resolve_source_url_referencing_local_object
 from issuer.models import BadgeClass, BadgeInstance, Issuer
 from issuer.utils import CURRENT_OBI_VERSION
 from mainsite.celery import app
-from mainsite.utils import OriginSetting, convert_svg_to_png, verify_svg
+from mainsite.utils import convert_svg_to_png, verify_svg
 
 logger = get_task_logger(__name__)
 badgrLogger = badgrlog.BadgrLogger()
@@ -25,7 +24,8 @@ background_task_queue_name = getattr(settings, 'BACKGROUND_TASK_QUEUE_NAME', 'de
 badgerank_task_queue_name = getattr(settings, 'BADGERANK_TASK_QUEUE_NAME', 'default')
 
 
-@app.task(bind=True, queue=badgerank_task_queue_name, autoretry_for=(ConnectionError,), retry_backoff=True, max_retries=10)
+@app.task(bind=True, queue=badgerank_task_queue_name, autoretry_for=(ConnectionError,),
+        retry_backoff=True, max_retries=10)
 def notify_badgerank_of_badgeclass(self, badgeclass_pk):
     badgerank_enabled = getattr(settings, 'BADGERANK_NOTIFY_ENABLED', True)
     if not badgerank_enabled:
@@ -82,7 +82,8 @@ def rebake_all_assertions(self, obi_version=CURRENT_OBI_VERSION, limit=None, off
 
 
 @app.task(bind=True, queue=background_task_queue_name)
-def rebake_all_assertions_for_badge_class(self, badge_class_id, obi_version=CURRENT_OBI_VERSION, limit=None, offset=0, replay=False):
+def rebake_all_assertions_for_badge_class(self, badge_class_id,
+        obi_version=CURRENT_OBI_VERSION, limit=None, offset=0, replay=False):
     queryset = BadgeInstance.objects.filter(badgeclass_id=badge_class_id, source_url__isnull=True).order_by("pk")
     if limit:
         queryset = queryset[offset:offset + limit]
@@ -113,7 +114,7 @@ def rebake_assertion_image(self, assertion_entity_id=None, obi_version=CURRENT_O
 
     try:
         assertion = BadgeInstance.cached.get(entity_id=assertion_entity_id)
-    except BadgeInstance.DoesNotExist as e:
+    except BadgeInstance.DoesNotExist:
         return {
             'success': False,
             'error': "Unknown assertion entity_id={}".format(assertion_entity_id)
@@ -122,7 +123,8 @@ def rebake_assertion_image(self, assertion_entity_id=None, obi_version=CURRENT_O
     if assertion.source_url:
         return {
             'success': False,
-            'error': "Skipping imported assertion={}  source_url={}".format(assertion_entity_id, assertion.source_url)
+            'error': "Skipping imported assertion={}  source_url={}".format(assertion_entity_id,
+                assertion.source_url)
         }
 
     assertion.rebake(obi_version=obi_version)

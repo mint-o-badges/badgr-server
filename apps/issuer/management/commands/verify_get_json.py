@@ -26,7 +26,7 @@ class Command(BaseCommand):
         for obj in model_cls.objects.all():
             new_json = obj.get_json()
             orig_json = obj.old_json
-            if cmp(new_json, orig_json) != 0:
+            if new_json != orig_json:
                 if self.verbosity > 1:
                     self.stdout.write("  Jsons don't match! pk={}\n  old: {}\n  new: {}\n\n".format(
                         obj.pk, sorted_dict(orig_json), sorted_dict(new_json)))

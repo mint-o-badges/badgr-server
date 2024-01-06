@@ -1,7 +1,4 @@
 # encoding: utf-8
-
-
-from apispec_drf.decorators import apispec_list_operation
 from rest_framework.exceptions import ValidationError
 
 from entity.api import BaseEntityListView, BaseEntityDetailView

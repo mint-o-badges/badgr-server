@@ -7,13 +7,11 @@ from urllib.parse import quote_plus
 import os
 import base64
 
-from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.files.images import get_image_dimensions
 from django.test import override_settings
-from django.urls import reverse
 from django.utils import timezone
 from oauth2_provider.models import Application
 
@@ -61,7 +59,7 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
 
     def test_create_issuer_if_authenticated(self):
         test_user = self.setup_user(authenticate=True)
-        issuer_email = CachedEmailAddress.objects.create(
+        CachedEmailAddress.objects.create(
             user=test_user, email=self.example_issuer_props['email'], verified=True)
 
         response = self.client.post('/v1/issuer/issuers', self.example_issuer_props)
@@ -78,7 +76,7 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
         slug = response.data.get('slug')
 
         issuer = Issuer.cached.get(entity_id=slug)
-        badgrapp = issuer.cached_badgrapp  # warm the cache
+        issuer.cached_badgrapp  # warm the cache
         # assert that the issuer was published to and fetched from the cache
         with self.assertNumQueries(0):
             response = self.client.get('/v1/issuer/issuers/{}'.format(slug))
@@ -92,7 +90,7 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
 
     def _create_issuer_with_image_and_test_resizing(self, image_path, desired_width=400, desired_height=400):
         test_user = self.setup_user(authenticate=True)
-        issuer_email = CachedEmailAddress.objects.create(
+        CachedEmailAddress.objects.create(
             user=test_user, email=self.example_issuer_props['email'], verified=True)
 
         with open(image_path, 'rb') as badge_image:
@@ -143,7 +141,7 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
         image = open(image_path, 'rb')
         encoded = 'data:image/png;base64,' + base64.b64encode(image.read()).decode()
 
-        issuer_email = CachedEmailAddress.objects.create(
+        CachedEmailAddress.objects.create(
                 user=test_user, email=self.example_issuer_props['email'], verified=True)
 
         issuer_fields_with_image = self.example_issuer_props.copy()
@@ -171,7 +169,7 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
         self.assertEqual(update_image_height, desired_height)
 
     def test_update_issuer_does_not_clear_badgrDomain(self):
-        badgr_app_two = BadgrApp.objects.create(cors='somethingelse.example.com', name='two')
+        BadgrApp.objects.create(cors='somethingelse.example.com', name='two')
         test_user = self.setup_user(authenticate=True)
         issuer = self.setup_issuer(owner=test_user)
         issuer.badgrapp = self.badgr_app
@@ -260,7 +258,7 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
             'category': 'Awesome category!'
         }
 
-        issuer_email_1 = CachedEmailAddress.objects.create(
+        CachedEmailAddress.objects.create(
             user=test_user, email=original_issuer_props['email'], verified=True)
 
         response = self.client.post('/v1/issuer/issuers', original_issuer_props)
@@ -274,7 +272,7 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
             'category': 'Awesome category 2!'
         }
 
-        issuer_email_2 = CachedEmailAddress.objects.create(
+        CachedEmailAddress.objects.create(
             user=test_user, email=updated_issuer_props['email'], verified=True)
 
         response = self.client.put('/v1/issuer/issuers/{}'.format(response_slug), updated_issuer_props)
@@ -317,7 +315,7 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
         self.assertEqual(len(response.data), 2)  # Assert that there is now one editor
 
     def test_add_user_to_issuer_editors_set_by_email_with_issueradmin_scope(self):
-        test_user = self.setup_user(authenticate=True, token_scope='rw:serverAdmin')
+        self.setup_user(authenticate=True, token_scope='rw:serverAdmin')
         test_owner = self.setup_user(authenticate=False)
         issuer = self.setup_issuer(owner=test_owner)
         other_user = self.setup_user(authenticate=False)
@@ -370,7 +368,8 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
         })
         self.assertEqual(response.status_code, 404)
         self.assertEqual(
-            response.data, 'User not found. please provide a valid email address, username, url or telephone identifier.')
+            response.data,
+            'User not found. please provide a valid email address, username, url or telephone identifier.')
 
     def test_bad_action_issuer_editors_set(self):
         test_user = self.setup_user(authenticate=True)
@@ -393,10 +392,10 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
             'username': erroneous_username,
             'role': 'editor'
         })
-        self.assertContains(response, "User not found.".format(erroneous_username), status_code=404)
+        self.assertContains(response, "User {} not found.".format(erroneous_username), status_code=404)
 
     def test_add_user_to_nonexistent_issuer_editors_set(self):
-        test_user = self.setup_user(authenticate=True)
+        self.setup_user(authenticate=True)
         erroneous_issuer_slug = 'wrongissuer'
         response = self.client.post(
             '/v1/issuer/issuers/{slug}/staff'.format(slug=erroneous_issuer_slug),
@@ -448,7 +447,7 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
             'role': 'editor'
         })
         self.assertEqual(second_response.status_code, 200)
-        staff = test_issuer.staff.all()
+        test_issuer.staff.all()
         self.assertEqual(test_issuer.editors.count(), 2)
 
     def test_modify_the_staff_role_of_a_user_by_url_recipient_identifier(self):
@@ -573,7 +572,7 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
 
         # Now with more feeling, and the right phone number format
         recipient_phone = "+15415551111"
-        telephone_id = UserRecipientIdentifier.objects.create(
+        UserRecipientIdentifier.objects.create(
             identifier=recipient_phone,
             type=UserRecipientIdentifier.IDENTIFIER_TYPE_TELEPHONE,
             user=user,
@@ -666,7 +665,7 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
         self.assertEqual(response.status_code, 400)
 
     def test_cant_create_issuer_with_unverified_email_v1(self):
-        test_user = self.setup_user(authenticate=True)
+        self.setup_user(authenticate=True)
         new_issuer_props = {
             'name': 'Test Issuer Name',
             'description': 'Test issuer description',
@@ -682,7 +681,7 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
             'Issuer email must be one of your verified addresses. Add this email to your profile and try again.')
 
     def test_cant_create_issuer_with_unverified_email_v2(self):
-        test_user = self.setup_user(authenticate=True)
+        self.setup_user(authenticate=True)
         new_issuer_props = {
             'name': 'Test Issuer Name',
             'description': 'Test issuer description',
@@ -699,7 +698,7 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
     def test_trusted_user_can_create_issuer_with_unverified_email(self):
         test_user = self.setup_user(authenticate=True)
         application = Application.objects.create(user=test_user)
-        app_info = ApplicationInfo.objects.create(application=application, trust_email_verification=True)
+        ApplicationInfo.objects.create(application=application, trust_email_verification=True)
 
         new_issuer_props = {
             'name': 'Test Issuer Name',
@@ -721,7 +720,7 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
         # issuer_email = CachedEmailAddress.objects.create(
         #     user=test_user, email=self.example_issuer_props['email'], verified=True)
 
-        email_staff = self.setup_user()
+        self.setup_user()
 
         url_staff = self.setup_user(email="", create_email_address=False)
         url_for_staff = UserRecipientIdentifier.objects.create(type=UserRecipientIdentifier.IDENTIFIER_TYPE_URL,
@@ -735,9 +734,10 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
         phone_for_staff = UserRecipientIdentifier.objects.create(type=UserRecipientIdentifier.IDENTIFIER_TYPE_TELEPHONE,
                                                                  identifier='+5555555555',
                                                                  user=phone_staff, verified=True)
-        phone_for_staff2 = UserRecipientIdentifier.objects.create(type=UserRecipientIdentifier.IDENTIFIER_TYPE_TELEPHONE,
-                                                                 identifier='+5555555556',
-                                                                 user=phone_staff, verified=False)
+        phone_for_staff2 = UserRecipientIdentifier.objects.create(
+                type=UserRecipientIdentifier.IDENTIFIER_TYPE_TELEPHONE,
+                identifier='+5555555556',
+                user=phone_staff, verified=False)
 
         issuer = self.setup_issuer(owner=test_user)
 
@@ -787,13 +787,13 @@ class IssuerTests(SetupOAuth2ApplicationHelper, SetupIssuerHelper, BadgrTestCase
         issuer_owner = self.setup_user(authenticate=False)
         test_issuer = self.setup_issuer(owner=issuer_owner)
 
-        user = self.setup_user(email='lilstudent@example.com')
+        self.setup_user(email='lilstudent@example.com')
         client_app_user = self.setup_user(email='clientApp@example.com', token_scope='rw:issuerOwner:*')
         app = Application.objects.create(
             client_id='clientApp-authcode', client_secret='testsecret', authorization_grant_type='authorization-code',
             user=client_app_user)
         ApplicationInfo.objects.create(application=app, allowed_scopes='rw:issuerOwner*')
-        t = AccessTokenProxy.objects.create(
+        AccessTokenProxy.objects.create(
             user=client_app_user, scope='rw:issuerOwner:' + test_issuer.entity_id,
             expires=timezone.now() + timezone.timedelta(hours=1),
             token='123', application=app
@@ -844,13 +844,13 @@ class IssuersChangedApplicationTests(SetupIssuerHelper, BadgrTestCase):
     def test_application_can_get_changed_issuers(self):
         issuer_user = self.setup_user(authenticate=True, verified=True, token_scope='rw:serverAdmin')
         test_issuer = self.setup_issuer(owner=issuer_user)
-        test_issuer2 = self.setup_issuer(owner=issuer_user)
-        test_issuer3 = self.setup_issuer(owner=issuer_user)
+        self.setup_issuer(owner=issuer_user)
+        self.setup_issuer(owner=issuer_user)
 
         other_user = self.setup_user(authenticate=False, verified=True)
-        other_issuer = self.setup_issuer(owner=other_user)
-        other_issuer2 = self.setup_issuer(owner=other_user)
-        other_issuer3 = self.setup_issuer(owner=other_user)
+        self.setup_issuer(owner=other_user)
+        self.setup_issuer(owner=other_user)
+        self.setup_issuer(owner=other_user)
 
         response = self.client.get('/v2/issuers/changed')
         self.assertEqual(response.status_code, 200)
@@ -880,7 +880,7 @@ class ApprovedIssuersOnlyTests(SetupIssuerHelper, BadgrTestCase):
     @override_settings(BADGR_APPROVED_ISSUERS_ONLY=True)
     def test_unapproved_user_cannot_create_issuer(self):
         test_user = self.setup_user(authenticate=True)
-        issuer_email = CachedEmailAddress.objects.create(
+        CachedEmailAddress.objects.create(
             user=test_user, email=self.example_issuer_props['email'], verified=True)
 
         response = self.client.post('/v2/issuers', self.example_issuer_props)
@@ -889,7 +889,7 @@ class ApprovedIssuersOnlyTests(SetupIssuerHelper, BadgrTestCase):
     @override_settings(BADGR_APPROVED_ISSUERS_ONLY=True)
     def test_approved_user_can_create_issuer(self):
         test_user = self.setup_user(authenticate=True)
-        issuer_email = CachedEmailAddress.objects.create(
+        CachedEmailAddress.objects.create(
             user=test_user, email=self.example_issuer_props['email'], verified=True)
 
         permission = Permission.objects.get_by_natural_key('add_issuer', 'issuer', 'issuer')

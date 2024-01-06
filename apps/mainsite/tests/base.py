@@ -13,7 +13,7 @@ from django.utils import timezone
 from oauth2_provider.models import Application
 from rest_framework.test import APITransactionTestCase
 
-from badgeuser.models import BadgeUser, TermsVersion, UserRecipientIdentifier
+from badgeuser.models import BadgeUser, TermsVersion
 from issuer.models import Issuer, BadgeClass
 from mainsite import TOP_DIR
 from mainsite.models import BadgrApp, ApplicationInfo, AccessTokenProxy
@@ -45,7 +45,7 @@ class SetupOAuth2ApplicationHelper(object):
         )
 
         if allowed_scopes:
-            application_info = ApplicationInfo.objects.create(
+            ApplicationInfo.objects.create(
                 application=application,
                 name=name,
                 allowed_scopes=allowed_scopes,
@@ -98,7 +98,8 @@ class SetupUserHelper(object):
 
         if token_scope:
             app = Application.objects.create(
-                client_id='test', client_secret='testsecret', authorization_grant_type='client-credentials',  # 'authorization-code'
+                client_id='test', client_secret='testsecret',
+                authorization_grant_type='client-credentials',  # 'authorization-code'
                 user=user)
             token = AccessTokenProxy.objects.create(
                 user=user, scope=token_scope, expires=timezone.now() + timedelta(hours=1),

@@ -352,7 +352,7 @@ class TestRemoteFileToStorage(SetupIssuerHelper, BadgrTestCase):
 
         try:
             shutil.rmtree(dir)
-        except OSError as e:
+        except OSError:
             print(("%s does not exist and was not deleted" % 'me'))
 
     def mimic_hashed_file_name(self, name, ext=''):
@@ -372,7 +372,7 @@ class TestRemoteFileToStorage(SetupIssuerHelper, BadgrTestCase):
     @responses.activate
     def test_svg_without_extension(self):
         expected_extension = '.svg'
-        expected_file_name = self.mimic_hashed_file_name(self.test_url, expected_extension)
+        self.mimic_hashed_file_name(self.test_url, expected_extension)
 
         responses.add(
             responses.GET,
@@ -440,20 +440,20 @@ class TestRemoteFileToStorage(SetupIssuerHelper, BadgrTestCase):
     @responses.activate
     def test_png_without_extension(self):
         expected_extension = '.png'
-        expected_file_name = self.mimic_hashed_file_name(self.test_url, expected_extension)
+        self.mimic_hashed_file_name(self.test_url, expected_extension)
 
         responses.add(
                 responses.GET,
                 self.test_url,
                 body=open(self.get_test_png_with_no_extension_image_path(), 'rb').read(),
                 status=200
-            )
+                )
 
         status_code, storage_name = fetch_remote_file_to_storage(
             self.test_url,
             upload_to=self.test_uploaded_path,
             allowed_mime_types=self.mime_types
-        )
+            )
 
         self.assertTrue(storage_name.endswith(expected_extension))
         self.assertTrue(default_storage.size(storage_name) > 0)
@@ -461,14 +461,14 @@ class TestRemoteFileToStorage(SetupIssuerHelper, BadgrTestCase):
     @responses.activate
     def test_png_with_extension(self):
         expected_extension = '.png'
-        expected_file_name = self.mimic_hashed_file_name(self.test_url, expected_extension)
+        self.mimic_hashed_file_name(self.test_url, expected_extension)
 
         responses.add(
                 responses.GET,
                 self.test_url,
                 body=open(self.get_test_png_image_path(), 'rb').read(),
                 status=200
-            )
+                )
 
         status_code, storage_name = fetch_remote_file_to_storage(
             self.test_url,
@@ -552,7 +552,7 @@ class TestRemoteFileToStorage(SetupIssuerHelper, BadgrTestCase):
     @responses.activate
     def test_jpeg_with_extension(self):
         expected_extension = '.jpeg'
-        expected_file_name = self.mimic_hashed_file_name(self.test_url, expected_extension)
+        self.mimic_hashed_file_name(self.test_url, expected_extension)
 
         responses.add(
             responses.GET,

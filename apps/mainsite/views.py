@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.urls import reverse_lazy
 from django.db import IntegrityError
-from django.http import HttpResponseServerError, HttpResponseNotFound, HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseServerError, HttpResponseNotFound, HttpResponseRedirect
 from django.shortcuts import redirect
 from django.template import loader
 from django.template.exceptions import TemplateDoesNotExist
@@ -148,7 +148,7 @@ def email_unsubscribe(request, *args, **kwargs):
         logger.event(badgrlog.BlacklistUnsubscribeRequestSuccessEvent(email))
     except IntegrityError:
         pass
-    except:
+    except Exception:
         logger.event(badgrlog.BlacklistUnsubscribeRequestFailedEvent(email))
         return email_unsubscribe_response(
             request, "Failed to unsubscribe email.",
@@ -230,7 +230,9 @@ class SitewideActionFormView(FormView):
 class RedirectToUiLogin(RedirectView):
     def get_redirect_url(self, *args, **kwargs):
         badgrapp = BadgrApp.objects.get_current()
-        return badgrapp.ui_login_redirect if badgrapp.ui_login_redirect is not None else badgrapp.email_confirmation_redirect
+        return (badgrapp.ui_login_redirect
+                if badgrapp.ui_login_redirect is not None
+                else badgrapp.email_confirmation_redirect)
 
 
 class DocsAuthorizeRedirect(RedirectView):

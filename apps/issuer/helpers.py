@@ -252,7 +252,9 @@ class BadgeCheckHelper(object):
                 issuer, issuer_created = Issuer.objects.get_or_create_from_ob2(
                     issuer_obo, original_json=original_json.get(issuer_obo.get('id')), image=issuer_image)
                 badgeclass, badgeclass_created = BadgeClass.objects.get_or_create_from_ob2(
-                    issuer, badgeclass_obo, original_json=original_json.get(badgeclass_obo.get('id')), image=badgeclass_image)
+                    issuer, badgeclass_obo,
+                    original_json=original_json.get(badgeclass_obo.get('id')),
+                    image=badgeclass_image)
                 if badgeclass_created and (
                         getattr(settings, 'BADGERANK_NOTIFY_ON_BADGECLASS_CREATE', True)
                         or getattr(settings, 'BADGERANK_NOTIFY_ON_FIRST_ASSERTION', True)
@@ -274,7 +276,7 @@ class BadgeCheckHelper(object):
     def get_assertion_obo(cls, badge_instance):
         try:
             response = openbadges.verify(badge_instance.source_url, recipient_profile=None, **cls.badgecheck_options())
-        except ValueError as e:
+        except ValueError:
             return None
 
         report = response.get('report', {})

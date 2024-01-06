@@ -1,15 +1,15 @@
 # encoding: utf-8
+# TODO: Is this still used?
 
+# import responses
 
-import responses
+# from allauth.socialaccount.models import SocialAccount, SocialApp
+# from django.shortcuts import reverse
+# from django.contrib.sites.models import Site
+# from django.test import override_settings
 
-from allauth.socialaccount.models import SocialAccount, SocialApp
-from django.shortcuts import reverse
-from django.contrib.sites.models import Site
-from django.test import override_settings
-
-from badgeuser.models import BadgeUser, UserRecipientIdentifier
-from mainsite.tests import BadgrTestCase
+# from badgeuser.models import BadgeUser, UserRecipientIdentifier
+# from mainsite.tests import BadgrTestCase
 
 MOCK_TWITTER_PROFILE_RESPONSE = """
 {"follow_request_sent":false,"profile_use_background_image":true,"id":45671919,"verified":false,

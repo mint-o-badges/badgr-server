@@ -249,17 +249,21 @@ class PublicAPITests(SetupIssuerHelper, BadgrTestCase):
 
     def test_get_assertion_html_redirects_to_frontend(self):
         badgr_app = BadgrApp(
-            cors='frontend.ui', is_default=True, signup_redirect='http://frontend.ui/signup', public_pages_redirect='http://frontend.ui/public'
+            cors='frontend.ui', is_default=True, signup_redirect='http://frontend.ui/signup',
+            public_pages_redirect='http://frontend.ui/public'
         )
         badgr_app.save()
 
         badgr_app_two = BadgrApp(cors='stuff.com', is_default=False,
-                                 signup_redirect='http://stuff.com/signup', public_pages_redirect='http://stuff.com/public')
+                                 signup_redirect='http://stuff.com/signup',
+                                 public_pages_redirect='http://stuff.com/public')
         badgr_app_two.save()
 
         redirect_accepts = [
-            {'HTTP_ACCEPT': 'application/xml,application/xhtml+xml,text/html;q=0.9, text/plain;q=0.8,image/png,*/*;q=0.5'},  # safari/chrome
-            {'HTTP_ACCEPT': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'},  # firefox
+            {'HTTP_ACCEPT': ('application/xml,application/xhtml+xml,text/html;q=0.9, '
+                'text/plain;q=0.8,image/png,*/*;q=0.5')},  # safari/chrome
+            {'HTTP_ACCEPT': ('text/html,application/xhtml+xml,application/xml;q=0.9,'
+                '*/*;q=0.8')},  # firefox
             {'HTTP_ACCEPT': 'text/html, application/xhtml+xml, image/jxr, */*'},  # edge
         ]
         json_accepts = [
@@ -391,8 +395,8 @@ class PendingAssertionsPublicAPITests(SetupIssuerHelper, BadgrTestCase):
 
         with mock.patch('mainsite.blacklist.api_query_is_in_blacklist',
                         new=lambda a, b: False):
-            post_resp = self.client.post('/v2/backpack/import', post_input,
-                                         format='json')
+            self.client.post('/v2/backpack/import', post_input,
+                    format='json')
         assertion = BadgeInstance.objects.first()
 
         self.client.logout()
@@ -488,7 +492,8 @@ class PublicReverificationTests(SetupIssuerHelper, BadgrTestCase, Ob2Generators)
             # openbadges.verify response (Revoked)
             mock_verify.return_value = {
                 'graph': [
-                    {**assertion_ob2, "revocationReason": revocation_reason, "revoked": True}, badgeclass_ob2, issuer_ob2
+                    {**assertion_ob2, "revocationReason": revocation_reason,
+                        "revoked": True}, badgeclass_ob2, issuer_ob2
                 ]
             }
 

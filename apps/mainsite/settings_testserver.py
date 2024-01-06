@@ -1,13 +1,14 @@
 # It doesn't seem as if this file is still being used.
 # TODO: Remove if true
-from mainsite.settings import *
+from mainsite.settings import *  # noqa: F403
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'badgr',
         'OPTIONS': {
-            # "init_command": "SET storage_engine=InnoDB",  # Uncomment when using MySQL to ensure consistency across servers
+            # Uncomment when using MySQL to ensure consistency across servers
+            # "init_command": "SET storage_engine=InnoDB",
         },
     }
 }
@@ -27,7 +28,10 @@ PASSWORD_HASHERS = (
     'django.contrib.auth.hashers.MD5PasswordHasher',
 )
 DEBUG = False
-logging.disable(logging.CRITICAL)
+try:
+    logging.disable(logging.CRITICAL)  # noqa: F405
+except NameError:
+    print("logging undefined!")
 
 # EMAIL_BACKEND = "django.core.mail.backends.dummy.EmailBackend"
 

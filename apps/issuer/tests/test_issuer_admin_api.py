@@ -1,15 +1,9 @@
 # encoding: utf-8
-
-
-import os
-from django.core.files.images import get_image_dimensions
-from django.urls import reverse
 from django.utils import timezone
-from oauth2_provider.models import Application
 
 from badgeuser.models import TermsVersion
-from issuer.models import Issuer, BadgeClass, IssuerStaff
-from mainsite.models import ApplicationInfo, AccessTokenProxy, BadgrApp
+from issuer.models import Issuer
+from mainsite.models import AccessTokenProxy, BadgrApp
 from mainsite.tests import SetupOAuth2ApplicationHelper
 from mainsite.tests.base import BadgrTestCase, SetupIssuerHelper
 
@@ -105,7 +99,7 @@ class IssuerAdminTests(BadgrTestCase, SetupIssuerHelper, SetupOAuth2ApplicationH
 
     def test_can_get_assertion_lists(self):
         badgeclass = self.setup_badgeclass(issuer=self.issuer, name='Example', criteria_text='Just earn it')
-        assertion = badgeclass.issue(recipient_id='someone@somewhere.com')
+        badgeclass.issue(recipient_id='someone@somewhere.com')
 
         # can get badgeclass-specific assertion list
         response = self.client.get('/v2/badgeclasses/{}/assertions'.format(badgeclass.entity_id))
@@ -128,7 +122,7 @@ class IssuerAdminTests(BadgrTestCase, SetupIssuerHelper, SetupOAuth2ApplicationH
         self.assertEqual(response.status_code, 201)
 
     def can_post_staff_v1(self):
-        staffer_user = self.setup_user(email='some_cool_staffer@example.com', verified=True)
+        self.setup_user(email='some_cool_staffer@example.com', verified=True)
         staff_action = {
             'action': 'add',
             'email': 'some_cool_staffer@example.com',

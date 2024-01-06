@@ -63,7 +63,7 @@ class TestBadgrApp(SetupUserHelper, SetupIssuerHelper, APITransactionTestCase, C
             cors='one.example.com',
             signup_redirect='https://one.example.com/start'
         )
-        ba_two = BadgrApp.objects.create(
+        BadgrApp.objects.create(
             cors='two.example.com',
             signup_redirect='https://two.example.com/start'
         )
@@ -84,7 +84,7 @@ class TestBadgrApp(SetupUserHelper, SetupIssuerHelper, APITransactionTestCase, C
             app.delete()
 
     def test_get_by_id_or_pk(self):
-        ba_one = BadgrApp.objects.get_by_id_or_default()
+        BadgrApp.objects.get_by_id_or_default()
         ba_two = BadgrApp.objects.create(
             name='The Original and Best',
             cors='one.example.com',

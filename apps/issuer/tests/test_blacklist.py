@@ -1,7 +1,4 @@
 # encoding: utf-8
-
-
-import json
 import responses
 
 from django.core.exceptions import ValidationError

@@ -1,12 +1,8 @@
 import os
-import pkg_resources
-import sys
 
 from django.core.management import call_command
-from django.core.management.base import BaseCommand, CommandError
-from subprocess import call
+from django.core.management.base import BaseCommand
 
-import mainsite
 from mainsite import TOP_DIR
 
 

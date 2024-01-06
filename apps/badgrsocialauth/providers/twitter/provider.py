@@ -1,11 +1,5 @@
-from urllib.parse import urlparse
-
-from allauth.account.models import EmailAddress
 from allauth.socialaccount import providers
 from allauth.socialaccount.providers.twitter.provider import TwitterProvider, TwitterAccount
-from django.core.exceptions import ValidationError
-
-from badgeuser.models import UserRecipientIdentifier
 
 
 class TwitterProviderWithIdentifier(TwitterProvider):
