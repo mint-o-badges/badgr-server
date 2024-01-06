@@ -1409,12 +1409,20 @@ class BadgeClassesChangedApplicationTests(SetupIssuerHelper, BadgrTestCase):
         test_issuer = self.setup_issuer(owner=issuer_user)
         test_badgeclass = self.setup_badgeclass(
             issuer=test_issuer, name='Badge Class 1', description='test')
+        self.setup_badgeclass(
+            issuer=test_issuer, name='Badge Class 2', description='test')
+        self.setup_badgeclass(
+            issuer=test_issuer, name='Badge Class 3', description='test')
 
         other_user = self.setup_user(authenticate=False, verified=True)
         other_issuer = self.setup_issuer(owner=other_user)
 
         self.setup_badgeclass(
             issuer=other_issuer, name='Badge Class 1', description='test')
+        self.setup_badgeclass(
+            issuer=other_issuer, name='Badge Class 2', description='test')
+        self.setup_badgeclass(
+            issuer=other_issuer, name='Badge Class 3', description='test')
 
         response = self.client.get('/v2/badgeclasses/changed')
         self.assertEqual(response.status_code, 200)
