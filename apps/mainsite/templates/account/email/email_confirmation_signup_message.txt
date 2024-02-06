@@ -1,7 +1,7 @@
-Bitte verifiziere Deine Email-Adresse auf myBadges, 
+Bitte verifiziere Deine Email-Adresse auf openbadges, 
 {{ email.email }}
 
-Bestätige Deine Email-Adresse, um Deinen myBadges Account zu aktivieren.
+Bestätige Deine Email-Adresse, um Deinen openbadges Account zu aktivieren.
 Klicke auf den Link oder kopiere ihn in die Adresszeile Deines Browsers.
 
 {{ activate_url }}

@@ -1,8 +1,8 @@
-Bitte bestätige Deine Email-Adresse auf myBadges,
+Bitte bestätige Deine Email-Adresse auf openbadges,
 {{ email.email }}
 
-Ein*e myBadges Nutzer*in hat angefragt diese Email-Adresse zu ihrem/seinem Account hinzuzufügen oder sie in einer verknüpften Anwendung zu nutzen.
-Wenn bestätigt, kannst Du Badges zu Deinem myBadges Account hinzufügen, die zu dieser Adresse ausgestellt wurden oder features in verknüpften Anwendungen nutzen.
+Ein*e openbadges Nutzer*in hat angefragt diese Email-Adresse zu ihrem/seinem Account hinzuzufügen oder sie in einer verknüpften Anwendung zu nutzen.
+Wenn bestätigt, kannst Du Badges zu Deinem openbadges Account hinzufügen, die zu dieser Adresse ausgestellt wurden oder features in verknüpften Anwendungen nutzen.
 
 {{ activate_url }}
 
