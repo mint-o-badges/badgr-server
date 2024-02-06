@@ -290,7 +290,7 @@ class Issuer(ResizeUploadedImage,
                 + (str(self.streetnumber) if self.streetnumber is not None else '') + " "
                 + (str(self.zip) if self.zip is not None else '') + " "
                 + (str(self.city) if self.city is not None else '') + " Deutschland"
-                nom = Nominatim(user_agent="myBadges")
+                nom = Nominatim(user_agent="openbadges")
                 geoloc = nom.geocode(addr_string)
                 if geoloc:
                     self.lon = geoloc.longitude
@@ -498,7 +498,7 @@ class Issuer(ResizeUploadedImage,
             # 'badge_instance_url': self.public_url,
             # 'image_url': self.public_url + '/image?type=png',
             # 'download_url': self.public_url + "?action=download",
-            'site_name': "mybadges.org"
+            'site_name': "openbadges.education"
             # 'badgr_app': badgr_app
         }
 
@@ -1099,6 +1099,7 @@ class BadgeInstance(BaseAuditedModel,
         self.image.delete()
         self.save()
 
+    # TODO: Use email related to the new domain, when one is created. Not urgent in this phase.
     def notify_earner(self, badgr_app=None, renotify=False):
         """
         Sends an email notification to the badge recipient.
@@ -1130,7 +1131,7 @@ class BadgeInstance(BaseAuditedModel,
                 'badge_name': self.badgeclass.name,
                 'badge_id': self.entity_id,
                 'badge_description': self.badgeclass.description,
-                'help_email': getattr(settings, 'HELP_EMAIL', 'help@badgr.io'),
+                'help_email': getattr(settings, 'HELP_EMAIL', 'info@opensenselab.org'),
                 'issuer_name': re.sub(r'[^\w\s]+', '', self.issuer.name, 0, re.I),
                 'issuer_url': self.issuer.url,
                 'issuer_email': self.issuer.email,

@@ -20,10 +20,11 @@ def notify_on_password_change(user, request=None):
     else:
         badgr_app = user.badgrapp
 
+    # TODO: Use email related to the new domain, when one is created. Not urgent in this phase.
     base_context = {
         'user': user,
         'site': get_current_site(request),
-        'help_email': getattr(settings, 'HELP_EMAIL', 'help@badgr.io'),
+        'help_email': getattr(settings, 'HELP_EMAIL', 'info@opensenselab.org'),
         'STATIC_URL': getattr(settings, 'STATIC_URL'),
         'HTTP_ORIGIN': getattr(settings, 'HTTP_ORIGIN'),
         'badgr_app': badgr_app,

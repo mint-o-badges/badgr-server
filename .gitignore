@@ -1,3 +1,6 @@
+# vscode updates
+.vscode
+
 *.pyc
 *.egg
 settings_local.py
