@@ -1,8 +1,8 @@
-Bitte bestätige Deine Email-Adresse auf openbadges,
+Bitte bestätige Deine Email-Adresse auf OpenEducationalBadges,
 {{ email.email }}
 
-Ein*e openbadges Nutzer*in hat angefragt diese Email-Adresse zu ihrem/seinem Account hinzuzufügen oder sie in einer verknüpften Anwendung zu nutzen.
-Wenn bestätigt, kannst Du Badges zu Deinem openbadges Account hinzufügen, die zu dieser Adresse ausgestellt wurden oder features in verknüpften Anwendungen nutzen.
+Ein*e OpenEducationalBadges Nutzer*in hat angefragt diese Email-Adresse zu ihrem/seinem Account hinzuzufügen oder sie in einer verknüpften Anwendung zu nutzen.
+Wenn bestätigt, kannst Du Badges zu Deinem OpenEducationalBadges Account hinzufügen, die zu dieser Adresse ausgestellt wurden oder features in verknüpften Anwendungen nutzen.
 
 {{ activate_url }}
 

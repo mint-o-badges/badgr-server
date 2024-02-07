@@ -290,7 +290,7 @@ class Issuer(ResizeUploadedImage,
                 + (str(self.streetnumber) if self.streetnumber is not None else '') + " "
                 + (str(self.zip) if self.zip is not None else '') + " "
                 + (str(self.city) if self.city is not None else '') + " Deutschland"
-                nom = Nominatim(user_agent="openbadges")
+                nom = Nominatim(user_agent="OpenEducationalBadges")
                 geoloc = nom.geocode(addr_string)
                 if geoloc:
                     self.lon = geoloc.longitude

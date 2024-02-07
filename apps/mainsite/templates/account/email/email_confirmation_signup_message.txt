@@ -1,7 +1,7 @@
-Bitte verifiziere Deine Email-Adresse auf openbadges, 
+Bitte verifiziere Deine Email-Adresse auf OpenEducationalBadges, 
 {{ email.email }}
 
-Bestätige Deine Email-Adresse, um Deinen openbadges Account zu aktivieren.
+Bestätige Deine Email-Adresse, um Deinen OpenEducationalBadges Account zu aktivieren.
 Klicke auf den Link oder kopiere ihn in die Adresszeile Deines Browsers.
 
 {{ activate_url }}

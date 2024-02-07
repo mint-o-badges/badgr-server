@@ -55,7 +55,7 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
     def set_email_string(self, context):
         # site_name should not contain commas.
         # email sender name
-        from_elements = [context.get('site_name', 'Open Badges').replace(',', '')]
+        from_elements = [context.get('site_name', 'Open Educational Badges').replace(',', '')]
 
         # DEFAULT_FROM_EMAIL must not already have < > in it.
         default_from = getattr(settings, 'DEFAULT_FROM_EMAIL', '')
