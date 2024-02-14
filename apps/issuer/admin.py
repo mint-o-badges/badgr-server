@@ -8,8 +8,26 @@ from django.utils.safestring import mark_safe
 from mainsite.admin import badgr_admin
 
 from .models import Issuer, BadgeClass, BadgeInstance, BadgeInstanceEvidence, BadgeClassAlignment, BadgeClassTag, \
-    BadgeClassExtension, IssuerExtension, BadgeInstanceExtension
+    BadgeClassExtension, IssuerExtension, BadgeInstanceExtension, SuperBadge
 from .tasks import resend_notifications
+
+
+class SuperBadgeInstanceInline(TabularInline):
+    model = SuperBadge.assertions.through
+    extra = 0
+    # raw_id_fields = ('badgeinstance',)
+
+class SuperBadgeAdmin(ModelAdmin):
+    # list_display = ('name', 'entity_id', )
+    # search_fields = ('name', 'entity_id')
+    # fieldsets = (
+    #     (None, {'fields': ('created_by', 'name', 'entity_id', 'description', 'share_hash')}),
+    # )
+    readonly_fields = ('entity_id', )
+    inlines = [
+        SuperBadgeInstanceInline,
+    ]
+    pass
 
 
 class IssuerStaffInline(TabularInline):
@@ -74,6 +92,7 @@ class IssuerAdmin(DjangoObjectActions, ModelAdmin):
 
 
 badgr_admin.register(Issuer, IssuerAdmin)
+badgr_admin.register(SuperBadge, SuperBadgeAdmin)
 
 
 class BadgeClassAlignmentInline(TabularInline):

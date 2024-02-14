@@ -17,12 +17,12 @@ import badgrlog
 from entity.api import BaseEntityListView, BaseEntityDetailView, VersionedObjectMixin, BaseEntityView, \
     UncachedPaginatedViewMixin
 from entity.serializers import BaseSerializerV2, V2ErrorSerializer
-from issuer.models import Issuer, BadgeClass, BadgeInstance, IssuerStaff
+from issuer.models import Issuer, BadgeClass, BadgeInstance, IssuerStaff, SuperBadge
 from issuer.permissions import (MayIssueBadgeClass, MayEditBadgeClass, IsEditor, IsEditorButOwnerForDelete,
                                 IsStaff, ApprovedIssuersOnly, BadgrOAuthTokenHasScope,
                                 BadgrOAuthTokenHasEntityScope, AuthorizationIsBadgrOAuthToken)
 from issuer.serializers_v1 import (IssuerSerializerV1, BadgeClassSerializerV1,
-                                   BadgeInstanceSerializerV1)
+                                   BadgeInstanceSerializerV1, SuperBadgeClassSerializerV1)
 from issuer.serializers_v2 import IssuerSerializerV2, BadgeClassSerializerV2, BadgeInstanceSerializerV2, \
     IssuerAccessTokenSerializerV2
 from apispec_drf.decorators import apispec_get_operation, apispec_put_operation, \
@@ -99,6 +99,24 @@ class IssuerDetail(BaseEntityDetailView):
     def delete(self, request, **kwargs):
         return super(IssuerDetail, self).delete(request, **kwargs)
 
+class AllSuperBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListView):
+    """
+    GET a list of superbadgeclasses 
+    """
+    model = SuperBadge
+    v1_serializer_class = SuperBadgeClassSerializerV1
+    # v2_serializer_class = BadgeClassSerializerV2
+    valid_scopes = ["rw:serverAdmin"]
+
+    def get_queryset(self, **kwargs):
+        return SuperBadge.objects.all()
+
+    @apispec_list_operation('SuperBadgeClass',
+        summary="Get a list of SuperBadgeClasses for authenticated user",
+        tags=["SuperBadgeClasses"],
+    )
+    def get(self, request, **kwargs):
+        return super(AllSuperBadgeClassesList, self).get(request, **kwargs)
 
 class AllBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListView):
     """
