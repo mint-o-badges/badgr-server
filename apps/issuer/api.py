@@ -17,12 +17,12 @@ import badgrlog
 from entity.api import BaseEntityListView, BaseEntityDetailView, VersionedObjectMixin, BaseEntityView, \
     UncachedPaginatedViewMixin
 from entity.serializers import BaseSerializerV2, V2ErrorSerializer
-from issuer.models import Issuer, BadgeClass, BadgeInstance, IssuerStaff, SuperBadge
+from issuer.models import Issuer, BadgeClass, BadgeInstance, IssuerStaff, SuperBadge, CollectionBadge
 from issuer.permissions import (MayIssueBadgeClass, MayEditBadgeClass, IsEditor, IsEditorButOwnerForDelete,
                                 IsStaff, ApprovedIssuersOnly, BadgrOAuthTokenHasScope,
                                 BadgrOAuthTokenHasEntityScope, AuthorizationIsBadgrOAuthToken)
 from issuer.serializers_v1 import (IssuerSerializerV1, BadgeClassSerializerV1,
-                                   BadgeInstanceSerializerV1, SuperBadgeClassSerializerV1)
+                                   BadgeInstanceSerializerV1, SuperBadgeClassSerializerV1, CollectionBadgeClassSerializerV1)
 from issuer.serializers_v2 import IssuerSerializerV2, BadgeClassSerializerV2, BadgeInstanceSerializerV2, \
     IssuerAccessTokenSerializerV2
 from apispec_drf.decorators import apispec_get_operation, apispec_put_operation, \
@@ -98,6 +98,25 @@ class IssuerDetail(BaseEntityDetailView):
     )
     def delete(self, request, **kwargs):
         return super(IssuerDetail, self).delete(request, **kwargs)
+
+class AllCollectionBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListView):
+    """
+    GET a list of collectionbadgeclasses 
+    """
+    model = CollectionBadge
+    v1_serializer_class = CollectionBadgeClassSerializerV1
+    # v2_serializer_class = BadgeClassSerializerV2
+    valid_scopes = ["rw:issuer"]
+
+    def get_queryset(self, **kwargs):
+        return CollectionBadge.objects.all()
+
+    @apispec_list_operation('CollectionBadgeClass',
+        summary="Get a list of CollectionBadgeClasses for authenticated user",
+        tags=["CollectionBadgeClasses"],
+    )
+    def get(self, request, **kwargs):
+        return super(AllCollectionBadgesClassesList, self).get(request, **kwargs)
 
 class AllSuperBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListView):
     """

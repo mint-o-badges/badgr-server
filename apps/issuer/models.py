@@ -564,6 +564,36 @@ def get_user_or_none(recipient_id, recipient_type):
 
     return user
 
+class CollectionBadge(BaseAuditedModelDeletedWithUser, BaseVersionedEntity):
+    entity_class_name = 'CollectionBadge'
+    name = models.CharField(max_length=128)
+    description = models.CharField(max_length=255, blank=True)
+
+    assertions =   models.ManyToManyField('issuer.BadgeClass', blank=True,
+            through='issuer.CollectionBadgeBadgeClass'
+        )  
+
+    # def delete(self, *args, **kwargs):
+    #     super(SuperBadge, self).delete(*args, **kwargs)
+
+    # def save(self, **kwargs):
+    #     super(SuperBadge, self).save(**kwargs)
+
+    @cachemodel.cached_method(auto_publish=True)
+    def cached_collects(self):
+        return self.assertions.all()
+
+class CollectionBadgeBadgeClass(cachemodel.CacheModel):
+    collectionbadge = models.ForeignKey('issuer.CollectionBadge',
+                                   on_delete=models.CASCADE)
+
+    badgeclass = models.ForeignKey('issuer.BadgeClass',
+                                      on_delete=models.CASCADE)
+
+
+    # def delete(self):
+    #     super(SuperBadgeBadgeClass, self).delete()    
+
 class SuperBadge(BaseAuditedModelDeletedWithUser, BaseVersionedEntity):
     entity_class_name = 'SuperBadge'
     name = models.CharField(max_length=128)

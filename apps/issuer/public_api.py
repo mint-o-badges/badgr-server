@@ -30,8 +30,8 @@ from entity.api import VersionedObjectMixin, BaseEntityListView, UncachedPaginat
 from mainsite.models import BadgrApp
 from mainsite.utils import (OriginSetting, set_url_query_params, first_node_match, fit_image_to_height,
                             convert_svg_to_png)
-from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, SuperBadgeClassSerializerV1
-from .models import Issuer, BadgeClass, BadgeInstance, SuperBadge
+from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, SuperBadgeClassSerializerV1, CollectionBadgeClassSerializerV1
+from .models import Issuer, BadgeClass, BadgeInstance, SuperBadge, CollectionBadge
 logger = badgrlog.BadgrLogger()
 
 
@@ -380,6 +380,17 @@ class BadgeClassList(JSONListView):
 
     def get_json(self, request):
         return super(BadgeClassList, self).get_json(request)
+
+class CollectionBadgeClassList(JSONListView):
+    permission_classes = (permissions.AllowAny,)
+    model = CollectionBadge
+    serializer_class = CollectionBadgeClassSerializerV1
+
+    # def log(self, obj):
+    #     logger.event(badgrlog.BadgeClassRetrievedEvent(obj, self.request))
+
+    def get_json(self, request):
+        return super(CollectionBadgeClassList, self).get_json(request)        
 
 class SuperBadgeClassList(JSONListView):
     permission_classes = (permissions.AllowAny,)

@@ -8,9 +8,26 @@ from django.utils.safestring import mark_safe
 from mainsite.admin import badgr_admin
 
 from .models import Issuer, BadgeClass, BadgeInstance, BadgeInstanceEvidence, BadgeClassAlignment, BadgeClassTag, \
-    BadgeClassExtension, IssuerExtension, BadgeInstanceExtension, SuperBadge
+    BadgeClassExtension, IssuerExtension, BadgeInstanceExtension, SuperBadge, CollectionBadge
 from .tasks import resend_notifications
 
+
+class CollectionBadgeInstanceInline(TabularInline):
+    model = CollectionBadge.assertions.through
+    extra = 0
+    # raw_id_fields = ('badgeinstance',)
+
+class CollectionBadgeAdmin(ModelAdmin):
+    # list_display = ('name', 'entity_id', )
+    # search_fields = ('name', 'entity_id')
+    # fieldsets = (
+    #     (None, {'fields': ('created_by', 'name', 'entity_id', 'description', 'share_hash')}),
+    # )
+    readonly_fields = ('entity_id', )
+    inlines = [
+        CollectionBadgeInstanceInline,
+    ]
+    pass
 
 class SuperBadgeInstanceInline(TabularInline):
     model = SuperBadge.assertions.through

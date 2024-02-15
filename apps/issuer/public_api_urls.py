@@ -3,7 +3,7 @@ from django.views.decorators.clickjacking import xframe_options_exempt
 from rest_framework.urlpatterns import format_suffix_patterns
 
 from .public_api import (IssuerJson, IssuerList, IssuerBadgesJson, IssuerImage, BadgeClassJson, BadgeClassList,
-                         BadgeClassImage, BadgeClassCriteria, BadgeInstanceJson, SuperBadgeClassList,
+                         BadgeClassImage, BadgeClassCriteria, BadgeInstanceJson, SuperBadgeClassList, CollectionBadgeClassList,
                          BadgeInstanceImage, BackpackCollectionJson, BakedBadgeInstanceImage,
                          OEmbedAPIEndpoint, VerifyBadgeAPIEndpoint)
 
@@ -17,6 +17,7 @@ json_patterns = [
         xframe_options_exempt(BadgeClassJson.as_view(slugToEntityIdRedirect=True)), name='badgeclass_json'),
     url(r'^all-badges$', xframe_options_exempt(BadgeClassList.as_view()), name='badgeclass_list_json'),
     url(r'^all-superbadges$', xframe_options_exempt(SuperBadgeClassList.as_view()), name='superbadgeclass_list_json'),
+    url(r'^all-collectionbadges$', xframe_options_exempt(CollectionBadgeClassList.as_view()), name='collectionbadgeclass_list_json'),
 
     url(r'^assertions/(?P<entity_id>[^/.]+)$', xframe_options_exempt(
         BadgeInstanceJson.as_view(slugToEntityIdRedirect=True)), name='badgeinstance_json'),
