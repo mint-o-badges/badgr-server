@@ -1,9 +1,8 @@
-FROM python:3.8.14-slim-buster
+# Best practies taken from here: https://snyk.io/blog/best-practices-containerizing-python-docker/
 
-RUN mkdir /badgr_server
-WORKDIR /badgr_server
-
-RUN apt-get update && apt-get upgrade -y
+# ------------------------------> Build image
+FROM python:3.8.14-slim-buster as build
+RUN apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-dev \
                        python3-cairo \
@@ -12,13 +11,38 @@ RUN apt-get install -y default-libmysqlclient-dev \
                        libxmlsec1-dev \
                        pkg-config
 
-COPY requirements.txt                   /badgr_server
-COPY manage.py                          /badgr_server
-COPY .docker/etc/uwsgi.ini              /badgr_server
-COPY .docker/etc/wsgi.py                /badgr_server
-COPY apps                               /badgr_server/apps
-COPY .docker/etc/settings_local.py      /badgr_server/apps/mainsite/
+RUN mkdir /badgr_server
+WORKDIR /badgr_server
+RUN python -m venv /badgr_server/venv
+ENV PATH="/badgr_server/venv/bin:$PATH"
 
-RUN pip install uwsgi
+COPY requirements.txt .
 RUN pip install -r requirements.txt
 
+# ------------------------------> Final image
+FROM python:3.8.14-slim-buster
+RUN apt-get update
+RUN apt-get install -y default-libmysqlclient-dev \
+                       python3-cairo \
+                       libxml2
+
+RUN groupadd -g 999 python && \
+    useradd -r -u 999 -g python python
+
+RUN mkdir /badgr_server && chown python:python /badgr_server
+WORKDIR /badgr_server
+
+# Copy installed dependencies
+COPY --chown=python:python --from=build /badgr_server/venv /badgr_server/venv
+
+# Copy everything related Django stuff
+COPY --chown=python:python  manage.py                          .
+COPY --chown=python:python  .docker/etc/uwsgi.ini              .
+COPY --chown=python:python  .docker/etc/wsgi.py                .
+COPY --chown=python:python  apps                               ./apps
+COPY --chown=python:python  .docker/etc/settings_local.py      ./apps/mainsite/
+
+USER 999
+
+ENV PATH="/badgr_server/venv/bin:$PATH"
+CMD ["uwsgi","--socket", "sock/app.sock", "--ini", "uwsgi.ini"]
