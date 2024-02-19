@@ -7,7 +7,7 @@
   "obi:validation": [
     {
       "obi:validatesType": "extensions:LevelExtension",
-      "obi:validationSchema": "http://localhost:8000/static/extensions/LevelExtension/schema.json"
+      "obi:validationSchema": "https://api.openbadges.education/static/extensions/LevelExtension/schema.json"
     }
   ]
 }
