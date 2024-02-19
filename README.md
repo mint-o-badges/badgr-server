@@ -95,6 +95,8 @@ you will need to stop and then rebuild the production containers:
 
 * `docker-compose -f docker-compose.prod.yml build` - (re)build the production containers
 
+* If the extension urls aren't adjusted (or the url changes, or for some other reason it seems as if extension schemas can't be loaded, e.g. because of 401 errors in the badge creation process), run the script in `scripts/change-extension-url.sh`.
+
 
 ### Accessing the Django Server Running in Docker
 
