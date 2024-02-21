@@ -1,6 +1,5 @@
 from oauth2_provider.admin import ApplicationAdmin, AccessTokenAdmin
 from django.contrib.sites.models import Site
-from django.contrib.sites.admin import SiteAdmin
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import GroupAdmin
 from allauth.socialaccount.admin import SocialApp, SocialAppAdmin, SocialTokenAdmin, SocialAccountAdmin
@@ -95,6 +94,13 @@ class LegacyTokenAdmin(ModelAdmin):
     search_fields = ('user__email', 'user__first_name', 'user__last_name')
     readonly_fields = ('obscured_token', 'created')
     fields = ('obscured_token', 'user', 'created')
+
+class SiteAdmin(ModelAdmin):
+    fields = ('id', 'name', 'domain')
+    readonly_fields = ('id',)
+    list_display = ('id', 'name', 'domain')
+    list_display_links = ('name',)
+    search_fields = ('name', 'domain')
 
 
 badgr_admin.register(LegacyTokenProxy, LegacyTokenAdmin)
