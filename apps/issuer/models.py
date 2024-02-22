@@ -564,25 +564,77 @@ def get_user_or_none(recipient_id, recipient_type):
 
     return user
 
-class SuperBadge(BaseAuditedModelDeletedWithUser, BaseVersionedEntity):
-    entity_class_name = 'SuperBadge'
+class CollectionBadgeContainer(
+                            #    ResizeUploadedImage,
+                            #    ScrubUploadedSvgImage,
+                            #    HashUploadedImage,
+                            #    PngImagePreview,
+                               BaseAuditedModel,
+                               BaseVersionedEntity):
+    entity_class_name = 'CollectionBadgeContainer'
     name = models.CharField(max_length=128)
     description = models.CharField(max_length=255, blank=True)
 
+    # image = models.FileField(upload_to='uploads/badges', blank=True)
+    # image_preview = models.FileField(upload_to='uploads/badges', blank=True, null=True)
+
     assertions =   models.ManyToManyField('issuer.BadgeClass', blank=True,
-            through='issuer.SuperBadgeBadgeClass'
-        )  
+            through='issuer.CollectionBadgeBadgeClass'
+        ) 
 
-    # def delete(self, *args, **kwargs):
-    #     super(SuperBadge, self).delete(*args, **kwargs)
-
-    # def save(self, **kwargs):
-    #     super(SuperBadge, self).save(**kwargs)
+    class Meta:
+        # name shown in admin interface
+        verbose_name = 'Collection Badge'     
 
     @cachemodel.cached_method(auto_publish=True)
     def cached_collects(self):
         return self.assertions.all()
+
+    # def image_url(self):
+    #     return OriginSetting.HTTP + reverse('collectionbadge_image', kwargs={'entity_id': self.entity_id})
+
+        # if getattr(settings, 'MEDIA_URL').startswith('http'):
+        #     return default_storage.url(self.image.name)
+        # else:
+        #     return getattr(settings, 'HTTP_ORIGIN') + default_storage.url(self.image.name)
+    
+
+    # @property
+    # def cached_badgrapp(self):
+    #     return self.cached_issuer.cached_badgrapp    
    
+class CollectionBadgeBadgeClass(cachemodel.CacheModel):
+    collectionbadge = models.ForeignKey('issuer.CollectionBadgeContainer',
+                                   on_delete=models.CASCADE)
+   
+    badgeclass = models.ForeignKey('issuer.BadgeClass',
+                                      on_delete=models.CASCADE)
+
+
+
+class SuperBadge(BaseAuditedModelDeletedWithUser, BaseVersionedEntity):
+    entity_class_name = 'SuperBadge'
+    name = models.CharField(max_length=128)
+    description = models.CharField(max_length=255, blank=True)
+    assertions =   models.ManyToManyField('issuer.BadgeClass', blank=True,
+            through='issuer.SuperBadgeBadgeClass'
+        )
+
+    cached = SlugOrJsonIdCacheModelManager(slug_kwarg_name='entity_id', slug_field_name='entity_id')
+
+    @cachemodel.cached_method(auto_publish=True)
+    def cached_badgeclasses(self):
+        return self.assertions.all()
+
+    @cachemodel.cached_method(auto_publish=True)
+    def cached_collects(self):
+        return self.assertions.all()
+
+    @property
+    def badge_items(self):
+        return self.cached_badgeclasses()
+
+       
 class SuperBadgeBadgeClass(cachemodel.CacheModel):
     superbadge = models.ForeignKey('issuer.SuperBadge',
                                    on_delete=models.CASCADE)
@@ -590,9 +642,14 @@ class SuperBadgeBadgeClass(cachemodel.CacheModel):
     badgeclass = models.ForeignKey('issuer.BadgeClass',
                                       on_delete=models.CASCADE)
 
+    @property
+    def cached_badgeclass(self):
+        return BadgeClass.cached.get(id=self.badgeclass_id)
 
-    # def delete(self):
-    #     super(SuperBadgeBadgeClass, self).delete()
+    @property
+    def cached_superbadge(self):
+        return Superbadge.cached.get(id=self.superbadge_id)
+                                      
 
  
 class BadgeClass(ResizeUploadedImage,

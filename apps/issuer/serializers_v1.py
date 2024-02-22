@@ -22,7 +22,7 @@ from mainsite.serializers import DateTimeWithUtcZAtEndField, HumanReadableBoolea
         StripTagsCharField, MarkdownCharField, OriginalJsonSerializerMixin
 from mainsite.utils import OriginSetting
 from mainsite.validators import ChoicesValidator, BadgeExtensionValidator, PositiveIntegerValidator, TelephoneValidator
-from .models import Issuer, BadgeClass, IssuerStaff, BadgeInstance, SuperBadge, BadgeClassExtension, \
+from .models import Issuer, BadgeClass, IssuerStaff, BadgeInstance, SuperBadge, BadgeClassExtension, CollectionBadgeContainer, \
         RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL
 
 logger = logging.getLogger(__name__)
@@ -225,36 +225,22 @@ class BadgeClassExpirationSerializerV1(serializers.Serializer):
     duration = serializers.ChoiceField(source='expires_duration', allow_null=True,
                                        choices=BadgeClass.EXPIRES_DURATION_CHOICES)
 
-
-class SuperBadgeBadgeSerializerV1(serializers.ModelSerializer):
-    id = serializers.RelatedField(queryset=BadgeClass.objects.all())
-    superBadge = serializers.RelatedField(queryset=SuperBadge.objects.all(),
-            write_only=True, required=False)
-
-    class Meta:
-        model = SuperBadge
-        # list_serializer_class = SuperBadgeBadgeSerializerV1
-        fields = '__all__'
-        # apispec_definition = ('CollectionBadgeSerializerV1', {})
+class SuperBadgeBadgeClassField(serializers.RelatedField):
+    def to_representation(self, value):
+        return value.entity_id
 
 class SuperBadgeClassSerializerV1(serializers.Serializer):
     name = StripTagsCharField(required=True, max_length=128)
-    # slug = StripTagsCharField(required=False, max_length=128, source='entity_id')
     description = StripTagsCharField(required=False, allow_blank=True,
             allow_null=True, max_length=255)
-    # badges = SuperBadgeBadgeSerializerV1(
-    #     read_only=False, many=True, required=False, source='cached_collects'
-    # )
-    badges = serializers.PrimaryKeyRelatedField(many=True, queryset=BadgeClass.objects.all(), required=False, source='cached_collects')
-
-
-    # class Meta:
-    #     apispec_definition = ('Collection', {})
+    badges = SuperBadgeBadgeClassField(
+        read_only=True, many=True, required=False, source='cached_collects'
+    )
 
     def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        representation['badges'] = [{'name': badge.name, 'description': badge.description} for badge in instance.cached_collects()]
+        representation = super(SuperBadgeClassSerializerV1, self).to_representation(instance)
         return representation
+        
 
     def create(self, validated_data):
         new_superbadge = SuperBadge.objects.create(
@@ -262,7 +248,45 @@ class SuperBadgeClassSerializerV1(serializers.Serializer):
             description=validated_data.get('description', ''),
         )
 
+class CollectionBadgeBadgeClassField(serializers.RelatedField):
+    def to_representation(self, value):
+        return value.entity_id
 
+
+class CollectionBadgeClassSerializerV1(serializers.Serializer):
+    name = StripTagsCharField(required=True, max_length=128)
+    description = StripTagsCharField(required=False, allow_blank=True,
+            allow_null=True, max_length=255)
+    # image = ValidImageField(required=False)
+    # badges = serializers.StringRelatedField(many=True, required=False, source='cached_collects')
+    badges = CollectionBadgeBadgeClassField(many=True, required=False, read_only=True, source='cached_collects')
+
+
+    def to_representation(self, instance):
+        representation = super(CollectionBadgeClassSerializerV1, self).to_representation(instance)
+        # representation['badges'] = [{'entity_id': badge.cached.entity_id} for badge in instance.cached_collects()]
+        return representation
+    
+    # def validate_image(self, image):
+    #     if image is not None:
+    #         img_name, img_ext = os.path.splitext(image.name)
+    #         image.name = 'issuer_collectionbadge_' + str(uuid.uuid4()) + img_ext
+    #     return image
+
+    def create(self, validated_data):
+
+        # if 'image' not in validated_data:
+        #     raise serializers.ValidationError({"image": ["This field is required"]})
+
+        # badges_data = validated_data.pop('badges')
+        # collectionbadge = CollectionBadgeContainer.objects.create(**validated_data)
+        # BadgeClass.objects.create(badgeclass=badgeclass, **badges_data)
+        # return collectionbadge
+
+        new_collectionbadge = CollectionBadgeContainer.objects.create(
+            name=validated_data.get('name'),
+            description=validated_data.get('description', ''),
+        )
 
 class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, serializers.Serializer):
     created_at = DateTimeWithUtcZAtEndField(read_only=True)
