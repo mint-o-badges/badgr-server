@@ -233,6 +233,8 @@ class SuperBadgeClassSerializerV1(serializers.Serializer):
     name = StripTagsCharField(required=True, max_length=128)
     description = StripTagsCharField(required=False, allow_blank=True,
             allow_null=True, max_length=255)
+    image = ValidImageField(required=False)
+
     badges = SuperBadgeBadgeClassField(
         read_only=True, many=True, required=False, source='cached_collects'
     )
@@ -240,9 +242,19 @@ class SuperBadgeClassSerializerV1(serializers.Serializer):
     def to_representation(self, instance):
         representation = super(SuperBadgeClassSerializerV1, self).to_representation(instance)
         return representation
-        
+
+    def validate_image(self, image):
+        if image is not None:
+            img_name, img_ext = os.path.splitext(image.name)
+            image.name = 'issuer_superbadge_' + str(uuid.uuid4()) + img_ext
+        return image    
 
     def create(self, validated_data):
+
+        if 'image' not in validated_data:
+            raise serializers.ValidationError({"image": ["This field is required"]})
+
+
         new_superbadge = SuperBadge.objects.create(
             name=validated_data.get('name'),
             description=validated_data.get('description', ''),
@@ -257,7 +269,7 @@ class CollectionBadgeClassSerializerV1(serializers.Serializer):
     name = StripTagsCharField(required=True, max_length=128)
     description = StripTagsCharField(required=False, allow_blank=True,
             allow_null=True, max_length=255)
-    # image = ValidImageField(required=False)
+    image = ValidImageField(required=False)
     # badges = serializers.StringRelatedField(many=True, required=False, source='cached_collects')
     badges = CollectionBadgeBadgeClassField(many=True, required=False, read_only=True, source='cached_collects')
 
@@ -267,16 +279,16 @@ class CollectionBadgeClassSerializerV1(serializers.Serializer):
         # representation['badges'] = [{'entity_id': badge.cached.entity_id} for badge in instance.cached_collects()]
         return representation
     
-    # def validate_image(self, image):
-    #     if image is not None:
-    #         img_name, img_ext = os.path.splitext(image.name)
-    #         image.name = 'issuer_collectionbadge_' + str(uuid.uuid4()) + img_ext
-    #     return image
+    def validate_image(self, image):
+        if image is not None:
+            img_name, img_ext = os.path.splitext(image.name)
+            image.name = 'issuer_collectionbadge_' + str(uuid.uuid4()) + img_ext
+        return image
 
     def create(self, validated_data):
 
-        # if 'image' not in validated_data:
-        #     raise serializers.ValidationError({"image": ["This field is required"]})
+        if 'image' not in validated_data:
+            raise serializers.ValidationError({"image": ["This field is required"]})
 
         # badges_data = validated_data.pop('badges')
         # collectionbadge = CollectionBadgeContainer.objects.create(**validated_data)

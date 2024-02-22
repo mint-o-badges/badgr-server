@@ -565,18 +565,18 @@ def get_user_or_none(recipient_id, recipient_type):
     return user
 
 class CollectionBadgeContainer(
-                            #    ResizeUploadedImage,
-                            #    ScrubUploadedSvgImage,
-                            #    HashUploadedImage,
-                            #    PngImagePreview,
+                               ResizeUploadedImage,
+                               ScrubUploadedSvgImage,
+                               HashUploadedImage,
+                               PngImagePreview,
                                BaseAuditedModel,
                                BaseVersionedEntity):
     entity_class_name = 'CollectionBadgeContainer'
     name = models.CharField(max_length=128)
     description = models.CharField(max_length=255, blank=True)
 
-    # image = models.FileField(upload_to='uploads/badges', blank=True)
-    # image_preview = models.FileField(upload_to='uploads/badges', blank=True, null=True)
+    image = models.FileField(upload_to='uploads/badges', blank=True)
+    image_preview = models.FileField(upload_to='uploads/badges', blank=True, null=True)
 
     assertions =   models.ManyToManyField('issuer.BadgeClass', blank=True,
             through='issuer.CollectionBadgeBadgeClass'
@@ -590,8 +590,8 @@ class CollectionBadgeContainer(
     def cached_collects(self):
         return self.assertions.all()
 
-    # def image_url(self):
-    #     return OriginSetting.HTTP + reverse('collectionbadge_image', kwargs={'entity_id': self.entity_id})
+    def image_url(self):
+        return OriginSetting.HTTP + reverse('collectionbadge_image', kwargs={'entity_id': self.entity_id})
 
         # if getattr(settings, 'MEDIA_URL').startswith('http'):
         #     return default_storage.url(self.image.name)
@@ -612,10 +612,19 @@ class CollectionBadgeBadgeClass(cachemodel.CacheModel):
 
 
 
-class SuperBadge(BaseAuditedModelDeletedWithUser, BaseVersionedEntity):
+class SuperBadge( ResizeUploadedImage,
+                  ScrubUploadedSvgImage,
+                  HashUploadedImage,
+                  PngImagePreview,
+                  BaseAuditedModel,
+                  BaseVersionedEntity):
     entity_class_name = 'SuperBadge'
     name = models.CharField(max_length=128)
     description = models.CharField(max_length=255, blank=True)
+
+    image = models.FileField(upload_to='uploads/badges', blank=True)
+    image_preview = models.FileField(upload_to='uploads/badges', blank=True, null=True)
+
     assertions =   models.ManyToManyField('issuer.BadgeClass', blank=True,
             through='issuer.SuperBadgeBadgeClass'
         )
@@ -633,6 +642,12 @@ class SuperBadge(BaseAuditedModelDeletedWithUser, BaseVersionedEntity):
     @property
     def badge_items(self):
         return self.cached_badgeclasses()
+
+    def image_url(self):
+        return OriginSetting.HTTP + reverse('superbadge_image', kwargs={'entity_id': self.entity_id})
+
+
+
 
        
 class SuperBadgeBadgeClass(cachemodel.CacheModel):

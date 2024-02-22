@@ -17,10 +17,35 @@ class CollectionBadgeInstanceInline(TabularInline):
     extra = 0
 
 class CollectionBadgeAdmin(ModelAdmin):
-    readonly_fields = ('entity_id', )
+    readonly_fields = ('created_by', 'created_at', 'updated_at', 
+                       'entity_id')
+    list_display = ('name', 'entity_id')
+    list_display_links = ('name',)
+    list_filter = ('created_at',)
+    search_fields = ('name', 'entity_id')
+    fieldsets = (
+        ('Metadata', {
+            'fields': ('created_by', 'created_at', 'updated_at', 'entity_id'),
+            'classes': ("collapse",)
+        }),
+        (None, {
+            'fields': ('image', 'name', 'description')
+        }),
+    )
     inlines = [
         CollectionBadgeInstanceInline,
     ]
+
+    def save_model(self, request, obj, form, change):
+        force_resize = False
+        if 'image' in form.changed_data:
+            force_resize = True
+        obj.save(force_resize=force_resize)
+
+    def badge_image(self, obj):
+        return mark_safe('<img src="{}" width="32"/>'.format(obj.image.url)) if obj.image else ''
+    badge_image.short_description = 'Badge'
+    
     pass
 
 
@@ -31,15 +56,35 @@ class SuperBadgeInstanceInline(TabularInline):
     # raw_id_fields = ('badgeinstance',)
 
 class SuperBadgeAdmin(ModelAdmin):
-    # list_display = ('name', 'entity_id', )
-    # search_fields = ('name', 'entity_id')
-    # fieldsets = (
-    #     (None, {'fields': ('created_by', 'name', 'entity_id', 'description', 'share_hash')}),
-    # )
-    readonly_fields = ('entity_id', )
+    readonly_fields = ('created_by', 'created_at', 'updated_at', 
+                       'entity_id')
+    list_display = ('name', 'entity_id')
+    list_display_links = ('name',)
+    list_filter = ('created_at',)
+    search_fields = ('name', 'entity_id')
+    fieldsets = (
+        ('Metadata', {
+            'fields': ('created_by', 'created_at', 'updated_at', 'entity_id'),
+            'classes': ("collapse",)
+        }),
+        (None, {
+            'fields': ('image', 'name', 'description')
+        }),
+    )
     inlines = [
         SuperBadgeInstanceInline,
     ]
+
+    def save_model(self, request, obj, form, change):
+        force_resize = False
+        if 'image' in form.changed_data:
+            force_resize = True
+        obj.save(force_resize=force_resize)
+
+    def badge_image(self, obj):
+        return mark_safe('<img src="{}" width="32"/>'.format(obj.image.url)) if obj.image else ''
+    badge_image.short_description = 'Badge'
+    
     pass
 
 
