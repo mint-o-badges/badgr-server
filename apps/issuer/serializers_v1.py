@@ -5,7 +5,7 @@ import json
 
 import logging
 
-
+from collections import OrderedDict
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.urls import reverse
 from django.core.validators import EmailValidator, URLValidator
@@ -262,9 +262,34 @@ class SuperBadgeClassSerializerV1(serializers.Serializer):
 
         return new_superbadge
 
-class CollectionBadgeBadgeClassField(serializers.RelatedField):
+class ModifiedRelatedField(serializers.RelatedField):
+    def get_choices(self, cutoff=None):
+        queryset = self.get_queryset()
+        if queryset is None:
+            # Ensure that field.choices returns something sensible
+            # even when accessed with a read-only field.
+            return {}
+
+        if cutoff is not None:
+            queryset = queryset[:cutoff]
+
+        return OrderedDict([
+            (
+                item.pk,
+                self.display_value(item)
+            )
+            for item in queryset
+        ])
+
+
+class CollectionBadgeBadgeClassField(ModifiedRelatedField):
     def to_representation(self, value):
-        return value.entity_id
+        return {
+                "id": value.entity_id,
+                "name": value.name,
+                "description": value.description,
+                "image": value.image.url
+                }
 
     def to_internal_value(self, data):
         return BadgeClass.objects.get(entity_id=data)    
@@ -293,7 +318,7 @@ class CollectionBadgeClassSerializerV1(serializers.Serializer):
     def create(self, validated_data):
 
         logger = logging.getLogger(__name__)  # Get logger instance
-        logger.error(validated_data)
+        # logger.error(validated_data)
 
         if 'image' not in validated_data:
             raise serializers.ValidationError({"image": ["This field is required"]})
