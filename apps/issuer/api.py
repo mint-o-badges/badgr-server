@@ -381,6 +381,49 @@ class BadgeClassDetail(BaseEntityDetailView):
     def put(self, request, **kwargs):
         return super(BadgeClassDetail, self).put(request, **kwargs)
 
+class SuperBadgeClassDetail(BaseEntityDetailView):
+    """
+    GET details on one SuperBadgeClass.
+    """
+    model = SuperBadge
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & MayEditBadgeClass & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    v1_serializer_class = SuperBadgeClassSerializerV1
+    v2_serializer_class = SuperBadgeClassSerializerV2
+
+    valid_scopes = ["rw:all", "rw:issuer:*"]
+
+    @apispec_get_operation('SuperBadgeClass',
+        summary='Get a single SuperBadgeClass',
+        tags=['SuperBadgeClasses'],
+    )
+    def get(self, request, **kwargs):
+        return super(SuperBadgeClassDetail, self).get(request, **kwargs)
+
+class CollectionBadgeClassDetail(BaseEntityDetailView):
+    """
+    GET details on one CollectionBadgeClass.
+    """
+    model = CollectionBadgeContainer
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & MayEditBadgeClass & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    v1_serializer_class = CollectionBadgeClassSerializerV1
+    v2_serializer_class = CollectionBadgeClassSerializerV2
+
+    valid_scopes = ["rw:all", "rw:issuer:*"]
+
+    @apispec_get_operation('CollectionBadgeClass',
+        summary='Get a single CollectionBadgeClass',
+        tags=['SuperBadgeClasses'],
+    )
+    def get(self, request, **kwargs):
+        return super(CollectionBadgeClassDetail, self).get(request, **kwargs)
 
 class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
     model = BadgeClass  # used by .get_object()
