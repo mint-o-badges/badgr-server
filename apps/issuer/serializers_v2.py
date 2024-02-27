@@ -503,6 +503,9 @@ class SuperBadgeClassSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixi
     image = ValidImageField(required=False, source='*')
     description = StripTagsCharField(max_length=16384, required=True, convert_null=True)
 
+    assertions = EntityRelatedFieldV2(many=True, source='badge_items',
+            required=False, queryset=BadgeClass.cached)
+
     class Meta(DetailSerializerV2.Meta):
         model = SuperBadge
         apispec_definition = ('SuperBadgeClass', {
@@ -556,6 +559,13 @@ class SuperBadgeClassSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixi
                     'format': "data:image/png;base64",
                     'description': "Base64 encoded string of an image that represents the SuperBadgeClass.",
                     'required': False,
+                }),
+                ('assertions', {
+                    'type': "array",
+                    # 'items': {
+                    #     '$ref': '#/definitions/Assertion'
+                    # },
+                    'description': "List of Assertions in the SuperBadge",
                 }),
             ])
         })
