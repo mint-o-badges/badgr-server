@@ -32,7 +32,10 @@ from mainsite.utils import (OriginSetting, set_url_query_params, first_node_matc
                             convert_svg_to_png)
 from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, SuperBadgeClassSerializerV1, CollectionBadgeClassSerializerV1
 from .models import Issuer, BadgeClass, BadgeInstance, SuperBadge, CollectionBadgeContainer, CollectionBadgeContainer
-logger = badgrlog.BadgrLogger()
+
+
+logger = badgrlog.BadgrLogger
+
 
 
 class SlugToEntityIdRedirectMixin(object):
@@ -388,6 +391,9 @@ class CollectionBadgeClassList(JSONListView):
 
     def get_json(self, request):
         return super(CollectionBadgeClassList, self).get_json(request)        
+
+    def post(self, request, *args, **kwargs): 
+        return super(CollectionBadgeClassList, self).post(request)    
 
 class SuperBadgeClassList(JSONListView):
     model = SuperBadge
