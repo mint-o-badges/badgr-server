@@ -12,7 +12,7 @@ from rest_framework import serializers
 from badgeuser.models import BadgeUser
 from badgeuser.serializers_v2 import BadgeUserEmailSerializerV2
 from entity.serializers import DetailSerializerV2, EntityRelatedFieldV2, BaseSerializerV2
-from issuer.models import Issuer, IssuerStaff, BadgeClass, BadgeInstance, \
+from issuer.models import Issuer, IssuerStaff, BadgeClass, SuperBadge, CollectionBadgeContainer, BadgeInstance, \
         RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL, RECIPIENT_TYPE_TELEPHONE
 from issuer.permissions import IsEditor
 from issuer.utils import generate_sha256_hashstring, request_authenticated_with_server_admin_token
@@ -410,6 +410,154 @@ class BadgeClassSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixin):
             raise serializers.ValidationError({"issuer": "You do not have permission to edit badges on this issuer."})
 
         return super(BadgeClassSerializerV2, self).create(validated_data)
+
+class CollectionBadgeClassSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixin):
+    # openBadgeId = serializers.URLField(source='jsonld_id', read_only=True)
+    # createdAt = DateTimeWithUtcZAtEndField(source='created_at', read_only=True)
+    # createdBy = EntityRelatedFieldV2(source='cached_creator', read_only=True)
+    # issuer = EntityRelatedFieldV2(source='cached_issuer', required=False, queryset=Issuer.cached)
+    # issuerOpenBadgeId = serializers.URLField(source='issuer_jsonld_id', read_only=True)
+
+    name = StripTagsCharField(max_length=1024)
+    image = ValidImageField(required=False, source='*')
+    description = StripTagsCharField(max_length=16384, required=True, convert_null=True)
+
+    class Meta(DetailSerializerV2.Meta):
+        model = CollectionBadgeContainer
+        apispec_definition = ('CollectionBadgeClass', {
+            'properties': OrderedDict([
+                ('entityId', {
+                    'type': "string",
+                    'format': "string",
+                    'description': "Unique identifier for this CollectionBadgeClass",
+                    'readOnly': True,
+                }),
+                ('entityType', {
+                    'type': "string",
+                    'format': "string",
+                    'description': "\"CollectionBadgeClass\"",
+                    'readOnly': True,
+                }),
+                # ('createdAt', {
+                #     'type': 'string',
+                #     'format': 'ISO8601 timestamp',
+                #     'description': "Timestamp when the BadgeClass was created",
+                #     'readOnly': True,
+                # }),
+                # ('createdBy', {
+                #     'type': 'string',
+                #     'format': 'entityId',
+                #     'description': "BadgeUser who created this BadgeClass",
+                #     'readOnly': True,
+                # }),
+
+                # ('issuer', {
+                #     'type': 'string',
+                #     'format': 'entityId',
+                #     'description': "entityId of the Issuer who owns the BadgeClass",
+                #     'required': False,
+                # }),
+
+                ('name', {
+                    'type': "string",
+                    'format': "string",
+                    'description': "Name of the CollectionBadgeClass",
+                    'required': True,
+                }),
+                ('description', {
+                    'type': "string",
+                    'format': "string",
+                    'description': "Short description of the CollectionBadgeClass",
+                    'required': True,
+                }),
+                ('image', {
+                    'type': "string",
+                    'format': "data:image/png;base64",
+                    'description': "Base64 encoded string of an image that represents the CollectionBadgeClass.",
+                    'required': False,
+                }),
+            ])
+        })
+
+    def to_internal_value(self, data):
+        return super(CollectionBadgeClassSerializerV2, self).to_internal_value(data)
+
+    def create(self, validated_data):
+        if 'image' not in validated_data:
+            raise serializers.ValidationError({'image': 'Valid image file or data URI required.'})
+       
+        return super(CollectionBadgeClassSerializerV2, self).create(validated_data)
+
+class SuperBadgeClassSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixin):
+    name = StripTagsCharField(max_length=1024)
+    image = ValidImageField(required=False, source='*')
+    description = StripTagsCharField(max_length=16384, required=True, convert_null=True)
+
+    class Meta(DetailSerializerV2.Meta):
+        model = SuperBadge
+        apispec_definition = ('SuperBadgeClass', {
+            'properties': OrderedDict([
+                ('entityId', {
+                    'type': "string",
+                    'format': "string",
+                    'description': "Unique identifier for this SuperBadgeClass",
+                    'readOnly': True,
+                }),
+                ('entityType', {
+                    'type': "string",
+                    'format': "string",
+                    'description': "\"SuperBadgeClass\"",
+                    'readOnly': True,
+                }),
+                # ('createdAt', {
+                #     'type': 'string',
+                #     'format': 'ISO8601 timestamp',
+                #     'description': "Timestamp when the BadgeClass was created",
+                #     'readOnly': True,
+                # }),
+                # ('createdBy', {
+                #     'type': 'string',
+                #     'format': 'entityId',
+                #     'description': "BadgeUser who created this BadgeClass",
+                #     'readOnly': True,
+                # }),
+
+                # ('issuer', {
+                #     'type': 'string',
+                #     'format': 'entityId',
+                #     'description': "entityId of the Issuer who owns the BadgeClass",
+                #     'required': False,
+                # }),
+
+                ('name', {
+                    'type': "string",
+                    'format': "string",
+                    'description': "Name of the SuperBadgeClass",
+                    'required': True,
+                }),
+                ('description', {
+                    'type': "string",
+                    'format': "string",
+                    'description': "Short description of the SuperBadgeClass",
+                    'required': True,
+                }),
+                ('image', {
+                    'type': "string",
+                    'format': "data:image/png;base64",
+                    'description': "Base64 encoded string of an image that represents the SuperBadgeClass.",
+                    'required': False,
+                }),
+            ])
+        })
+
+    def to_internal_value(self, data):
+        return super(SuperBadgeClassSerializerV2, self).to_internal_value(data)
+
+    def create(self, validated_data):
+        if 'image' not in validated_data:
+            raise serializers.ValidationError({'image': 'Valid image file or data URI required.'})
+       
+        return super(SuperBadgeClassSerializerV2, self).create(validated_data)
 
 
 class BadgeRecipientSerializerV2(BaseSerializerV2):

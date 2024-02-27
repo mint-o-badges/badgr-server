@@ -23,7 +23,7 @@ from issuer.permissions import (MayIssueBadgeClass, MayEditBadgeClass, IsEditor,
                                 BadgrOAuthTokenHasEntityScope, AuthorizationIsBadgrOAuthToken, AuditedModelOwner)
 from issuer.serializers_v1 import (IssuerSerializerV1, BadgeClassSerializerV1,
                                    BadgeInstanceSerializerV1, SuperBadgeClassSerializerV1, CollectionBadgeClassSerializerV1)
-from issuer.serializers_v2 import IssuerSerializerV2, BadgeClassSerializerV2, BadgeInstanceSerializerV2, \
+from issuer.serializers_v2 import IssuerSerializerV2, BadgeClassSerializerV2, BadgeInstanceSerializerV2, SuperBadgeClassSerializerV2, CollectionBadgeClassSerializerV2, \
     IssuerAccessTokenSerializerV2
 from apispec_drf.decorators import apispec_get_operation, apispec_put_operation, \
     apispec_delete_operation, apispec_list_operation, apispec_post_operation
@@ -207,7 +207,7 @@ class AllSuperBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListView):
         | BadgrOAuthTokenHasEntityScope
     ]
     v1_serializer_class = SuperBadgeClassSerializerV1
-    # v2_serializer_class = BadgeClassSerializerV2
+    v2_serializer_class = SuperBadgeClassSerializerV2
     valid_scopes = ["rw:issuer"]
 
     def get_queryset(self, request, **kwargs):
@@ -249,7 +249,7 @@ class AllCollectionBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListVi
         | BadgrOAuthTokenHasEntityScope
     ]
     v1_serializer_class = CollectionBadgeClassSerializerV1
-    # v2_serializer_class = BadgeClassSerializerV2
+    v2_serializer_class = CollectionBadgeClassSerializerV2
     valid_scopes = ["rw:issuer"]
 
     def get_queryset(self, request, **kwargs):
