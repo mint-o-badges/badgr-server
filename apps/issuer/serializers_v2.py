@@ -479,6 +479,13 @@ class CollectionBadgeClassSerializerV2(DetailSerializerV2, OriginalJsonSerialize
                     'description': "Base64 encoded string of an image that represents the CollectionBadgeClass.",
                     'required': False,
                 }),
+                ('assertions', {
+                    'type': "array",
+                    # 'items': {
+                    #     '$ref': '#/definitions/Assertion'
+                    # },
+                    'description': "List of Assertions in the CollectionBadge",
+                }),
             ])
         })
 
