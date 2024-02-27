@@ -411,19 +411,43 @@ class BadgeClassSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixin):
 
         return super(BadgeClassSerializerV2, self).create(validated_data)
 
-class CollectionBadgeClassSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixin):
-    # openBadgeId = serializers.URLField(source='jsonld_id', read_only=True)
-    # createdAt = DateTimeWithUtcZAtEndField(source='created_at', read_only=True)
-    # createdBy = EntityRelatedFieldV2(source='cached_creator', read_only=True)
-    # issuer = EntityRelatedFieldV2(source='cached_issuer', required=False, queryset=Issuer.cached)
-    # issuerOpenBadgeId = serializers.URLField(source='issuer_jsonld_id', read_only=True)
+class ModifiedRelatedField(serializers.RelatedField):
+    def get_choices(self, cutoff=None):
+        queryset = self.get_queryset()
+        if queryset is None:
+            return {}
 
+        if cutoff is not None:
+            queryset = queryset[:cutoff]
+
+        return OrderedDict([
+            (
+                item.pk,
+                self.display_value(item)
+            )
+            for item in queryset
+        ])
+        
+class CollectionBadgeBadgeClassField(ModifiedRelatedField):
+    def to_representation(self, value):
+        return {
+                "id": value.entity_id,
+                "name": value.name,
+                "description": value.description,
+                "image": value.image.url
+                }
+
+    def to_internal_value(self, data):
+        return BadgeClass.objects.get(entity_id=data)  
+
+class CollectionBadgeClassSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixin):
     name = StripTagsCharField(max_length=1024)
     image = ValidImageField(required=False, source='*')
     description = StripTagsCharField(max_length=16384, required=True, convert_null=True)
 
-    assertions = EntityRelatedFieldV2(many=True, source='badgeclass_items',
-            required=False, queryset=BadgeClass.cached)
+    assertions = CollectionBadgeBadgeClassField(many=True, source='badgeclass_items',
+            required=False, queryset=BadgeClass.cached)    
+
 
     class Meta(DetailSerializerV2.Meta):
         model = CollectionBadgeContainer
@@ -498,12 +522,24 @@ class CollectionBadgeClassSerializerV2(DetailSerializerV2, OriginalJsonSerialize
        
         return super(CollectionBadgeClassSerializerV2, self).create(validated_data)
 
+class SuperBadgeBadgeClassField(ModifiedRelatedField):
+    def to_representation(self, value):
+        return {
+                "id": value.entity_id,
+                "name": value.name,
+                "description": value.description,
+                "image": value.image.url
+                }
+
+    def to_internal_value(self, data):
+        return BadgeClass.objects.get(entity_id=data) 
+
 class SuperBadgeClassSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixin):
     name = StripTagsCharField(max_length=1024)
     image = ValidImageField(required=False, source='*')
     description = StripTagsCharField(max_length=16384, required=True, convert_null=True)
 
-    assertions = EntityRelatedFieldV2(many=True, source='badge_items',
+    assertions = SuperBadgeBadgeClassField(many=True, source='badge_items',
             required=False, queryset=BadgeClass.cached)
 
     class Meta(DetailSerializerV2.Meta):
