@@ -225,9 +225,35 @@ class BadgeClassExpirationSerializerV1(serializers.Serializer):
     duration = serializers.ChoiceField(source='expires_duration', allow_null=True,
                                        choices=BadgeClass.EXPIRES_DURATION_CHOICES)
 
-class SuperBadgeBadgeClassField(serializers.RelatedField):
+
+class ModifiedRelatedField(serializers.RelatedField):
+    def get_choices(self, cutoff=None):
+        queryset = self.get_queryset()
+        if queryset is None:
+            return {}
+
+        if cutoff is not None:
+            queryset = queryset[:cutoff]
+
+        return OrderedDict([
+            (
+                item.pk,
+                self.display_value(item)
+            )
+            for item in queryset
+        ])
+        
+class SuperBadgeBadgeClassField(ModifiedRelatedField):
     def to_representation(self, value):
-        return value.entity_id
+        return {
+                "id": value.entity_id,
+                "name": value.name,
+                "description": value.description,
+                "image": value.image.url
+                }
+
+    def to_internal_value(self, data):
+        return BadgeClass.objects.get(entity_id=data)              
 
 class SuperBadgeClassSerializerV1(serializers.Serializer):
     name = StripTagsCharField(required=True, max_length=128)
@@ -236,7 +262,7 @@ class SuperBadgeClassSerializerV1(serializers.Serializer):
     image = ValidImageField(required=False)
 
     badges = SuperBadgeBadgeClassField(
-        read_only=True, many=True, required=False, source='cached_collects'
+        queryset=BadgeClass.objects.all(), many=True, source='cached_collects'
     )
 
     def to_representation(self, instance):
@@ -258,28 +284,13 @@ class SuperBadgeClassSerializerV1(serializers.Serializer):
         new_superbadge = SuperBadge.objects.create(
             name=validated_data.get('name'),
             description=validated_data.get('description', ''),
+            image=validated_data.get('image')
         )
 
+        for badge in validated_data.get('cached_collects', []):
+            new_superbadge.assertions.add(badge)   
+
         return new_superbadge
-
-class ModifiedRelatedField(serializers.RelatedField):
-    def get_choices(self, cutoff=None):
-        queryset = self.get_queryset()
-        if queryset is None:
-            # Ensure that field.choices returns something sensible
-            # even when accessed with a read-only field.
-            return {}
-
-        if cutoff is not None:
-            queryset = queryset[:cutoff]
-
-        return OrderedDict([
-            (
-                item.pk,
-                self.display_value(item)
-            )
-            for item in queryset
-        ])
 
 
 class CollectionBadgeBadgeClassField(ModifiedRelatedField):
@@ -300,13 +311,11 @@ class CollectionBadgeClassSerializerV1(serializers.Serializer):
     description = StripTagsCharField(required=False, allow_blank=True,
             allow_null=True, max_length=255)
     image = ValidImageField(required=False)
-    # badges = serializers.StringRelatedField(many=True, required=False, source='cached_collects')
     badges = CollectionBadgeBadgeClassField(many=True, queryset=BadgeClass.objects.all(), source='cached_collects')
 
 
     def to_representation(self, instance):
         representation = super(CollectionBadgeClassSerializerV1, self).to_representation(instance)
-        # representation['badges'] = [{'entity_id': badge.cached.entity_id} for badge in instance.cached_collects()]
         return representation
     
     def validate_image(self, image):
@@ -317,30 +326,15 @@ class CollectionBadgeClassSerializerV1(serializers.Serializer):
 
     def create(self, validated_data):
 
-        logger = logging.getLogger(__name__)  # Get logger instance
-        # logger.error(validated_data)
-
         if 'image' not in validated_data:
             raise serializers.ValidationError({"image": ["This field is required"]})
 
-        # badge_ids = validated_data.pop('badges', []) 
-
-        # logger.error(badge_ids) 
 
         new_collectionbadge = CollectionBadgeContainer.objects.create(
             name=validated_data.get('name'),
             description=validated_data.get('description', ''),
             image=validated_data.get('image')
         )
-
-        # for badge_id in badge_ids:
-        #     try:
-        #         badge = BadgeClass.objects.get(entity_id=badge_id)
-        #         logger.error(badge)
-        #         new_collectionbadge.assertions.add(badge)
-        #     except BadgeClass.DoesNotExist:
-        #         # Handle case where badge with provided ID does not exist
-        #         pass
 
         for badge in validated_data.get('cached_collects', []):
             new_collectionbadge.assertions.add(badge)        
