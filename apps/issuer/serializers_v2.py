@@ -422,6 +422,9 @@ class CollectionBadgeClassSerializerV2(DetailSerializerV2, OriginalJsonSerialize
     image = ValidImageField(required=False, source='*')
     description = StripTagsCharField(max_length=16384, required=True, convert_null=True)
 
+    assertions = EntityRelatedFieldV2(many=True, source='badgeclass_items',
+            required=False, queryset=BadgeClass.cached)
+
     class Meta(DetailSerializerV2.Meta):
         model = CollectionBadgeContainer
         apispec_definition = ('CollectionBadgeClass', {

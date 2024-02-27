@@ -598,6 +598,9 @@ class CollectionBadgeContainer(
         # else:
         #     return getattr(settings, 'HTTP_ORIGIN') + default_storage.url(self.image.name)
     
+    @property
+    def badgeclass_items(self):
+        return self.cached_collects()
 
     # @property
     # def cached_badgrapp(self):
