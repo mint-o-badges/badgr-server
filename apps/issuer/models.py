@@ -227,6 +227,8 @@ class Issuer(ResizeUploadedImage,
         'country': None
     }
 
+    __original_verified = False
+
     def publish(self, publish_staff=True, *args, **kwargs):
         fields_cache = self._state.fields_cache  # stash the fields cache to avoid publishing related objects here
         self._state.fields_cache = dict()
@@ -274,6 +276,7 @@ class Issuer(ResizeUploadedImage,
         super().__init__(*args, **kwargs)
         self.__original_address = {'street': self.street, 'streetnumber': self.streetnumber,
             'city': self.city, 'zip': self.zip, 'country': self.country}
+        self.__original_verified = self.verified
 
     def save(self, *args, **kwargs):
         if not self.pk:
@@ -298,6 +301,9 @@ class Issuer(ResizeUploadedImage,
 
         ret = super(Issuer, self).save(*args, **kwargs)
 
+        # notify the owner of the Issuer on verification
+        if self.__original_verified == False and self.verified:
+            self.notify_issuer_owner(self)
         # The user who created the issuer should always be an owner
         self.ensure_owner()
 
@@ -481,7 +487,6 @@ class Issuer(ResizeUploadedImage,
         if badgr_app is None:
             badgr_app = BadgrApp.objects.get_current(None)
 
-        print(badgr_app)
         UserModel = get_user_model()
         users = UserModel.objects.filter(is_staff=True)
 
@@ -507,7 +512,48 @@ class Issuer(ResizeUploadedImage,
         adapter = get_adapter()
         for user in users:
             adapter.send_mail(template_name, user.email, context=email_context)
+ 
+    # Notify Issuer owner when issuer gets verified
+    def notify_issuer_owner(self, badgr_app=None, renotify=False):
+        """
+        Sends an email notification to the Issuer owner.
+        """
 
+        try:
+            EmailBlacklist.objects.get(email=self.email)
+        except EmailBlacklist.DoesNotExist:
+            # Allow sending, as this email is not blacklisted.
+            pass
+        else:
+            logger.event(badgrlog.BlacklistEarnerNotNotifiedEvent(self))
+            return
+
+        if badgr_app is None:
+            badgr_app = self.cached_issuer.cached_badgrapp
+        if badgr_app is None:
+            badgr_app = BadgrApp.objects.get_current(None)
+
+        try:
+            if self.image:
+                issuer_image_url = self.issuer.public_url + '/image'
+            else:
+                issuer_image_url = None
+
+            email_context = {
+                'issuer_name': re.sub(r'[^\w\s]+', '', self.name, 0, re.I),
+                'issuer_url': self.url,
+                'issuer_email': self.email,
+                'site_name': badgr_app.name,
+                'badgr_app': badgr_app
+            }
+        except KeyError as e:
+            # A property isn't stored right in json
+            raise e
+
+        template_name = 'issuer/email/notify_issuer_verified'
+
+        adapter = get_adapter()
+        adapter.send_mail(template_name, self.email, context=email_context)
 
 class IssuerStaff(cachemodel.CacheModel):
     ROLE_OWNER = 'owner'
