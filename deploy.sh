@@ -10,9 +10,10 @@ set -e
 packagesUrl="https://github.com/mint-o-badges/badgr-server/pkgs/container/badgr-server"
 productionUrl="openbadges.education"
 productionUser="ubuntu"
-deploymentPath="/home/ubuntu/docker/badgr-server"
+basePath="/home/ubuntu/docker"
+deploymentPath="$basePath/badgr-server"
 
-echo "Enter the commit checksum (e.g. 'f2ed4f8') you want to deploy (leave empty for the latest commit)"
+echo "Enter the commit checksum (e.g. 'f2ed4f8') you want to deploy (leave empty for the latest commit from the remote main)"
 read checksum
 echo "Enter the major part of the version you want to release (the x in vx.y.z)"
 read versionMajor
@@ -26,12 +27,14 @@ read message
 version="v$versionMajor.$versionMinor.$versionPatch"
 
 if [ -z "$checksum" ]; then
-    echo "Tagging the latest commit with $version..."
-    git tag -a $version -m "$message"
+    echo "Fetching latest commit..."
+    git fetch --all
+    checksum=$(git log -n 1 --pretty=format:"%H" origin/main)
+    echo "Tagging the latest commit ($checksum) with $version..."
 else
     echo "Tagging commit $checksum with version $version..."
-    git tag -a "$version" $checksum -m "$message"
 fi
+git tag -a "$version" $checksum -m "$message"
 
 echo "Pushing tags to origin..."
 git push origin --tags
@@ -50,7 +53,23 @@ ssh $productionUser@$productionUrl "sed -i \"s/IMAGE_VERSION=.*/IMAGE_VERSION=\\
 echo "Committing changes on production server..."
 ssh $productionUser@$productionUrl "cd $deploymentPath && git add .env && git commit -m \"Update deployed version of server to $version\""
 
-echo "Restarting container..."
-ssh $productionUser@$productionUrl "cd $deploymentPath && docker compose up -d > /dev/null"
+echo "Restarting all containers..."
+echo "Shutting down badgr-ui..."
+ssh $productionUser@$productionUrl "cd $basePath/badgr-ui && docker compose down > /dev/null"
+
+echo "Shutting down badgr-server..."
+ssh $productionUser@$productionUrl "cd $basePath/badgr-server && docker compose down > /dev/null"
+
+echo "Shutting down https_proxy..."
+ssh $productionUser@$productionUrl "cd $basePath/https_proxy && docker compose down > /dev/null"
+
+echo "Starting https_proxy..."
+ssh $productionUser@$productionUrl "cd $basePath/https_proxy && docker compose up -d > /dev/null"
+
+echo "Starting badgr-server..."
+ssh $productionUser@$productionUrl "cd $basePath/badgr-server && docker compose up -d > /dev/null"
+
+echo "Starting badgr-ui..."
+ssh $productionUser@$productionUrl "cd $basePath/badgr-ui && docker compose up -d > /dev/null"
 
 echo "Successfully deployed version $version!"
