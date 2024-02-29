@@ -225,6 +225,7 @@ class BadgeClassExpirationSerializerV1(serializers.Serializer):
     duration = serializers.ChoiceField(source='expires_duration', allow_null=True,
                                        choices=BadgeClass.EXPIRES_DURATION_CHOICES)
 
+# https://stackoverflow.com/questions/50973569/django-rest-framework-relatedfield-cant-return-a-dict-object
 
 class ModifiedRelatedField(serializers.RelatedField):
     def get_choices(self, cutoff=None):
@@ -312,7 +313,7 @@ class CollectionBadgeClassSerializerV1(serializers.Serializer):
             allow_null=True, max_length=255)
     image = ValidImageField(required=False)
     badges = CollectionBadgeBadgeClassField(many=True, queryset=BadgeClass.objects.all(), source='cached_collects')
-
+    slug = StripTagsCharField(required=False, max_length=128, source='entity_id')
 
     def to_representation(self, instance):
         representation = super(CollectionBadgeClassSerializerV1, self).to_representation(instance)

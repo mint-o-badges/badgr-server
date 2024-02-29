@@ -578,6 +578,9 @@ class CollectionBadgeContainer(
     image = models.FileField(upload_to='uploads/badges', blank=True)
     image_preview = models.FileField(upload_to='uploads/badges', blank=True, null=True)
 
+    # issuer = models.ForeignKey(Issuer, blank=False, null=False, on_delete=models.CASCADE, related_name="collectionbadgeclasses")
+
+
     assertions =   models.ManyToManyField('issuer.BadgeClass', blank=True,
             through='issuer.CollectionBadgeBadgeClass'
         ) 
@@ -601,6 +604,10 @@ class CollectionBadgeContainer(
     @property
     def badgeclass_items(self):
         return self.cached_collects()
+
+    # @property
+    # def cached_issuer(self):
+    #     return Issuer.cached.get(pk=self.issuer_id)
 
     # @property
     # def cached_badgrapp(self):
