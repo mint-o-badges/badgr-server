@@ -75,7 +75,7 @@ class IssuerSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixin):
     createdBy = EntityRelatedFieldV2(source='cached_creator', queryset=BadgeUser.cached, required=False)
     name = StripTagsCharField(max_length=1024)
     image = ValidImageField(required=False, use_public=True, source='*')
-    email = serializers.EmailField(max_length=255, required=True)
+    email = serializers.EmailField(max_length=255, required=True) 
     description = StripTagsCharField(max_length=16384, required=False)
     url = serializers.URLField(max_length=1024, required=True)
     staff = IssuerStaffSerializerV2(many=True, source='staff_items', required=False)
@@ -465,25 +465,6 @@ class CollectionBadgeClassSerializerV2(DetailSerializerV2, OriginalJsonSerialize
                     'description': "\"CollectionBadgeClass\"",
                     'readOnly': True,
                 }),
-                # ('createdAt', {
-                #     'type': 'string',
-                #     'format': 'ISO8601 timestamp',
-                #     'description': "Timestamp when the BadgeClass was created",
-                #     'readOnly': True,
-                # }),
-                # ('createdBy', {
-                #     'type': 'string',
-                #     'format': 'entityId',
-                #     'description': "BadgeUser who created this BadgeClass",
-                #     'readOnly': True,
-                # }),
-
-                # ('issuer', {
-                #     'type': 'string',
-                #     'format': 'entityId',
-                #     'description': "entityId of the Issuer who owns the BadgeClass",
-                #     'required': False,
-                # }),
 
                 ('name', {
                     'type': "string",
