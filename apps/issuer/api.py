@@ -102,7 +102,7 @@ class IssuerDetail(BaseEntityDetailView):
 class CollectionBadgeDetail(BaseEntityDetailView):
     model = CollectionBadgeContainer
     v1_serializer_class = CollectionBadgeClassSerializerV1
-    # v2_serializer_class = BackpackCollectionSerializerV2
+    v2_serializer_class = CollectionBadgeClassSerializerV2
     permission_classes = (AuthenticatedWithVerifiedIdentifier, AuditedModelOwner)
     valid_scopes = {
         'get': ['r:issuer', 'rw:issuer'],
@@ -140,7 +140,7 @@ class AllSuperBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListView):
     """
     model = SuperBadge
     v1_serializer_class = SuperBadgeClassSerializerV1
-    # v2_serializer_class = BadgeClassSerializerV2
+    v2_serializer_class = SuperBadgeClassSerializerV2
     valid_scopes = ["rw:serverAdmin"]
 
     def get_queryset(self, **kwargs):
