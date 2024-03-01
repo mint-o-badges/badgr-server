@@ -263,7 +263,7 @@ class SuperBadgeClassSerializerV1(serializers.Serializer):
     image = ValidImageField(required=False)
 
     badges = SuperBadgeBadgeClassField(
-        queryset=BadgeClass.objects.all(), many=True, source='cached_collects'
+        queryset=BadgeClass.objects.all(), many=True, source='cached_badgeclasses'
     )
 
     def to_representation(self, instance):
@@ -288,7 +288,7 @@ class SuperBadgeClassSerializerV1(serializers.Serializer):
             image=validated_data.get('image')
         )
 
-        for badge in validated_data.get('cached_collects', []):
+        for badge in validated_data.get('cached_badgeclasses', []):
             new_superbadge.assertions.add(badge)   
 
         return new_superbadge
