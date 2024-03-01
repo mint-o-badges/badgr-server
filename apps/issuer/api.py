@@ -102,7 +102,7 @@ class IssuerDetail(BaseEntityDetailView):
 class CollectionBadgeDetail(BaseEntityDetailView):
     model = CollectionBadgeContainer
     v1_serializer_class = CollectionBadgeClassSerializerV1
-    v2_serializer_class = CollectionBadgeClassSerializerV2
+    # v2_serializer_class = CollectionBadgeClassSerializerV2
     permission_classes = (AuthenticatedWithVerifiedIdentifier, AuditedModelOwner)
     valid_scopes = {
         'get': ['r:issuer', 'rw:issuer'],
@@ -195,47 +195,6 @@ class AllBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListView):
     def post(self, request, **kwargs):
         return super(AllBadgeClassesList, self).post(request, **kwargs)
 
-class AllSuperBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListView):
-    """
-    GET a list of superbadgeclasses within one issuer context or
-    POST to create a new superbadgeclass within the issuer context
-    """
-    model = SuperBadge
-    permission_classes = [
-        IsServerAdmin
-        | (AuthenticatedWithVerifiedIdentifier & IsEditor & BadgrOAuthTokenHasScope)
-        | BadgrOAuthTokenHasEntityScope
-    ]
-    v1_serializer_class = SuperBadgeClassSerializerV1
-    v2_serializer_class = SuperBadgeClassSerializerV2
-    valid_scopes = ["rw:issuer"]
-
-    def get_queryset(self, request, **kwargs):
-        return SuperBadge.objects.all().order_by('created_at')
-
-    @apispec_list_operation('SuperBadgeClass',
-        summary="Get a list of SuperBadgeClasses for authenticated user",
-        tags=["SuperBadgeClasses"],
-    )
-    def get(self, request, **kwargs):
-        return super(AllSuperBadgeClassesList, self).get(request, **kwargs)
-
-    @apispec_post_operation('SuperBadgeClass',
-        summary="Create a new SuperBadgeClass",
-        tags=["SuperBadgeClasses"],
-        parameters=[
-            {
-                'in': 'query',
-                'name': "num",
-                'type': "string",
-                'description': 'Request pagination of results'
-            },
-        ]
-    )
-    def post(self, request, **kwargs):
-        return super(AllSuperBadgeClassesList, self).post(request, **kwargs)        
-
-
 
 class AllCollectionBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListView):
     """
@@ -265,14 +224,8 @@ class AllCollectionBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListVi
     @apispec_post_operation('CollectionBadgeClass',
         summary="Create a new CollectionBadgeClass",
         tags=["CollectionBadgeClasses"],
-        parameters=[
-            {
-                'in': 'query',
-                'name': "num",
-                'type': "string",
-                'description': 'Request pagination of results'
-            },
-        ]
+        # TODO: Add parameters
+        parameters=[]
     )
     def post(self, request, **kwargs):
         return super(AllCollectionBadgeClassesList, self).post(request, **kwargs)        
