@@ -578,8 +578,8 @@ class CollectionBadgeContainer(
     image = models.FileField(upload_to='uploads/badges', blank=True)
     image_preview = models.FileField(upload_to='uploads/badges', blank=True, null=True)
 
-    # issuer = models.ForeignKey(Issuer, blank=False, null=False, on_delete=models.CASCADE, related_name="collectionbadgeclasses")
-
+    
+    # slug = models.CharField(max_length=254, blank=True, null=True, default=None)
 
     assertions =   models.ManyToManyField('issuer.BadgeClass', blank=True,
             through='issuer.CollectionBadgeBadgeClass'
@@ -596,22 +596,11 @@ class CollectionBadgeContainer(
     def image_url(self):
         return OriginSetting.HTTP + reverse('collectionbadge_image', kwargs={'entity_id': self.entity_id})
 
-        # if getattr(settings, 'MEDIA_URL').startswith('http'):
-        #     return default_storage.url(self.image.name)
-        # else:
-        #     return getattr(settings, 'HTTP_ORIGIN') + default_storage.url(self.image.name)
     
     @property
     def badgeclass_items(self):
         return self.cached_collects()
-
-    # @property
-    # def cached_issuer(self):
-    #     return Issuer.cached.get(pk=self.issuer_id)
-
-    # @property
-    # def cached_badgrapp(self):
-    #     return self.cached_issuer.cached_badgrapp    
+   
    
 class CollectionBadgeBadgeClass(cachemodel.CacheModel):
     collectionbadge = models.ForeignKey('issuer.CollectionBadgeContainer',
@@ -645,10 +634,7 @@ class SuperBadge( ResizeUploadedImage,
     def cached_badgeclasses(self):
         return self.assertions.all()
 
-    @cachemodel.cached_method(auto_publish=True)
-    def cached_collects(self):
-        return self.assertions.all()
-
+  
     @property
     def badge_items(self):
         return self.cached_badgeclasses()
