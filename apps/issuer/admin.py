@@ -7,7 +7,7 @@ from django.utils.safestring import mark_safe
 
 from mainsite.admin import badgr_admin
 
-from .models import Issuer, BadgeClass, BadgeInstance, BadgeInstanceEvidence, BadgeClassAlignment, BadgeClassTag, \
+from .models import Issuer, BadgeClass, BadgeInstance, CollectionBadgeInstance, BadgeInstanceEvidence, BadgeClassAlignment, BadgeClassTag, \
     BadgeClassExtension, IssuerExtension, BadgeInstanceExtension, SuperBadge, CollectionBadgeContainer
 from .tasks import resend_notifications
 
@@ -325,6 +325,75 @@ class BadgeInstanceAdmin(DjangoObjectActions, ModelAdmin):
 
 
 badgr_admin.register(BadgeInstance, BadgeInstanceAdmin)
+
+# class CollectionBadgeInstanceInstanceInline(TabularInline):
+#     model = CollectionBadgeInstance.assertions.through
+#     extra = 0
+
+class CollectionBadgeInstanceAdmin(DjangoObjectActions, ModelAdmin):
+    readonly_fields = ('created_at', 'created_by', 'updated_at', 'image', 'entity_id',
+                       'salt', 'entity_id', 'slug',)
+    list_display = ('badge_image', 'recipient_identifier', 'entity_id', 'collectionbadgeclass', 'issuer')
+    list_display_links = ('badge_image', 'recipient_identifier', )
+    list_filter = ('created_at',)
+    search_fields = ('recipient_identifier', 'entity_id', 'collectionbadgeclass__name', 'issuer__name')
+    raw_id_fields = ('collectionbadgeclass', 'issuer')
+    fieldsets = (
+        ('Metadata', {
+            'fields': ('created_by', 'created_at', 'updated_at', 'slug', 'salt'),
+            'classes': ("collapse",)
+        }),
+        ('CollectionBadgeclass', {
+            'fields': ('collectionbadgeclass', 'issuer')
+        }),
+        ('Assertion', {
+            'fields': (
+                'entity_id', 'acceptance', 'recipient_type', 'recipient_identifier',
+                'image', 'issued_on', 'expires_at')
+        }),
+        ('Revocation', {
+            'fields': ('revoked', 'revocation_reason')
+        }),
+    )
+    actions = ['resend_notifications']
+    # change_actions = ['redirect_issuer', 'redirect_collectionbadgeclass']
+    # inlines = [
+    #     CollectionBadgeInstanceInstanceInline
+    # ]
+
+    def badge_image(self, obj):
+        try:
+            return mark_safe('<img src="{}" width="32"/>'.format(obj.image.url))
+        except ValueError:
+            return obj.image
+    badge_image.short_description = 'CollectionBadge'
+    badge_image.allow_tags = True
+
+    # def redirect_badgeclass(self, request, obj):
+    #     return HttpResponseRedirect(
+    #         reverse('admin:issuer_collectionbadgeclass_change', args=(obj.badgeclass.id,))
+    #     )
+    # redirect_badgeclass.label = "CollectionBadgeClass"
+    # redirect_badgeclass.short_description = "See this CollectionBadgeClass"
+
+    def redirect_issuer(self, request, obj):
+        return HttpResponseRedirect(
+            reverse('admin:issuer_issuer_change', args=(obj.issuer.id,))
+        )
+    redirect_issuer.label = "Issuer"
+    redirect_issuer.short_description = "See this Issuer"
+
+    def resend_notifications(self, request, queryset):
+        ids_dict = queryset.only('entity_id').values()
+        ids = [i['entity_id'] for i in ids_dict]
+        resend_notifications.delay(ids)
+
+    def save_model(self, request, obj, form, change):
+        # obj.rebake(save=False)
+        super().save_model(request, obj, form, change)
+
+
+badgr_admin.register(CollectionBadgeInstance, CollectionBadgeInstanceAdmin)
 
 
 class ExtensionAdmin(ModelAdmin):
