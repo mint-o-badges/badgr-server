@@ -578,7 +578,7 @@ class CollectionBadgeContainer(
     image = models.FileField(upload_to='uploads/badges', blank=True)
     image_preview = models.FileField(upload_to='uploads/badges', blank=True, null=True)
 
-    
+    issuer = models.ForeignKey(Issuer, blank=False, null=False, on_delete=models.CASCADE, related_name="collectionbadgeclasses")
     # slug = models.CharField(max_length=254, blank=True, null=True, default=None)
 
     assertions =   models.ManyToManyField('issuer.BadgeClass', blank=True,
@@ -600,6 +600,11 @@ class CollectionBadgeContainer(
     @property
     def badgeclass_items(self):
         return self.cached_collects()
+
+    @property
+    def cached_issuer(self):
+        return Issuer.cached.get(pk=self.issuer_id)
+    
    
    
 class CollectionBadgeBadgeClass(cachemodel.CacheModel):
@@ -682,7 +687,7 @@ class CollectionBadgeInstance(BaseAuditedModel,
 
     @property
     def cached_collectionbadgeclass(self):
-        return CollectionBadgeContainer.cached.get(pk=self.badgeclass_id)
+        return CollectionBadgeContainer.cached.get(pk=self.collectionbadgeclass_id)
 
     @property
     def pending(self):
