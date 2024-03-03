@@ -1,6 +1,6 @@
 from django.conf.urls import url
 
-from issuer.api import (IssuerList, IssuerDetail, IssuerBadgeClassList, BadgeClassDetail, BadgeInstanceList, CollectionBadgeDetail,
+from issuer.api import (IssuerList, IssuerDetail, IssuerBadgeClassList, BadgeClassDetail, BadgeInstanceList, CollectionBadgeInstanceList, CollectionBadgeDetail,
                         BadgeInstanceDetail, IssuerBadgeInstanceList, AllBadgeClassesList, AllSuperBadgeClassesList, AllCollectionBadgeClassesList, BatchAssertionsIssue)
 from issuer.api_v1 import FindBadgeClassDetail, IssuerStaffList
 
@@ -32,6 +32,10 @@ urlpatterns = [
 
     url(r'^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<slug>[^/]+)/assertions$',
         BadgeInstanceList.as_view(), name='v1_api_badgeinstance_list'),
+
+    url(r'^issuers/(?P<issuerSlug>[^/]+)/collectionbadges/(?P<slug>[^/]+)/assertions$',
+        CollectionBadgeInstanceList.as_view(), name='v1_api_collectionbadgeinstance_list'),
+
     url(r'^issuers/(?P<slug>[^/]+)/assertions$', IssuerBadgeInstanceList.as_view(), name='v1_api_issuer_instance_list'),
     url(r'^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/assertions/(?P<slug>[^/]+)$',
         BadgeInstanceDetail.as_view(), name='v1_api_badgeinstance_detail'),
