@@ -610,6 +610,252 @@ class CollectionBadgeBadgeClass(cachemodel.CacheModel):
                                       on_delete=models.CASCADE)
 
 
+class CollectionBadgeInstance(BaseAuditedModel,
+                    BaseVersionedEntity,
+                    ):
+    entity_class_name = 'CollectionBadgeAssertion'
+    COMPARABLE_PROPERTIES = ('collectionbadgeclass_id', 'entity_id', 'issued_on', 'pk', 
+                             'recipient_identifier', 'recipient_type', 'revoked', 'revocation_reason', 'updated_at',)
+
+    issued_on = models.DateTimeField(blank=False, null=False, default=timezone.now)
+
+    collectionbadgeclass = models.ForeignKey(CollectionBadgeContainer, blank=False, null=False,
+                                   on_delete=models.CASCADE, related_name='collectionbadgeinstances')
+    issuer = models.ForeignKey(Issuer, blank=False, null=False,
+                               on_delete=models.CASCADE)
+
+    user = models.ForeignKey('badgeuser.BadgeUser', blank=True, null=True, on_delete=models.SET_NULL)
+
+    RECIPIENT_TYPE_CHOICES = (
+        (RECIPIENT_TYPE_EMAIL, 'email'),
+        (RECIPIENT_TYPE_ID, 'openBadgeId'),
+        (RECIPIENT_TYPE_TELEPHONE, 'telephone'),
+        (RECIPIENT_TYPE_URL, 'url'),
+    )
+    recipient_identifier = models.CharField(max_length=768, blank=False, null=False, db_index=True)
+    recipient_type = models.CharField(max_length=255, choices=RECIPIENT_TYPE_CHOICES,
+                                      default=RECIPIENT_TYPE_EMAIL, blank=False, null=False)
+
+    image = models.FileField(upload_to='uploads/badges', blank=True)
+
+    # slug has been deprecated for now, but preserve existing values
+    slug = models.CharField(max_length=255, db_index=True, blank=True, null=True, default=None)
+    # slug = AutoSlugField(max_length=255, populate_from='get_new_slug', unique=True, blank=False, editable=False)
+
+    revoked = models.BooleanField(default=False, db_index=True)
+    revocation_reason = models.CharField(max_length=255, blank=True, null=True, default=None)
+
+    expires_at = models.DateTimeField(blank=True, null=True, default=None)
+
+    ACCEPTANCE_UNACCEPTED = 'Unaccepted'
+    ACCEPTANCE_ACCEPTED = 'Accepted'
+    ACCEPTANCE_REJECTED = 'Rejected'
+    ACCEPTANCE_CHOICES = (
+        (ACCEPTANCE_UNACCEPTED, 'Unaccepted'),
+        (ACCEPTANCE_ACCEPTED, 'Accepted'),
+        (ACCEPTANCE_REJECTED, 'Rejected'),
+    )
+    acceptance = models.CharField(max_length=254, choices=ACCEPTANCE_CHOICES, default=ACCEPTANCE_UNACCEPTED)
+
+    hashed = models.BooleanField(default=True)
+    salt = models.CharField(max_length=254, blank=True, null=True, default=None)
+
+    # objects = BadgeInstanceManager()
+    cached = SlugOrJsonIdCacheModelManager(slug_kwarg_name='entity_id', slug_field_name='entity_id')
+
+    class Meta:
+        index_together = (
+                ('recipient_identifier', 'collectionbadgeclass', 'revoked'),
+        )
+
+    def image_url(self, public=False):
+        # if public:
+            return OriginSetting.HTTP + reverse('collectionbadgeinstance_image', kwargs={'entity_id': self.entity_id})
+        # if getattr(settings, 'MEDIA_URL').startswith('http'):
+        #     return default_storage.url(self.image.name)
+        # else:
+        #     return getattr(settings, 'HTTP_ORIGIN') + default_storage.url(self.image.name)
+
+    @property
+    def cached_issuer(self):
+        return Issuer.cached.get(pk=self.issuer_id)
+
+    @property
+    def cached_collectionbadgeclass(self):
+        return CollectionBadgeContainer.cached.get(pk=self.badgeclass_id)
+
+    @property
+    def pending(self):
+        """
+            If the associated identifier for this CollectionBadgeInstance
+            does not exist or is unverified the CollectionBadgeInstance is
+            considered "pending"
+        """
+        from badgeuser.models import CachedEmailAddress, UserRecipientIdentifier
+        try:
+            if self.recipient_type == RECIPIENT_TYPE_EMAIL:
+                existing_identifier = CachedEmailAddress.cached.get(email=self.recipient_identifier)
+            else:
+                existing_identifier = UserRecipientIdentifier.cached.get(identifier=self.recipient_identifier)
+        except (UserRecipientIdentifier.DoesNotExist, CachedEmailAddress.DoesNotExist,):
+            return False
+
+        if not self.source_url:
+            return False
+
+        return not existing_identifier.verified
+
+    def save(self, *args, **kwargs):
+        if self.pk is None:
+            # First check if recipient is in the blacklist
+            if blacklist.api_query_is_in_blacklist(self.recipient_type, self.recipient_identifier):
+                logger.event(badgrlog.BlacklistAssertionNotCreatedEvent(self))
+                raise ValidationError("You may not award this collectionbadge to this recipient.")
+
+            self.salt = uuid.uuid4().hex
+            self.created_at = datetime.datetime.now()
+
+            # do this now instead of in AbstractVersionedEntity.save() so we can use it for image name
+            if self.entity_id is None:
+                self.entity_id = generate_entity_uri()
+
+            # if not self.image:
+            #     collectionbadgeclass_name, ext = os.path.splitext(self.badgeclass.image.file.name)
+            #     new_image = io.BytesIO()
+            #     bake(image_file=self.cached_collectionbadgeclass.image.file,
+            #          assertion_json_string=json_dumps(self.get_json(obi_version=UNVERSIONED_BAKED_VERSION), indent=2),
+            #          output_file=new_image)
+            #     self.image.save(name='assertion-{id}{ext}'.format(id=self.entity_id, ext=ext),
+            #                     content=ContentFile(new_image.read()),
+            #                     save=False)
+
+            try:
+                from badgeuser.models import CachedEmailAddress
+                existing_email = CachedEmailAddress.cached.get(email=self.recipient_identifier)
+                if self.recipient_identifier != existing_email.email and \
+                        self.recipient_identifier not in [e.email for e in existing_email.cached_variants()]:
+                    existing_email.add_variant(self.recipient_identifier)
+            except CachedEmailAddress.DoesNotExist:
+                pass
+
+        if self.revoked is False:
+            self.revocation_reason = None
+
+        super(CollectionBadgeInstance, self).save(*args, **kwargs)
+
+    # def rebake(self, obi_version=CURRENT_OBI_VERSION, save=True):
+    #     new_image = io.BytesIO()
+    #     bake(
+    #         image_file=self.cached_badgeclass.image.file,
+    #         assertion_json_string=json_dumps(self.get_json(obi_version=obi_version), indent=2),
+    #         output_file=new_image
+    #     )
+
+    #     new_filename = generate_rebaked_filename(self.image.name, self.cached_badgeclass.image.name)
+    #     new_name = default_storage.save(new_filename, ContentFile(new_image.read()))
+    #     default_storage.delete(self.image.name)
+    #     self.image.name = new_name
+    #     if save:
+    #         self.save()
+
+
+    def revoke(self, revocation_reason):
+        if self.revoked:
+            raise ValidationError("Assertion is already revoked")
+
+        if not revocation_reason:
+            raise ValidationError("revocation_reason is required")
+
+        self.revoked = True
+        self.revocation_reason = revocation_reason
+        self.image.delete()
+        self.save()
+
+    def notify_earner(self, badgr_app=None, renotify=False):
+        """
+        Sends an email notification to the collectionbadge recipient.
+        """
+        if self.recipient_type != RECIPIENT_TYPE_EMAIL:
+            return
+
+        try:
+            EmailBlacklist.objects.get(email=self.recipient_identifier)
+        except EmailBlacklist.DoesNotExist:
+            # Allow sending, as this email is not blacklisted.
+            pass
+        else:
+            logger.event(badgrlog.BlacklistEarnerNotNotifiedEvent(self))
+            return
+
+        if badgr_app is None:
+            badgr_app = self.cached_issuer.cached_badgrapp
+        if badgr_app is None:
+            badgr_app = BadgrApp.objects.get_current(None)
+
+        try:
+            if self.issuer.image:
+                issuer_image_url = self.issuer.public_url + '/image'
+            else:
+                issuer_image_url = None
+
+            email_context = {
+                'collectionbadge_name': self.collectionbadgeclass.name,
+                'collectionbadge_id': self.entity_id,
+                'collectionbadge_description': self.collectionbadgeclass.description,
+                'help_email': getattr(settings, 'HELP_EMAIL', 'help@badgr.io'),
+                'issuer_name': re.sub(r'[^\w\s]+', '', self.issuer.name, 0, re.I),
+                'issuer_url': self.issuer.url,
+                'issuer_email': self.issuer.email,
+                'issuer_detail': self.issuer.public_url,
+                'issuer_image_url': issuer_image_url,
+                'badge_instance_url': self.public_url,
+                'image_url': self.public_url + '/image?type=png',
+                'download_url': self.public_url + "?action=download",
+                'site_name': badgr_app.name,
+                'site_url': badgr_app.signup_redirect,
+                'badgr_app': badgr_app
+            }
+            if badgr_app.cors == 'badgr.io':
+                email_context['promote_mobile'] = True
+            if renotify:
+                email_context['renotify'] = 'Reminder'
+        except KeyError as e:
+            # A property isn't stored right in json
+            raise e
+
+        template_name = 'issuer/email/notify_earner'
+        try:
+            from badgeuser.models import CachedEmailAddress
+            CachedEmailAddress.objects.get(email=self.recipient_identifier, verified=True)
+            template_name = 'issuer/email/notify_account_holder'
+            email_context['site_url'] = badgr_app.ui_login_redirect
+        except CachedEmailAddress.DoesNotExist:
+            pass
+
+        adapter = get_adapter()
+        adapter.send_mail(template_name, self.recipient_identifier, context=email_context)
+
+    @property
+    def recipient_user(self):
+        from badgeuser.models import CachedEmailAddress, UserRecipientIdentifier
+        try:
+            email_address = CachedEmailAddress.cached.get(email=self.recipient_identifier)
+            if email_address.verified:
+                return email_address.user
+        except CachedEmailAddress.DoesNotExist:
+            try:
+                identifier = UserRecipientIdentifier.cached.get(identifier=self.recipient_identifier)
+                if identifier.verified:
+                    return identifier.user
+            except UserRecipientIdentifier.DoesNotExist:
+                pass
+            pass
+        return None
+
+    @property
+    def cached_badgrapp(self):
+        return self.cached_issuer.cached_badgrapp
+
 
 class SuperBadge( ResizeUploadedImage,
                   ScrubUploadedSvgImage,
