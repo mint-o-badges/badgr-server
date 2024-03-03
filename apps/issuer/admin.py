@@ -23,13 +23,14 @@ class CollectionBadgeAdmin(ModelAdmin):
     list_display_links = ('name',)
     list_filter = ('created_at',)
     search_fields = ('name', 'entity_id')
+    raw_id_fields = ('issuer',)
     fieldsets = (
         ('Metadata', {
             'fields': ('created_by', 'created_at', 'updated_at', 'entity_id'),
             'classes': ("collapse",)
         }),
         (None, {
-            'fields': ('image', 'name', 'description')
+            'fields': ('issuer', 'image', 'name', 'description')
         }),
     )
     inlines = [
