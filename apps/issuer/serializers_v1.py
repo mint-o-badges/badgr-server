@@ -665,3 +665,115 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
         instance.save()
 
         return instance
+
+class CollectionBadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
+    created_at = DateTimeWithUtcZAtEndField(read_only=True, default_timezone=pytz.utc)
+    created_by = BadgeUserIdentifierFieldV1(read_only=True)
+    slug = serializers.CharField(max_length=255, read_only=True, source='entity_id')
+    image = serializers.FileField(read_only=True)  # use_url=True, might be necessary
+    email = serializers.EmailField(max_length=1024, required=False, write_only=True)
+    recipient_identifier = serializers.CharField(max_length=1024, required=False)
+    recipient_type = serializers.CharField(default=RECIPIENT_TYPE_EMAIL)
+    allow_uppercase = serializers.BooleanField(default=False, required=False, write_only=True)
+
+    revoked = HumanReadableBooleanField(read_only=True)
+    revocation_reason = serializers.CharField(read_only=True)
+
+    expires = DateTimeWithUtcZAtEndField(source='expires_at', required=False,
+                                         allow_null=True, default_timezone=pytz.utc)
+
+    create_notification = HumanReadableBooleanField(write_only=True, required=False, default=False)
+    allow_duplicate_awards = serializers.BooleanField(write_only=True, required=False, default=True)
+    hashed = serializers.NullBooleanField(default=None, required=False)
+
+
+    class Meta:
+        apispec_definition = ('Assertion', {})
+
+    def validate(self, data):
+        recipient_type = data.get('recipient_type')
+        if data.get('recipient_identifier') and data.get('email') is None:
+            if recipient_type == RECIPIENT_TYPE_EMAIL:
+                recipient_validator = EmailValidator()
+            elif recipient_type in (RECIPIENT_TYPE_URL, RECIPIENT_TYPE_ID):
+                recipient_validator = URLValidator()
+            else:
+                recipient_validator = TelephoneValidator()
+
+            try:
+                recipient_validator(data['recipient_identifier'])
+            except DjangoValidationError as e:
+                raise serializers.ValidationError(e.message)
+
+        elif data.get('email') and data.get('recipient_identifier') is None:
+            data['recipient_identifier'] = data.get('email')
+
+        allow_duplicate_awards = data.pop('allow_duplicate_awards')
+        if allow_duplicate_awards is False and self.context.get('collectionbadgeclass') is not None:
+            previous_awards = BadgeInstance.objects.filter(
+                recipient_identifier=data['recipient_identifier'], badgeclass=self.context['collectionbadgeclass']
+            ).filter(
+                Q(expires_at__isnull=True) | Q(expires_at__lt=timezone.now())
+            )
+            if previous_awards.exists():
+                raise serializers.ValidationError(
+                    "A previous award of this badge already exists for this recipient.")
+
+        hashed = data.get('hashed', None)
+        if hashed is None:
+            if recipient_type in (RECIPIENT_TYPE_URL, RECIPIENT_TYPE_ID):
+                data['hashed'] = False
+            else:
+                data['hashed'] = True
+
+        return data
+
+    def to_representation(self, instance):
+        representation = super(CollectionBadgeInstanceSerializerV1, self).to_representation(instance)
+        if self.context.get('include_issuer', False):
+            representation['issuer'] = IssuerSerializerV1(instance.cached_badgeclass.cached_issuer).data
+        else:
+            representation['issuer'] = OriginSetting.HTTP + \
+                reverse('issuer_json', kwargs={'entity_id': instance.cached_issuer.entity_id})
+        if self.context.get('include_collectionbadge_class', False):
+            representation['collectionbadge_class'] = CollectionBadgeClassSerializerV1(
+                instance.cached_badgeclass, context=self.context).data
+        else:
+            representation['collectionbadge_class'] = OriginSetting.HTTP + \
+                reverse('collectionbadgeclass_json', kwargs={'entity_id': instance.cached_collectionbadgeclass.entity_id})
+
+        return representation
+
+    def create(self, validated_data):
+        """
+        Requires self.context to include request (with authenticated request.user)
+        and collectionbadgeclass: issuer.models.CollectionBadgeContainer.
+        """
+
+        try:
+            return self.context.get('collectionbadgeclass').issue(
+                recipient_id=validated_data.get('recipient_identifier'),
+                notify=validated_data.get('create_notification'),
+                created_by=self.context.get('request').user,
+                allow_uppercase=validated_data.get('allow_uppercase'),
+                recipient_type=validated_data.get('recipient_type', RECIPIENT_TYPE_EMAIL),
+                badgr_app=BadgrApp.objects.get_current(self.context.get('request')),
+                expires_at=validated_data.get('expires_at', None),
+            )
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.message)
+
+    def update(self, instance, validated_data):
+        updateable_fields = [
+            'expires_at',
+            'hashed',
+            'recipient_identifier',
+            'recipient_type'
+        ]
+
+        for field_name in updateable_fields:
+            if field_name in validated_data:
+                setattr(instance, field_name, validated_data.get(field_name))
+        instance.save()
+
+        return instance
