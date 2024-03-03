@@ -22,7 +22,7 @@ from issuer.permissions import (MayIssueBadgeClass, MayEditBadgeClass, IsEditor,
                                 IsStaff, ApprovedIssuersOnly, BadgrOAuthTokenHasScope,
                                 BadgrOAuthTokenHasEntityScope, AuthorizationIsBadgrOAuthToken, AuditedModelOwner)
 from issuer.serializers_v1 import (IssuerSerializerV1, BadgeClassSerializerV1,
-                                   BadgeInstanceSerializerV1, SuperBadgeClassSerializerV1, CollectionBadgeClassSerializerV1)
+                                   BadgeInstanceSerializerV1, CollectionBadgeInstanceSerializerV1, SuperBadgeClassSerializerV1, CollectionBadgeClassSerializerV1)
 from issuer.serializers_v2 import IssuerSerializerV2, BadgeClassSerializerV2, BadgeInstanceSerializerV2, SuperBadgeClassSerializerV2, CollectionBadgeClassSerializerV2, \
     IssuerAccessTokenSerializerV2
 from apispec_drf.decorators import apispec_get_operation, apispec_put_operation, \
@@ -591,6 +591,81 @@ class BadgeInstanceList(UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEn
         # verify the user has permission to the badgeclass
         self.get_object(request, **kwargs)
         return super(BadgeInstanceList, self).post(request, **kwargs)
+
+class CollectionBadgeInstanceList(UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEntityListView):
+    """
+    GET a list of assertions for a single collectionbadgeclass
+    POST to issue a new assertion
+    """
+    model = CollectionBadgeContainer  # used by get_object()
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & MayIssueBadgeClass & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    v1_serializer_class = CollectionBadgeInstanceSerializerV1
+    # v2_serializer_class = CollectionBadgeInstanceSerializerV2
+    # create_event = badgrlog.BadgeInstanceCreatedEvent
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    def get_queryset(self, request=None, **kwargs):
+        collectionbadgeclass = self.get_object(request, **kwargs)
+        queryset = CollectionBadgeInstance.objects.all()
+        recipients = request.query_params.getlist('recipient', None)
+        if recipients:
+            queryset = queryset.filter(recipient_identifier__in=recipients)
+        if request.query_params.get('include_expired', '').lower() not in ['1', 'true']:
+            queryset = queryset.filter(
+                Q(expires_at__gte=datetime.datetime.now()) | Q(expires_at__isnull=True))
+        if request.query_params.get('include_revoked', '').lower() not in ['1', 'true']:
+            queryset = queryset.filter(revoked=False)
+
+        return queryset
+
+
+    @apispec_list_operation('Assertion',
+        summary="Get a list of Assertions for a single CollectionBadgeClass",
+        tags=['Assertions', 'CollectionBadgeClasses'],
+        parameters=[
+            {
+                'in': 'query',
+                'name': "recipient",
+                'type': "string",
+                'description': 'A recipient identifier to filter by'
+            },
+            {
+                'in': 'query',
+                'name': "num",
+                'type': "string",
+                'description': 'Request pagination of results'
+            },
+            {
+                'in': 'query',
+                'name': "include_expired",
+                'type': "boolean",
+                'description': 'Include expired assertions'
+            },
+            {
+                'in': 'query',
+                'name': "include_revoked",
+                'type': "boolean",
+                'description': 'Include revoked assertions'
+            }
+        ]
+    )
+    def get(self, request, **kwargs):
+        # verify the user has permission to the badgeclass
+        self.get_object(request, **kwargs)
+        return super(CollectionBadgeInstanceList, self).get(request, **kwargs)
+
+    @apispec_post_operation('Assertion',
+        summary="Issue an Assertion to a single recipient",
+        tags=['Assertions', 'CollectionBadgeClasses'],
+    )
+    def post(self, request, **kwargs):
+        # verify the user has permission to the badgeclass
+        self.get_object(request, **kwargs)
+        return super(CollectionBadgeInstanceList, self).post(request, **kwargs)
 
 
 class IssuerBadgeInstanceList(UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEntityListView):
