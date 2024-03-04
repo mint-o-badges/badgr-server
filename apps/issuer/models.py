@@ -674,7 +674,7 @@ class CollectionBadgeInstance(BaseAuditedModel,
         )
 
     def image_url(self, public=False):
-            return OriginSetting.HTTP + reverse('collectionbadgeinstance_image', kwargs={'entity_id': self.entity_id})
+            return OriginSetting.HTTP + reverse('badgeinstance_image', kwargs={'entity_id': self.entity_id})
 
     @property
     def cached_issuer(self):
