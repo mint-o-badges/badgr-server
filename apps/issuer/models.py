@@ -674,12 +674,7 @@ class CollectionBadgeInstance(BaseAuditedModel,
         )
 
     def image_url(self, public=False):
-        # if public:
             return OriginSetting.HTTP + reverse('collectionbadgeinstance_image', kwargs={'entity_id': self.entity_id})
-        # if getattr(settings, 'MEDIA_URL').startswith('http'):
-        #     return default_storage.url(self.image.name)
-        # else:
-        #     return getattr(settings, 'HTTP_ORIGIN') + default_storage.url(self.image.name)
 
     @property
     def cached_issuer(self):
@@ -724,16 +719,6 @@ class CollectionBadgeInstance(BaseAuditedModel,
             if self.entity_id is None:
                 self.entity_id = generate_entity_uri()
 
-            # if not self.image:
-            #     collectionbadgeclass_name, ext = os.path.splitext(self.badgeclass.image.file.name)
-            #     new_image = io.BytesIO()
-            #     bake(image_file=self.cached_collectionbadgeclass.image.file,
-            #          assertion_json_string=json_dumps(self.get_json(obi_version=UNVERSIONED_BAKED_VERSION), indent=2),
-            #          output_file=new_image)
-            #     self.image.save(name='assertion-{id}{ext}'.format(id=self.entity_id, ext=ext),
-            #                     content=ContentFile(new_image.read()),
-            #                     save=False)
-
             try:
                 from badgeuser.models import CachedEmailAddress
                 existing_email = CachedEmailAddress.cached.get(email=self.recipient_identifier)
@@ -747,21 +732,6 @@ class CollectionBadgeInstance(BaseAuditedModel,
             self.revocation_reason = None
 
         super(CollectionBadgeInstance, self).save(*args, **kwargs)
-
-    # def rebake(self, obi_version=CURRENT_OBI_VERSION, save=True):
-    #     new_image = io.BytesIO()
-    #     bake(
-    #         image_file=self.cached_badgeclass.image.file,
-    #         assertion_json_string=json_dumps(self.get_json(obi_version=obi_version), indent=2),
-    #         output_file=new_image
-    #     )
-
-    #     new_filename = generate_rebaked_filename(self.image.name, self.cached_badgeclass.image.name)
-    #     new_name = default_storage.save(new_filename, ContentFile(new_image.read()))
-    #     default_storage.delete(self.image.name)
-    #     self.image.name = new_name
-    #     if save:
-    #         self.save()
 
 
     def revoke(self, revocation_reason):

@@ -327,9 +327,6 @@ class BadgeInstanceAdmin(DjangoObjectActions, ModelAdmin):
 
 badgr_admin.register(BadgeInstance, BadgeInstanceAdmin)
 
-# class CollectionBadgeInstanceInstanceInline(TabularInline):
-#     model = CollectionBadgeInstance.assertions.through
-#     extra = 0
 
 class CollectionBadgeInstanceAdmin(DjangoObjectActions, ModelAdmin):
     readonly_fields = ('created_at', 'created_by', 'updated_at', 'image', 'entity_id',
@@ -357,10 +354,6 @@ class CollectionBadgeInstanceAdmin(DjangoObjectActions, ModelAdmin):
         }),
     )
     actions = ['resend_notifications']
-    # change_actions = ['redirect_issuer', 'redirect_collectionbadgeclass']
-    # inlines = [
-    #     CollectionBadgeInstanceInstanceInline
-    # ]
 
     def badge_image(self, obj):
         try:
@@ -370,12 +363,6 @@ class CollectionBadgeInstanceAdmin(DjangoObjectActions, ModelAdmin):
     badge_image.short_description = 'CollectionBadge'
     badge_image.allow_tags = True
 
-    # def redirect_badgeclass(self, request, obj):
-    #     return HttpResponseRedirect(
-    #         reverse('admin:issuer_collectionbadgeclass_change', args=(obj.badgeclass.id,))
-    #     )
-    # redirect_badgeclass.label = "CollectionBadgeClass"
-    # redirect_badgeclass.short_description = "See this CollectionBadgeClass"
 
     def redirect_issuer(self, request, obj):
         return HttpResponseRedirect(
