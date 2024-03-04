@@ -486,9 +486,6 @@ class CollectionBadgeClassSerializerV2(DetailSerializerV2, OriginalJsonSerialize
                 }),
                 ('assertions', {
                     'type': "array",
-                    # 'items': {
-                    #     '$ref': '#/definitions/Assertion'
-                    # },
                     'description': "List of Assertions in the CollectionBadge",
                 }),
             ])
@@ -539,26 +536,6 @@ class SuperBadgeClassSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixi
                     'description': "\"SuperBadgeClass\"",
                     'readOnly': True,
                 }),
-                # ('createdAt', {
-                #     'type': 'string',
-                #     'format': 'ISO8601 timestamp',
-                #     'description': "Timestamp when the BadgeClass was created",
-                #     'readOnly': True,
-                # }),
-                # ('createdBy', {
-                #     'type': 'string',
-                #     'format': 'entityId',
-                #     'description': "BadgeUser who created this BadgeClass",
-                #     'readOnly': True,
-                # }),
-
-                # ('issuer', {
-                #     'type': 'string',
-                #     'format': 'entityId',
-                #     'description': "entityId of the Issuer who owns the BadgeClass",
-                #     'required': False,
-                # }),
-
                 ('name', {
                     'type': "string",
                     'format': "string",
@@ -579,9 +556,6 @@ class SuperBadgeClassSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixi
                 }),
                 ('assertions', {
                     'type': "array",
-                    # 'items': {
-                    #     '$ref': '#/definitions/Assertion'
-                    # },
                     'description': "List of Assertions in the SuperBadge",
                 }),
             ])
