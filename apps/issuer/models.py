@@ -578,9 +578,6 @@ class CollectionBadgeContainer(
     image = models.FileField(upload_to='uploads/badges', blank=True)
     image_preview = models.FileField(upload_to='uploads/badges', blank=True, null=True)
 
-    
-    # slug = models.CharField(max_length=254, blank=True, null=True, default=None)
-
     assertions =   models.ManyToManyField('issuer.BadgeClass', blank=True,
             through='issuer.CollectionBadgeBadgeClass'
         ) 
