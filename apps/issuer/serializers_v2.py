@@ -12,7 +12,7 @@ from rest_framework import serializers
 from badgeuser.models import BadgeUser
 from badgeuser.serializers_v2 import BadgeUserEmailSerializerV2
 from entity.serializers import DetailSerializerV2, EntityRelatedFieldV2, BaseSerializerV2
-from issuer.models import Issuer, IssuerStaff, BadgeClass, SuperBadge, CollectionBadgeContainer, BadgeInstance, \
+from issuer.models import Issuer, IssuerStaff, BadgeClass, SuperBadge, CollectionBadgeContainer, BadgeInstance, CollectionBadgeInstance, \
         RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL, RECIPIENT_TYPE_TELEPHONE
 from issuer.permissions import IsEditor
 from issuer.utils import generate_sha256_hashstring, request_authenticated_with_server_admin_token
@@ -932,3 +932,201 @@ class BadgeInstanceSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixin)
             data['issuer'] = data['badgeclass'].issuer
 
         return data
+
+class CollectionBadgeInstanceSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixin):
+    createdAt = DateTimeWithUtcZAtEndField(source='created_at', read_only=True, default_timezone=pytz.utc)
+    createdBy = EntityRelatedFieldV2(source='cached_creator', read_only=True)
+    collectionbadgeclass = EntityRelatedFieldV2(source='cached_collectionbadgeclass', required=False, queryset=CollectionBadgeContainer.cached)
+    collectionbadgeclassName = serializers.CharField(write_only=True, required=False)
+
+    issuer = EntityRelatedFieldV2(source='cached_issuer', required=False, queryset=Issuer.cached)
+
+    image = ValidImageField(read_only=True, use_public=True, source='*')
+    recipient = BadgeRecipientSerializerV2(source='*', required=False)
+
+    issuedOn = DateTimeWithUtcZAtEndField(source='issued_on', required=False, default_timezone=pytz.utc)
+
+    revoked = HumanReadableBooleanField(read_only=True)
+    revocationReason = serializers.CharField(source='revocation_reason', read_only=True)
+    acceptance = serializers.CharField(read_only=True)
+
+    expires = DateTimeWithUtcZAtEndField(source='expires_at', required=False,
+                                         allow_null=True, default_timezone=pytz.utc)
+
+    notify = HumanReadableBooleanField(write_only=True, required=False, default=False)
+    allowDuplicateAwards = serializers.BooleanField(write_only=True, required=False, default=True)
+
+
+    class Meta(DetailSerializerV2.Meta):
+        model = CollectionBadgeInstance
+        apispec_definition = ('Assertion', {
+            'properties': OrderedDict([
+                ('entityId', {
+                    'type': "string",
+                    'format': "string",
+                    'description': "Unique identifier for this Assertion",
+                    'readOnly': True,
+                }),
+                ('entityType', {
+                    'type': "string",
+                    'format': "string",
+                    'description': "\"Assertion\"",
+                    'readOnly': True,
+                }),
+                ('createdAt', {
+                    'type': 'string',
+                    'format': 'ISO8601 timestamp',
+                    'description': "Timestamp when the Assertion was created",
+                    'readOnly': True,
+                }),
+                ('createdBy', {
+                    'type': 'string',
+                    'format': 'entityId',
+                    'description': "BadgeUser who created the Assertion",
+                    'readOnly': True,
+                }),
+
+                ('collectionbadgeclass', {
+                    'type': 'string',
+                    'format': 'entityId',
+                    'description': "CollectionBadgeClass that issued this Assertion",
+                    'required': False,
+                }),
+                ('collectionbadgeclassName', {
+                    'type': 'string',
+                    'format': 'string',
+                    'description': "Name of CollectionBadgeClass to create assertion against, case insensitive",
+                    'required': False,
+                }),
+                ('revoked', {
+                    'type': 'boolean',
+                    'description': "True if this Assertion has been revoked",
+                    'readOnly': True,
+                }),
+                ('revocationReason', {
+                    'type': 'string',
+                    'format': "string",
+                    'description': "Short description of why the Assertion was revoked",
+                    'readOnly': True,
+                }),
+                ('acceptance', {
+                    'type': 'string',
+                    'description': "Recipient interaction with Assertion. One of: Unaccepted, Accepted, or Rejected",
+                    'readOnly': True,
+                }),
+                ('image', {
+                    'type': 'string',
+                    'format': 'url',
+                    'description': "URL to the baked assertion image",
+                    'readOnly': True,
+                }),
+                ('issuedOn', {
+                    'type': 'string',
+                    'format': 'ISO8601 timestamp',
+                    'description': "Timestamp when the Assertion was issued",
+                    'required': False,
+                }),
+                ('recipient', {
+                    'type': 'object',
+                    '$ref': '#/definitions/BadgeRecipient',
+                    'description': "Recipient that was issued the Assertion",
+                    'required': False,
+                }),
+                ('expires', {
+                    'type': 'string',
+                    'format': 'ISO8601 timestamp',
+                    'description': "Timestamp when the Assertion expires",
+                    'required': False,
+                }),
+            ])
+        })
+
+    def validate_issuedOn(self, value):
+        if value > timezone.now():
+            raise serializers.ValidationError("Only issuedOn dates in the past are acceptable.")
+        if value.year < 1583:
+            raise serializers.ValidationError(
+                "Only issuedOn dates after the introduction of the Gregorian calendar are allowed.")
+        return value
+
+    def update(self, instance, validated_data):
+        updateable_fields = [
+            'expires_at',
+            'hashed',
+            'issued_on',
+            'recipient_identifier',
+            'recipient_type'
+        ]
+
+        for field_name in updateable_fields:
+            if field_name in validated_data:
+                setattr(instance, field_name, validated_data.get(field_name))
+
+        return instance
+
+    def create(self, validated_data):
+        if 'cached_issuer' in validated_data:
+            # ignore issuer in request
+            validated_data.pop('cached_issuer')
+        return super().create(validated_data)
+
+    def validate(self, data):
+        request = self.context.get('request', None)
+        expected_issuer = self.context.get('kwargs', {}).get('issuer')
+        collectionbadgeclass_identifiers = ['collectionbadgeclassName', 'cached_collectionbadgeclass', 'collectionbadgeclass']
+        collectionbadge_instance_properties = list(data.keys())
+
+        if 'collectionbadgeclass' in self.context:
+            collectionbadge_instance_properties.append('collectionbadgeclass')
+
+        if sum([el in collectionbadgeclass_identifiers for el in collectionbadge_instance_properties]) > 1:
+            raise serializers.ValidationError(
+                'Multiple collectionbadge class identifiers. '
+                'Exactly one of the following badge class identifiers are allowed: '
+                'badgeclass, badgeclassName')
+
+        if request and request.method != 'PUT':
+            # recipient and collectionbadgeclass are only required on create, ignored on update
+            if 'recipient_identifier' not in data:
+                raise serializers.ValidationError({'recipient': ["This field is required"]})
+
+            if 'cached_collectionbadgeclass' in data:
+                # included collectionbadgeclass in request
+                data['collectionbadgeclass'] = data.pop('cached_collectionbadgeclass')
+            elif 'collectionbadgeclass' in self.context:
+                # collectionbadgeclass was passed in context
+                data['collectionbadgeclass'] = self.context.get('collectionbadgeclass')
+            elif 'collectionbadgeclassName' in data:
+                name = data.pop('collectionbadgeclassName')
+                matches = CollectionBadgeContainer.objects.filter(name=name, issuer=expected_issuer)
+                len_matches = len(matches)
+                if len_matches == 1:
+                    data['collectionbadgeclass'] = matches.first()
+                elif len_matches == 0:
+                    raise serializers.ValidationError("No matching CollectionBadgeClass found with name {}".format(name))
+                else:
+                    raise serializers.ValidationError(
+                        "Could not award; {} CollectionBadgeClasses with name {}".format(len_matches, name))
+            else:
+                raise serializers.ValidationError({"collectionbadgeclass": ["This field is required"]})
+
+            allow_duplicate_awards = data.pop('allowDuplicateAwards')
+            if allow_duplicate_awards is False:
+                previous_awards = CollectionBadgeInstance.objects.filter(
+                    recipient_identifier=data['recipient_identifier'], collectionbadgeclass=data['collectionbadgeclass']
+                ).filter(
+                    revoked=False
+                ).filter(
+                    Q(expires_at__isnull=True) | Q(expires_at__gt=timezone.now())
+                )
+                if previous_awards.exists():
+                    raise serializers.ValidationError(
+                        "A previous award of this badge already exists for this recipient.")
+
+        if expected_issuer and data['collectionbadgeclass'].issuer_id != expected_issuer.id:
+            raise serializers.ValidationError({"collectionbadgeclass": ["Could not find matching collectionbadgeclass for this issuer."]})
+
+        if 'collectionbadgeclass' in data:
+            data['issuer'] = data['collectionbadgeclass'].issuer
+
+        return data        
