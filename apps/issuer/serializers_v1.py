@@ -225,9 +225,13 @@ class BadgeClassExpirationSerializerV1(serializers.Serializer):
     duration = serializers.ChoiceField(source='expires_duration', allow_null=True,
                                        choices=BadgeClass.EXPIRES_DURATION_CHOICES)
 
-# https://stackoverflow.com/questions/50973569/django-rest-framework-relatedfield-cant-return-a-dict-object
 
+# custom relational field, that describes exactly how the output representation should 
+# be generated from the model instance as found in:ModifiedRelatedField
+# https://stackoverflow.com/questions/50973569/django-rest-framework-relatedfield-cant-return-a-dict-object
+# not using this custom field results in the following error: TypeError: unhashable type: 'dict'
 class ModifiedRelatedField(serializers.RelatedField):
+    # override get_choices method from parent class
     def get_choices(self, cutoff=None):
         queryset = self.get_queryset()
         if queryset is None:
@@ -238,6 +242,8 @@ class ModifiedRelatedField(serializers.RelatedField):
 
         return OrderedDict([
             (
+                # This is the only line that differs
+                # from the official RelatedField's implementation
                 item.pk,
                 self.display_value(item)
             )
