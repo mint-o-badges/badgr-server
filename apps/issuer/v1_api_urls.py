@@ -16,6 +16,7 @@ urlpatterns = [
     url(r'^collectionbadges/(?P<slug>[-\w]+)$', CollectionBadgeDetail.as_view(),
         name='v1_api_collectionbadges_detail'),
 
+    # TODO: implement SuperBadgeDetail
     # url(r'^superbadges/(?P<slug>[-\w]+)$', SuperBadgeDetail.as_view(),
     #     name='v1_api_superbadges_detail'),    
 
