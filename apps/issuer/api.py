@@ -224,8 +224,7 @@ class AllCollectionBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListVi
     @apispec_post_operation('CollectionBadgeClass',
         summary="Create a new CollectionBadgeClass",
         tags=["CollectionBadgeClasses"],
-        # TODO: Add parameters
-        parameters=[]
+
     )
     def post(self, request, **kwargs):
         return super(AllCollectionBadgeClassesList, self).post(request, **kwargs)        
