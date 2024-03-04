@@ -44,7 +44,7 @@ class CollectionBadgeAdmin(ModelAdmin):
 
     def badge_image(self, obj):
         return mark_safe('<img src="{}" width="32"/>'.format(obj.image.url)) if obj.image else ''
-    badge_image.short_description = 'Badge'
+    badge_image.short_description = 'CollectionBadge'
     
     pass
 
@@ -53,7 +53,6 @@ class CollectionBadgeAdmin(ModelAdmin):
 class SuperBadgeInstanceInline(TabularInline):
     model = SuperBadge.assertions.through
     extra = 0
-    # raw_id_fields = ('badgeinstance',)
 
 class SuperBadgeAdmin(ModelAdmin):
     readonly_fields = ('created_by', 'created_at', 'updated_at', 
