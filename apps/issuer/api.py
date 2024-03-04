@@ -23,7 +23,7 @@ from issuer.permissions import (MayIssueBadgeClass, MayEditBadgeClass, IsEditor,
                                 BadgrOAuthTokenHasEntityScope, AuthorizationIsBadgrOAuthToken, AuditedModelOwner)
 from issuer.serializers_v1 import (IssuerSerializerV1, BadgeClassSerializerV1,
                                    BadgeInstanceSerializerV1, CollectionBadgeInstanceSerializerV1, SuperBadgeClassSerializerV1, CollectionBadgeClassSerializerV1)
-from issuer.serializers_v2 import IssuerSerializerV2, BadgeClassSerializerV2, BadgeInstanceSerializerV2, SuperBadgeClassSerializerV2, CollectionBadgeClassSerializerV2, \
+from issuer.serializers_v2 import IssuerSerializerV2, BadgeClassSerializerV2, BadgeInstanceSerializerV2, CollectionBadgeInstanceSerializerV2, SuperBadgeClassSerializerV2, CollectionBadgeClassSerializerV2, \
     IssuerAccessTokenSerializerV2
 from apispec_drf.decorators import apispec_get_operation, apispec_put_operation, \
     apispec_delete_operation, apispec_list_operation, apispec_post_operation
@@ -604,7 +604,7 @@ class CollectionBadgeInstanceList(UncachedPaginatedViewMixin, VersionedObjectMix
         | BadgrOAuthTokenHasEntityScope
     ]
     v1_serializer_class = CollectionBadgeInstanceSerializerV1
-    # v2_serializer_class = CollectionBadgeInstanceSerializerV2
+    v2_serializer_class = CollectionBadgeInstanceSerializerV2
     # create_event = badgrlog.BadgeInstanceCreatedEvent
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
@@ -811,6 +811,78 @@ class BadgeInstanceDetail(BaseEntityDetailView):
     def put(self, request, **kwargs):
         return super(BadgeInstanceDetail, self).put(request, **kwargs)
 
+class CollectionBadgeInstanceDetail(BaseEntityDetailView):
+    """
+    Endpoints for (GET)ting a single assertion or revoking a collectionbadge (DELETE)
+    """
+    model = CollectionBadgeInstance
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    v1_serializer_class = CollectionBadgeInstanceSerializerV1
+    v2_serializer_class = CollectionBadgeInstanceSerializerV2
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    @apispec_get_operation('Assertion',
+        summary="Get a single Assertion",
+        tags=['Assertions']
+    )
+    def get(self, request, **kwargs):
+        return super(CollectionBadgeInstanceDetail, self).get(request, **kwargs)
+
+    @apispec_delete_operation('Assertion',
+        summary="Revoke an Assertion",
+        tags=['Assertions'],
+        responses=OrderedDict([
+            ('400', {
+                'description': "Assertion is already revoked"
+            })
+        ]),
+        parameters=[{
+            "in": "body",
+            "name": "body",
+            "required": True,
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "revocation_reason": {
+                        "type": "string",
+                        "format": "string",
+                        'description': "The reason for revoking this assertion",
+                        'required': False
+                    },
+                }
+            }
+        }]
+    )
+    def delete(self, request, **kwargs):
+        # verify the user has permission to the assertion
+        assertion = self.get_object(request, **kwargs)
+        if not self.has_object_permissions(request, assertion):
+            return Response(status=HTTP_404_NOT_FOUND)
+
+        revocation_reason = request.data.get('revocation_reason', None)
+        if not revocation_reason:
+            raise ValidationError({'revocation_reason': "This field is required"})
+
+        try:
+            assertion.revoke(revocation_reason)
+        except DjangoValidationError as e:
+            raise ValidationError(e.message)
+
+        serializer = self.get_serializer_class()(assertion, context={'request': request})
+
+        logger.event(badgrlog.BadgeAssertionRevokedEvent(assertion, request.user))
+        return Response(status=HTTP_200_OK, data=serializer.data)
+
+    @apispec_put_operation('Assertion',
+        summary="Update an Assertion",
+        tags=['Assertions'],
+    )
+    def put(self, request, **kwargs):
+        return super(CollectionBadgeInstanceDetail, self).put(request, **kwargs)
 
 class IssuerTokensList(BaseEntityListView):
     model = AccessTokenProxy
