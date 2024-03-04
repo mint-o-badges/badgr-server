@@ -25,13 +25,6 @@ json_patterns = [
     url(r'^collections/(?P<entity_id>[^/.]+)$', xframe_options_exempt(
         BackpackCollectionJson.as_view(slugToEntityIdRedirect=True)), name='collection_json'),
 
-    # url(r'^superbadges/(?P<entity_id>[^/.]+)$',
-    #     xframe_options_exempt(SuperBadgeClassJson.as_view(slugToEntityIdRedirect=True)), name='superbadgeclass_json'),
-
-    url(r'^collectionbadges/(?P<entity_id>[^/.]+)$',
-        xframe_options_exempt(CollectionBadgeClassJson.as_view(slugToEntityIdRedirect=True)), name='collectionbadgeclass_json'),
-    
-
     url(r'^oembed$', OEmbedAPIEndpoint.as_view(), name='oembed_api_endpoint'),
 
     url(r'^verify$', VerifyBadgeAPIEndpoint.as_view(), name='verify_badge_api_endpoint')
