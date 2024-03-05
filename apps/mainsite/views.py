@@ -85,6 +85,42 @@ def upload(req):
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
 @permission_classes([IsAuthenticated])
+def aiskills(req, searchterm, page):
+    if req.method != 'GET':
+        return JsonResponse({"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST)
+
+    attempt_num = 0  # keep track of how many times we've retried
+    while attempt_num < 4:
+        apiKey = getattr(settings, 'AISKILLS_API_KEY')
+        endpoint = getattr(settings, 'AISKILLS_ENDPOINT')
+        payload = {'api_key': apiKey}
+        response = requests.get(endpoint, params=payload)
+
+        if response.status_code == 200:
+            data = response.json()
+            return JsonResponse(data, status=status.HTTP_200_OK)
+        elif response.status_code == 403:
+            # Probably the API KEY was wrong
+            return JsonResponse({"error":
+                "Couldn't authenticate against AI skills service!"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        elif response.status_code == 400:
+            # Invalid input
+            return JsonResponse({"error": "Invalid searchterm!"},
+                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            attempt_num += 1
+            # You can probably use a logger to log the error here
+            time.sleep(5)  # Wait for 5 seconds before re-trying
+
+    return JsonResponse({"error":
+        f"Request failed with status code {response.status_code}"},
+        status=response.status_code)
+
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
+@permission_classes([IsAuthenticated])
 def nounproject(req, searchterm, page):
     if req.method == 'GET':
         attempt_num = 0  # keep track of how many times we've retried

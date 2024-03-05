@@ -1,6 +1,6 @@
 from django.views.generic.base import RedirectView, TemplateView
 from django.conf.urls.static import static
-from mainsite.views import upload, nounproject
+from mainsite.views import upload, nounproject, aiskills
 from mainsite.views import info_view, email_unsubscribe, AppleAppSiteAssociation, error404, error500
 from mainsite.views import (SitewideActionFormView, RedirectToUiLogin, DocsAuthorizeRedirect,
                             LegacyLoginAndObtainAuthToken,)
@@ -121,6 +121,8 @@ urlpatterns = [
     url(r'^upload', upload, name="image_upload"),
     url(r'^nounproject/(?P<searchterm>[^/]+)/(?P<page>[^/]+)$', nounproject,
         name="nounproject"),
+
+    url(r'^aiskills/(?P<searchterm>[^/]+)$', nounproject, name="aiskills"),
 ]
 # add to serve files
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

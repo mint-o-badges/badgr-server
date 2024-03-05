@@ -64,6 +64,8 @@ Set or adjust these values in your `settings_local.dev.py` and/or `settings_loca
   - Django supports various backends for storing media, as applicable for your deployment strategy. See Django docs on the [file storage API](https://docs.djangoproject.com/en/1.11/ref/files/storage/)
 * `NOUNPROJECT_API_KEY` and `NOURNPROJECT_SECRET`:
   - Set these values to be able to search for icons with in the badge creation process.
+* `AISKILLS_API_KEY` and `AISKILLS_ENDPOINT`:
+  - Set these values to be able to get AI skill suggestions within the badge creation process.
 
 ### Running the Django Server in Development
 
