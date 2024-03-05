@@ -310,7 +310,11 @@ class CollectionBadgeBadgeClassField(ModifiedRelatedField):
                 }
 
     def to_internal_value(self, data):
-        return BadgeClass.objects.get(entity_id=data)    
+        if isinstance(data, dict) and 'slug' in data:
+            slug = data['slug']
+            return BadgeClass.objects.get(entity_id=slug)
+        else:
+            raise serializers.ValidationError("Invalid data format")    
 
 
 class CollectionBadgeClassSerializerV1(serializers.Serializer):
