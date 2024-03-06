@@ -56,9 +56,9 @@ class CollectionLocalBadgeInstanceList(APIView):
 
         if new_records == []:
             return Response(
-                "No new records could be added to collection. "
+                ("No new records could be added to collection. "
                 + "Check for missing/unknown badge references, unauthorized "
-                + "access, or badges already existing in collection.",
+                + "access, or badges already existing in collection."),
                 status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
