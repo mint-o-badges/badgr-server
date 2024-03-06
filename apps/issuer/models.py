@@ -286,10 +286,10 @@ class Issuer(ResizeUploadedImage,
                     or self.city != self.__original_address['city']
                     or self.zip != self.__original_address['zip']
                     or self.country != self.__original_address['country']):
-                addr_string = (self.street if self.street is not None else '') + " "
+                addr_string = ((self.street if self.street is not None else '') + " "
                 + (str(self.streetnumber) if self.streetnumber is not None else '') + " "
                 + (str(self.zip) if self.zip is not None else '') + " "
-                + (str(self.city) if self.city is not None else '') + " Deutschland"
+                + (str(self.city) if self.city is not None else '') + " Deutschland")
                 nom = Nominatim(user_agent="OpenEducationalBadges")
                 geoloc = nom.geocode(addr_string)
                 if geoloc:
