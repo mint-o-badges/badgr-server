@@ -1,7 +1,7 @@
 from django.conf.urls import url
 
-from issuer.api import (IssuerList, IssuerDetail, IssuerBadgeClassList, BadgeClassDetail, BadgeInstanceList,
-                        BadgeInstanceDetail, IssuerBadgeInstanceList, AllBadgeClassesList, BatchAssertionsIssue)
+from issuer.api import (IssuerList, IssuerDetail, IssuerBadgeClassList, BadgeClassDetail, BadgeInstanceList, CollectionBadgeDetail,
+                        BadgeInstanceDetail, IssuerBadgeInstanceList, AllBadgeClassesList, AllSuperBadgeClassesList, AllCollectionBadgeClassesList, BatchAssertionsIssue)
 from issuer.api_v1 import FindBadgeClassDetail, IssuerStaffList
 
 urlpatterns = [
@@ -9,6 +9,16 @@ urlpatterns = [
 
     url(r'^all-badges$', AllBadgeClassesList.as_view(), name='v1_api_issuer_all_badges_list'),
     url(r'^all-badges/find$', FindBadgeClassDetail.as_view(), name='v1_api_find_badgeclass_by_identifier'),
+
+    url(r'^all-superbadges$', AllSuperBadgeClassesList.as_view(), name='v1_api_issuer_all_superbadges_list'),
+    url(r'^all-collectionbadges$', AllCollectionBadgeClassesList.as_view(), name='v1_api_issuer_all_collectionbadges_list'),
+
+    url(r'^collectionbadges/(?P<slug>[-\w]+)$', CollectionBadgeDetail.as_view(),
+        name='v1_api_collectionbadges_detail'),
+
+    # TODO: implement SuperBadgeDetail
+    # url(r'^superbadges/(?P<slug>[-\w]+)$', SuperBadgeDetail.as_view(),
+    #     name='v1_api_superbadges_detail'),    
 
     url(r'^issuers$', IssuerList.as_view(), name='v1_api_issuer_list'),
     url(r'^issuers/(?P<slug>[^/]+)$', IssuerDetail.as_view(), name='v1_api_issuer_detail'),

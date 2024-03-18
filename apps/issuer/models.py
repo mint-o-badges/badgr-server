@@ -289,10 +289,10 @@ class Issuer(ResizeUploadedImage,
                     or self.city != self.__original_address['city']
                     or self.zip != self.__original_address['zip']
                     or self.country != self.__original_address['country']):
-                addr_string = (self.street if self.street is not None else '') + " "
+                addr_string = ((self.street if self.street is not None else '') + " "
                 + (str(self.streetnumber) if self.streetnumber is not None else '') + " "
                 + (str(self.zip) if self.zip is not None else '') + " "
-                + (str(self.city) if self.city is not None else '') + " Deutschland"
+                + (str(self.city) if self.city is not None else '') + " Deutschland")
                 nom = Nominatim(user_agent="OpenEducationalBadges")
                 geoloc = nom.geocode(addr_string)
                 if geoloc:
@@ -610,7 +610,102 @@ def get_user_or_none(recipient_id, recipient_type):
 
     return user
 
+class CollectionBadgeContainer(
+                               ResizeUploadedImage,
+                               ScrubUploadedSvgImage,
+                               HashUploadedImage,
+                               PngImagePreview,
+                               BaseAuditedModel,
+                               BaseVersionedEntity):
+    entity_class_name = 'CollectionBadgeContainer'
+    name = models.CharField(max_length=128)
+    description = models.CharField(max_length=255, blank=True)
 
+    image = models.FileField(upload_to='uploads/badges', blank=True)
+    image_preview = models.FileField(upload_to='uploads/badges', blank=True, null=True)
+
+    assertions =   models.ManyToManyField('issuer.BadgeClass', blank=True,
+            through='issuer.CollectionBadgeBadgeClass'
+        ) 
+
+    class Meta:
+        # name shown in admin interface
+        verbose_name = 'Collection Badge'     
+
+    @cachemodel.cached_method(auto_publish=True)
+    def cached_collects(self):
+        return self.assertions.all()
+
+    def image_url(self):
+        return OriginSetting.HTTP + reverse('collectionbadge_image', kwargs={'entity_id': self.entity_id})
+
+    
+    @property
+    def badgeclass_items(self):
+        return self.cached_collects()
+   
+   
+class CollectionBadgeBadgeClass(cachemodel.CacheModel):
+    collectionbadge = models.ForeignKey('issuer.CollectionBadgeContainer',
+                                   on_delete=models.CASCADE)
+   
+    badgeclass = models.ForeignKey('issuer.BadgeClass',
+                                      on_delete=models.CASCADE)
+
+
+
+class SuperBadge( ResizeUploadedImage,
+                  ScrubUploadedSvgImage,
+                  HashUploadedImage,
+                  PngImagePreview,
+                  BaseAuditedModel,
+                  BaseVersionedEntity):
+    entity_class_name = 'SuperBadge'
+    name = models.CharField(max_length=128)
+    description = models.CharField(max_length=255, blank=True)
+
+    image = models.FileField(upload_to='uploads/badges', blank=True)
+    image_preview = models.FileField(upload_to='uploads/badges', blank=True, null=True)
+
+    assertions =   models.ManyToManyField('issuer.BadgeClass', blank=True,
+            through='issuer.SuperBadgeBadgeClass'
+        )
+
+    cached = SlugOrJsonIdCacheModelManager(slug_kwarg_name='entity_id', slug_field_name='entity_id')
+
+    @cachemodel.cached_method(auto_publish=True)
+    def cached_badgeclasses(self):
+        return self.assertions.all()
+
+  
+    @property
+    def badge_items(self):
+        return self.cached_badgeclasses()
+
+    def image_url(self):
+        return OriginSetting.HTTP + reverse('superbadge_image', kwargs={'entity_id': self.entity_id})
+
+
+
+
+       
+class SuperBadgeBadgeClass(cachemodel.CacheModel):
+    superbadge = models.ForeignKey('issuer.SuperBadge',
+                                   on_delete=models.CASCADE)
+   
+    badgeclass = models.ForeignKey('issuer.BadgeClass',
+                                      on_delete=models.CASCADE)
+
+    @property
+    def cached_badgeclass(self):
+        return BadgeClass.cached.get(id=self.badgeclass_id)
+
+    @property
+    def cached_superbadge(self):
+        return Superbadge.cached.get(id=self.superbadge_id)
+                                      
+
+ 
 class BadgeClass(ResizeUploadedImage,
                  ScrubUploadedSvgImage,
                  HashUploadedImage,
