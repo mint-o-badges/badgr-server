@@ -373,6 +373,7 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
     expires = BadgeClassExpirationSerializerV1(source='*', required=False, allow_null=True)
 
     source_url = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
+    
 
     class Meta:
         apispec_definition = ('BadgeClass', {})
@@ -422,6 +423,7 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
                 or ext_name.endswith('StudyLoadExtension')
                 or ext_name.endswith('CategoryExtension')
                 or ext_name.endswith('LevelExtension')
+                or ext_name.endswith('CompetencyExtension')
                 or ext_name.endswith('BasedOnExtension')):
                     is_formal = True
         self.formal = is_formal
