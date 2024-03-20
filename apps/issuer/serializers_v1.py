@@ -373,7 +373,6 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
     expires = BadgeClassExpirationSerializerV1(source='*', required=False, allow_null=True)
 
     source_url = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
-    
 
     class Meta:
         apispec_definition = ('BadgeClass', {})
