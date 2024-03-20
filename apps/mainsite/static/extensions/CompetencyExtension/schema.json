@@ -5,7 +5,7 @@
   "type": "object",
   "definitions": {
     "Category": {
-      "description": "Category of competency can either be skill or knwoledge",
+      "description": "Category of competency can either be skill or knowledge",
       "type": "string",
       "enum": ["skill", "knowledge"]
     }
