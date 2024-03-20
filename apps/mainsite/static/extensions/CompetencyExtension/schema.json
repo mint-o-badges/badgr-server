@@ -27,5 +27,5 @@
       "$ref": "#/definitions/Category"
     }
   },
-  "required": ["name", "description", "escoID"]
+  "required": ["name", "description", "studyLoad", "category"]
 }
