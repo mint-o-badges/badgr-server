@@ -1,20 +1,31 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Competency Extension",
-  "description": "An extension that allows you to reference the competencies on which this badgeclass is based on.",
+  "title": "Competency",
+  "description": "This extension provides a reference to an array of competencies that a competency badge contains.",
   "type": "object",
-  "properties": {
-    "Competency": {
-      "type": "object",
-      "properties": {
-        "slug": {
-          "type": "string"
-        },
-        "issuerSlug": {
-          "type": "string"
-        }
-      }
+  "definitions": {
+    "Category": {
+      "description": "Category of competency can either be skill or knwoledge",
+      "type": "string",
+      "enum": ["skill", "knowledge"]
     }
   },
-  "required": ["Competency"]
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "escoID": {
+      "type": "string"
+    },
+    "studyLoad": {
+      "type": "number"
+    },
+    "category": {
+      "$ref": "#/definitions/Category"
+    }
+  },
+  "required": ["name", "description", "escoID"]
 }

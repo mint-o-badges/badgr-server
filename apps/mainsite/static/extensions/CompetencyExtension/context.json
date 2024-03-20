@@ -1,14 +1,17 @@
 {
-    "@context": {
-      "obi": "https://w3id.org/openbadges#",
-      "extensions": "https://w3id.org/openbadges/extensions#",
-      "Competency": "extensions:Competency"
-    },
-    "obi:validation": [
-      {
-        "obi:validatesType": "extensions:Competency",
-        "obi:validationSchema": "http://localhost:8000/static/extensions/CompetencyExtension/schema.json"
-      }
-    ]
-  }
-  
+  "@context": {
+    "obi": "https://w3id.org/openbadges#",
+    "extensions": "https://w3id.org/openbadges/extensions#",
+    "category": "extensions:category",
+    "escoID": "extensions:escoID",
+    "studyLoad": "extensions:studyLoad",
+    "name": "extensions:name",
+    "description": "extensions:description"
+  },
+  "obi:validation": [
+    {
+      "obi:validatesType": "extensions:CompetencyExtension",
+      "obi:validationSchema": "http://localhost:8000/static/extensions/CompetencyExtension/schema.json"
+    }
+  ]
+}
