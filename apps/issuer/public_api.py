@@ -34,7 +34,7 @@ from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, SuperBad
 from .models import Issuer, BadgeClass, BadgeInstance, SuperBadge, CollectionBadgeContainer, CollectionBadgeContainer
 
 
-logger = badgrlog.BadgrLogger
+logger = badgrlog.BadgrLogger()
 
 
 
