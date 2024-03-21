@@ -11,7 +11,7 @@
   "obi:validation": [
     {
       "obi:validatesType": "extensions:CompetencyExtension",
-      "obi:validationSchema": "http://localhost:8000/static/extensions/CompetencyExtension/schema.json"
+      "obi:validationSchema": "https://api.openbadges.education/static/extensions/CompetencyExtension/schema.json"
     }
   ]
 }
