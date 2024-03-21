@@ -227,6 +227,7 @@ class Issuer(ResizeUploadedImage,
         'country': None
     }
 
+    # stores the original verified variable to detect changes and notify the issuer
     __original_verified = False
 
     def publish(self, publish_staff=True, *args, **kwargs):
@@ -518,28 +519,14 @@ class Issuer(ResizeUploadedImage,
         """
         Sends an email notification to the Issuer owner.
         """
-
-        try:
-            EmailBlacklist.objects.get(email=self.email)
-        except EmailBlacklist.DoesNotExist:
-            # Allow sending, as this email is not blacklisted.
-            pass
-        else:
-            logger.event(badgrlog.BlacklistEarnerNotNotifiedEvent(self))
-            return
-
         if badgr_app is None:
             badgr_app = self.cached_issuer.cached_badgrapp
         if badgr_app is None:
             badgr_app = BadgrApp.objects.get_current(None)
 
         try:
-            if self.image:
-                issuer_image_url = self.issuer.public_url + '/image'
-            else:
-                issuer_image_url = None
-
             email_context = {
+                # removes all special characters from the issuer name (keeps whitespces, digits and alphabetical characters )
                 'issuer_name': re.sub(r'[^\w\s]+', '', self.name, 0, re.I),
                 'issuer_url': self.url,
                 'issuer_email': self.email,
