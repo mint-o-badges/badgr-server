@@ -47,6 +47,15 @@ services:
       - "3306"
     networks:
       - badgr
+  mailhog:
+    image: mailhog/mailhog
+    container_name: mailhog
+    restart: always
+    ports:
+      - "1025:1025" #127.0.0.1:1025:1025  
+      - "8025:8025"
+    networks:
+      - badgr
 
 networks:
   badgr:
