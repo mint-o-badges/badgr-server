@@ -1,0 +1,17 @@
+{
+  "@context": {
+    "obi": "https://w3id.org/openbadges#",
+    "extensions": "https://w3id.org/openbadges/extensions#",
+    "category": "extensions:category",
+    "escoID": "extensions:escoID",
+    "studyLoad": "extensions:studyLoad",
+    "name": "extensions:name",
+    "description": "extensions:description"
+  },
+  "obi:validation": [
+    {
+      "obi:validatesType": "extensions:CompetencyExtension",
+      "obi:validationSchema": "https://api.openbadges.education/static/extensions/CompetencyExtension/schema.json"
+    }
+  ]
+}
