@@ -163,6 +163,8 @@ class BadgrApp(CreatedUpdatedBy, CreatedUpdatedAt, IsActive, cachemodel.CacheMod
         if use_https is None:
             use_https = self.signup_redirect.startswith('https')
         scheme = 'https://' if use_https else 'http://'
+        if (self.cors.startswith(scheme)):
+            scheme = '';
         return '{}{}{}'.format(scheme, self.cors, path)
 
     @property
