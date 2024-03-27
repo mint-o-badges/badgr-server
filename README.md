@@ -152,6 +152,16 @@ docker-compose exec api python /badgr_server/manage.py test -k <test-name>
 docker-compose exec api python /badgr_server/manage.py test issuer.tests.test_issuer.IssuerTests.test_cant_create_issuer_with_unverified_email_v1
 ```
 
+### Debug
+For debugging, in the `Docerfile.dev.api` `debugpy` is also installed and there is the docker compose file `docker-compose.debug.yml`.
+In VSCode you can create a `launch.json` by choosing `Python` as debugger and `Remote Attach` as debug configuration (and defaults for the rest).
+You can then start the application with
+```bash
+docker compose -f docker-compose.yml -f docker-compose.debug.yml up
+```
+and attach the debugger in VSCode by selecting *Python: Remote Attach*.
+This process is heavily inspired by [this tutorial](https://dev.to/ferkarchiloff/how-to-debug-django-inside-a-docker-container-with-vscode-4ef9).
+
 ### Install and run Badgr UI {#badgr-ui}
 Start in your `badgr` directory and clone badgr-ui source code: `git clone https://github.com/concentricsky/badgr-ui.git badgr-ui`
 

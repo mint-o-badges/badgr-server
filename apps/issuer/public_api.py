@@ -30,12 +30,9 @@ from entity.api import VersionedObjectMixin, BaseEntityListView, UncachedPaginat
 from mainsite.models import BadgrApp
 from mainsite.utils import (OriginSetting, set_url_query_params, first_node_match, fit_image_to_height,
                             convert_svg_to_png)
-from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, SuperBadgeClassSerializerV1, CollectionBadgeClassSerializerV1
-from .models import Issuer, BadgeClass, BadgeInstance, SuperBadge, CollectionBadgeContainer, CollectionBadgeContainer
-
-
-logger = badgrlog.BadgrLogger
-
+from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1
+from .models import Issuer, BadgeClass, BadgeInstance
+logger = badgrlog.BadgrLogger()
 
 
 class SlugToEntityIdRedirectMixin(object):
@@ -384,43 +381,6 @@ class BadgeClassList(JSONListView):
     def get_json(self, request):
         return super(BadgeClassList, self).get_json(request)
 
-class CollectionBadgeClassList(JSONListView):
-    permission_classes = (permissions.AllowAny,)
-    model = CollectionBadgeContainer
-    serializer_class = CollectionBadgeClassSerializerV1
-
-    def get_json(self, request):
-        return super(CollectionBadgeClassList, self).get_json(request)        
-
-    def post(self, request, *args, **kwargs): 
-        return super(CollectionBadgeClassList, self).post(request)    
-
-class SuperBadgeClassList(JSONListView):
-    model = SuperBadge
-    permission_classes = (permissions.AllowAny,)
-    serializer_class = SuperBadgeClassSerializerV1
-
-    def get_json(self, request):
-        return super(SuperBadgeClassList, self).get_json(request)
-
-    def get(self, request, **kwargs):
-        return super(SuperBadgeClassList, self).get(request, **kwargs)    
-
-class SuperBadgeClassJson(JSONComponentView):
-    permission_classes = (permissions.AllowAny,)
-    model = SuperBadge
-
-    def get_json(self, request):
-        json = super(SuperBadgeClassJson, self).get_json(request)
-        return json
-
-class CollectionBadgeClassJson(JSONComponentView):
-    permission_classes = (permissions.AllowAny,)
-    model = CollectionBadgeContainer
-
-    def get_json(self, request):
-        json = super(CollectionBadgeClassJson, self).get_json(request)
-        return json
 
 class BadgeClassImage(ImagePropertyDetailView):
     model = BadgeClass

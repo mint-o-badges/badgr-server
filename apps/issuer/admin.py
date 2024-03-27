@@ -8,83 +8,8 @@ from django.utils.safestring import mark_safe
 from mainsite.admin import badgr_admin
 
 from .models import Issuer, BadgeClass, BadgeInstance, BadgeInstanceEvidence, BadgeClassAlignment, BadgeClassTag, \
-    BadgeClassExtension, IssuerExtension, BadgeInstanceExtension, SuperBadge, CollectionBadgeContainer
+    BadgeClassExtension, IssuerExtension, BadgeInstanceExtension
 from .tasks import resend_notifications
-
-
-class CollectionBadgeInstanceInline(TabularInline):
-    model = CollectionBadgeContainer.assertions.through
-    extra = 0
-
-class CollectionBadgeAdmin(ModelAdmin):
-    readonly_fields = ('created_by', 'created_at', 'updated_at', 
-                       'entity_id')
-    list_display = ('name', 'entity_id')
-    list_display_links = ('name',)
-    list_filter = ('created_at',)
-    search_fields = ('name', 'entity_id')
-    fieldsets = (
-        ('Metadata', {
-            'fields': ('created_by', 'created_at', 'updated_at', 'entity_id'),
-            'classes': ("collapse",)
-        }),
-        (None, {
-            'fields': ('image', 'name', 'description')
-        }),
-    )
-    inlines = [
-        CollectionBadgeInstanceInline,
-    ]
-
-    def save_model(self, request, obj, form, change):
-        force_resize = False
-        if 'image' in form.changed_data:
-            force_resize = True
-        obj.save(force_resize=force_resize)
-
-    def badge_image(self, obj):
-        return mark_safe('<img src="{}" width="32"/>'.format(obj.image.url)) if obj.image else ''
-    badge_image.short_description = 'CollectionBadge'
-    
-    pass
-
-
-
-class SuperBadgeInstanceInline(TabularInline):
-    model = SuperBadge.assertions.through
-    extra = 0
-
-class SuperBadgeAdmin(ModelAdmin):
-    readonly_fields = ('created_by', 'created_at', 'updated_at', 
-                       'entity_id')
-    list_display = ('name', 'entity_id')
-    list_display_links = ('name',)
-    list_filter = ('created_at',)
-    search_fields = ('name', 'entity_id')
-    fieldsets = (
-        ('Metadata', {
-            'fields': ('created_by', 'created_at', 'updated_at', 'entity_id'),
-            'classes': ("collapse",)
-        }),
-        (None, {
-            'fields': ('image', 'name', 'description')
-        }),
-    )
-    inlines = [
-        SuperBadgeInstanceInline,
-    ]
-
-    def save_model(self, request, obj, form, change):
-        force_resize = False
-        if 'image' in form.changed_data:
-            force_resize = True
-        obj.save(force_resize=force_resize)
-
-    def badge_image(self, obj):
-        return mark_safe('<img src="{}" width="32"/>'.format(obj.image.url)) if obj.image else ''
-    badge_image.short_description = 'Badge'
-    
-    pass
 
 
 class IssuerStaffInline(TabularInline):
@@ -149,9 +74,6 @@ class IssuerAdmin(DjangoObjectActions, ModelAdmin):
 
 
 badgr_admin.register(Issuer, IssuerAdmin)
-badgr_admin.register(SuperBadge, SuperBadgeAdmin)
-badgr_admin.register(CollectionBadgeContainer, CollectionBadgeAdmin)
-
 
 
 class BadgeClassAlignmentInline(TabularInline):

@@ -227,6 +227,9 @@ class Issuer(ResizeUploadedImage,
         'country': None
     }
 
+    # stores the original verified variable to detect changes and notify the issuer
+    __original_verified = False
+
     def publish(self, publish_staff=True, *args, **kwargs):
         fields_cache = self._state.fields_cache  # stash the fields cache to avoid publishing related objects here
         self._state.fields_cache = dict()
@@ -274,6 +277,7 @@ class Issuer(ResizeUploadedImage,
         super().__init__(*args, **kwargs)
         self.__original_address = {'street': self.street, 'streetnumber': self.streetnumber,
             'city': self.city, 'zip': self.zip, 'country': self.country}
+        self.__original_verified = self.verified
 
     def save(self, *args, **kwargs):
         if not self.pk:
@@ -298,6 +302,9 @@ class Issuer(ResizeUploadedImage,
 
         ret = super(Issuer, self).save(*args, **kwargs)
 
+        # notify the owner of the Issuer on verification
+        if self.__original_verified == False and self.verified:
+            self.notify_issuer_owner(self)
         # The user who created the issuer should always be an owner
         self.ensure_owner()
 
@@ -481,7 +488,6 @@ class Issuer(ResizeUploadedImage,
         if badgr_app is None:
             badgr_app = BadgrApp.objects.get_current(None)
 
-        print(badgr_app)
         UserModel = get_user_model()
         users = UserModel.objects.filter(is_staff=True)
 
@@ -507,7 +513,34 @@ class Issuer(ResizeUploadedImage,
         adapter = get_adapter()
         for user in users:
             adapter.send_mail(template_name, user.email, context=email_context)
+ 
+    # Notify Issuer owner when issuer gets verified
+    def notify_issuer_owner(self, badgr_app=None, renotify=False):
+        """
+        Sends an email notification to the Issuer owner.
+        """
+        if badgr_app is None:
+            badgr_app = self.cached_issuer.cached_badgrapp
+        if badgr_app is None:
+            badgr_app = BadgrApp.objects.get_current(None)
 
+        try:
+            email_context = {
+                # removes all special characters from the issuer name (keeps whitespces, digits and alphabetical characters )
+                'issuer_name': re.sub(r'[^\w\s]+', '', self.name, 0, re.I),
+                'issuer_url': self.url,
+                'issuer_email': self.email,
+                'site_name': badgr_app.name,
+                'badgr_app': badgr_app
+            }
+        except KeyError as e:
+            # A property isn't stored right in json
+            raise e
+
+        template_name = 'issuer/email/notify_issuer_verified'
+
+        adapter = get_adapter()
+        adapter.send_mail(template_name, self.email, context=email_context)
 
 class IssuerStaff(cachemodel.CacheModel):
     ROLE_OWNER = 'owner'
@@ -564,102 +597,7 @@ def get_user_or_none(recipient_id, recipient_type):
 
     return user
 
-class CollectionBadgeContainer(
-                               ResizeUploadedImage,
-                               ScrubUploadedSvgImage,
-                               HashUploadedImage,
-                               PngImagePreview,
-                               BaseAuditedModel,
-                               BaseVersionedEntity):
-    entity_class_name = 'CollectionBadgeContainer'
-    name = models.CharField(max_length=128)
-    description = models.CharField(max_length=255, blank=True)
 
-    image = models.FileField(upload_to='uploads/badges', blank=True)
-    image_preview = models.FileField(upload_to='uploads/badges', blank=True, null=True)
-
-    assertions =   models.ManyToManyField('issuer.BadgeClass', blank=True,
-            through='issuer.CollectionBadgeBadgeClass'
-        ) 
-
-    class Meta:
-        # name shown in admin interface
-        verbose_name = 'Collection Badge'     
-
-    @cachemodel.cached_method(auto_publish=True)
-    def cached_collects(self):
-        return self.assertions.all()
-
-    def image_url(self):
-        return OriginSetting.HTTP + reverse('collectionbadge_image', kwargs={'entity_id': self.entity_id})
-
-    
-    @property
-    def badgeclass_items(self):
-        return self.cached_collects()
-   
-   
-class CollectionBadgeBadgeClass(cachemodel.CacheModel):
-    collectionbadge = models.ForeignKey('issuer.CollectionBadgeContainer',
-                                   on_delete=models.CASCADE)
-   
-    badgeclass = models.ForeignKey('issuer.BadgeClass',
-                                      on_delete=models.CASCADE)
-
-
-
-class SuperBadge( ResizeUploadedImage,
-                  ScrubUploadedSvgImage,
-                  HashUploadedImage,
-                  PngImagePreview,
-                  BaseAuditedModel,
-                  BaseVersionedEntity):
-    entity_class_name = 'SuperBadge'
-    name = models.CharField(max_length=128)
-    description = models.CharField(max_length=255, blank=True)
-
-    image = models.FileField(upload_to='uploads/badges', blank=True)
-    image_preview = models.FileField(upload_to='uploads/badges', blank=True, null=True)
-
-    assertions =   models.ManyToManyField('issuer.BadgeClass', blank=True,
-            through='issuer.SuperBadgeBadgeClass'
-        )
-
-    cached = SlugOrJsonIdCacheModelManager(slug_kwarg_name='entity_id', slug_field_name='entity_id')
-
-    @cachemodel.cached_method(auto_publish=True)
-    def cached_badgeclasses(self):
-        return self.assertions.all()
-
-  
-    @property
-    def badge_items(self):
-        return self.cached_badgeclasses()
-
-    def image_url(self):
-        return OriginSetting.HTTP + reverse('superbadge_image', kwargs={'entity_id': self.entity_id})
-
-
-
-
-       
-class SuperBadgeBadgeClass(cachemodel.CacheModel):
-    superbadge = models.ForeignKey('issuer.SuperBadge',
-                                   on_delete=models.CASCADE)
-   
-    badgeclass = models.ForeignKey('issuer.BadgeClass',
-                                      on_delete=models.CASCADE)
-
-    @property
-    def cached_badgeclass(self):
-        return BadgeClass.cached.get(id=self.badgeclass_id)
-
-    @property
-    def cached_superbadge(self):
-        return Superbadge.cached.get(id=self.superbadge_id)
-                                      
-
- 
 class BadgeClass(ResizeUploadedImage,
                  ScrubUploadedSvgImage,
                  HashUploadedImage,
