@@ -71,6 +71,7 @@ def info_view(request, *args, **kwargs):
     return redirect(getattr(settings, 'LOGIN_REDIRECT_URL'))
 
 
+# TODO: It is possible to call this method without authentication, thus storing files on the server
 @csrf_exempt
 def upload(req):
     if req.method == 'POST':
