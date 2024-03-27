@@ -1,4 +1,5 @@
 import base64
+import json
 import time
 
 from django import forms
@@ -85,7 +86,7 @@ def upload(req):
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
 @permission_classes([IsAuthenticated])
-def aiskills(req, searchterm, page):
+def aiskills(req, searchterm):
     if req.method != 'GET':
         return JsonResponse({"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -95,12 +96,16 @@ def aiskills(req, searchterm, page):
         endpoint = getattr(settings, 'AISKILLS_ENDPOINT')
         params = {'api_key': apiKey}
         payload = {'text_to_analyze': searchterm}
-        response = requests.get(endpoint, params=params, data=payload)
+        headers = {'Content-Type': 'application/json',
+                   'accept': 'application/json'}
+        response = requests.post(endpoint, params=params,
+                                data=json.dumps(payload), headers=headers)
+        print(response.text)
 
         if response.status_code == 200:
             data = response.json()
             return JsonResponse(data, status=status.HTTP_200_OK)
-        elif response.status_code == 403:
+        elif response.status_code == 403 or response.status_code == 401:
             # Probably the API KEY was wrong
             return JsonResponse({"error":
                 "Couldn't authenticate against AI skills service!"},

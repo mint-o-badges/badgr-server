@@ -122,7 +122,7 @@ urlpatterns = [
     url(r'^nounproject/(?P<searchterm>[^/]+)/(?P<page>[^/]+)$', nounproject,
         name="nounproject"),
 
-    url(r'^aiskills/(?P<searchterm>[^/]+)$', nounproject, name="aiskills"),
+    url(r'^aiskills/(?P<searchterm>[^/]+)$', aiskills, name="aiskills"),
 ]
 # add to serve files
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
