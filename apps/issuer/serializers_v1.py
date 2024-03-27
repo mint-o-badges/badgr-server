@@ -5,7 +5,7 @@ import json
 
 import logging
 
-
+from collections import OrderedDict
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.urls import reverse
 from django.core.validators import EmailValidator, URLValidator
@@ -22,7 +22,7 @@ from mainsite.serializers import DateTimeWithUtcZAtEndField, HumanReadableBoolea
         StripTagsCharField, MarkdownCharField, OriginalJsonSerializerMixin
 from mainsite.utils import OriginSetting
 from mainsite.validators import ChoicesValidator, BadgeExtensionValidator, PositiveIntegerValidator, TelephoneValidator
-from .models import Issuer, BadgeClass, IssuerStaff, BadgeInstance, BadgeClassExtension, \
+from .models import Issuer, BadgeClass, IssuerStaff, BadgeInstance, SuperBadge, BadgeClassExtension, CollectionBadgeContainer, \
         RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL
 
 logger = logging.getLogger(__name__)
@@ -83,6 +83,8 @@ class IssuerStaffSerializerV1(serializers.Serializer):
                 }
             }
         })
+
+
 
 
 class IssuerSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
@@ -224,6 +226,132 @@ class BadgeClassExpirationSerializerV1(serializers.Serializer):
                                        choices=BadgeClass.EXPIRES_DURATION_CHOICES)
 
 
+# custom relational field, that describes exactly how the output representation should 
+# be generated from the model instance as found in:ModifiedRelatedField
+# https://stackoverflow.com/questions/50973569/django-rest-framework-relatedfield-cant-return-a-dict-object
+# not using this custom field results in the following error: TypeError: unhashable type: 'dict'
+class ModifiedRelatedField(serializers.RelatedField):
+    # override get_choices method from parent class
+    def get_choices(self, cutoff=None):
+        queryset = self.get_queryset()
+        if queryset is None:
+            return {}
+
+        if cutoff is not None:
+            queryset = queryset[:cutoff]
+
+        return OrderedDict([
+            (
+                # This is the only line that differs
+                # from the official RelatedField's implementation
+                item.pk,
+                self.display_value(item)
+            )
+            for item in queryset
+        ])
+        
+class SuperBadgeBadgeClassField(ModifiedRelatedField):
+    def to_representation(self, value):
+        return {
+                "id": value.entity_id,
+                "name": value.name,
+                "description": value.description,
+                "image": value.image.url
+                }
+
+    def to_internal_value(self, data):
+        return BadgeClass.objects.get(entity_id=data)              
+
+class SuperBadgeClassSerializerV1(serializers.Serializer):
+    name = StripTagsCharField(required=True, max_length=128)
+    description = StripTagsCharField(required=False, allow_blank=True,
+            allow_null=True, max_length=255)
+    image = ValidImageField(required=False)
+
+    badges = SuperBadgeBadgeClassField(
+        queryset=BadgeClass.objects.all(), many=True, source='cached_badgeclasses'
+    )
+
+    def to_representation(self, instance):
+        representation = super(SuperBadgeClassSerializerV1, self).to_representation(instance)
+        return representation
+
+    def validate_image(self, image):
+        if image is not None:
+            img_name, img_ext = os.path.splitext(image.name)
+            image.name = 'issuer_superbadge_' + str(uuid.uuid4()) + img_ext
+        return image    
+
+    def create(self, validated_data):
+
+        if 'image' not in validated_data:
+            raise serializers.ValidationError({"image": ["This field is required"]})
+
+
+        new_superbadge = SuperBadge.objects.create(
+            name=validated_data.get('name'),
+            description=validated_data.get('description', ''),
+            image=validated_data.get('image')
+        )
+
+        for badge in validated_data.get('cached_badgeclasses', []):
+            new_superbadge.assertions.add(badge)   
+
+        return new_superbadge
+
+
+class CollectionBadgeBadgeClassField(ModifiedRelatedField):
+    def to_representation(self, value):
+        return {
+                "id": value.entity_id,
+                "name": value.name,
+                "description": value.description,
+                "image": value.image.url
+                }
+
+    def to_internal_value(self, data):
+        if isinstance(data, dict) and 'slug' in data:
+            slug = data['slug']
+            return BadgeClass.objects.get(entity_id=slug)
+        else:
+            raise serializers.ValidationError("Invalid data format")    
+
+
+class CollectionBadgeClassSerializerV1(serializers.Serializer):
+    name = StripTagsCharField(required=True, max_length=128)
+    description = StripTagsCharField(required=False, allow_blank=True,
+            allow_null=True, max_length=255)
+    image = ValidImageField(required=False)
+    badges = CollectionBadgeBadgeClassField(many=True, queryset=BadgeClass.objects.all(), source='cached_collects')
+    slug = StripTagsCharField(required=False, max_length=128, source='entity_id')
+
+    def to_representation(self, instance):
+        representation = super(CollectionBadgeClassSerializerV1, self).to_representation(instance)
+        return representation
+    
+    def validate_image(self, image):
+        if image is not None:
+            img_name, img_ext = os.path.splitext(image.name)
+            image.name = 'issuer_collectionbadge_' + str(uuid.uuid4()) + img_ext
+        return image
+
+    def create(self, validated_data):
+
+        if 'image' not in validated_data:
+            raise serializers.ValidationError({"image": ["This field is required"]})
+
+
+        new_collectionbadge = CollectionBadgeContainer.objects.create(
+            name=validated_data.get('name'),
+            description=validated_data.get('description', ''),
+            image=validated_data.get('image')
+        )
+
+        for badge in validated_data.get('cached_collects', []):
+            new_collectionbadge.assertions.add(badge)        
+
+        return new_collectionbadge
+
 class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, serializers.Serializer):
     created_at = DateTimeWithUtcZAtEndField(read_only=True)
     created_by = BadgeUserIdentifierFieldV1()
@@ -294,6 +422,7 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
                 or ext_name.endswith('StudyLoadExtension')
                 or ext_name.endswith('CategoryExtension')
                 or ext_name.endswith('LevelExtension')
+                or ext_name.endswith('CompetencyExtension')
                 or ext_name.endswith('BasedOnExtension')):
                     is_formal = True
         self.formal = is_formal

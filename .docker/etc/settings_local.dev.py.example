@@ -57,6 +57,10 @@ CACHES = {
 DEFAULT_FROM_EMAIL = ''  # e.g. "noreply@example.com"
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
+# use these settings if you want to use mailhog instead of console backend
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'mailhog'
+# EMAIL_PORT = 1025
 
 ###
 #
