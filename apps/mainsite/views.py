@@ -93,8 +93,9 @@ def aiskills(req, searchterm, page):
     while attempt_num < 4:
         apiKey = getattr(settings, 'AISKILLS_API_KEY')
         endpoint = getattr(settings, 'AISKILLS_ENDPOINT')
-        payload = {'api_key': apiKey}
-        response = requests.get(endpoint, params=payload)
+        params = {'api_key': apiKey}
+        payload = {'text_to_analyze': searchterm}
+        response = requests.get(endpoint, params=params, data=payload)
 
         if response.status_code == 200:
             data = response.json()
