@@ -470,8 +470,8 @@ CELERY_ALWAYS_EAGER = True
 
 # If enabled, notify badgerank about new badgeclasses
 BADGERANK_NOTIFY_ON_BADGECLASS_CREATE = False
-BADGERANK_NOTIFY_ON_FIRST_ASSERTION = False
-#BADGERANK_NOTIFY_URL = 'https://api.badgerank.org/v1/badgeclass/submit'
+BADGERANK_NOTIFY_ON_FIRST_ASSERTION = True
+BADGERANK_NOTIFY_URL = 'https://api.badgerank.org/v1/badgeclass/submit'
 
 # Feature options
 GDPR_COMPLIANCE_NOTIFY_ON_FIRST_AWARD = True  # Notify recipients of first award on server even if issuer didn't opt to.
