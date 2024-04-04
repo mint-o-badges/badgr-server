@@ -255,12 +255,6 @@ class BadgeCheckHelper(object):
                     issuer, badgeclass_obo,
                     original_json=original_json.get(badgeclass_obo.get('id')),
                     image=badgeclass_image)
-                if badgeclass_created and (
-                        getattr(settings, 'BADGERANK_NOTIFY_ON_BADGECLASS_CREATE', True)
-                        or getattr(settings, 'BADGERANK_NOTIFY_ON_FIRST_ASSERTION', True)
-                ):
-                    from issuer.tasks import notify_badgerank_of_badgeclass
-                    notify_badgerank_of_badgeclass.delay(badgeclass_pk=badgeclass.pk)
                 return BadgeInstance.objects.get_or_create_from_ob2(
                     badgeclass, assertion_obo,
                     recipient_identifier=recipient_identifier, recipient_type=recipient_type,
