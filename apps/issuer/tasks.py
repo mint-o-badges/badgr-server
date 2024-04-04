@@ -27,7 +27,7 @@ badgerank_task_queue_name = getattr(settings, 'BADGERANK_TASK_QUEUE_NAME', 'defa
 @app.task(bind=True, queue=badgerank_task_queue_name, autoretry_for=(ConnectionError,),
         retry_backoff=True, max_retries=10)
 def notify_badgerank_of_badgeclass(self, badgeclass_pk):
-    badgerank_enabled = getattr(settings, 'BADGERANK_NOTIFY_ENABLED', True)
+    badgerank_enabled = False#getattr(settings, 'BADGERANK_NOTIFY_ENABLED', True)
     if not badgerank_enabled:
         return {
             'success': True,
