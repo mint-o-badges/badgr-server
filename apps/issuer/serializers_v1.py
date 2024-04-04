@@ -250,59 +250,42 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
         apispec_definition = ('BadgeClass', {})
 
     def to_internal_value(self, data):
-        logger.error("Converting to internal value")
         if 'expires' in data:
             if not data['expires'] or len(data['expires']) == 0:
                 # if expires was included blank, remove it so to_internal_value() doesnt choke
                 del data['expires']
-        logger.error("Done with expire ifs")
-        returnValue = super(BadgeClassSerializerV1, self).to_internal_value(data)
-        logger.error("Got return value")
-        return returnValue
+        return super(BadgeClassSerializerV1, self).to_internal_value(data)
 
     def to_representation(self, instance):
-        logger.error("Converting to representation")
         representation = super(BadgeClassSerializerV1, self).to_representation(instance)
         representation['issuerName'] = instance.cached_issuer.name
         representation['issuer'] = OriginSetting.HTTP + \
             reverse('issuer_json', kwargs={'entity_id': instance.cached_issuer.entity_id})
         representation['json'] = instance.get_json(obi_version='1_1', use_canonical_id=True)
-        logger.error("Got representation")
         return representation
 
     def validate_image(self, image):
-        logger.error("Validating image")
         if image is not None:
             img_name, img_ext = os.path.splitext(image.name)
             image.name = 'issuer_badgeclass_' + str(uuid.uuid4()) + img_ext
-        logger.error("Validated image")
         return image
 
     def validate_criteria_text(self, criteria_text):
-        logger.error("Validating criteria text")
         if criteria_text is not None and criteria_text != '':
-            logger.error("Validated criteria text")
             return criteria_text
         else:
-            logger.error("Returning none for criteria text")
             return None
 
     def validate_criteria_url(self, criteria_url):
-        logger.error("Validating criteria url")
         if criteria_url is not None and criteria_url != '':
-            logger.error("Validated critera url")
             return criteria_url
         else:
-            logger.error("Returning none for criteria url")
             return None
 
     def validate_extensions(self, extensions):
-        logger.error("Validating extensions")
         is_formal = False
         if extensions:
-            logger.error("Got extensions")
             for ext_name, ext in extensions.items():
-                logger.error("Validating an extension")
                 # if "@context" in ext and not ext['@context'].startswith(settings.EXTENSIONS_ROOT_URL):
                 #     raise BadgrValidationError(
                 #         error_code=999,
@@ -313,24 +296,17 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
                 or ext_name.endswith('LevelExtension')
                 or ext_name.endswith('CompetencyExtension')
                 or ext_name.endswith('BasedOnExtension')):
-                    logger.error("Extensions is formal")
                     is_formal = True
         self.formal = is_formal
-        logger.error("Returning extensions")
         return extensions
 
     def add_extensions(self, instance, add_these_extensions, extension_items):
-        logger.error("Adding extensions")
         for extension_name in add_these_extensions:
-            logger.error("Adding extension")
             original_json = extension_items[extension_name]
-            logger.error("Got original json")
             extension = BadgeClassExtension(name=extension_name,
                                             original_json=json.dumps(original_json),
                                             badgeclass_id=instance.pk)
-            logger.error("Got extension")
             extension.save()
-            logger.error("Saved extension")
 
     def update(self, instance, validated_data):
         logger.info("UPDATE BADGECLASS")
@@ -381,7 +357,6 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
         return instance
 
     def validate(self, data):
-        logger.error("Validating")
         if 'criteria' in data:
             if 'criteria_url' in data or 'criteria_text' in data:
                 raise serializers.ValidationError(
@@ -396,12 +371,10 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
                 )
             else:
                 data['criteria_text'] = data.pop('criteria')
-        logger.error("Validated")
         return data
 
     def create(self, validated_data, **kwargs):
 
-        logger.error("Creating")
         logger.info("CREATE NEW BADGECLASS")
         logger.debug(validated_data)
 
@@ -416,9 +389,7 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
                 "One or both of the criteria_text and criteria_url fields must be provided"
             )
 
-        logger.error("Passed validations")
         new_badgeclass = BadgeClass.objects.create(**validated_data)
-        logger.error("Created")
         return new_badgeclass
 
 
