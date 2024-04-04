@@ -469,7 +469,7 @@ BADGR_PUBLIC_BOT_USERAGENTS_WIDE = [
 CELERY_ALWAYS_EAGER = True
 
 # If enabled, notify badgerank about new badgeclasses
-BADGERANK_NOTIFY_ON_BADGECLASS_CREATE = False
+BADGERANK_NOTIFY_ON_BADGECLASS_CREATE = True
 BADGERANK_NOTIFY_ON_FIRST_ASSERTION = True
 BADGERANK_NOTIFY_URL = 'https://api.badgerank.org/v1/badgeclass/submit'
 
