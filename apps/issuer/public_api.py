@@ -14,7 +14,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.storage import DefaultStorage
 from django.urls import resolve, reverse, Resolver404, NoReverseMatch
 from django.http import Http404, HttpResponseRedirect
-from django.shortcuts import redirect, render_to_response
+from django.shortcuts import redirect, render
 from django.views.generic import RedirectView
 from entity.serializers import BaseSerializerV2
 from rest_framework import status, permissions
@@ -124,7 +124,7 @@ class JSONComponentView(VersionedObjectMixin, APIView, SlugToEntityIdRedirectMix
 
         if self.is_bot():
             # if user agent matches a known bot, return a stub html with opengraph tags
-            return render_to_response(self.template_name, context=self.get_context_data())
+            return render(request, self.template_name, context=self.get_context_data())
 
         if self.is_requesting_html():
             return HttpResponseRedirect(redirect_to=self.get_badgrapp_redirect())
