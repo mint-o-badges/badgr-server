@@ -12,7 +12,7 @@ from django.http import HttpResponseRedirect
 from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.module_loading import autodiscover_modules
-from django.utils.translation import ugettext_lazy
+from django.utils.translation import gettext_lazy
 from django_object_actions import DjangoObjectActions
 from oauth2_provider.models import get_application_model, get_grant_model, get_access_token_model, \
     get_refresh_token_model
@@ -26,8 +26,8 @@ badgrlogger = badgrlog.BadgrLogger()
 
 
 class BadgrAdminSite(AdminSite):
-    site_header = ugettext_lazy('Badgr')
-    index_title = ugettext_lazy('Staff Dashboard')
+    site_header = gettext_lazy('Badgr')
+    index_title = gettext_lazy('Staff Dashboard')
     site_title = 'Badgr'
 
     def autodiscover(self):

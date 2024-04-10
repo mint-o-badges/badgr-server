@@ -8,7 +8,7 @@ from django.core.cache import cache
 from django.db import router
 from django.template.response import TemplateResponse
 from django.utils.encoding import force_text
-from django.utils.translation import ugettext_lazy, ugettext as _
+from django.utils.translation import gettext_lazy, gettext as _
 
 
 def delete_selected(modeladmin, request, queryset):
@@ -76,7 +76,7 @@ def delete_selected(modeladmin, request, queryset):
     ], context, current_app=modeladmin.admin_site.name)
 
 
-delete_selected.short_description = ugettext_lazy("Delete selected %(verbose_name_plural)s")
+delete_selected.short_description = gettext_lazy("Delete selected %(verbose_name_plural)s")
 
 
 def clear_cache():
