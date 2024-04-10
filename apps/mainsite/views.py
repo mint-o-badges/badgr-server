@@ -89,8 +89,7 @@ def upload(req):
 @permission_classes([IsAuthenticated])
 def aiskills(req, searchterm):
     # The searchterm is encoded URL safe, meaning that + and / got replaced by - and _
-    searchterm.replace("-", "+")
-    searchterm.replace("_", "/")
+    searchterm = searchterm.replace("-", "+").replace("_", "/")
     searchterm = base64.b64decode(searchterm).decode("utf-8")
     if req.method != 'GET':
         return JsonResponse({"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST)
