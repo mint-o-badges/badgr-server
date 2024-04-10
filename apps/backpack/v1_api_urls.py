@@ -1,4 +1,4 @@
-from django.conf.urls import url
+from django.conf.urls import re_path as url
 
 from backpack.api import BackpackAssertionList, BackpackAssertionDetail, \
         BackpackAssertionDetailImage, BackpackCollectionList, \

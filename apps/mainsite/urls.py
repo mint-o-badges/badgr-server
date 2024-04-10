@@ -6,7 +6,7 @@ from mainsite.views import (SitewideActionFormView, RedirectToUiLogin, DocsAutho
                             LegacyLoginAndObtainAuthToken,)
 from django.apps import apps
 from django.conf import settings
-from django.conf.urls import include, url
+from django.conf.urls import include, re_path as url
 from django.urls import path
 
 from mainsite.admin import badgr_admin
