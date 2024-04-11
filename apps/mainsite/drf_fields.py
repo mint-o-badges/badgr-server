@@ -7,7 +7,7 @@ import uuid
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import UploadedFile
-from django.utils.translation import gettext as _
+from django.utils.translation import ugettext as _
 from rest_framework.fields import FileField, SkipField
 
 from mainsite.validators import ValidImageValidator
