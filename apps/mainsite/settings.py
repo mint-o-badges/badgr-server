@@ -496,5 +496,3 @@ SAML_LAST_NAME_KEYS = ['LastName', 'sn', 'surname', 'http://schemas.xmlsoap.org/
 # You may use an HTTP service to convert SVG images to PNG for higher reliability than the built-in Python option.
 SVG_HTTP_CONVERSION_ENABLED = False
 SVG_HTTP_CONVERSION_ENDPOINT = ''  # Include scheme, e.g. 'http://example.com/convert-to-png'
-
-DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
