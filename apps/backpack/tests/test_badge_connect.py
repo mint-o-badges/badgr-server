@@ -14,7 +14,7 @@ import mock
 
 from django.conf import settings
 from django.core.files.storage import default_storage
-from django.utils.encoding import force_str
+from django.utils.encoding import force_text
 from rest_framework.fields import DateTimeField
 
 from backpack.tests.utils import setup_resources
@@ -241,13 +241,13 @@ class BadgeConnectOAuthTests(BadgrTestCase, SetupIssuerHelper):
                         new=lambda a, b: False):
             response = self.client.post('/bcv1/assertions', data={'assertion': {'id': REMOTE_BADGE_URI}}, format='json')
         self.assertEqual(response.status_code, 201)
-        self.assertJSONEqual(force_str(response.content), {
+        self.assertJSONEqual(force_text(response.content), {
             "status": expected_status
         })
 
         response = self.client.get('/bcv1/assertions')
         self.assertEqual(response.status_code, 200)
-        self.assertJSONEqual(force_str(json.dumps(response.data['status'])), expected_status)
+        self.assertJSONEqual(force_text(json.dumps(response.data['status'])), expected_status)
         self.assertEqual(len(response.data['results']), 2)
         ids = [response.data['results'][0]['id'], response.data['results'][1]['id']]
         self.assertTrue(assertion.jsonld_id in ids)
@@ -258,7 +258,7 @@ class BadgeConnectOAuthTests(BadgrTestCase, SetupIssuerHelper):
 
         response = self.client.get('/bcv1/profile')
         self.assertEqual(response.status_code, 200)
-        self.assertJSONEqual(force_str(response.content), {
+        self.assertJSONEqual(force_text(response.content), {
             "status": expected_status,
             "results": [
                 {
@@ -530,15 +530,15 @@ class BadgeConnectAPITests(BadgrTestCase, SetupIssuerHelper):
 
         response = self.client.get('/bcv1/assertions')
         self.assertEquals(response.status_code, 401)
-        self.assertJSONEqual(force_str(response.content), expected_response)
+        self.assertJSONEqual(force_text(response.content), expected_response)
 
         response = self.client.post('/bcv1/assertions', data={'id': 'http://a.com/assertion-embedded1'}, format='json')
         self.assertEquals(response.status_code, 401)
-        self.assertJSONEqual(force_str(response.content), expected_response)
+        self.assertJSONEqual(force_text(response.content), expected_response)
 
         response = self.client.get('/bcv1/profile')
         self.assertEqual(response.status_code, 401)
-        self.assertJSONEqual(force_str(response.content), expected_response)
+        self.assertJSONEqual(force_text(response.content), expected_response)
 
     @responses.activate
     def test_submit_badges_with_intragraph_references(self):
