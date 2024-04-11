@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 
-from django.conf.urls import re_path as url
+from django.conf.urls import url
 
 from externaltools.api import ExternalToolList, ExternalToolLaunch
 

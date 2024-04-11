@@ -1,4 +1,4 @@
-from django.conf.urls import re_path as url
+from django.conf.urls import url
 from django.views.decorators.clickjacking import xframe_options_exempt
 from rest_framework.urlpatterns import format_suffix_patterns
 

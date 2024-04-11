@@ -1,7 +1,7 @@
 # encoding: utf-8
 from __future__ import unicode_literals
 
-from django.conf.urls import re_path as url
+from django.conf.urls import url
 
 from backpack.badge_connect_api import BadgeConnectProfileView, BadgeConnectAssertionListView
 

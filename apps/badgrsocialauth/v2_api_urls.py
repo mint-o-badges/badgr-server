@@ -1,4 +1,4 @@
-from django.conf.urls import re_path as url
+from django.conf.urls import url
 
 from badgrsocialauth.api import BadgrSocialAccountList, BadgrSocialAccountDetail, BadgrSocialAccountConnect
 

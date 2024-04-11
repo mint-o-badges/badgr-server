@@ -3,7 +3,7 @@ import logging
 
 from allauth.socialaccount import providers
 from django.conf import settings
-from django.conf.urls import re_path as url
+from django.conf.urls import url
 
 from badgrsocialauth.views import BadgrSocialLogin, BadgrSocialEmailExists, \
         BadgrSocialAccountVerifyEmail, BadgrSocialLoginCancel, BadgrAccountConnected, \
