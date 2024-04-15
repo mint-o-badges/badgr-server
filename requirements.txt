@@ -9,7 +9,7 @@ python-dateutil==2.7.5
 # mysql database
 mysqlclient==1.4.6
 
-django-storages==1.9.1
+django-storages==1.14.2
 python-resize-image==1.1.19
 
 # CSky models
