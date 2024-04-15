@@ -88,7 +88,7 @@ apispec==0.22.0
 apispec-djangorestframework==1.1.1
 
 responses==0.12.1
-mock==3.0.5
+mock==5.1.0
 django_mock_queries==2.1.5
 
 # lti consumer
