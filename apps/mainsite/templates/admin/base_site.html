@@ -1,6 +1,10 @@
-{% extends "admin/base.html" %} {% load static %} {% block title %}{{ title }} |
-{{ site_title|default:_('Django site admin') }}{% endblock %} {% block
-extrastyle %} {{ block.super }}
+{% extends "admin/base.html" %} 
+{% load static %} 
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrastyle %} 
+{{ block.super }}
 <style>
   #header {
     background-color: #31383e;
@@ -37,6 +41,11 @@ extrastyle %} {{ block.super }}
     />
   </a>
 </header>
-{% endblock %} {% block nav-global %}{% endblock %} {% block userlinks %}
-<a href="{% url 'badgr_admin_sitewide_actions' %}">Sitewide Actions</a> / {{
-block.super }} {% endblock %}
+{% endblock %} 
+
+{% block nav-global %}{% endblock %} 
+
+{% block userlinks %}
+  <a href="{% url 'badgr_admin_sitewide_actions' %}">Sitewide Actions</a> / 
+  {{block.super }} 
+{% endblock %}
