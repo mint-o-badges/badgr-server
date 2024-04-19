@@ -1,7 +1,8 @@
 {% extends "admin/base.html" %} 
 {% load static %} 
 
-{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}
+{% endblock %}
 
 {% block extrastyle %} 
 {{ block.super }}
@@ -32,6 +33,8 @@
     height: 47px;
   }
 </style>
+{% endblock %}
+
 {% block base_content %}{% endblock base_content %} {% block branding %}
 <header>
   <a href="{% url 'admin:index' %}" style="padding-left: 16px">
