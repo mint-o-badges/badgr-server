@@ -66,6 +66,14 @@ Set or adjust these values in your `settings_local.dev.py` and/or `settings_loca
   - Set these values to be able to search for icons with in the badge creation process.
 * `AISKILLS_API_KEY` and `AISKILLS_ENDPOINT`:
   - Set these values to be able to get AI skill suggestions within the badge creation process.
+* `OIDC_RP_CLIENT_ID` and `OIDC_RP_CLIENT_SECRET`
+  - The credentials for the meinBildungsraum SSO connection
+* `OIDC_OP_AUTHORIZATION_ENDPOINT` and `OIDC_OP_TOKEN_ENDPOINT`
+  - The endpoints for the meinBildungsraum SSO connection
+  - For the demo: `https://aai.demo.meinbildungsraum.de/realms/nbp-aai/protocol/openid-connect/auth` and `https://aai.demo.meinbildungsraum.de/realms/nbp-aai/protocol/openid-connect/token`
+* `LOGIN_REDIRECT_URL` and `LOGOUT_REDIRECT_URL`
+  - The redirect urls to our application after login / logout via meinBildungsraum
+  - E.g. `http://localhost:4200/public/start` and `http://localhost:4200/auth/login`
 
 ### Running the Django Server in Development
 

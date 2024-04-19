@@ -14,6 +14,7 @@ INSTALLED_APPS = [
     'mainsite',
 
     'django.contrib.auth',
+    'mozilla_django_oidc', # Load after auth
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
@@ -143,6 +144,7 @@ LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/docs'
 
 AUTHENTICATION_BACKENDS = [
+    'mozilla_django_oidc.auth.OIDCAuthenticationBackend',
     'oauth2_provider.backends.OAuth2Backend',
 
     # Object permissions for issuing badges

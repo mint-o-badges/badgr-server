@@ -123,6 +123,10 @@ urlpatterns = [
         name="nounproject"),
 
     url(r'^aiskills/(?P<searchterm>[^/]+)$', aiskills, name="aiskills"),
+
+
+    # meinBildungsraum OIDC connection
+    path('oidc/', include('mozilla_django_oidc.urls')),
 ]
 # add to serve files
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
