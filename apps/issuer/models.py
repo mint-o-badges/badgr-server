@@ -1173,7 +1173,7 @@ class BadgeInstance(BaseAuditedModel,
                 'badge_instance_url': self.public_url,
                 'image_url': self.public_url + '/image?type=png',
                 'download_url': self.public_url + "?action=download",
-                'site_name': badgr_app.name,
+                'site_name': "Open Educational Badges",
                 'site_url': badgr_app.signup_redirect,
                 'badgr_app': badgr_app
             }
