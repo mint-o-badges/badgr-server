@@ -504,7 +504,7 @@ class Issuer(ResizeUploadedImage,
             # 'badge_instance_url': self.public_url,
             # 'image_url': self.public_url + '/image?type=png',
             # 'download_url': self.public_url + "?action=download",
-            'site_name': "openbadges.education"
+            'site_name': "Open Educational Badges"
             # 'badgr_app': badgr_app
         }
 

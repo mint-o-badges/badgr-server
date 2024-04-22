@@ -37,7 +37,7 @@
         <tr>
           <td align="center" style="font-size:0px;padding:10px 25px;word-break:break-word;">
             
-  <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:32px;font-weight:bold;line-height:40px;text-align:center;color:#191919;">
+  <div style="font-family: Rubik, sans-serif;font-size:32px;font-weight:bold;line-height:40px;text-align:center;color:#191919;">
     Herzlichen Glückwunsch, Du hast einen Badge erhalten!
   </div>
 
@@ -67,7 +67,7 @@
         <tr>
           <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
             
-  <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:18px;font-weight:bold;line-height:24px;text-align:left;color:#191919;">
+  <div style="font-family:Rubik, sans-serif;font-size:18px;font-weight:bold;line-height:24px;text-align:left;color:#191919;">
       {{ badge_name }}
   </div>
 
@@ -77,7 +77,7 @@
         <tr>
           <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
             
-  <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#666666;">
+  <div style="font-family:Rubik, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#666666;">
       {{ badge_description }}
   </div>
 
@@ -109,7 +109,7 @@
         <tr>
           <td align="left" style="font-size:0px;padding:10px 25px;padding-top:32px;word-break:break-word;">
             
-  <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:16px;font-weight:bold;line-height:24px;text-align:left;color:#666666;">
+  <div style="font-family:Rubik, sans-serif;font-size:16px;font-weight:bold;line-height:24px;text-align:left;color:#666666;">
     Vergeben von:
   </div>
 
@@ -205,7 +205,7 @@
         <tr>
           <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
             
-  <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#000000;">
+  <div style="font-family:Rubik, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#000000;">
     <a href="{{ issuer_detail }}" class="linkstyle" style="color: #515dc6; font-weight: bold; text-decoration: none;">{{ issuer_name }}</a>
   </div>
 
@@ -267,7 +267,7 @@
         <tr>
           <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
             
-  <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:12px;font-weight:400;line-height:24px;text-align:left;color:#666666;">
+  <div style="font-family:Rubik, sans-serif;font-size:12px;font-weight:400;line-height:24px;text-align:left;color:#666666;">
     {% if issued_on %}
     Ausgestellt am {{issued_on}}
     {% endif %}
@@ -334,7 +334,7 @@
   <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:separate;width:100%;line-height:100%;">
     <tr>
       <td align="center" bgcolor="#3F44BA" role="presentation" style="border:none;border-radius:2px;cursor:auto;background:#3F44BA;" valign="middle">
-        <a href="{{ site_url }}" style="background:#3F44BA;color:#FFFFFF;font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none; display: block; padding:15px 30px;" target="_blank">
+        <a href="{{ site_url }}" style="background:#492e98;color:#FFFFFF;font-family:Rubik, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none; display: block; padding:15px 30px;" target="_blank">
             {% block call_to_action_label %}
             {% endblock %}
         </a>
@@ -351,7 +351,7 @@
   <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:separate;width:100%;line-height:100%;">
     <tr>
       <td align="center" bgcolor="#ffffff" role="presentation" style="border:solid 1px #3F44BA;border-radius:2px;cursor:auto background:#ffffff;" valign="middle">
-        <a href="{{ download_url }}" style="background:#ffffff;color:#3F44BA;font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none; display: block; padding:15px 30px;" target="_blank">
+        <a href="{{ download_url }}" style="background:#ffffff;color:#3F44BA;font-family:Rubik, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none; display: block; padding:15px 30px;" target="_blank">
           Download
         </a>
       </td>
@@ -421,7 +421,7 @@
         <tr>
           <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
             
-  <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#000000;">
+  <div style="font-family:Rubik, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#000000;">
       <a href="{{ HTTP_ORIGIN }}{% url 'v1_api_analytics_share_badge' slug=badge_id %}?provider=facebook&source=awardemail"><img src="{% static '/images/icon-facebook@2x.png' %}" align="left" width="32px" style="padding-right:16px;"></a>
       <a href="{{ HTTP_ORIGIN }}{% url 'v1_api_analytics_share_badge' slug=badge_id %}?provider=linkedin&source=awardemail"><img src="{% static '/images/icon-linkedin@2x.png' %}" align="left" width="32px" style="padding-right:16px;"></a>
       <a href="{{ HTTP_ORIGIN }}{% url 'v1_api_analytics_share_badge' slug=badge_id %}?provider=pinterest&source=awardemail"><img src="{% static '/images/icon-pinterest@2x.png' %}" align="left" width="32px" style="padding-right:16px;"></a>
