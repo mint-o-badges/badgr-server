@@ -305,7 +305,8 @@
                               </td>
                             </tr>
                             {% endif %}
-                            <tr>
+                            <!-- ToDo: remove display none when user can unsubscribe from newsletter  -->
+                            <tr style="display: none;">
                               <td colspan="2" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                                 <p style="border-top:solid 1px #dddddd;font-size:1;margin:0px auto;width:100%;">
                                 </p>
@@ -334,7 +335,8 @@
                               </td>
                             </tr>
                               {% endif %}
-                            <tr>
+                            <!-- unsubscribe is hidden, since users are not subscribed to a newsletter atm -->
+                            <tr style="display: none;">
                               <td colspan="2" align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                                 <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:12px;font-weight:400;line-height:16px;text-align:left;color:#666666;">
                                   {% block unsubscribe %}
