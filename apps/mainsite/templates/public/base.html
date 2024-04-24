@@ -26,7 +26,8 @@
 
     <link href="{% static 'badgr-ui/badgr-ui.css' %}" rel="stylesheet" />
 
-    {% block extra_head %} {% endblock %}
+    {% block extra_head %} 
+    {% endblock %}
   </head>
 
   <body>
@@ -54,7 +55,10 @@
         >
       </header>
 
-      <main>{% block content %} {% endblock %}</main>
+      <main>
+        {% block content %} 
+        {% endblock %}
+      </main>
 
       <footer class="wrap l-containerhorizontal">
         <div class="footer">
@@ -81,7 +85,8 @@
       <nav class="menu" id="menu">
         <h1 class="visuallyhidden">Main Navigation</h1>
         <ul>
-          {% block navigation_items_ui %} {% endblock %}
+          {% block navigation_items_ui %} 
+          {% endblock %}
         </ul>
       </nav>
     </app>
