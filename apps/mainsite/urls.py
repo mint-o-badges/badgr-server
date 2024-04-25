@@ -12,6 +12,7 @@ from django.urls import path
 from mainsite.admin import badgr_admin
 from backpack.badge_connect_api import BadgeConnectManifestView, BadgeConnectManifestRedirectView
 from mainsite.oauth2_api import AuthorizationApiView, TokenView, AuthCodeExchange, RegisterApiView
+from oidc.oidc_views import OidcView
 
 badgr_admin.autodiscover()
 # make sure that any view/model/form imports occur AFTER admin.autodiscover
@@ -127,6 +128,7 @@ urlpatterns = [
 
     # meinBildungsraum OIDC connection
     path('oidc/', include('mozilla_django_oidc.urls')),
+    path('oidcview/', OidcView.login, name="oidcviewLogin"),
 ]
 # add to serve files
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

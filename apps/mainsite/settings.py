@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     # OAuth 2 provider
     'oauth2_provider',
 
+    'oidc',
+
     'entity',
     'issuer',
     'backpack',
