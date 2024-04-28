@@ -359,6 +359,9 @@ REST_FRAMEWORK = {
         'mainsite.authentication.BadgrOAuth2Authentication',
         'mainsite.authentication.LoggedLegacyTokenAuthentication',
         'entity.authentication.ExplicitCSRFSessionAuthentication',
+        # Both needed for OIDC authentication
+        'mozilla_django_oidc.contrib.drf.OIDCAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
     'DEFAULT_VERSION': 'v1',
@@ -510,3 +513,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 OIDC_RP_SCOPES = 'openid'
 OIDC_RP_SIGN_ALGO = 'RS256'
 OIDC_USERNAME_ALGO = 'badgeuser.utils.generate_badgr_username'
+# TODO: Add expiry
+# OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 60 * 60
+OIDC_STORE_ACCESS_TOKEN = True
+OIDC_STORE_ID_TOKEN = True
