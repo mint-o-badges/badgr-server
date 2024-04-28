@@ -67,6 +67,7 @@ MIDDLEWARE = [
     'oauth2_provider.middleware.OAuth2TokenMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'mozilla_django_oidc.middleware.SessionRefresh',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'mainsite.middleware.XframeExempt500Middleware',
@@ -146,7 +147,7 @@ LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/docs'
 
 AUTHENTICATION_BACKENDS = [
-    'mozilla_django_oidc.auth.OIDCAuthenticationBackend',
+    'oidc.OebOIDCAuthenticationBackend',
     'oauth2_provider.backends.OAuth2Backend',
 
     # Object permissions for issuing badges
@@ -504,6 +505,7 @@ SVG_HTTP_CONVERSION_ENDPOINT = ''  # Include scheme, e.g. 'http://example.com/co
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 # OIDC Global settings
+# The document specifies nbp-enmeshed-address to also be an option, but at least in the demo it doesn't work
 #OIDC_RP_SCOPES = 'openid nbp-enmeshed-address'
 OIDC_RP_SCOPES = 'openid'
 OIDC_RP_SIGN_ALGO = 'RS256'
