@@ -147,7 +147,7 @@ LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/docs'
 
 AUTHENTICATION_BACKENDS = [
-    'oidc.OebOIDCAuthenticationBackend',
+    'oidc.oeb_oidc_authentication_backend.OebOIDCAuthenticationBackend',
     'oauth2_provider.backends.OAuth2Backend',
 
     # Object permissions for issuing badges
@@ -509,3 +509,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 #OIDC_RP_SCOPES = 'openid nbp-enmeshed-address'
 OIDC_RP_SCOPES = 'openid'
 OIDC_RP_SIGN_ALGO = 'RS256'
+OIDC_USERNAME_ALGO = 'badgeuser.utils.generate_badgr_username'
