@@ -502,3 +502,8 @@ SVG_HTTP_CONVERSION_ENABLED = False
 SVG_HTTP_CONVERSION_ENDPOINT = ''  # Include scheme, e.g. 'http://example.com/convert-to-png'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+# OIDC Global settings
+#OIDC_RP_SCOPES = 'openid nbp-enmeshed-address'
+OIDC_RP_SCOPES = 'openid'
+OIDC_RP_SIGN_ALGO = 'RS256'
