@@ -39,3 +39,9 @@ class OebOIDCAuthenticationBackend(OIDCAuthenticationBackend):
     def update_user(self, user, claims):
         # Don't update based on data from OIDC
         return user
+
+    def verify_jws(self, payload, key):
+        return super(OebOIDCAuthenticationBackend, self).verify_jws(payload, key)
+    
+    def verify_token(self, token, nonce):
+        return super(OebOIDCAuthenticationBackend, self).verify_token(token, nonce=nonce)
