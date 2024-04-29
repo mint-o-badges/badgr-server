@@ -4,6 +4,7 @@ import base64
 import json
 import re
 from urllib.parse import urlparse
+import datetime
 
 from django.core.files.storage import default_storage
 from django.conf import settings
@@ -15,6 +16,7 @@ from oauth2_provider.models import get_application_model, get_access_token_model
 from oauth2_provider.scopes import get_scopes_backend
 from oauth2_provider.settings import oauth2_settings
 from oauth2_provider.views import TokenView as OAuth2ProviderTokenView
+from oauth2_provider import models
 from oauth2_provider.views.mixins import OAuthLibMixin
 from oauthlib.oauth2.rfc6749.utils import scope_to_list
 from rest_framework import serializers
@@ -309,6 +311,17 @@ class RegisterApiView(APIView):
         return Response(serializer.data, status=HTTP_201_CREATED)
 
 
+# This code comes from the [OAuth2 provider library](https://github.com/caffeinehit/django-oauth2-provider/blob/master/provider/oauth2/views.py)
+def create_access_token(self, request, user, scope, client):
+    at = models.AccessToken.objects.create(
+        user=user,
+        # TODO: Proper expires
+        expires=datetime(2025, 10, 9, 23, 55, 59, 342380)
+    )
+    for s in scope:
+        at.scope.add(s)
+    return at
+
 class TokenView(OAuth2ProviderTokenView):
     server_class = BadgrOauthServer
     validator_class = BadgrRequestValidator
@@ -361,7 +374,14 @@ class TokenView(OAuth2ProviderTokenView):
                 return HttpResponse(json.dumps({"error": "invalid scope requested"}), status=HTTP_400_BAD_REQUEST)
 
         # let parent method do actual authentication
-        response = super(TokenView, self).post(request, *args, **kwargs)
+        response = None
+        if grant_type == "password":
+            response = super(TokenView, self).post(request, *args, **kwargs)
+        elif grant_type == "oidc":
+            if not request.user.is_authenticated:
+                return HttpResponse(json.dumps({"error": "User not authenticated in session!"}), status=HTTP_401_UNAUTHORIZED)
+            token = create_access_token(self, request, request.user, requested_scopes, oauth_app)
+            response = Response(token, status=200)
 
         if oauth_app and not oauth_app.applicationinfo.issue_refresh_token:
             data = json.loads(response.content)

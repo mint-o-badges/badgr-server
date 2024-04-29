@@ -359,6 +359,7 @@ REST_FRAMEWORK = {
         'mainsite.authentication.LoggedLegacyTokenAuthentication',
         'entity.authentication.ExplicitCSRFSessionAuthentication',
         # Both needed for OIDC authentication
+        # TODO: Really?
         'mozilla_django_oidc.contrib.drf.OIDCAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
@@ -514,5 +515,5 @@ OIDC_RP_SIGN_ALGO = 'RS256'
 OIDC_USERNAME_ALGO = 'badgeuser.utils.generate_badgr_username'
 # TODO: Add expiry
 # OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 60 * 60
-OIDC_STORE_ACCESS_TOKEN = True
+OIDC_STORE_ACCESS_TOKEN = False
 OIDC_STORE_ID_TOKEN = True
