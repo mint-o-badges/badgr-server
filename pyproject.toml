@@ -13,7 +13,7 @@ known_first_party = ["config"]
 
 [tool.djlint]
 profile = "django"
-ignore = "H021,H005,H031,T003,D018,H006,H019,H023,H030,H006,H013,H025,H016"
+ignore = "H021,H005,H031,T003,D018,H006,H019,H023,H030,H006,H013,H025"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
