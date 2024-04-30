@@ -1,10 +1,11 @@
 # Created by wiggins@concentricsky.com on 8/24/15.
-from django.conf import settings
-from celery import Celery
 import os
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mainsite.settings_local')
-app = Celery('mainsite')
+from celery import Celery
+from django.conf import settings
 
-app.config_from_object('django.conf:settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mainsite.settings_local")
+app = Celery("mainsite")
+
+app.config_from_object("django.conf:settings")
 app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)

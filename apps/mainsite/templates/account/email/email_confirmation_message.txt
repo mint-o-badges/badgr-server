@@ -6,5 +6,5 @@ Wenn bestätigt, kannst Du Badges zu Deinem OpenEducationalBadges Account hinzuf
 
 {{ activate_url }}
 
-Wenn Du dies nicht angefragt hast, kannst Du sicher diese Email ignorieren und 
-es wird nichts weiter passieren. 
+Wenn Du dies nicht angefragt hast, kannst Du sicher diese Email ignorieren und
+es wird nichts weiter passieren.

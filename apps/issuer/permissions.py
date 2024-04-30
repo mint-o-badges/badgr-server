@@ -1,36 +1,41 @@
 import oauth2_provider
-from django.conf import settings
-from rest_framework import permissions
 import rules
-
+from django.conf import settings
 from issuer.models import IssuerStaff
+from rest_framework import permissions
 
-SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS']
+SAFE_METHODS = ["GET", "HEAD", "OPTIONS"]
 
 
 @rules.predicate
 def is_owner(user, issuer):
-    if not hasattr(issuer, 'cached_issuerstaff'):
+    if not hasattr(issuer, "cached_issuerstaff"):
         return False
     for staff_record in issuer.cached_issuerstaff():
-        if staff_record.user_id == user.id and staff_record.role == IssuerStaff.ROLE_OWNER:
+        if (
+            staff_record.user_id == user.id
+            and staff_record.role == IssuerStaff.ROLE_OWNER
+        ):
             return True
     return False
 
 
 @rules.predicate
 def is_editor(user, issuer):
-    if not hasattr(issuer, 'cached_issuerstaff'):
+    if not hasattr(issuer, "cached_issuerstaff"):
         return False
     for staff_record in issuer.cached_issuerstaff():
-        if staff_record.user_id == user.id and staff_record.role in (IssuerStaff.ROLE_OWNER, IssuerStaff.ROLE_EDITOR):
+        if staff_record.user_id == user.id and staff_record.role in (
+            IssuerStaff.ROLE_OWNER,
+            IssuerStaff.ROLE_EDITOR,
+        ):
             return True
     return False
 
 
 @rules.predicate
 def is_staff(user, issuer):
-    if not hasattr(issuer, 'cached_issuerstaff'):
+    if not hasattr(issuer, "cached_issuerstaff"):
         return False
     for staff_record in issuer.cached_issuerstaff():
         if staff_record.user_id == user.id:
@@ -41,35 +46,42 @@ def is_staff(user, issuer):
 is_on_staff = is_owner | is_staff
 is_staff_editor = is_owner | is_editor
 
-rules.add_perm('issuer.is_owner', is_owner)
-rules.add_perm('issuer.is_editor', is_staff_editor)
-rules.add_perm('issuer.is_staff', is_on_staff)
+rules.add_perm("issuer.is_owner", is_owner)
+rules.add_perm("issuer.is_editor", is_staff_editor)
+rules.add_perm("issuer.is_staff", is_on_staff)
 
 
 @rules.predicate
 def is_badgeclass_owner(user, badgeclass):
-    return any(staff.role == IssuerStaff.ROLE_OWNER
-            for staff in badgeclass.cached_issuer.cached_issuerstaff()
-            if staff.user_id == user.id)
+    return any(
+        staff.role == IssuerStaff.ROLE_OWNER
+        for staff in badgeclass.cached_issuer.cached_issuerstaff()
+        if staff.user_id == user.id
+    )
 
 
 @rules.predicate
 def is_badgeclass_editor(user, badgeclass):
-    return any(staff.role in [IssuerStaff.ROLE_EDITOR, IssuerStaff.ROLE_OWNER]
-            for staff in badgeclass.cached_issuer.cached_issuerstaff()
-            if staff.user_id == user.id)
+    return any(
+        staff.role in [IssuerStaff.ROLE_EDITOR, IssuerStaff.ROLE_OWNER]
+        for staff in badgeclass.cached_issuer.cached_issuerstaff()
+        if staff.user_id == user.id
+    )
 
 
 @rules.predicate
 def is_badgeclass_staff(user, badgeclass):
-    return any(staff.user_id == user.id for staff in badgeclass.cached_issuer.cached_issuerstaff())
+    return any(
+        staff.user_id == user.id
+        for staff in badgeclass.cached_issuer.cached_issuerstaff()
+    )
 
 
 can_issue_badgeclass = is_badgeclass_owner | is_badgeclass_staff
 can_edit_badgeclass = is_badgeclass_owner | is_badgeclass_editor
 
-rules.add_perm('issuer.can_issue_badge', can_issue_badgeclass)
-rules.add_perm('issuer.can_edit_badgeclass', can_edit_badgeclass)
+rules.add_perm("issuer.can_issue_badge", can_issue_badgeclass)
+rules.add_perm("issuer.can_edit_badgeclass", can_edit_badgeclass)
 
 
 class MayIssueBadgeClass(permissions.BasePermission):
@@ -81,7 +93,9 @@ class MayIssueBadgeClass(permissions.BasePermission):
     """
 
     def has_object_permission(self, request, view, badgeclass):
-        return _is_server_admin(request) or request.user.has_perm('issuer.can_issue_badge', badgeclass)
+        return _is_server_admin(request) or request.user.has_perm(
+            "issuer.can_issue_badge", badgeclass
+        )
 
 
 class MayEditBadgeClass(permissions.BasePermission):
@@ -97,9 +111,9 @@ class MayEditBadgeClass(permissions.BasePermission):
         if _is_server_admin(request):
             return True
         if request.method in SAFE_METHODS:
-            return request.user.has_perm('issuer.can_issue_badge', badgeclass)
+            return request.user.has_perm("issuer.can_issue_badge", badgeclass)
         else:
-            return request.user.has_perm('issuer.can_edit_badgeclass', badgeclass)
+            return request.user.has_perm("issuer.can_edit_badgeclass", badgeclass)
 
 
 class IsOwnerOrStaff(permissions.BasePermission):
@@ -112,9 +126,9 @@ class IsOwnerOrStaff(permissions.BasePermission):
         if _is_server_admin(request):
             return True
         if request.method in SAFE_METHODS:
-            return request.user.has_perm('issuer.is_staff', issuer)
+            return request.user.has_perm("issuer.is_staff", issuer)
         else:
-            return request.user.has_perm('issuer.is_owner', issuer)
+            return request.user.has_perm("issuer.is_owner", issuer)
 
 
 class IsEditor(permissions.BasePermission):
@@ -129,9 +143,9 @@ class IsEditor(permissions.BasePermission):
         if _is_server_admin(request):
             return True
         if request.method in SAFE_METHODS:
-            return request.user.has_perm('issuer.is_staff', issuer)
+            return request.user.has_perm("issuer.is_staff", issuer)
         else:
-            return request.user.has_perm('issuer.is_editor', issuer)
+            return request.user.has_perm("issuer.is_editor", issuer)
 
 
 class IsEditorButOwnerForDelete(permissions.BasePermission):
@@ -144,11 +158,11 @@ class IsEditorButOwnerForDelete(permissions.BasePermission):
 
     def has_object_permission(self, request, view, issuer):
         if request.method in SAFE_METHODS:
-            return request.user.has_perm('issuer.is_staff', issuer)
-        elif request.method == 'DELETE':
-            return request.user.has_perm('issuer.is_owner', issuer)
+            return request.user.has_perm("issuer.is_staff", issuer)
+        elif request.method == "DELETE":
+            return request.user.has_perm("issuer.is_owner", issuer)
         else:
-            return request.user.has_perm('issuer.is_editor', issuer)
+            return request.user.has_perm("issuer.is_editor", issuer)
 
 
 class IsStaff(permissions.BasePermission):
@@ -160,19 +174,25 @@ class IsStaff(permissions.BasePermission):
     """
 
     def has_object_permission(self, request, view, issuer):
-        return _is_server_admin(request) or request.user.has_perm('issuer.is_staff', issuer)
+        return _is_server_admin(request) or request.user.has_perm(
+            "issuer.is_staff", issuer
+        )
 
 
 class ApprovedIssuersOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if _is_server_admin(request):
             return True
-        if request.method == 'POST' and getattr(settings, 'BADGR_APPROVED_ISSUERS_ONLY', False):
-            return request.user.has_perm('issuer.add_issuer')
+        if request.method == "POST" and getattr(
+            settings, "BADGR_APPROVED_ISSUERS_ONLY", False
+        ):
+            return request.user.has_perm("issuer.add_issuer")
         return True
 
     def has_permission(self, request, view):
-        return _is_server_admin(request) or self.has_object_permission(request, view, None)
+        return _is_server_admin(request) or self.has_object_permission(
+            request, view, None
+        )
 
 
 class AuditedModelOwner(permissions.BasePermission):
@@ -183,7 +203,7 @@ class AuditedModelOwner(permissions.BasePermission):
     """
 
     def has_object_permission(self, request, view, obj):
-        created_by_id = getattr(obj, 'created_by_id', None)
+        created_by_id = getattr(obj, "created_by_id", None)
         return created_by_id and request.user.id == created_by_id
 
 
@@ -198,17 +218,25 @@ class VerifiedEmailMatchesRecipientIdentifier(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if _is_server_admin(request):
             return True
-        recipient_identifier = getattr(obj, 'recipient_identifier', None)
-        if getattr(obj, 'pending', False):
-            return recipient_identifier and recipient_identifier in request.user.all_recipient_identifiers
-        return recipient_identifier and recipient_identifier in request.user.all_verified_recipient_identifiers
+        recipient_identifier = getattr(obj, "recipient_identifier", None)
+        if getattr(obj, "pending", False):
+            return (
+                recipient_identifier
+                and recipient_identifier in request.user.all_recipient_identifiers
+            )
+        return (
+            recipient_identifier
+            and recipient_identifier in request.user.all_verified_recipient_identifiers
+        )
 
 
 class AuthorizationIsBadgrOAuthToken(permissions.BasePermission):
-    message = 'Invalid token'
+    message = "Invalid token"
 
     def has_permission(self, request, view):
-        return _is_server_admin(request) or isinstance(request.auth, oauth2_provider.models.AccessToken)
+        return _is_server_admin(request) or isinstance(
+            request.auth, oauth2_provider.models.AccessToken
+        )
 
 
 class BadgrOAuthTokenHasScope(permissions.BasePermission):
@@ -217,12 +245,12 @@ class BadgrOAuthTokenHasScope(permissions.BasePermission):
         token = request.auth
 
         if not token:
-            if '*' in valid_scopes:
+            if "*" in valid_scopes:
                 return True
 
             # fallback scopes for authenticated users
             if request.user and request.user.is_authenticated:
-                default_auth_scopes = set(['rw:profile', 'rw:issuer', 'rw:backpack'])
+                default_auth_scopes = set(["rw:profile", "rw:issuer", "rw:backpack"])
                 if len(set(valid_scopes) & default_auth_scopes) > 0:
                     return True
 
@@ -258,22 +286,26 @@ class BadgrOAuthTokenHasEntityScope(permissions.BasePermission):
             return False
 
         # badgeclass/assertion objects defer to the issuer for permissions
-        if hasattr(obj, 'cached_issuer'):
+        if hasattr(obj, "cached_issuer"):
             entity_id = obj.cached_issuer.entity_id
         else:
             entity_id = obj.entity_id
 
         valid_scopes = self._get_valid_scopes(request, view)
-        valid_scopes = [s for s in valid_scopes if '*' in s]
-        valid_scopes = set([self._resolve_wildcard(scope, entity_id) for scope in valid_scopes])
+        valid_scopes = [s for s in valid_scopes if "*" in s]
+        valid_scopes = set(
+            [self._resolve_wildcard(scope, entity_id) for scope in valid_scopes]
+        )
         token_scopes = set(token.scope.split())
 
-        return not token.is_expired() and len(valid_scopes.intersection(token_scopes)) > 0
+        return (
+            not token.is_expired() and len(valid_scopes.intersection(token_scopes)) > 0
+        )
 
     def _resolve_wildcard(self, scope, entity_id):
-        if scope.endswith(':*'):
-            base_scope, _ = scope.rsplit(':*', 1)
-            return ':'.join([base_scope, entity_id])
+        if scope.endswith(":*"):
+            base_scope, _ = scope.rsplit(":*", 1)
+            return ":".join([base_scope, entity_id])
         else:
             return scope
 
@@ -286,6 +318,6 @@ class BadgrOAuthTokenHasEntityScope(permissions.BasePermission):
 
 def _is_server_admin(request):
     try:
-        return 'rw:serverAdmin' in request.auth.scopes
+        return "rw:serverAdmin" in request.auth.scopes
     except AttributeError:
         return False

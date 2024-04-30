@@ -3,7 +3,6 @@
 
 import cachemodel
 from django.db import models
-
 from mainsite.utils import generate_entity_uri
 
 
@@ -14,7 +13,7 @@ class _AbstractVersionedEntity(cachemodel.CacheModel):
         abstract = True
 
     def get_entity_class_name(self):
-        if hasattr(self, 'entity_class_name') and self.entity_class_name:
+        if hasattr(self, "entity_class_name") and self.entity_class_name:
             return self.entity_class_name
         return self.__class__.__name__
 
@@ -27,10 +26,10 @@ class _AbstractVersionedEntity(cachemodel.CacheModel):
 
     def publish(self):
         super(_AbstractVersionedEntity, self).publish()
-        self.publish_by('entity_id')
+        self.publish_by("entity_id")
 
     def delete(self, *args, **kwargs):
-        self.publish_delete('entity_id')
+        self.publish_delete("entity_id")
         return super(_AbstractVersionedEntity, self).delete(*args, **kwargs)
 
 
@@ -51,6 +50,7 @@ class _MigratingToBaseVersionedEntity(_AbstractVersionedEntity):
            instead of _MigratingToBaseVersionedEntity
        5.) ./manage.py makemigrations existing_app  # make migration that sets unique=True
     """
+
     entity_id = models.CharField(max_length=254, blank=False, null=True, default=None)
 
     class Meta:
@@ -58,13 +58,15 @@ class _MigratingToBaseVersionedEntity(_AbstractVersionedEntity):
 
 
 class BaseVersionedEntity(_AbstractVersionedEntity):
-    entity_id = models.CharField(max_length=254, unique=True, default=None)  # default=None is required
+    entity_id = models.CharField(
+        max_length=254, unique=True, default=None
+    )  # default=None is required
 
     class Meta:
         abstract = True
 
     def __str__(self):
         try:
-            return '{}{}'.format(type(self)._meta.object_name, self.entity_id)
+            return "{}{}".format(type(self)._meta.object_name, self.entity_id)
         except AttributeError:
             return self.entity_id

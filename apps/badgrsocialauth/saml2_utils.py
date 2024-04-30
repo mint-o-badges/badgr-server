@@ -1,29 +1,41 @@
-from saml2.metadata import entities_descriptor, entity_descriptor, sign_entity_descriptor
-from saml2.sigver import security_context
 from saml2.config import Config
+from saml2.metadata import (
+    entities_descriptor,
+    entity_descriptor,
+    sign_entity_descriptor,
+)
+from saml2.sigver import security_context
 from saml2.validate import valid_instance
 
 
 def metadata_tostring_fix(desc, nspair, xmlstring=""):
     MDNS = '"urn:oasis:names:tc:SAML:2.0:metadata"'
     bMDNS = b'"urn:oasis:names:tc:SAML:2.0:metadata"'
-    XMLNSXS = " xmlns:xs=\"http://www.w3.org/2001/XMLSchema\""
-    bXMLNSXS = b" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\""
+    XMLNSXS = ' xmlns:xs="http://www.w3.org/2001/XMLSchema"'
+    bXMLNSXS = b' xmlns:xs="http://www.w3.org/2001/XMLSchema"'
     if not xmlstring:
         xmlstring = desc.to_string(nspair)
 
     try:
-        if "\"xs:string\"" in xmlstring and XMLNSXS not in xmlstring:
+        if '"xs:string"' in xmlstring and XMLNSXS not in xmlstring:
             xmlstring = xmlstring.replace(MDNS, MDNS + XMLNSXS)
     except TypeError:
-        if b"\"xs:string\"" in xmlstring and bXMLNSXS not in xmlstring:
+        if b'"xs:string"' in xmlstring and bXMLNSXS not in xmlstring:
             xmlstring = xmlstring.replace(bMDNS, bMDNS + bXMLNSXS)
 
     return xmlstring
 
 
-def create_metadata_string(configfile, config=None, valid=None, cert=None,
-                           keyfile=None, mid=None, name=None, sign=None):
+def create_metadata_string(
+    configfile,
+    config=None,
+    valid=None,
+    cert=None,
+    keyfile=None,
+    mid=None,
+    name=None,
+    sign=None,
+):
     """
     TODO: REMOVE THIS FUNCTION AFTER pysaml2 library is updated. to fix the above metadata_tostring_fix function
     """
@@ -49,8 +61,7 @@ def create_metadata_string(configfile, config=None, valid=None, cert=None,
     secc = security_context(conf)
 
     if mid:
-        eid, xmldoc = entities_descriptor(eds, valid_for, name, mid,
-                                          sign, secc)
+        eid, xmldoc = entities_descriptor(eds, valid_for, name, mid, sign, secc)
     else:
         eid = eds[0]
         if sign:

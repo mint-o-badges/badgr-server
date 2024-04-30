@@ -1,32 +1,30 @@
-from django import http
-
 import six
+from backpack.serializers_bcv1 import BadgeConnectErrorSerializer
+from django import http
 from django.db.models import ProtectedError
-from rest_framework import views, exceptions, status
+from entity.authentication import CSRFPermissionDenied
+from entity.serializers import Rfc7591ErrorSerializer, V2ErrorSerializer
+from rest_framework import exceptions, status, views
 from rest_framework.exceptions import UnsupportedMediaType
 from rest_framework.response import Response
 
-from backpack.serializers_bcv1 import BadgeConnectErrorSerializer
-from entity.serializers import V2ErrorSerializer, Rfc7591ErrorSerializer
-from entity.authentication import CSRFPermissionDenied
-
 
 def exception_handler(exc, context):
-    version = context.get('kwargs', {}).get('version', 'v1')
+    version = context.get("kwargs", {}).get("version", "v1")
 
-    if version in ['v2', 'rfc7591']:
-        description = 'miscellaneous error'
+    if version in ["v2", "rfc7591"]:
+        description = "miscellaneous error"
         field_errors = {}
         validation_errors = []
 
         if isinstance(exc, exceptions.ParseError):
-            description = 'bad request'
+            description = "bad request"
             validation_errors = [exc.detail]
 
             response_code = status.HTTP_400_BAD_REQUEST
 
         elif isinstance(exc, exceptions.ValidationError):
-            description = 'bad request'
+            description = "bad request"
 
             if isinstance(exc.detail, list):
                 validation_errors = exc.detail
@@ -37,16 +35,18 @@ def exception_handler(exc, context):
 
             response_code = status.HTTP_400_BAD_REQUEST
 
-        elif isinstance(exc, (exceptions.AuthenticationFailed, exceptions.NotAuthenticated)):
-            description = 'no valid auth token found'
+        elif isinstance(
+            exc, (exceptions.AuthenticationFailed, exceptions.NotAuthenticated)
+        ):
+            description = "no valid auth token found"
             response_code = status.HTTP_401_UNAUTHORIZED
 
         elif isinstance(exc, CSRFPermissionDenied):
-            description = 'no valid csrf token found'
+            description = "no valid csrf token found"
             response_code = status.HTTP_401_UNAUTHORIZED
 
         elif isinstance(exc, (http.Http404, exceptions.PermissionDenied)):
-            description = 'entity not found or insufficient privileges'
+            description = "entity not found or insufficient privileges"
             response_code = status.HTTP_404_NOT_FOUND
 
         elif isinstance(exc, ProtectedError):
@@ -65,46 +65,52 @@ def exception_handler(exc, context):
         else:
             # Unrecognized exception, return 500 error
             return None
-        if version == 'v2':
+        if version == "v2":
             serializer = V2ErrorSerializer(
-                instance={}, success=False, description=description,
-                field_errors=field_errors, validation_errors=validation_errors
+                instance={},
+                success=False,
+                description=description,
+                field_errors=field_errors,
+                validation_errors=validation_errors,
             )
         else:
             serializer = Rfc7591ErrorSerializer(
-                instance={}, field_errors=field_errors, validation_errors=validation_errors
+                instance={},
+                field_errors=field_errors,
+                validation_errors=validation_errors,
             )
         return Response(serializer.data, status=response_code)
 
-    elif version == 'bcv1':
+    elif version == "bcv1":
         # Badge Connect errors
         error = None
         status_code = status.HTTP_400_BAD_REQUEST
-        status_text = 'BAD_REQUEST'
+        status_text = "BAD_REQUEST"
 
         if isinstance(exc, exceptions.ParseError):
             error = exc.detail
 
         elif isinstance(exc, exceptions.ValidationError):
             error = exc.detail
-            status_text = 'REQUEST_VALIDATION_ERROR'
+            status_text = "REQUEST_VALIDATION_ERROR"
 
         elif isinstance(exc, exceptions.PermissionDenied):
             status_code = status.HTTP_401_UNAUTHORIZED
-            status_text = 'PERMISSION_DENIED'
+            status_text = "PERMISSION_DENIED"
 
-        elif isinstance(exc, (exceptions.AuthenticationFailed, exceptions.NotAuthenticated)):
+        elif isinstance(
+            exc, (exceptions.AuthenticationFailed, exceptions.NotAuthenticated)
+        ):
             status_code = status.HTTP_401_UNAUTHORIZED
-            status_text = 'UNAUTHENTICATED'
+            status_text = "UNAUTHENTICATED"
 
         elif isinstance(exc, exceptions.MethodNotAllowed):
             status_code = status.HTTP_405_METHOD_NOT_ALLOWED
-            status_text = 'METHOD_NOT_ALLOWED'
+            status_text = "METHOD_NOT_ALLOWED"
 
-        serializer = BadgeConnectErrorSerializer(instance={},
-                                                 error=error,
-                                                 status_text=status_text,
-                                                 status_code=status_code)
+        serializer = BadgeConnectErrorSerializer(
+            instance={}, error=error, status_text=status_text, status_code=status_code
+        )
         return Response(serializer.data, status=status_code)
 
     else:

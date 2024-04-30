@@ -16,10 +16,10 @@ curl -X POST 'https://api.badgr.io/o/token' -d "username=YOUREMAIL&password=YOUR
 returns a response like:
 ```javascript
 {
-    "access_token": "YOURACCESSTOKEN", 
-    "token_type": "Bearer", 
-    "expires_in": 86400, 
-    "refresh_token": "YOURREFRESHTOKEN", 
+    "access_token": "YOURACCESSTOKEN",
+    "token_type": "Bearer",
+    "expires_in": 86400,
+    "refresh_token": "YOURREFRESHTOKEN",
 }
 ```
 

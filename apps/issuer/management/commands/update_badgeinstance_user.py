@@ -1,9 +1,8 @@
 # encoding: utf-8
 
 
-from django.core.management import BaseCommand
-
 from badgeuser.models import CachedEmailAddress, UserRecipientIdentifier
+from django.core.management import BaseCommand
 from issuer.models import BadgeInstance
 
 
@@ -25,8 +24,12 @@ class Command(BaseCommand):
 
         self.stdout.write("3. Triggering cache updates")
         while True:
-            badges = BadgeInstance.objects.filter(user__isnull=False)[page:page + chunk_size]
-            self.stdout.write("Processing badges %d through %d" % (page + 1, page + len(badges)))
+            badges = BadgeInstance.objects.filter(user__isnull=False)[
+                page : page + chunk_size  # noqa: E203
+            ]
+            self.stdout.write(
+                "Processing badges %d through %d" % (page + 1, page + len(badges))
+            )
             for b in badges:
                 b.publish()
             if len(badges) < chunk_size:

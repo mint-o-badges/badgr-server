@@ -1,35 +1,43 @@
 import logging
-import urllib.request
-import urllib.parse
 import urllib.error
+import urllib.parse
+import urllib.request
 
 from allauth.account.utils import user_email
 from allauth.exceptions import ImmediateHttpResponse
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+from badgeuser.authcode import accesstoken_for_authcode
+from badgeuser.models import UserRecipientIdentifier
+from badgrsocialauth.utils import (
+    generate_provider_identifier,
+    get_session_authcode,
+    set_session_verification_email,
+)
 from django.conf import settings
 from django.http import HttpResponseForbidden, HttpResponseRedirect
 from django.shortcuts import reverse
-from rest_framework.exceptions import AuthenticationFailed
-
-from badgeuser.authcode import accesstoken_for_authcode
-from badgrsocialauth.utils import set_session_verification_email, get_session_authcode, generate_provider_identifier
-from badgeuser.models import UserRecipientIdentifier
 from mainsite.models import BadgrApp
+from rest_framework.exceptions import AuthenticationFailed
 
 
 class BadgrSocialAccountAdapter(DefaultSocialAccountAdapter):
 
-    def authentication_error(self, request, provider_id, error=None, exception=None, extra_context=None):
+    def authentication_error(
+        self, request, provider_id, error=None, exception=None, extra_context=None
+    ):
         logging.getLogger(__name__).info(
-            'social login authentication error: %s' % {
-                'error': error,
-                'exception': exception,
-                'extra_context': extra_context,
-            })
+            "social login authentication error: %s"
+            % {
+                "error": error,
+                "exception": exception,
+                "extra_context": extra_context,
+            }
+        )
         badgr_app = BadgrApp.objects.get_current(self.request)
         redirect_url = "{url}?authError={message}".format(
             url=badgr_app.ui_login_redirect,
-            message=urllib.parse.quote("Authentication error"))
+            message=urllib.parse.quote("Authentication error"),
+        )
         raise ImmediateHttpResponse(HttpResponseRedirect(redirect_to=redirect_url))
 
     def _update_session(self, request, sociallogin):
@@ -42,11 +50,18 @@ class BadgrSocialAccountAdapter(DefaultSocialAccountAdapter):
         """
         self._update_session(request, sociallogin)
 
-        user = super(BadgrSocialAccountAdapter, self).save_user(request, sociallogin, form)
+        user = super(BadgrSocialAccountAdapter, self).save_user(
+            request, sociallogin, form
+        )
 
-        if sociallogin.account.provider in getattr(settings, 'SOCIALACCOUNT_RECIPIENT_ID_PROVIDERS', ['twitter']):
+        if sociallogin.account.provider in getattr(
+            settings, "SOCIALACCOUNT_RECIPIENT_ID_PROVIDERS", ["twitter"]
+        ):
             UserRecipientIdentifier.objects.create(
-                user=user, verified=True, identifier=generate_provider_identifier(sociallogin))
+                user=user,
+                verified=True,
+                identifier=generate_provider_identifier(sociallogin),
+            )
 
         return user
 
@@ -57,13 +72,16 @@ class BadgrSocialAccountAdapter(DefaultSocialAccountAdapter):
         """
         assert request.user.is_authenticated
 
-        if socialaccount.provider in getattr(settings, 'SOCIALACCOUNT_RECIPIENT_ID_PROVIDERS', ['twitter']):
+        if socialaccount.provider in getattr(
+            settings, "SOCIALACCOUNT_RECIPIENT_ID_PROVIDERS", ["twitter"]
+        ):
             UserRecipientIdentifier.objects.get_or_create(
-                user=socialaccount.user, identifier=generate_provider_identifier(socialaccount=socialaccount),
-                defaults={'verified': True}
+                user=socialaccount.user,
+                identifier=generate_provider_identifier(socialaccount=socialaccount),
+                defaults={"verified": True},
             )
 
-        url = reverse('socialaccount_connections')
+        url = reverse("socialaccount_connections")
         return url
 
     def pre_social_login(self, request, sociallogin):
@@ -85,19 +103,29 @@ class BadgrSocialAccountAdapter(DefaultSocialAccountAdapter):
                     redirect_url = "{url}?authError={message}".format(
                         url=badgr_app.ui_connect_success_redirect,
                         message=urllib.parse.quote(
-                            "Could not add social login. This account is already associated with a user."))
-                    raise ImmediateHttpResponse(HttpResponseRedirect(redirect_to=redirect_url))
+                            "Could not add social login. This account is already associated with a user."
+                        ),
+                    )
+                    raise ImmediateHttpResponse(
+                        HttpResponseRedirect(redirect_to=redirect_url)
+                    )
             elif sociallogin.is_existing and len(sociallogin.email_addresses):
                 # See if we should mark an unverified email address as verified
                 try:
-                    should_verify = settings.SOCIALACCOUNT_PROVIDERS[sociallogin.account.provider]['VERIFIED_EMAIL']
+                    should_verify = settings.SOCIALACCOUNT_PROVIDERS[
+                        sociallogin.account.provider
+                    ]["VERIFIED_EMAIL"]
                     if should_verify and not sociallogin.user.verified:
                         email = sociallogin.email_addresses[0].email
                         user_emails = sociallogin.user.cached_emails()
                         this_email = [e for e in user_emails if e.email == email][0]
                         this_email.verified = True
                         this_email.save()
-                except (AttributeError, IndexError, KeyError,):
+                except (
+                    AttributeError,
+                    IndexError,
+                    KeyError,
+                ):
                     pass
 
         except AuthenticationFailed as e:

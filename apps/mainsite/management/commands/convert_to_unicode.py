@@ -6,18 +6,19 @@ from django.db import connection
 
 
 class Command(BaseCommand):
-    args = ''
-    help = ''
+    args = ""
+    help = ""
 
     def handle(self, *args, **options):
         with connection.cursor() as cursor:
 
             # Ignore "PROCEDURE convert_to_unicode does not exist" warning.
             with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
+                warnings.simplefilter("ignore")
                 cursor.execute("DROP PROCEDURE IF EXISTS convert_to_unicode")
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE PROCEDURE convert_to_unicode
                 (IN dbname VARCHAR(64))
                 BEGIN
@@ -47,9 +48,14 @@ class Command(BaseCommand):
                     CLOSE all_tables;
 
                 END
-            """)
+            """
+            )
 
-            cursor.execute("CALL convert_to_unicode('{}')".format(settings.DATABASES['default']['NAME']))
+            cursor.execute(
+                "CALL convert_to_unicode('{}')".format(
+                    settings.DATABASES["default"]["NAME"]
+                )
+            )
 
             for row in cursor.fetchall():
                 print(row)

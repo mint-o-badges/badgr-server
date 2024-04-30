@@ -1,15 +1,16 @@
 import os
-from mainsite import TOP_DIR
-from django.conf import settings
 
-test_files_path = os.path.join(TOP_DIR, 'apps', 'badgrsocialauth', 'testfiles')
-attribute_map_dir = os.path.join(test_files_path, 'attributemaps')
+from django.conf import settings
+from mainsite import TOP_DIR
+
+test_files_path = os.path.join(TOP_DIR, "apps", "badgrsocialauth", "testfiles")
+attribute_map_dir = os.path.join(test_files_path, "attributemaps")
 # metadata_sp_1 = os.path.join(test_files_path, 'metadata_sp_1.xml')
 # metadata_sp_2 = os.path.join(test_files_path, 'metadata_sp_2.xml')
-ipd_cert_path = os.path.join(test_files_path, 'idp-test-cert.pem')
-ipd_key_path = os.path.join(test_files_path, 'idp-test-key.pem')
-idp_xml_path = os.path.join(test_files_path, 'idp.xml')
-vo_metadata_path = os.path.join(test_files_path, 'vo_metadata.xml')
+ipd_cert_path = os.path.join(test_files_path, "idp-test-cert.pem")
+ipd_key_path = os.path.join(test_files_path, "idp-test-key.pem")
+idp_xml_path = os.path.join(test_files_path, "idp.xml")
+vo_metadata_path = os.path.join(test_files_path, "vo_metadata.xml")
 
 CONFIG = {
     "entityid": "urn:mace:example.com:saml:roland:sp",
@@ -18,8 +19,7 @@ CONFIG = {
     "service": {
         "sp": {
             "endpoints": {
-                "assertion_consumer_service": [
-                    "http://lingon.catalogix.se:8087/"],
+                "assertion_consumer_service": ["http://lingon.catalogix.se:8087/"],
             },
             "required_attributes": ["surName", "givenName", "mail"],
             "optional_attributes": ["title"],
@@ -48,7 +48,7 @@ CONFIG = {
     # "encryption_keypairs": [{"key_file": full_path("test_1.key"), "cert_file": full_path("test_1.crt")},
     #                         {"key_file": full_path("test_2.key"), "cert_file": full_path("test_2.crt")}],
     # "ca_certs": full_path("cacerts.txt"),
-    "xmlsec_binary": getattr(settings, 'XMLSEC_BINARY_PATH', None),
+    "xmlsec_binary": getattr(settings, "XMLSEC_BINARY_PATH", None),
     "metadata": {
         "local": [idp_xml_path, vo_metadata_path],
     },
@@ -58,7 +58,6 @@ CONFIG = {
             "common_identifier": "umuselin",
         }
     },
-
     "subject_data": "subject_data.db",
     "accepted_time_diff": 60,
     "attribute_map_dir": attribute_map_dir,
@@ -68,14 +67,14 @@ CONFIG = {
         "display_name": ("AB Exempel", "se"),
         "url": "http://www.example.org",
     },
-    "contact_person": [{
-        "given_name": "Roland",
-        "sur_name": "Hedberg",
-        "telephone_number": "+46 70 100 0000",
-        "email_address": ["tech@eample.com",
-                          "tech@example.org"],
-        "contact_type": "technical"
-    },
+    "contact_person": [
+        {
+            "given_name": "Roland",
+            "sur_name": "Hedberg",
+            "telephone_number": "+46 70 100 0000",
+            "email_address": ["tech@eample.com", "tech@example.org"],
+            "contact_type": "technical",
+        },
     ],
     # "logger": {
     #     "rotating": {

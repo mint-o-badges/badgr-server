@@ -1,17 +1,19 @@
-from .celery import app as celery_app
-import sys
 import os
+import sys
+
 import semver
 
+from .celery import app as celery_app
 
-default_app_config = 'mainsite.apps.BadgrConfig'
+default_app_config = "mainsite.apps.BadgrConfig"
 
-__all__ = ['APPS_DIR', 'TOP_DIR', 'get_version']
+__all__ = ["APPS_DIR", "TOP_DIR", "get_version"]
 
 
 def get_version(version=None):
     if version is None:
         from .version import VERSION
+
         version = VERSION
     return semver.format_version(*version)
 

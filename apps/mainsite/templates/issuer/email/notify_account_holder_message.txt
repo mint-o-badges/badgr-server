@@ -30,7 +30,7 @@ Download
 ----------
 
 
-Du kannst diese Badge-Bilddatei auch für Deine Unterlagen speichern oder in einen beliebiges Open Badges 
+Du kannst diese Badge-Bilddatei auch für Deine Unterlagen speichern oder in einen beliebiges Open Badges
 kompatiblen Service hochladen
 {{ download_url }}
 
