@@ -5,7 +5,8 @@
         <meta charset="utf-8" />
         <meta http-equiv="x-ua-compatible" content="ie=edge" />
         <title>
-            {% block page_title %}{% endblock %}
+            {% block page_title %}
+            {% endblock page_title %}
         - Badgr</title>
         <meta name="description" content="" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -17,7 +18,8 @@
         <link rel="apple-touch-icon"
               href="{% static 'badgr-ui/images/apple_touch.png' %}" />
         <link href="{% static 'badgr-ui/badgr-ui.css' %}" rel="stylesheet" />
-        {% block extra_head %}{% endblock %}
+        {% block extra_head %}
+        {% endblock extra_head %}
     </head>
     <body>
         <!-- Since this uses the same stylesheet as Badgr UI content must be wrapped in an app tag -->
@@ -35,7 +37,8 @@
                onclick="document.getElementById('menu').scrollIntoView(false)">Main Navigation</a>
         </header>
         <main>
-            {% block content %}{% endblock %}
+            {% block content %}
+            {% endblock content %}
         </main>
         <footer class="wrap l-containerhorizontal">
             <div class="footer">
@@ -55,10 +58,12 @@
         <nav class="menu" id="menu">
             <h1 class="visuallyhidden">Main Navigation</h1>
             <ul>
-                {% block navigation_items_ui %}{% endblock %}
+                {% block navigation_items_ui %}
+                {% endblock navigation_items_ui %}
             </ul>
         </nav>
         </app>
-        {% block footer_extra_scripts %}{% endblock %}
+        {% block footer_extra_scripts %}
+        {% endblock footer_extra_scripts %}
     </body>
 </html>
