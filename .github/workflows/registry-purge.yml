@@ -1,0 +1,19 @@
+name: 🗑️ Purge untagged images
+
+# https://docs.github.com/en/actions/reference/events-that-trigger-workflows#registry_package
+# Run cleanup job every day
+on:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  purge_untagged_images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 💣 Purge untagged images
+        uses: vlaurin/action-ghcr-prune@v0.6.0
+        with:
+          token: ${{ secrets.GHCR_TOKEN }}
+          organization: ${{ github.repository_owner }}
+          container: ${{ github.event.repository.name }}
+          prune-untagged: true
