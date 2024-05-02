@@ -1,23 +1,25 @@
-from django.contrib.auth.hashers import is_password_usable
-from rest_framework import serializers
 from collections import OrderedDict
+
+from django.contrib.auth.hashers import is_password_usable
 from mainsite.serializers import StripTagsCharField
 from mainsite.validators import PasswordValidator
+from rest_framework import serializers
+
 from .models import BadgeUser, CachedEmailAddress, TermsVersion
 from .utils import notify_on_password_change
 
 
 class BadgeUserTokenSerializerV1(serializers.Serializer):
     class Meta:
-        apispec_definition = ('BadgeUserToken', {})
+        apispec_definition = ("BadgeUserToken", {})
 
     def to_representation(self, instance):
         representation = {
-            'username': instance.username,
-            'token': instance.cached_token()
+            "username": instance.username,
+            "token": instance.cached_token(),
         }
-        if self.context.get('tokenReplaced', False):
-            representation['replace'] = True
+        if self.context.get("tokenReplaced", False):
+            representation["replace"] = True
         return representation
 
     def update(self, instance, validated_data):
@@ -36,13 +38,23 @@ class VerifiedEmailsField(serializers.Field):
 class BadgeUserProfileSerializerV1(serializers.Serializer):
     first_name = StripTagsCharField(max_length=30, allow_blank=True)
     last_name = StripTagsCharField(max_length=30, allow_blank=True)
-    email = serializers.EmailField(source='primary_email', required=False, allow_blank=True, allow_null=True)
-    url = serializers.ListField(read_only=True, source='cached_verified_urls')
-    telephone = serializers.ListField(read_only=True, source='cached_verified_phone_numbers')
-    current_password = serializers.CharField(style={'input_type': 'password'}, write_only=True, required=False)
-    password = serializers.CharField(style={'input_type': 'password'},
-            write_only=True, required=False, validators=[PasswordValidator()])
-    slug = serializers.CharField(source='entity_id', read_only=True)
+    email = serializers.EmailField(
+        source="primary_email", required=False, allow_blank=True, allow_null=True
+    )
+    url = serializers.ListField(read_only=True, source="cached_verified_urls")
+    telephone = serializers.ListField(
+        read_only=True, source="cached_verified_phone_numbers"
+    )
+    current_password = serializers.CharField(
+        style={"input_type": "password"}, write_only=True, required=False
+    )
+    password = serializers.CharField(
+        style={"input_type": "password"},
+        write_only=True,
+        required=False,
+        validators=[PasswordValidator()],
+    )
+    slug = serializers.CharField(source="entity_id", read_only=True)
     agreed_terms_version = serializers.IntegerField(required=False)
     marketing_opt_in = serializers.BooleanField(required=False)
     has_password_set = serializers.SerializerMethodField()
@@ -52,33 +64,41 @@ class BadgeUserProfileSerializerV1(serializers.Serializer):
         return is_password_usable(obj.password)
 
     class Meta:
-        apispec_definition = ('BadgeUser', {
-            'properties': OrderedDict([
-                ('source', {
-                    'type': "string",
-                    'format': "string",
-                    'description': "Ex: mozilla",
-                }),
-            ])
-        })
+        apispec_definition = (
+            "BadgeUser",
+            {
+                "properties": OrderedDict(
+                    [
+                        (
+                            "source",
+                            {
+                                "type": "string",
+                                "format": "string",
+                                "description": "Ex: mozilla",
+                            },
+                        ),
+                    ]
+                )
+            },
+        )
 
     def create(self, validated_data):
         user = BadgeUser.objects.create(
-            email=validated_data.get('primary_email'),
-            first_name=validated_data['first_name'],
-            last_name=validated_data['last_name'],
-            plaintext_password=validated_data['password'],
-            marketing_opt_in=validated_data.get('marketing_opt_in', False),
-            request=self.context.get('request', None),
-            source=validated_data.get('source', ''),
+            email=validated_data.get("primary_email"),
+            first_name=validated_data["first_name"],
+            last_name=validated_data["last_name"],
+            plaintext_password=validated_data["password"],
+            marketing_opt_in=validated_data.get("marketing_opt_in", False),
+            request=self.context.get("request", None),
+            source=validated_data.get("source", ""),
         )
         return user
 
     def update(self, user, validated_data):
-        first_name = validated_data.get('first_name')
-        last_name = validated_data.get('last_name')
-        password = validated_data.get('password')
-        current_password = validated_data.get('current_password')
+        first_name = validated_data.get("first_name")
+        last_name = validated_data.get("last_name")
+        password = validated_data.get("password")
+        current_password = validated_data.get("current_password")
 
         if first_name:
             user.first_name = first_name
@@ -87,30 +107,36 @@ class BadgeUserProfileSerializerV1(serializers.Serializer):
 
         if password:
             if not current_password:
-                raise serializers.ValidationError({'current_password': "Field is required"})
+                raise serializers.ValidationError(
+                    {"current_password": "Field is required"}
+                )
             if user.check_password(current_password):
                 user.set_password(password)
                 notify_on_password_change(user)
             else:
-                raise serializers.ValidationError({'current_password': "Incorrect password"})
+                raise serializers.ValidationError(
+                    {"current_password": "Incorrect password"}
+                )
 
-        if 'agreed_terms_version' in validated_data:
-            user.agreed_terms_version = validated_data.get('agreed_terms_version')
+        if "agreed_terms_version" in validated_data:
+            user.agreed_terms_version = validated_data.get("agreed_terms_version")
 
-        if 'marketing_opt_in' in validated_data:
-            user.marketing_opt_in = validated_data.get('marketing_opt_in')
+        if "marketing_opt_in" in validated_data:
+            user.marketing_opt_in = validated_data.get("marketing_opt_in")
 
         user.save()
         return user
 
     def to_representation(self, instance):
-        representation = super(BadgeUserProfileSerializerV1, self).to_representation(instance)
+        representation = super(BadgeUserProfileSerializerV1, self).to_representation(
+            instance
+        )
 
         latest = TermsVersion.cached.cached_latest()
         if latest:
-            representation['latest_terms_version'] = latest.version
+            representation["latest_terms_version"] = latest.version
             if latest.version != instance.agreed_terms_version:
-                representation['latest_terms_description'] = latest.short_description
+                representation["latest_terms_description"] = latest.short_description
 
         return representation
 
@@ -118,20 +144,21 @@ class BadgeUserProfileSerializerV1(serializers.Serializer):
 class EmailSerializerV1(serializers.ModelSerializer):
     variants = serializers.ListField(
         child=serializers.EmailField(required=False),
-        required=False, source='cached_variants', allow_null=True, read_only=True
+        required=False,
+        source="cached_variants",
+        allow_null=True,
+        read_only=True,
     )
     email = serializers.EmailField(required=True)
 
     class Meta:
         model = CachedEmailAddress
-        fields = ('id', 'email', 'verified', 'primary', 'variants')
-        read_only_fields = ('id', 'verified', 'primary', 'variants')
-        apispec_definition = ('BadgeUserEmail', {
-
-        })
+        fields = ("id", "email", "verified", "primary", "variants")
+        read_only_fields = ("id", "verified", "primary", "variants")
+        apispec_definition = ("BadgeUserEmail", {})
 
     def create(self, validated_data):
-        new_address = validated_data.get('email')
+        new_address = validated_data.get("email")
         created = False
         try:
             email = CachedEmailAddress.objects.get(email=new_address)
@@ -144,15 +171,19 @@ class EmailSerializerV1(serializers.ModelSerializer):
                 email.delete()
                 email = super(EmailSerializerV1, self).create(validated_data)
                 created = True
-            elif email.user != self.context.get('request').user:
+            elif email.user != self.context.get("request").user:
                 raise serializers.ValidationError("Could not register email address.")
 
-        if new_address != email.email and new_address not in [v.email for v in email.cached_variants()]:
+        if new_address != email.email and new_address not in [
+            v.email for v in email.cached_variants()
+        ]:
             email.add_variant(new_address)
-            raise serializers.ValidationError("Matching address already exists. New case variant registered.")
+            raise serializers.ValidationError(
+                "Matching address already exists. New case variant registered."
+            )
 
-        if validated_data.get('variants'):
-            for variant in validated_data.get('variants'):
+        if validated_data.get("variants"):
+            for variant in validated_data.get("variants"):
                 try:
                     email.add_variant(variant)
                 except serializers.ValidationError:
@@ -165,10 +196,10 @@ class EmailSerializerV1(serializers.ModelSerializer):
 
 class BadgeUserIdentifierFieldV1(serializers.CharField):
     def __init__(self, *args, **kwargs):
-        if 'source' not in kwargs:
-            kwargs['source'] = 'created_by_id'
-        if 'read_only' not in kwargs:
-            kwargs['read_only'] = True
+        if "source" not in kwargs:
+            kwargs["source"] = "created_by_id"
+        if "read_only" not in kwargs:
+            kwargs["read_only"] = True
         super(BadgeUserIdentifierFieldV1, self).__init__(*args, **kwargs)
 
     def to_representation(self, value):

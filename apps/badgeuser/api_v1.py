@@ -3,15 +3,19 @@
 
 import datetime
 
-from apispec_drf.decorators import apispec_list_operation, apispec_operation, \
-    apispec_get_operation, apispec_delete_operation, apispec_put_operation
-from rest_framework import permissions, status
-from rest_framework.response import Response
-from rest_framework.views import APIView
-
+from apispec_drf.decorators import (
+    apispec_delete_operation,
+    apispec_get_operation,
+    apispec_list_operation,
+    apispec_operation,
+    apispec_put_operation,
+)
 from badgeuser.models import CachedEmailAddress
 from badgeuser.serializers_v1 import EmailSerializerV1
 from mainsite.utils import throttleable
+from rest_framework import permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 RATE_LIMIT_DELTA = datetime.timedelta(minutes=5)
 
@@ -19,31 +23,34 @@ RATE_LIMIT_DELTA = datetime.timedelta(minutes=5)
 class BadgeUserEmailList(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
-    @apispec_list_operation('BadgeUserEmail',
+    @apispec_list_operation(
+        "BadgeUserEmail",
         summary="Get a list of user's registered emails",
-        tags=['BadgeUsers']
+        tags=["BadgeUsers"],
     )
     def get(self, request, **kwargs):
         instances = request.user.cached_emails()
-        serializer = EmailSerializerV1(instances, many=True, context={'request': request})
+        serializer = EmailSerializerV1(
+            instances, many=True, context={"request": request}
+        )
         return Response(serializer.data)
 
     @apispec_operation(
         summary="Register a new unverified email",
-        tags=['BadgeUsers'],
+        tags=["BadgeUsers"],
         properties=[
             {
-                'in': 'formData',
-                'name': "email",
-                'type': "string",
-                'format': "email",
-                'description': 'The email to register'
+                "in": "formData",
+                "name": "email",
+                "type": "string",
+                "format": "email",
+                "description": "The email to register",
             }
-        ]
+        ],
     )
     @throttleable
     def post(self, request, **kwargs):
-        serializer = EmailSerializerV1(data=request.data, context={'request': request})
+        serializer = EmailSerializerV1(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
 
         email_address = serializer.save(user=request.user)
@@ -67,21 +74,23 @@ class BadgeUserEmailView(APIView):
 class BadgeUserEmailDetail(BadgeUserEmailView):
     model = CachedEmailAddress
 
-    @apispec_get_operation('BadgeUserEmail',
+    @apispec_get_operation(
+        "BadgeUserEmail",
         summary="Get detail for one registered email",
-        tags=['BadgeUsers']
+        tags=["BadgeUsers"],
     )
     def get(self, request, id, **kwargs):
         email_address = self.get_email(pk=id)
         if email_address is None or email_address.user_id != self.request.user.id:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        serializer = EmailSerializerV1(email_address, context={'request': request})
+        serializer = EmailSerializerV1(email_address, context={"request": request})
         return Response(serializer.data)
 
-    @apispec_delete_operation('BadgeUserEmail',
+    @apispec_delete_operation(
+        "BadgeUserEmail",
         summary="Remove a registered email for the current user",
-        tags=['BadgeUsers']
+        tags=["BadgeUsers"],
     )
     def delete(self, request, id, **kwargs):
         email_address = self.get_email(pk=id)
@@ -91,17 +100,24 @@ class BadgeUserEmailDetail(BadgeUserEmailView):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         if email_address.primary:
-            return Response({'error': "Can not remove primary email address"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Can not remove primary email address"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         if self.request.user.emailaddress_set.count() == 1:
-            return Response({'error': "Can not remove only email address"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Can not remove only email address"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         email_address.delete()
         return Response(status.HTTP_200_OK)
 
-    @apispec_put_operation('BadgeUserEmail',
-        summary='Update a registered email for the current user',
-        tags=['BadgeUsers']
+    @apispec_put_operation(
+        "BadgeUserEmail",
+        summary="Update a registered email for the current user",
+        tags=["BadgeUsers"],
     )
     def put(self, request, id, **kwargs):
         email_address = self.get_email(pk=id)
@@ -111,17 +127,19 @@ class BadgeUserEmailDetail(BadgeUserEmailView):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         if email_address.verified:
-            if request.data.get('primary'):
+            if request.data.get("primary"):
                 email_address.set_as_primary()
                 email_address.publish()
         else:
-            if request.data.get('resend'):
+            if request.data.get("resend"):
                 send_confirmation = False
                 current_time = datetime.datetime.now()
                 last_request_time = email_address.get_last_verification_sent_time()
 
                 if last_request_time is None:
-                    email_address.set_last_verification_sent_time(datetime.datetime.now())
+                    email_address.set_last_verification_sent_time(
+                        datetime.datetime.now()
+                    )
                     send_confirmation = True
                 else:
                     time_delta = current_time - last_request_time
@@ -130,16 +148,25 @@ class BadgeUserEmailDetail(BadgeUserEmailView):
 
                 if send_confirmation:
                     email_address.send_confirmation(request=request)
-                    email_address.set_last_verification_sent_time(datetime.datetime.now())
+                    email_address.set_last_verification_sent_time(
+                        datetime.datetime.now()
+                    )
                 else:
-                    remaining_time_obj = RATE_LIMIT_DELTA - (datetime.datetime.now() - last_request_time)
+                    remaining_time_obj = RATE_LIMIT_DELTA - (
+                        datetime.datetime.now() - last_request_time
+                    )
                     remaining_min = (remaining_time_obj.seconds // 60) % 60
                     remaining_sec = remaining_time_obj.seconds % 60
-                    remaining_time_rep = "{} minutes and {} seconds".format(remaining_min, remaining_sec)
+                    remaining_time_rep = "{} minutes and {} seconds".format(
+                        remaining_min, remaining_sec
+                    )
 
-                    return Response("Will be able to re-send verification email in %s." % (str(remaining_time_rep)),
-                     status=status.HTTP_429_TOO_MANY_REQUESTS)
+                    return Response(
+                        "Will be able to re-send verification email in %s."
+                        % (str(remaining_time_rep)),
+                        status=status.HTTP_429_TOO_MANY_REQUESTS,
+                    )
 
-        serializer = EmailSerializerV1(email_address, context={'request': request})
+        serializer = EmailSerializerV1(email_address, context={"request": request})
         serialized = serializer.data
         return Response(serialized, status=status.HTTP_200_OK)

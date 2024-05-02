@@ -1,16 +1,16 @@
 from smtplib import SMTPException
 
+from allauth.account.models import EmailConfirmation
+from badgeuser.models import BadgeUser, CachedEmailAddress
 from django.core.management.base import BaseCommand
 from django.db import IntegrityError
 
-from allauth.account.models import EmailConfirmation
-
-from badgeuser.models import BadgeUser, CachedEmailAddress
-
 
 class Command(BaseCommand):
-    args = ''
-    help = 'Ensures users have the proper EmailAddress objects created for their accounts'
+    args = ""
+    help = (
+        "Ensures users have the proper EmailAddress objects created for their accounts"
+    )
 
     def handle(self, *args, **options):
         users_processed = 0
@@ -45,23 +45,36 @@ class Command(BaseCommand):
                 elif len([e for e in emails if e.primary is True]) == 0:
                     new_primary = emails.first()
                     new_primary.set_as_primary(conditional=True)
-                    self.stdout.write("Set {} as primary for user {}".format(new_primary.email, user.pk))
+                    self.stdout.write(
+                        "Set {} as primary for user {}".format(
+                            new_primary.email, user.pk
+                        )
+                    )
                     primaries_set += 1
 
-                    prior_confirmations = EmailConfirmation.objects.filter(email_address=new_primary)
+                    prior_confirmations = EmailConfirmation.objects.filter(
+                        email_address=new_primary
+                    )
 
-                    if new_primary.verified is False and not prior_confirmations.exists():
+                    if (
+                        new_primary.verified is False
+                        and not prior_confirmations.exists()
+                    ):
                         try:
                             new_primary.send_confirmation(signup=True)
                         except SMTPException as e:
                             raise e
                         except Exception as e:
-                            raise SMTPException("Error sending mail to {} -- {}".format(
-                                new_primary.email, str(e)
-                            ))
+                            raise SMTPException(
+                                "Error sending mail to {} -- {}".format(
+                                    new_primary.email, str(e)
+                                )
+                            )
             except IntegrityError as e:
                 user_errors += 1
-                self.stdout.write("Error in user {} record: {}".format(user.pk, e.message))
+                self.stdout.write(
+                    "Error in user {} record: {}".format(user.pk, e.message)
+                )
                 continue
             except SMTPException as e:
                 email_errors += 1

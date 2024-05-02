@@ -1,11 +1,16 @@
 # encoding: utf-8
-from rest_framework.exceptions import ValidationError
-
-from entity.api import BaseEntityListView, BaseEntityDetailView
+from entity.api import BaseEntityDetailView, BaseEntityListView
 from externaltools.models import ExternalTool, ExternalToolLaunchpoint
-from externaltools.serializers_v1 import ExternalToolSerializerV1, ExternalToolLaunchSerializerV1
-from externaltools.serializers_v2 import ExternalToolSerializerV2, ExternalToolLaunchSerializerV2
+from externaltools.serializers_v1 import (
+    ExternalToolLaunchSerializerV1,
+    ExternalToolSerializerV1,
+)
+from externaltools.serializers_v2 import (
+    ExternalToolLaunchSerializerV2,
+    ExternalToolSerializerV2,
+)
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier
+from rest_framework.exceptions import ValidationError
 
 
 class ExternalToolList(BaseEntityListView):
@@ -13,7 +18,7 @@ class ExternalToolList(BaseEntityListView):
     v1_serializer_class = ExternalToolSerializerV1
     v2_serializer_class = ExternalToolSerializerV2
     permission_classes = ()
-    http_method_names = ['get']
+    http_method_names = ["get"]
     allow_any_unauthenticated_access = True
 
     def get_objects(self, request, **kwargs):
@@ -36,17 +41,19 @@ class ExternalToolLaunch(BaseEntityDetailView):
     v1_serializer_class = ExternalToolLaunchSerializerV1
     v2_serializer_class = ExternalToolLaunchSerializerV2
     permission_classes = (AuthenticatedWithVerifiedIdentifier,)
-    http_method_names = ['get']
+    http_method_names = ["get"]
 
     def get_context_data(self, **kwargs):
         context = super(ExternalToolLaunch, self).get_context_data(**kwargs)
-        context['tool_launch_context_id'] = self.request.query_params.get('context_id', None)
+        context["tool_launch_context_id"] = self.request.query_params.get(
+            "context_id", None
+        )
         return context
 
     def get_object(self, request, **kwargs):
         externaltool = super(ExternalToolLaunch, self).get_object(request, **kwargs)
         try:
-            launchpoint = externaltool.get_launchpoint(kwargs.get('launchpoint'))
+            launchpoint = externaltool.get_launchpoint(kwargs.get("launchpoint"))
         except ExternalToolLaunchpoint.DoesNotExist:
             raise ValidationError(["Unknown launchpoint"])
         return launchpoint

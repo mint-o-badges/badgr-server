@@ -1,62 +1,106 @@
 {% extends "email/base.html" %}
 {% load i18n %}
 {% block beforebutton %}
-<div style="background:#FFFFFF;background-color:#FFFFFF;Margin:0px auto;max-width:600px;">
-  <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#FFFFFF;background-color:#FFFFFF;width:100%;">
-    <tbody>
-      <tr>
-        <td style="border-left:1px solid #DBD8DF;border-right:1px solid #DBD8DF;direction:ltr;font-size:0px;padding:12px;text-align:center;vertical-align:top;">
-          <!--[if mso | IE]>
+    <div style="background:#FFFFFF;
+                background-color:#FFFFFF;
+                Margin:0px auto;
+                max-width:600px">
+        <table align="center"
+               border="0"
+               cellpadding="0"
+               cellspacing="0"
+               role="presentation"
+               style="background:#FFFFFF;
+                      background-color:#FFFFFF;
+                      width:100%">
+            <tbody>
+                <tr>
+                    <td style="border-left:1px solid #DBD8DF;
+                               border-right:1px solid #DBD8DF;
+                               direction:ltr;
+                               font-size:0px;
+                               padding:12px;
+                               text-align:center;
+                               vertical-align:top">
+                        <!--[if mso | IE]>
               <table role="presentation" border="0" cellpadding="0" cellspacing="0">
     <tr>
-        <td
-           class="" style="vertical-align:top;width:574px;"
-        >
+        <td class="" style="vertical-align:top;width:574px;">
       <![endif]-->
-          <div class="mj-column-per-100 outlook-group-fix" style="font-size:13px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;">
-            <table border="0" cellpadding="0" cellspacing="0" role="presentation" width="100%">
-              <tbody>
-                <tr>
-                  <td style="vertical-align:top;padding-top:32px;">
-                    <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="" width="100%">
-                      <tbody>
-                        <tr>
-                          <td align="center" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                            <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:32px;font-weight:bold;line-height:40px;text-align:center;color:#191919;">
-                              Bitte bestätige Deine zusätzliche E-Mail-Adresse.
-                            </div>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                            <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#666666;">
-                              {% blocktrans with site_name=site.name site_domain=site.domain %}
+                        <div class="mj-column-per-100 outlook-group-fix"
+                             style="font-size:13px;
+                                    text-align:left;
+                                    direction:ltr;
+                                    display:inline-block;
+                                    vertical-align:top;
+                                    width:100%">
+                            <table border="0"
+                                   cellpadding="0"
+                                   cellspacing="0"
+                                   role="presentation"
+                                   width="100%">
+                                <tbody>
+                                    <tr>
+                                        <td style="vertical-align:top;padding-top:32px;">
+                                            <table border="0"
+                                                   cellpadding="0"
+                                                   cellspacing="0"
+                                                   role="presentation"
+                                                   style=""
+                                                   width="100%">
+                                                <tbody>
+                                                    <tr>
+                                                        <td align="center"
+                                                            style="font-size:0px;
+                                                                   padding:10px 25px;
+                                                                   word-break:break-word">
+                                                            <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;
+                                                                        font-size:32px;
+                                                                        font-weight:bold;
+                                                                        line-height:40px;
+                                                                        text-align:center;
+                                                                        color:#191919">
+                                                                Bitte bestätige Deine zusätzliche E-Mail-Adresse.
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td align="left"
+                                                            style="font-size:0px;
+                                                                   padding:10px 25px;
+                                                                   word-break:break-word">
+                                                            <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;
+                                                                        font-size:16px;
+                                                                        font-weight:400;
+                                                                        line-height:24px;
+                                                                        text-align:left;
+                                                                        color:#666666">
+                                                                {% blocktrans with site_name=site.name site_domain=site.domain %}
                               Ein {{ site_name }} Benutzer hat angefordert, diese E-Mail zu seinem Konto hinzuzufügen oder sie in einer
-                               verknüpften Anwendung zu verwenden. Wenn dies 
+                               verknüpften Anwendung zu verwenden. Wenn dies
                                bestätigt wird, kansnt Du Badges auf Dein {{ site_name }}-Konto hochladen, die für diese Email-Adresse ausgestellt wurden
                                oder verwende Features innerhalb verknüpften Anwendungen.
                               {% endblocktrans %}
-                            </div>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <!--[if mso | IE]>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!--[if mso | IE]>
         </td>
     </tr>
               </table>
             <![endif]-->
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 {% endblock %}
 {% block button_url %}{{ activate_url }}{% endblock %}
 {% block button_url_copy %}{{ activate_url }}{% endblock %}

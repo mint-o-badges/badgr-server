@@ -2,11 +2,13 @@
 
 
 from django.conf.urls import url
-
-from externaltools.api import ExternalToolList, ExternalToolLaunch
+from externaltools.api import ExternalToolLaunch, ExternalToolList
 
 urlpatterns = [
-    url(r'^$', ExternalToolList.as_view(), name='v2_api_externaltools_list'),
-    url(r'^launch/(?P<entity_id>[^/]+)/(?P<launchpoint>[^/]+)$',
-        ExternalToolLaunch.as_view(), name='v2_api_externaltools_launch'),
+    url(r"^$", ExternalToolList.as_view(), name="v2_api_externaltools_list"),
+    url(
+        r"^launch/(?P<entity_id>[^/]+)/(?P<launchpoint>[^/]+)$",
+        ExternalToolLaunch.as_view(),
+        name="v2_api_externaltools_launch",
+    ),
 ]

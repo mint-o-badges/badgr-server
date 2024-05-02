@@ -1,5 +1,5 @@
-from .badgeuser import *
 from .backpack import *
+from .badgeuser import *
 from .blacklist import *
 from .composition import *
 from .email import *

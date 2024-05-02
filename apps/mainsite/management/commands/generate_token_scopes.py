@@ -1,22 +1,23 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-
 from mainsite.models import AccessTokenProxy, AccessTokenScope
 
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
-        self.stdout.write('Splitting all scopes on tokens')
+        self.stdout.write("Splitting all scopes on tokens")
 
         chunk_size = 5000
         page = 0
 
-        self.stdout.write('Deleting AccessTokenScopes')
+        self.stdout.write("Deleting AccessTokenScopes")
         AccessTokenScope.objects.all().delete()
 
-        self.stdout.write('Bulk creating AccessTokenScope')
+        self.stdout.write("Bulk creating AccessTokenScope")
         while True:
-            tokens = AccessTokenProxy.objects.filter(expires__gt=timezone.now())[page:page + chunk_size]
+            tokens = AccessTokenProxy.objects.filter(expires__gt=timezone.now())[
+                page : page + chunk_size  # noqa: E203
+            ]
             for t in tokens:
                 scopes = []
                 for s in t.scope.split():
@@ -27,4 +28,4 @@ class Command(BaseCommand):
                 break
             page += chunk_size
 
-        self.stdout.write('All done.')
+        self.stdout.write("All done.")

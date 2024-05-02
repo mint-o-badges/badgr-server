@@ -7,20 +7,20 @@ from .settings import *  # noqa: F403, F401
 LOGGING = {}
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'badgr',
-        'USER': 'root',
-        'PASSWORD': 'password',
-        'HOST': 'db',
-        'PORT': '',
-        'OPTIONS': {
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": "badgr",
+        "USER": "root",
+        "PASSWORD": "password",
+        "HOST": "db",
+        "PORT": "",
+        "OPTIONS": {
             "init_command": "SET default_storage_engine=InnoDB",
         },
     }
 }
 
 CELERY_ALWAYS_EAGER = True
-SECRET_KEY = 'aninsecurekeyusedfortesting'
+SECRET_KEY = "aninsecurekeyusedfortesting"
 UNSUBSCRIBE_SECRET_KEY = str(SECRET_KEY)
 AUTHCODE_SECRET_KEY = Fernet.generate_key()

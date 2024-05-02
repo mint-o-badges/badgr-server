@@ -1,5 +1,5 @@
 ***************************************************
-Herzlichen Glückwunsch, Du hast einen Badge erhalten! 
+Herzlichen Glückwunsch, Du hast einen Badge erhalten!
 ***************************************************
 
 {{ badge_name }}
@@ -26,7 +26,7 @@ Badge Speicherung und Zugriff
 ----------
 
 Wohin auch immer Du Dein Badge mitnimmst, Informationen über Deine Leistung werden
-darin kodiert sein. Du kannst jeden Open Badges Rucksackservice nutzen, aber wenn Du 
+darin kodiert sein. Du kannst jeden Open Badges Rucksackservice nutzen, aber wenn Du
 einen {{ site_name }} ( {{ site_url }} ) Account erstellst, werden die von dieser Institution vergebenen Badges
 automatisch hinzugefügt.
 {% if GDPR_INFO_URL %}
@@ -35,7 +35,7 @@ Kenne Deine Rechte
 -----------
 Die Institution, die dieses Abzeichen vergibt, hat {{ site_name }} Deine E-Mail-Adresse und die
 Daten über Deine Leistung, die in diesem Badge enthalten sind, bereitgestellt. Wenn Du Fragen zu diesem Badge hast,
-kontaktiere die ausstellende Institution unter {{ issuer_email }}. Du kannst auch eine Kopie Deiner Daten anfordern, 
+kontaktiere die ausstellende Institution unter {{ issuer_email }}. Du kannst auch eine Kopie Deiner Daten anfordern,
 die Entfernung der Daten über Dich oder die Aktualisierung falscher Informationen. Erfahre mehr unter
 {{ GDPR_INFO_URL }}
 {% endif %}
@@ -49,7 +49,7 @@ Kombinieren sie, um eine zusammenhängende Geschichte über Dein Lernen zu erzä
 
 Erfahre mehr unter http://openbadges.org
 
-Abmelden: Wenn Du nicht über zukünftige Vergaben von Badges von diesem Dienst informiert werden möchtest, 
+Abmelden: Wenn Du nicht über zukünftige Vergaben von Badges von diesem Dienst informiert werden möchtest,
 klicke auf den folgenden Link:
 {{ unsubscribe_url }}
 

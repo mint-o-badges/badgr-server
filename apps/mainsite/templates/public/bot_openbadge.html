@@ -1,39 +1,33 @@
-<!doctype html>
+<!DOCTYPE html>
 <html prefix="og: http://ogp.me/ns#">
-<head>
-	<meta charset="utf-8">
-	<meta http-equiv="x-ua-compatible" content="ie=edge">
-	<title>{{ title }}</title>
-
-	<meta property="og:type" content="website" />
-	<meta property="og:url" content="{{ public_url|safe }}" />
-	<meta property="og:title" content="{{ title }}" />
-	<meta property="og:description" content="{{ description }}" />
-	{% if image_url %}
-		<meta property="og:image" content="{{ image_url|safe }}" />
-		<meta property="og:image:secure_url" content="{{ image_url|safe }}" />
-		<meta property="og:image:width" content="768" />
-		<meta property="og:image:height" content="400" />
-	{% endif %}
-
-	<meta property="og:site_name" content="Badgr" />
-    {% if oembed_link_url %}
-			{% if 'LinkedInBot' not in user_agent %}
-        <link rel="alternate" type="application/json+oembed" href="{{oembed_link_url | safe }}" />
-			{% endif %}
-    {% endif %}
-</head>
-
-<body>
-	{% if image_url %}
-		<img src="{{ image_url|safe }}"/>
-	{% endif %}
-	<h1>{{ title }}</h1>
-	<div>{{ description }}</div>
-	<a href="{{ public_url|safe }}">{{ public_url }}</a>
-
-	<script>
-		window.location = "{{ public_url|safe }}";
-	</script>
-</body>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>{{ title }}</title>
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="{{ public_url|safe }}" />
+        <meta property="og:title" content="{{ title }}" />
+        <meta property="og:description" content="{{ description }}" />
+        {% if image_url %}
+            <meta property="og:image" content="{{ image_url|safe }}" />
+            <meta property="og:image:secure_url" content="{{ image_url|safe }}" />
+            <meta property="og:image:width" content="768" />
+            <meta property="og:image:height" content="400" />
+        {% endif %}
+        <meta property="og:site_name" content="Badgr" />
+        {% if oembed_link_url %}
+            {% if 'LinkedInBot' not in user_agent %}
+                <link rel="alternate"
+                      type="application/json+oembed"
+                      href="{{ oembed_link_url | safe }}" />
+            {% endif %}
+        {% endif %}
+    </head>
+    <body>
+        {% if image_url %}<img src="{{ image_url|safe }}" />{% endif %}
+        <h1>{{ title }}</h1>
+        <div>{{ description }}</div>
+        <a href="{{ public_url|safe }}">{{ public_url }}</a>
+        <script>window.location = "{{ public_url|safe }}";</script>
+    </body>
 </html>

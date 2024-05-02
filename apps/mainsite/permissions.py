@@ -24,6 +24,7 @@ class AuthenticatedWithVerifiedIdentifier(permissions.BasePermission):
     """
     Allows access only to authenticated users who have verified email addresses.
     """
+
     message = "This function only available to authenticated users with confirmed email addresses."
 
     def has_permission(self, request, view):
@@ -38,7 +39,7 @@ class IsServerAdmin(permissions.BasePermission):
             return False
 
         token_scopes = set(token.scope.split())
-        return 'rw:serverAdmin' in token_scopes
+        return "rw:serverAdmin" in token_scopes
 
     def has_permission(self, request, view):
         return self.check_permission(request)
