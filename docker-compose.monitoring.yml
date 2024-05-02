@@ -1,0 +1,22 @@
+version: '3.6'
+services:
+  prometheus:
+    image: prom/prometheus:v2.14.0
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - 9090:9090
+    networks:
+      - badgr  
+  grafana:
+    image: grafana/grafana:6.5.2
+    ports:
+      - 3060:3000
+    networks:
+      - badgr  
+
+networks:
+  badgr:
+    driver: bridge

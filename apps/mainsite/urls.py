@@ -23,6 +23,7 @@ def django2_include(three_tuple_urlconf):
 
 
 urlpatterns = [
+    path('', include('django_prometheus.urls')),
     # Backup URLs in case the server isn't serving these directly
     url(r'^favicon\.png[/]?$',
         RedirectView.as_view(url='%simages/favicon.png' % settings.STATIC_URL,

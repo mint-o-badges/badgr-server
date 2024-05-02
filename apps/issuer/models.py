@@ -24,6 +24,8 @@ from django.db.models import ProtectedError
 from json import loads as json_loads
 from json import dumps as json_dumps
 
+from django_prometheus.models import ExportModelOperationsMixin
+
 from jsonfield import JSONField
 from openbadges_bakery import bake
 from django.utils import timezone
@@ -598,13 +600,15 @@ def get_user_or_none(recipient_id, recipient_type):
     return user
 
 
-class BadgeClass(ResizeUploadedImage,
+class BadgeClass(ExportModelOperationsMixin('badgeclass'),
+                 ResizeUploadedImage,
                  ScrubUploadedSvgImage,
                  HashUploadedImage,
                  PngImagePreview,
                  BaseAuditedModel,
                  BaseVersionedEntity,
-                 BaseOpenBadgeObjectModel):
+                 BaseOpenBadgeObjectModel,
+                 ):
     entity_class_name = 'BadgeClass'
     COMPARABLE_PROPERTIES = ('criteria_text', 'criteria_url', 'description', 'entity_id', 'entity_version',
                              'expires_amount', 'expires_duration', 'name', 'pk', 'slug', 'updated_at',)
@@ -900,7 +904,8 @@ class BadgeClass(ResizeUploadedImage,
         return issued_on + dateutil.relativedelta.relativedelta(**duration_kwargs)
 
 
-class BadgeInstance(BaseAuditedModel,
+class BadgeInstance(ExportModelOperationsMixin('badge_instance'),
+                    BaseAuditedModel,
                     BaseVersionedEntity,
                     BaseOpenBadgeObjectModel):
     entity_class_name = 'Assertion'
