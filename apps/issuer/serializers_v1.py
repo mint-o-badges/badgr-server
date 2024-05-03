@@ -137,11 +137,19 @@ class IssuerSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
         new_issuer.city = validated_data.get('city')
         new_issuer.country = validated_data.get('country')
 
+        # Check whether issuer email domain matches institution website domain to verify it automatically 
+        if self.verifyIssuerAutomatically(validated_data.get('url'), validated_data.get('email')):
+            new_issuer.verified = True
+            
         # set badgrapp
         new_issuer.badgrapp = BadgrApp.objects.get_current(self.context.get('request', None))
 
         new_issuer.save()
         return new_issuer
+    
+    def verifyIssuerAutomatically(self, url, email):
+        emailDomain = email.split('@')[1]
+        return emailDomain in url
 
     def update(self, instance, validated_data):
         force_image_resize = False
