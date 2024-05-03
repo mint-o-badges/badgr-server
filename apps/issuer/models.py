@@ -508,7 +508,11 @@ class Issuer(ResizeUploadedImage,
             # 'badgr_app': badgr_app
         }
 
-        template_name = 'issuer/email/notify_admins'
+        # Notiy admin whether issuer was automatically verified or needs to be verified manually
+        if self.verified:
+            template_name = 'issuer/email/notify_admins_issuer_verified'
+        else: 
+            template_name = 'issuer/email/notify_admins'
 
         adapter = get_adapter()
         for user in users:
