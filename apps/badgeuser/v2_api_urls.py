@@ -4,7 +4,7 @@
 from django.conf.urls import url
 
 from badgeuser.api import (BadgeUserAccountConfirm, BadgeUserToken, BadgeUserForgotPassword, BadgeUserEmailConfirm,
-                           BadgeUserDetail, AccessTokenList, AccessTokenDetail, LatestTermsVersionDetail,)
+                           BadgeUserDetail, AccessTokenList, AccessTokenDetail, LatestTermsVersionDetail, ApplicationList,ApplicationDetails)
 
 urlpatterns = [
 
@@ -19,6 +19,8 @@ urlpatterns = [
     url(r'^auth/tokens$', AccessTokenList.as_view(), name='v2_api_access_token_list'),
     url(r'^auth/tokens/(?P<entity_id>[^/]+)$', AccessTokenDetail.as_view(),
         name='v2_api_access_token_detail'),
+    url(r'^auth/applications$', ApplicationList.as_view(), name='v2_api_application_list'),
+    url(r'^auth/applications/(?P<application_id>[^/]+)$', ApplicationDetails.as_view(), name='v2_api_application_details'),
 
     url(r'^users/(?P<entity_id>self)$', BadgeUserDetail.as_view(), name='v2_api_user_self'),
     url(r'^users/(?P<entity_id>[^/]+)$', BadgeUserDetail.as_view(),

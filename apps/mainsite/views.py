@@ -1,6 +1,7 @@
 import base64
 import json
 import time
+import re
 
 from django import forms
 from django.conf import settings
@@ -104,8 +105,6 @@ def aiskills(req, searchterm):
                    'accept': 'application/json'}
         response = requests.post(endpoint, params=params,
                                 data=json.dumps(payload), headers=headers)
-        print(response.text)
-
         if response.status_code == 200:
             data = response.json()
             return JsonResponse(data, status=status.HTTP_200_OK)
@@ -118,6 +117,10 @@ def aiskills(req, searchterm):
             # Invalid input
             return JsonResponse({"error": "Invalid searchterm!"},
                 status=status.HTTP_400_BAD_REQUEST)
+        elif response.status_code == 500:
+            # This is, weirdly enough, typically also an indication of an invalid searchterm
+            return JsonResponse({"error": extractErrorMessage500(response)},
+                status=status.HTTP_400_BAD_REQUEST)
         else:
             attempt_num += 1
             # You can probably use a logger to log the error here
@@ -126,6 +129,11 @@ def aiskills(req, searchterm):
     return JsonResponse({"error":
         f"Request failed with status code {response.status_code}"},
         status=response.status_code)
+
+def extractErrorMessage500(response: Response):
+    expression = re.compile("<pre>Error: ([^<]+)<br>")
+    match = expression.search(response.text)
+    return match.group(1) if match else "Invalid searchterm! (Unknown error)"
 
 
 @api_view(['GET'])
