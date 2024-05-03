@@ -107,6 +107,9 @@ requests-cache==0.5.2
 importlib-resources==5.10.0 # Normally v6.0.1 is installed but Django is not working with it
 
 geopy==2.2.0
+
+# Install wheel to fix the installation error for uwsgi
+wheel
 uwsgi
 
 tox
