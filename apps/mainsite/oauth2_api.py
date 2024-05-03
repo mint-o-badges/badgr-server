@@ -19,7 +19,7 @@ from oauth2_provider.views import TokenView as OAuth2ProviderTokenView
 from oauth2_provider import models
 from oauth2_provider.views.mixins import OAuthLibMixin
 from oauthlib.oauth2.rfc6749.utils import scope_to_list
-from rest_framework import serializers
+from rest_framework import serializers, permissions
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
 from rest_framework.views import APIView
@@ -306,6 +306,91 @@ class RegisterApiView(APIView):
 
     def post(self, request, **kwargs):
         serializer = RegistrationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=HTTP_201_CREATED)
+
+# this method allows users that are authorized (but do not have to be admins) to register client credentials for their account, currently the user can only choose the name
+class PublicRegistrationSerializer(serializers.Serializer):
+    client_name = serializers.CharField(required=True, source='name')
+    grant_types = serializers.ListField(child=serializers.CharField(), required=False, default=['client-credentials'])
+    response_types = serializers.ListField(child=serializers.CharField(), required=False, default=['code'])
+    scope = serializers.CharField(
+        required=False, source='applicationinfo.allowed_scopes', default='rw:issuer rw:backpack rw:profile'
+    )
+
+    client_id = serializers.CharField(read_only=True)
+    client_secret = serializers.CharField(read_only=True)
+    client_id_issued_at = serializers.SerializerMethodField(read_only=True)
+    client_secret_expires_at = serializers.IntegerField(default=0, read_only=True)
+
+    def get_client_id_issued_at(self, obj):
+        try:
+            return int(obj.created.strftime('%s'))
+        except AttributeError:
+            return None
+
+    def validate_response_types(self, val):
+        if val != ['code']:
+            raise serializers.ValidationError("Invalid response type")
+        return val
+
+    def validate_scope(self, val):
+        if val:
+            scopes = val.split(' ')
+            included = []
+            for scope in scopes:
+                if scope in ['rw:issuer', 'rw:backpack', 'rw:profile']:
+                    included.append(scope)
+
+            if len(included):
+                return ' '.join(set(included))
+            raise serializers.ValidationError(
+                "No supported Badge Connect scopes requested. See manifest for supported scopes."
+            )
+
+        else:
+            # If no scopes provided, we assume they want all scopes
+            return ' '.join(BADGE_CONNECT_SCOPES)
+
+    def validate_token_endpoint_auth_method(self, val):
+        if val != 'client_secret_basic':
+            raise serializers.ValidationError("Invalid token authentication method. Only client_secret_basic allowed.")
+        return val
+
+    def create(self, validated_data):
+        app_model = get_application_model()
+        user = self.context['request'].user
+        app = app_model.objects.create(
+            name=validated_data['name'],
+            user = user,
+            authorization_grant_type=app_model.GRANT_CLIENT_CREDENTIALS,
+            client_type=Application.CLIENT_CONFIDENTIAL
+        )
+
+        app_info = ApplicationInfo(
+            application=app,
+            allowed_scopes=validated_data['applicationinfo']['allowed_scopes'],
+            issue_refresh_token='refresh_token' in validated_data.get('grant_types')
+        )
+        app_info.save()
+        return app
+
+    def to_representation(self, instance):
+        rep = super(PublicRegistrationSerializer, self).to_representation(instance)
+        if ' ' in instance.redirect_uris:
+            rep['redirect_uris'] = ' '.split(instance.redirect_uris)
+        else:
+            rep['redirect_uris'] = [instance.redirect_uris]
+        return rep
+
+
+class PublicRegisterApiView(APIView):
+    permission_classes = []
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request, **kwargs):
+        serializer = PublicRegistrationSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=HTTP_201_CREATED)
