@@ -509,7 +509,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 OIDC_RP_SCOPES = 'openid'
 OIDC_RP_SIGN_ALGO = 'RS256'
 OIDC_USERNAME_ALGO = 'badgeuser.utils.generate_badgr_username'
-# TODO: Add expiry
-# OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 60 * 60
+# The tokens themselves don't need to be stored in the session, since the user is marked as authenticated in
+# the Django session
 OIDC_STORE_ACCESS_TOKEN = False
-OIDC_STORE_ID_TOKEN = True
+OIDC_STORE_ID_TOKEN = False
+
+# Make the Django session expire after 1 minute, so that the UI has 1 minute to convert the session authentication
+# into an access token
+SESSION_COOKIE_AGE = 60

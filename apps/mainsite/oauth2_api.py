@@ -11,6 +11,7 @@ from django.conf import settings
 from django.core.validators import URLValidator
 from django.http import HttpResponse
 from django.utils import timezone
+from django.contrib.auth import logout
 from oauth2_provider.exceptions import OAuthToolkitError
 from oauth2_provider.models import get_application_model, get_access_token_model, Application
 from oauth2_provider.scopes import get_scopes_backend
@@ -489,6 +490,9 @@ class TokenView(OAuth2ProviderTokenView):
                 sender=self, request=request, token=token.get('access_token')
             )
             response = HttpResponse(content=json.dumps(token), status=200)
+            # Log out of the django session, since from now on we use token authentication; the session authentication was
+            # only used to obtain the access token
+            logout(request)
 
         if oauth_app and not oauth_app.applicationinfo.issue_refresh_token:
             data = json.loads(response.content)
