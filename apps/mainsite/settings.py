@@ -358,10 +358,6 @@ REST_FRAMEWORK = {
         'mainsite.authentication.BadgrOAuth2Authentication',
         'mainsite.authentication.LoggedLegacyTokenAuthentication',
         'entity.authentication.ExplicitCSRFSessionAuthentication',
-        # Both needed for OIDC authentication
-        # TODO: Really?
-        'mozilla_django_oidc.contrib.drf.OIDCAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
     'DEFAULT_VERSION': 'v1',
