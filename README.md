@@ -71,9 +71,15 @@ Set or adjust these values in your `settings_local.dev.py` and/or `settings_loca
 * `OIDC_OP_AUTHORIZATION_ENDPOINT`, `OIDC_OP_TOKEN_ENDPOINT`, `OIDC_OP_USER_ENDPOINT`, `OIDC_OP_JWKS_ENDPOINT`
   - The endpoints for the meinBildungsraum SSO connection
   - For the demo as specified [here](https://aai.demo.meinbildungsraum.de/realms/nbp-aai/.well-known/openid-configuration)
+* `LOGIN_BASE_URL`
+  - The base url for the redirect urls
+  - E.g. `http://localhost:4200//auth/login`
 * `LOGIN_REDIRECT_URL` and `LOGOUT_REDIRECT_URL`
   - The redirect urls to our application after login / logout via meinBildungsraum
-  - E.g. `http://localhost:4200/public/start` and `http://localhost:4200/auth/login`
+  - After the login with meinBildungsraum, the OIDC session authentication needs to be converted to an access token
+  - This is done with the `auth/login?validateToken` url
+  - E.g. `http://localhost:4200/auth/login?validateToken` and `http://localhost:4200/auth/login`
+  - Typically you don't need to change these if you used the example with `LOGIN_BASE_URL`
 
 ### Running the Django Server in Development
 
