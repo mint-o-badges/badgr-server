@@ -485,3 +485,7 @@ def convert_svg_to_png(svg_string, height, width):
     except ValueError:
         # Issuing decoding response JSON
         return False
+
+def verifyIssuerAutomatically(url, email):
+    emailDomain = email.split('@')[1]
+    return emailDomain in url

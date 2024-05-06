@@ -508,7 +508,7 @@ class Issuer(ResizeUploadedImage,
             # 'badgr_app': badgr_app
         }
 
-        # Notiy admin whether issuer was automatically verified or needs to be verified manually
+        # Notify admin whether issuer was automatically verified or needs to be verified manually
         if self.verified:
             template_name = 'issuer/email/notify_admins_issuer_verified'
         else: 
