@@ -217,8 +217,10 @@ AUTH_PASSWORD_VALIDATORS = [
 ##
 
 # CORS_ORIGIN_ALLOW_ALL = True
-CORS_URLS_REGEX = r'^.*$'
+COR_URLS_REGEX = r'^.*$'
 BADGR_CORS_MODEL = 'mainsite.BadgrApp'
+# Needed for OIDC authentication
+CORS_ALLOW_CREDENTIALS = True
 
 CORS_EXPOSE_HEADERS = (
     'link',
@@ -509,6 +511,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 OIDC_RP_SCOPES = 'openid'
 OIDC_RP_SIGN_ALGO = 'RS256'
 OIDC_USERNAME_ALGO = 'badgeuser.utils.generate_badgr_username'
+OIDC_USE_PKCE = True
 # The tokens themselves don't need to be stored in the session, since the user is marked as authenticated in
 # the Django session
 OIDC_STORE_ACCESS_TOKEN = False
