@@ -191,10 +191,6 @@ def createCaptchaChallenge(req):
 
     return JsonResponse(ch)
 
-    # return JsonResponse({"error":
-    #     f"Request failed with status code {response.status_code}"},
-    #     status=response.status_code)
-
 
 def extractErrorMessage500(response: Response):
     expression = re.compile("<pre>Error: ([^<]+)<br>")
