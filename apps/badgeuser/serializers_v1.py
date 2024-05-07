@@ -97,6 +97,10 @@ class BadgeUserProfileSerializerV1(serializers.Serializer):
                     source=validated_data.get("source", ""),
                 )
                 return user
+            else:
+                raise serializers.ValidationError("Invalid captcha")
+        else:
+            raise serializers.ValidationError("Captcha required")
 
     def update(self, user, validated_data):
         first_name = validated_data.get("first_name")
