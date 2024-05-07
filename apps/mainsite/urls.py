@@ -128,7 +128,8 @@ urlpatterns = [
 
     # meinBildungsraum OIDC connection
     path('oidc/', include('mozilla_django_oidc.urls')),
-    path('oidcview/', OidcView.login, name="oidcviewLogin"),
+    # A debug view for OIDC
+    # path('oidcview/', OidcView.login, name="oidcviewLogin"),
 ]
 # add to serve files
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
