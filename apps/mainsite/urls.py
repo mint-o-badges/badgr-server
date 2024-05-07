@@ -11,7 +11,7 @@ from django.urls import path
 
 from mainsite.admin import badgr_admin
 from backpack.badge_connect_api import BadgeConnectManifestView, BadgeConnectManifestRedirectView
-from mainsite.oauth2_api import AuthorizationApiView, TokenView, AuthCodeExchange, RegisterApiView
+from mainsite.oauth2_api import AuthorizationApiView, TokenView, AuthCodeExchange, RegisterApiView, PublicRegisterApiView
 from oidc.oidc_views import OidcView
 
 badgr_admin.autodiscover()
@@ -49,6 +49,8 @@ urlpatterns = [
     url(r'^o/code/?$', AuthCodeExchange.as_view(), name='oauth2_code_exchange'),
     url(r'^o/register/?$', RegisterApiView.as_view(), kwargs={'version': 'rfc7591'},
         name='oauth2_api_register'),
+    url(r'^o/publicregister/?$', PublicRegisterApiView.as_view(), kwargs={'version': 'rfc7591'},
+        name='oauth2_public_api_register'),
     path('o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
 
     # Badge Connect URLs

@@ -11,6 +11,7 @@ from django.conf import settings
 from django.core.validators import URLValidator
 from django.http import HttpResponse
 from django.utils import timezone
+from django.contrib.auth import logout
 from oauth2_provider.exceptions import OAuthToolkitError
 from oauth2_provider.models import get_application_model, get_access_token_model, Application
 from oauth2_provider.scopes import get_scopes_backend
@@ -18,8 +19,10 @@ from oauth2_provider.settings import oauth2_settings
 from oauth2_provider.views import TokenView as OAuth2ProviderTokenView
 from oauth2_provider import models
 from oauth2_provider.views.mixins import OAuthLibMixin
+from oauth2_provider.signals import app_authorized
 from oauthlib.oauth2.rfc6749.utils import scope_to_list
-from rest_framework import serializers
+from oauthlib.oauth2.rfc6749.tokens import random_token_generator
+from rest_framework import serializers, permissions
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
 from rest_framework.views import APIView
@@ -310,17 +313,119 @@ class RegisterApiView(APIView):
         serializer.save()
         return Response(serializer.data, status=HTTP_201_CREATED)
 
-
-# This code comes from the [OAuth2 provider library](https://github.com/caffeinehit/django-oauth2-provider/blob/master/provider/oauth2/views.py)
-def create_access_token(self, request, user, scope, client):
-    at = models.AccessToken.objects.create(
-        user=user,
-        # TODO: Proper expires
-        expires=datetime(2025, 10, 9, 23, 55, 59, 342380)
+# this method allows users that are authorized (but do not have to be admins) to register client credentials for their account, currently the user can only choose the name
+class PublicRegistrationSerializer(serializers.Serializer):
+    client_name = serializers.CharField(required=True, source='name')
+    grant_types = serializers.ListField(child=serializers.CharField(), required=False, default=['client-credentials'])
+    response_types = serializers.ListField(child=serializers.CharField(), required=False, default=['code'])
+    scope = serializers.CharField(
+        required=False, source='applicationinfo.allowed_scopes', default='rw:issuer rw:backpack rw:profile'
     )
-    for s in scope:
-        at.scope.add(s)
-    return at
+
+    client_id = serializers.CharField(read_only=True)
+    client_secret = serializers.CharField(read_only=True)
+    client_id_issued_at = serializers.SerializerMethodField(read_only=True)
+    client_secret_expires_at = serializers.IntegerField(default=0, read_only=True)
+
+    def get_client_id_issued_at(self, obj):
+        try:
+            return int(obj.created.strftime('%s'))
+        except AttributeError:
+            return None
+
+    def validate_response_types(self, val):
+        if val != ['code']:
+            raise serializers.ValidationError("Invalid response type")
+        return val
+
+    def validate_scope(self, val):
+        if val:
+            scopes = val.split(' ')
+            included = []
+            for scope in scopes:
+                if scope in ['rw:issuer', 'rw:backpack', 'rw:profile']:
+                    included.append(scope)
+
+            if len(included):
+                return ' '.join(set(included))
+            raise serializers.ValidationError(
+                "No supported Badge Connect scopes requested. See manifest for supported scopes."
+            )
+
+        else:
+            # If no scopes provided, we assume they want all scopes
+            return ' '.join(BADGE_CONNECT_SCOPES)
+
+    def validate_token_endpoint_auth_method(self, val):
+        if val != 'client_secret_basic':
+            raise serializers.ValidationError("Invalid token authentication method. Only client_secret_basic allowed.")
+        return val
+
+    def create(self, validated_data):
+        app_model = get_application_model()
+        user = self.context['request'].user
+        app = app_model.objects.create(
+            name=validated_data['name'],
+            user = user,
+            authorization_grant_type=app_model.GRANT_CLIENT_CREDENTIALS,
+            client_type=Application.CLIENT_CONFIDENTIAL
+        )
+
+        app_info = ApplicationInfo(
+            application=app,
+            allowed_scopes=validated_data['applicationinfo']['allowed_scopes'],
+            issue_refresh_token='refresh_token' in validated_data.get('grant_types')
+        )
+        app_info.save()
+        return app
+
+    def to_representation(self, instance):
+        rep = super(PublicRegistrationSerializer, self).to_representation(instance)
+        if ' ' in instance.redirect_uris:
+            rep['redirect_uris'] = ' '.split(instance.redirect_uris)
+        else:
+            rep['redirect_uris'] = [instance.redirect_uris]
+        return rep
+
+
+class PublicRegisterApiView(APIView):
+    permission_classes = []
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request, **kwargs):
+        serializer = PublicRegistrationSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=HTTP_201_CREATED)
+
+
+# This code is inspired the [OAuth2 provider library](https://github.com/caffeinehit/django-oauth2-provider/blob/master/provider/oauth2/views.py)
+# and [this SO Post](https://stackoverflow.com/a/25095375)
+def create_access_token(self, request, user, scope, client):
+    joined_scope = ' '.join(scope)
+    expire_seconds = oauth2_settings.user_settings['ACCESS_TOKEN_EXPIRE_SECONDS']
+    # TODO: It would be nice to re-use existing tokens if they're still valid
+    access_token = models.AccessToken.objects.create(
+        user=user,
+        application=client,
+        scope=joined_scope,
+        token=random_token_generator(request),
+        # TODO: Be timezone sensitive
+        expires=datetime.datetime.now() + datetime.timedelta(seconds=expire_seconds)
+    )
+    refresh_token = models.RefreshToken.objects.create(
+        user=user,
+        token=random_token_generator(request),
+        access_token=access_token,
+        application=client
+    )
+    return {
+        'access_token': access_token.token,
+        'token_type': 'Bearer',
+        'expires_in': expire_seconds,
+        'refresh_token': refresh_token.token,
+        'scope': joined_scope
+    }
 
 class TokenView(OAuth2ProviderTokenView):
     server_class = BadgrOauthServer
@@ -381,7 +486,13 @@ class TokenView(OAuth2ProviderTokenView):
             if not request.user.is_authenticated:
                 return HttpResponse(json.dumps({"error": "User not authenticated in session!"}), status=HTTP_401_UNAUTHORIZED)
             token = create_access_token(self, request, request.user, requested_scopes, oauth_app)
-            response = Response(token, status=200)
+            app_authorized.send(
+                sender=self, request=request, token=token.get('access_token')
+            )
+            response = HttpResponse(content=json.dumps(token), status=200)
+            # Log out of the django session, since from now on we use token authentication; the session authentication was
+            # only used to obtain the access token
+            logout(request)
 
         if oauth_app and not oauth_app.applicationinfo.issue_refresh_token:
             data = json.loads(response.content)

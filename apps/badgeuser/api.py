@@ -28,6 +28,7 @@ from rest_framework.response import Response
 from rest_framework.serializers import BaseSerializer
 from rest_framework.status import (HTTP_302_FOUND, HTTP_200_OK, HTTP_404_NOT_FOUND,
         HTTP_201_CREATED, HTTP_400_BAD_REQUEST,)
+from oauth2_provider.models import get_application_model
 
 from badgeuser.authcode import authcode_for_accesstoken, decrypt_authcode
 from badgeuser.models import BadgeUser, CachedEmailAddress, TermsVersion
@@ -41,8 +42,9 @@ import badgrlog
 from entity.api import BaseEntityDetailView, BaseEntityListView
 from entity.serializers import BaseSerializerV2
 from issuer.permissions import BadgrOAuthTokenHasScope
-from mainsite.models import BadgrApp, AccessTokenProxy
+from mainsite.models import BadgrApp, AccessTokenProxy, ApplicationInfo
 from mainsite.utils import backoff_cache_key, OriginSetting, set_url_query_params, throttleable
+from mainsite.serializers import ApplicationInfoSerializer
 
 RATE_LIMIT_DELTA = datetime.timedelta(minutes=5)
 
@@ -536,6 +538,38 @@ class AccessTokenList(BaseEntityListView):
     def get(self, request, **kwargs):
         return super(AccessTokenList, self).get(request, **kwargs)
 
+class ApplicationList(BaseEntityListView):
+    model = get_application_model()
+    v2_serializer_class = ApplicationInfoSerializer
+    permission_classes = (permissions.IsAuthenticated, BadgrOAuthTokenHasScope)
+    valid_scopes = ['rw:profile']
+
+    def get_objects(self, request, **kwargs):
+        return ApplicationInfo.objects.filter(application__user=request.user)
+
+    @apispec_list_operation('Applicationlist',
+                            summary='Get a list of application registered for the authenticated user',
+                            tags=['Authentication']
+                            )
+    def get(self, request, **kwargs):
+        return super(ApplicationList, self).get(request, **kwargs)
+        
+class ApplicationDetails(BaseEntityDetailView):
+    model = ApplicationInfo
+    v2_serializer_class = ApplicationInfoSerializer
+    permission_classes = (permissions.IsAuthenticated, BadgrOAuthTokenHasScope)
+    valid_scopes = ['rw:profile']
+
+    @apispec_list_operation('ApplicationDetails',
+                            summary='Delete one registed set of access tokens',
+                            tags=['Authentication']
+                            )
+    def delete(self, request, application_id,**kwargs):
+        model = get_application_model()
+
+        obj = model.objects.filter(client_id=application_id, user=request.user)
+        obj.delete()
+        return Response(status=204)
 
 class AccessTokenDetail(BaseEntityDetailView):
     model = AccessTokenProxy

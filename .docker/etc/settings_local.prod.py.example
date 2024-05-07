@@ -154,5 +154,8 @@ OIDC_OP_AUTHORIZATION_ENDPOINT = ''
 OIDC_OP_TOKEN_ENDPOINT = ''
 OIDC_OP_USER_ENDPOINT = 'https://aai.demo.meinbildungsraum.de/realms/nbp-aai/protocol/openid-connect/userinfo'
 OIDC_OP_JWKS_ENDPOINT = 'https://aai.demo.meinbildungsraum.de/realms/nbp-aai/protocol/openid-connect/certs'
-LOGIN_REDIRECT_URL = ''
-LOGOUT_REDIRECT_URL = ''
+LOGIN_BASE_URL = ''
+
+# Don't change these
+LOGIN_REDIRECT_URL = f'{LOGIN_BASE_URL}?validateToken'
+LOGOUT_REDIRECT_URL = f'{LOGIN_BASE_URL}'

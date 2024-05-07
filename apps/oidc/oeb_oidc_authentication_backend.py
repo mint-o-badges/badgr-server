@@ -29,13 +29,21 @@ class OebOIDCAuthenticationBackend(OIDCAuthenticationBackend):
         user.first_name = 'unknown'
         user.last_name = 'unknown'
         user.email = convertSubToMail(claims.get('sub'))
+        user.set_email_items([{
+            'primary': True,
+            # Set this to verified since this is required for the user to be able to login.
+            # Note that this kinda breaches our idea of always having a verified mail;
+            # Since the mail actually only is a dummy mail. TODO: Handle this case
+            'verified': True,
+            'email': user.email,
+        }], allow_verify=True)
         if user.username == 'unknown':
             # The username is set to unknown if the email was None
             user.username = convertSubToUsername(claims.get('sub'))
         user.save()
 
         return user
-
+    
     def update_user(self, user, claims):
         # Don't update based on data from OIDC
         return user
