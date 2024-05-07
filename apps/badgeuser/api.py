@@ -6,6 +6,8 @@ import urllib.parse
 import urllib.error
 import urllib.parse
 
+import requests
+
 from allauth.account.adapter import get_adapter
 from allauth.account.models import EmailConfirmationHMAC
 from allauth.account.utils import user_pk_to_url_str, url_str_to_user_pk
@@ -24,9 +26,10 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.core.cache import cache
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.urls import reverse
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.utils import timezone
 from django.views.generic import RedirectView
+from django.conf import settings
 from rest_framework import permissions, serializers, status
 from rest_framework.exceptions import ValidationError as RestframeworkValidationError
 from rest_framework.response import Response
@@ -96,6 +99,41 @@ class BadgeUserDetail(BaseEntityDetailView):
         Signup for a new account
         """
         if request.version == "v1":
+
+            email = request.data.get("email")
+            # only send email domain to spamfilter API to protect users privacy
+            _, email_domain = email.split("@", 1)
+            firstname = request.data.get("first_name")
+            lastname = request.data.get("last_name")
+
+            apiKey = getattr(settings, "ALTCHA_API_KEY")
+            endpoint = getattr(settings, "ALTCHA_SPAMFILTER_ENDPOINT")
+            payload = {
+                "text": [firstname, lastname],
+                # the following options seem to classify too much data as spam, i commented them out for now
+                # "email": email_domain,
+                # "expectedLanguages": ["en", "de"],
+            }
+            params = {"apiKey": apiKey}
+            headers = {
+                "Content-Type": "application/json",
+                "referer": "https://api.openbadges.education/",
+            }
+            response = requests.post(
+                endpoint, params=params, data=json.dumps(payload), headers=headers
+            )
+            if response.status_code == 200:
+                data = response.json()
+                classification = data["classification"]
+                if classification == "BAD":
+                    # TODO: show reasons why data was classified as spam
+                    return JsonResponse(
+                        {
+                            "error": "Spam filter detected spam. Your account was not created."
+                        },
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+
             serializer_cls = self.get_serializer_class()
             captcha = request.data.get("captcha")
             serializer = serializer_cls(
