@@ -29,6 +29,7 @@ class OebOIDCAuthenticationBackend(OIDCAuthenticationBackend):
         user.first_name = 'unknown'
         user.last_name = 'unknown'
         user.email = convertSubToMail(claims.get('sub'))
+        user.mbr_user = True
         user.set_email_items([{
             'primary': True,
             # Set this to verified since this is required for the user to be able to login.
