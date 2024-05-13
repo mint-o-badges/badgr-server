@@ -222,17 +222,6 @@ class BadgeUser(BaseVersionedEntity, AbstractUser, cachemodel.CacheModel):
 
     marketing_opt_in = models.BooleanField(default=False)
 
-    """
-    Indicates whether this user comes from meinBildungsraum (mbr).
-    If so, then the user can *only* log in via mbr. Also, if
-    the user logs out of oeb, it should also be logged out of mbr;
-    and, the other way round, if they log out of mbr, they should
-    also get logged out of oeb. This also indicates that the user
-    originally was automatically created, meaning that it received
-    a dummy mail address and so on.
-    """
-    mbr_user = models.BooleanField(default=False)
-
     objects = BadgeUserManager()
 
     class Meta:

@@ -60,7 +60,7 @@ class BadgeUserAdmin(DjangoObjectActions, ModelAdmin):
             None, {
                 'fields': (
                     'email', 'first_name', 'last_name',
-                    'badgrapp', 'agreed_terms_version', 'marketing_opt_in', 'mbr_user'
+                    'badgrapp', 'agreed_terms_version', 'marketing_opt_in'
                     )
                 }
             ), (
