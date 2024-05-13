@@ -80,6 +80,7 @@
   <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet" type="text/css">
   <style type="text/css">
     @import url(https://fonts.googleapis.com/css?family=Open+Sans:400,700);
+    @import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
   </style>
   <!--<![endif]-->
   <style type="text/css">
@@ -110,8 +111,8 @@
         <tr>
           <td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;">
       <![endif]-->
-    <div style="background:#3F44BA;background-color:#3F44BA;Margin:0px auto;max-width:600px;">
-      <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#3F44BA;background-color:#3F44BA;width:100%;">
+    <div style="background:#492e98;background-color:#492e98;Margin:0px auto;max-width:600px;">
+      <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#492e98;background-color:#492e98;width:100%;">
         <tbody>
           <tr>
             <td style="direction:ltr;font-size:0px;padding:0px;text-align:center;vertical-align:top;">
@@ -188,9 +189,9 @@
                                       <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:separate;width:100%;line-height:100%;">
                                         <tbody>
                                           <tr>
-                                            <td align="center" bgcolor="#3F44BA" role="presentation" style="border:none;cursor:auto;background:#3F44BA;"
+                                            <td align="center" bgcolor="#492e98" role="presentation" style="border:none;cursor:auto;background:#492e98;"
                                               valign="middle">
-                                              <a href="{% block button_url %}{% endblock %}" style="background:#3F44BA;color:#FFFFFF;font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none;display:block;border-radius:2px;padding:15px 30px;"
+                                              <a href="{% block button_url %}{% endblock %}" style="background:#492e98;color:#FFFFFF;font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none;display:block;border-radius:2px;padding:15px 30px;"
                                                 target="_blank">
                                                 {% block button_text %}{% endblock %}
                                               </a>
@@ -203,7 +204,7 @@
                                   <tr>
                                     <td align="center" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                                       <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;line-height:14px;text-align:center;color:#aaaaaa;">
-                                        Or, you can copy/paste this link into your browser: <br>
+                                        Alternativ kannst du diesen Link kopieren und in deinen Browser einfügen: <br>
                                         <strong>{% block button_url_copy %}{% endblock %}</strong>
                                       </div>
                                     </td>
@@ -269,30 +270,35 @@
                         <td style="vertical-align:top;padding-top:32px;padding-bottom:32px;">
                           <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="" width="100%">
                             <tr>
-                              <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
+                              <td rowspan="2" align="left" style="font-size:0px;padding:10px 10px 10px 25px;word-break:break-word;">
+                                <a href="https://openbadges.education" target="_blank">
+                                  <img src="{% static '/images/logo-square.png' %}" align="left" style="width: auto; height: 80px;">
+                                </a>
+                              </td>
+                              <td align="left" style="font-size:0px;padding:10px 25px 10px 15px;word-break:break-word;">
                                 <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:24px;font-weight:400;line-height:24px;text-align:left;color:#191919;">
-                                  New to Badging?
+                                  Neu bei Open Educational Badges?
                                 </div>
                               </td>
                             </tr>
                             <tr>
-                              <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
+                              <td align="left" style="font-size:0px;padding:10px 25px 10px 15px;word-break:break-word;">
                                 <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#666666;">
-                                  <a href="http://openbadges.org" class="linkstyle" style="color: #515dc6; font-weight: bold; text-decoration: none;">Learn
-                                    More</a>
+                                  <a href="https://openbadges.education" class="linkstyle" style="color: #515dc6; font-weight: bold; text-decoration: none;"> Mehr erfahren
+                                  </a>
                                 </div>
                               </td>
                             </tr>
                             {% if GDPR_INFO_URL %}
                             <tr>
-                              <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
+                              <td colspan="2" align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                                 <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:24px;font-weight:400;line-height:24px;text-align:left;color:#191919;">
                                   We’re GDPR-compliant
                                 </div>
                               </td>
                             </tr>
                             <tr>
-                              <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
+                              <td colspan="2" align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                                 <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#666666;">
                                   <a href="{{ GDPR_INFO_URL }}" class="linkstyle"
                                     style="color: #515dc6; font-weight: bold; text-decoration: none;"> Know your rights
@@ -301,8 +307,9 @@
                               </td>
                             </tr>
                             {% endif %}
-                            <tr>
-                              <td style="font-size:0px;padding:10px 25px;word-break:break-word;">
+                            <!-- ToDo: remove display none when user can unsubscribe from newsletter  -->
+                            <tr style="display: none;">
+                              <td colspan="2" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                                 <p style="border-top:solid 1px #dddddd;font-size:1;margin:0px auto;width:100%;">
                                 </p>
                                 <!--[if mso | IE]>
@@ -320,7 +327,7 @@
                             </tr>
                             {% if OPERATOR_ADDRESS and OPERATOR_NAME %}
                             <tr>
-                              <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
+                              <td colspan="2" align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                                 <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#666666;">
                                   Sent from {% if OPERATOR_URL %}
                                     <a href="{{ OPERATOR_URL }}" class="linkstyle" style="color: #515dc6; font-weight: bold; text-decoration: none;">{{ OPERATOR_NAME }}</a>
@@ -330,11 +337,12 @@
                               </td>
                             </tr>
                               {% endif %}
-                            <tr>
-                              <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
+                            <!-- unsubscribe is hidden, since users are not subscribed to a newsletter atm -->
+                            <tr style="display: none;">
+                              <td colspan="2" align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                                 <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:12px;font-weight:400;line-height:16px;text-align:left;color:#666666;">
                                   {% block unsubscribe %}
-                                  <a href="{{ unsubscribe_url }}" class="linkstyle" style="color: #515dc6; font-weight: bold; text-decoration: none;">Unsubscribe</a>
+                                  <a href="{{ unsubscribe_url }}" class="linkstyle" style="color: #515dc6; font-weight: bold; text-decoration: none;">Abmelden</a>
                                   {% endblock %}
                                   {% if PRIVACY_POLICY_URL %} • <a href="{{ PRIVACY_POLICY_URL }}" class="linkstyle" style="color: #515dc6; font-weight: bold; text-decoration: none;">Privacy
                                     Policy</a> {% endif %}{% if TERMS_OF_SERVICE_URL %}•
