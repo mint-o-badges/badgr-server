@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: ⬇️ Checkout repository
-        uses: actions/checkout@v4.1.4
+        uses: actions/checkout@v4.1.5
 
       - name: 📋 Create release
         id: create-release
@@ -51,7 +51,7 @@ jobs:
 
     steps:
       - name: ⬇️ Checkout repository
-        uses: actions/checkout@v4.1.4
+        uses: actions/checkout@v4.1.5
 
       - name: 🏄 Copy default env vars
         run: cp .docker/etc/settings_local.prod.py.example .docker/etc/settings_local.py
