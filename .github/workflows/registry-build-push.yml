@@ -28,7 +28,7 @@ jobs:
 
       - name: 📋 Create release
         id: create-release
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             const { data } = await github.rest.repos.createRelease({
@@ -90,7 +90,7 @@ jobs:
 
     steps:
       - name: 🚢 Publish release
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         env:
           release_id: ${{ needs.create-release.outputs.release_id }}
         with:
