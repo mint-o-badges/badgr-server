@@ -68,7 +68,7 @@ Set or adjust these values in your `settings_local.dev.py` and/or `settings_loca
   - Set these values to be able to get AI skill suggestions within the badge creation process.
 * `OIDC_RP_CLIENT_ID` and `OIDC_RP_CLIENT_SECRET`
   - The credentials for the meinBildungsraum SSO connection
-* `OIDC_OP_AUTHORIZATION_ENDPOINT`, `OIDC_OP_TOKEN_ENDPOINT`, `OIDC_OP_USER_ENDPOINT`, `OIDC_OP_JWKS_ENDPOINT`
+* `OIDC_OP_AUTHORIZATION_ENDPOINT`, `OIDC_OP_TOKEN_ENDPOINT`, `OIDC_OP_USER_ENDPOINT`, `OIDC_OP_JWKS_ENDPOINT`, `OIDC_OP_END_SESSION_ENDPOINT`
   - The endpoints for the meinBildungsraum SSO connection
   - For the demo as specified [here](https://aai.demo.meinbildungsraum.de/realms/nbp-aai/.well-known/openid-configuration)
 * `LOGIN_BASE_URL`

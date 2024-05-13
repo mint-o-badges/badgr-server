@@ -1,5 +1,6 @@
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 from badgeuser.utils import generate_badgr_username
+from django.conf import settings
 
 # Since we only get the subject identifier from meinBildungsraum,
 # we don't necessarily know the E-Mail address of the user.

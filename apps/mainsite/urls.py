@@ -1,6 +1,6 @@
 from django.views.generic.base import RedirectView, TemplateView
 from django.conf.urls.static import static
-from mainsite.views import upload, nounproject, aiskills
+from mainsite.views import upload, oidcLogoutRedirect, nounproject, aiskills
 from mainsite.views import info_view, email_unsubscribe, AppleAppSiteAssociation, error404, error500
 from mainsite.views import (SitewideActionFormView, RedirectToUiLogin, DocsAuthorizeRedirect,
                             LegacyLoginAndObtainAuthToken,)
@@ -122,6 +122,7 @@ urlpatterns = [
         kwargs={'version': 'v2'}),
 
     url(r'^upload', upload, name="image_upload"),
+    url(r'^oidcLogoutRedirect/', oidcLogoutRedirect, name="oidcLogoutRedirect"),
     url(r'^nounproject/(?P<searchterm>[^/]+)/(?P<page>[^/]+)$', nounproject,
         name="nounproject"),
 
@@ -131,7 +132,7 @@ urlpatterns = [
     # meinBildungsraum OIDC connection
     path('oidc/', include('mozilla_django_oidc.urls')),
     # A debug view for OIDC
-    # path('oidcview/', OidcView.login, name="oidcviewLogin"),
+    path('oidcview/', OidcView.login, name="oidcviewLogin"),
 ]
 # add to serve files
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
