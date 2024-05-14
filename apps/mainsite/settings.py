@@ -515,7 +515,8 @@ OIDC_USE_PKCE = True
 # The tokens themselves don't need to be stored in the session, since the user is marked as authenticated in
 # the Django session
 OIDC_STORE_ACCESS_TOKEN = False
-OIDC_STORE_ID_TOKEN = False
+# TODO: Make false
+OIDC_STORE_ID_TOKEN = True
 
 # Make the Django session expire after 1 minute, so that the UI has 1 minute to convert the session authentication
 # into an access token

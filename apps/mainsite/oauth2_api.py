@@ -413,6 +413,10 @@ def create_access_token(self, request, user, scope, client):
         # TODO: Be timezone sensitive
         expires=datetime.datetime.now() + datetime.timedelta(seconds=expire_seconds)
     )
+    # TODO: Store session ID alongside this access token, so that it can be revoked
+    # via an OIDC logout token (containing the session ID). the session ID can be obtained with:
+    # jwt.decode(request.session['oidc_id_token'], options={"verify_signature": False})['sid']
+    # (the signature doesn't need to verified here, since the OIDC authentication already happened)
     refresh_token = models.RefreshToken.objects.create(
         user=user,
         token=random_token_generator(request),
