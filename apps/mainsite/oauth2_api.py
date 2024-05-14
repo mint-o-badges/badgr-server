@@ -12,12 +12,12 @@ from django.core.validators import URLValidator
 from django.http import HttpResponse
 from django.utils import timezone
 from django.contrib.auth import logout
+import jwt
 from oauth2_provider.exceptions import OAuthToolkitError
-from oauth2_provider.models import get_application_model, get_access_token_model, Application
+from oauth2_provider.models import get_application_model, get_access_token_model, Application, RefreshToken, AccessToken
 from oauth2_provider.scopes import get_scopes_backend
 from oauth2_provider.settings import oauth2_settings
 from oauth2_provider.views import TokenView as OAuth2ProviderTokenView
-from oauth2_provider import models
 from oauth2_provider.views.mixins import OAuthLibMixin
 from oauth2_provider.signals import app_authorized
 from oauthlib.oauth2.rfc6749.utils import scope_to_list
@@ -30,7 +30,7 @@ from rest_framework.views import APIView
 import badgrlog
 from badgeuser.authcode import accesstoken_for_authcode
 from backpack.badge_connect_api import BADGE_CONNECT_SCOPES
-from mainsite.models import ApplicationInfo
+from mainsite.models import ApplicationInfo, AccessTokenSessionId
 from mainsite.oauth_validator import BadgrRequestValidator, BadgrOauthServer
 from mainsite.serializers import ApplicationInfoSerializer, AuthorizationSerializer
 from mainsite.utils import fetch_remote_file_to_storage, throttleable, set_url_query_params
@@ -398,26 +398,29 @@ class PublicRegisterApiView(APIView):
         serializer.save()
         return Response(serializer.data, status=HTTP_201_CREATED)
 
+def get_session_id(request):
+    return jwt.decode(request.session['oidc_id_token'], options={"verify_signature": False})['sid']
 
 # This code is inspired the [OAuth2 provider library](https://github.com/caffeinehit/django-oauth2-provider/blob/master/provider/oauth2/views.py)
 # and [this SO Post](https://stackoverflow.com/a/25095375)
-def create_access_token(self, request, user, scope, client):
+def create_access_token(request, user, scope, client):
     joined_scope = ' '.join(scope)
     expire_seconds = oauth2_settings.user_settings['ACCESS_TOKEN_EXPIRE_SECONDS']
     # TODO: It would be nice to re-use existing tokens if they're still valid
-    access_token = models.AccessToken.objects.create(
+    access_token = AccessToken.objects.create(
         user=user,
         application=client,
         scope=joined_scope,
         token=random_token_generator(request),
-        # TODO: Be timezone sensitive
+        # TODO: Is timezone information necessary here?
         expires=datetime.datetime.now() + datetime.timedelta(seconds=expire_seconds)
     )
-    # TODO: Store session ID alongside this access token, so that it can be revoked
-    # via an OIDC logout token (containing the session ID). the session ID can be obtained with:
-    # jwt.decode(request.session['oidc_id_token'], options={"verify_signature": False})['sid']
-    # (the signature doesn't need to verified here, since the OIDC authentication already happened)
-    refresh_token = models.RefreshToken.objects.create(
+    # Store session ID to be able to delete the access token (and refresh tokens) later on logout
+    AccessTokenSessionId.objects.create(
+        token = access_token,
+        sessionId = get_session_id(request)
+    )
+    refresh_token = RefreshToken.objects.create(
         user=user,
         token=random_token_generator(request),
         access_token=access_token,
@@ -489,7 +492,7 @@ class TokenView(OAuth2ProviderTokenView):
         elif grant_type == "oidc":
             if not request.user.is_authenticated:
                 return HttpResponse(json.dumps({"error": "User not authenticated in session!"}), status=HTTP_401_UNAUTHORIZED)
-            token = create_access_token(self, request, request.user, requested_scopes, oauth_app)
+            token = create_access_token(request, request.user, requested_scopes, oauth_app)
             app_authorized.send(
                 sender=self, request=request, token=token.get('access_token')
             )

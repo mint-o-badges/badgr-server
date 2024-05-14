@@ -382,6 +382,16 @@ class AccessTokenScope(models.Model):
     def __str__(self):
         return self.scope
 
+class AccessTokenSessionId(models.Model):
+    token = models.OneToOneField(
+        AccessToken,
+        on_delete=models.CASCADE,
+        primary_key=True
+    )
+    sessionId = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.sessionId} -> {self.token}"
 
 class LegacyTokenProxy(Token):
     class Meta:
