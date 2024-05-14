@@ -33,6 +33,8 @@ class OidcView():
     @authentication_classes([])
     @permission_classes([])
     def oidcTriggerLogout(req: HttpRequest):
+        # TODO: If there is some method of further validating that this is a legitimate
+        # logout request, we should implement it
         if req.method != 'POST':
             return JsonResponse({"error": "Method not allowed"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
