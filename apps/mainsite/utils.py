@@ -487,5 +487,19 @@ def convert_svg_to_png(svg_string, height, width):
         return False
 
 def verifyIssuerAutomatically(url, email):
-    emailDomain = email.split('@')[1]
-    return emailDomain in url
+    emailDomain = email.split('@')[1].lower()
+    urlDomain = extract_domain(url)
+    return urlDomain == emailDomain
+
+def extract_domain(url):
+  # Define a regular expression pattern for extracting the domain
+  pattern = r"(https?://)?(www\d?\.)?(?P<domain>[\w\.-]+\.\w+)(/\S*)?"
+  # Use re.match to search for the pattern at the beginning of the URL
+  match = re.match(pattern, url)
+  # Check if a match is found
+  if match:
+  # Extract the domain from the named group "domain" and convert it to lowercase
+    domain = match.group("domain")
+    return domain.lower()
+  else:
+    return None
