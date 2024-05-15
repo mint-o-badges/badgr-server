@@ -360,6 +360,8 @@ REST_FRAMEWORK = {
         'mainsite.authentication.BadgrOAuth2Authentication',
         'mainsite.authentication.LoggedLegacyTokenAuthentication',
         'entity.authentication.ExplicitCSRFSessionAuthentication',
+        # TODO: Validate that we want to use this authentication
+        'mozilla_django_oidc.contrib.drf.OIDCAuthentication',
     ),
     'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
     'DEFAULT_VERSION': 'v1',
@@ -514,7 +516,8 @@ OIDC_USERNAME_ALGO = 'badgeuser.utils.generate_badgr_username'
 OIDC_USE_PKCE = True
 # The access token itself doesn't need to be stored in the session,
 # since the user is marked as authenticated in the Django session
-OIDC_STORE_ACCESS_TOKEN = False
+# TODO: Validate that this should be True
+OIDC_STORE_ACCESS_TOKEN = True
 # We store the ID token in the session, since we need the session ID (sid) contained in it
 # in order to later identify the access token to revoke on a triggered logout
 OIDC_STORE_ID_TOKEN = True

@@ -5,6 +5,7 @@ import json
 import re
 from urllib.parse import urlparse
 import datetime
+import jwt
 
 from django.core.files.storage import default_storage
 from django.conf import settings
@@ -12,7 +13,6 @@ from django.core.validators import URLValidator
 from django.http import HttpResponse
 from django.utils import timezone
 from django.contrib.auth import logout
-import jwt
 from oauth2_provider.exceptions import OAuthToolkitError
 from oauth2_provider.models import get_application_model, get_access_token_model, Application, RefreshToken, AccessToken
 from oauth2_provider.scopes import get_scopes_backend
@@ -403,36 +403,46 @@ def get_session_id(request):
 
 # This code is inspired the [OAuth2 provider library](https://github.com/caffeinehit/django-oauth2-provider/blob/master/provider/oauth2/views.py)
 # and [this SO Post](https://stackoverflow.com/a/25095375)
+# TODO: If the new mode is retained, rename this method
 def create_access_token(request, user, scope, client):
     joined_scope = ' '.join(scope)
     expire_seconds = oauth2_settings.user_settings['ACCESS_TOKEN_EXPIRE_SECONDS']
+    # TODO: Decide which token generation mechanism to use. If the access token
+    # from the request is taken, this also means that the AccessTokenSessionId table
+    # and the logout endpoint can be safely deleted
     # TODO: It would be nice to re-use existing tokens if they're still valid
-    access_token = AccessToken.objects.create(
-        user=user,
-        application=client,
-        scope=joined_scope,
-        token=random_token_generator(request),
-        # TODO: Is timezone information necessary here?
-        expires=datetime.datetime.now() + datetime.timedelta(seconds=expire_seconds)
-    )
+    #access_token = AccessToken.objects.create(
+    #    user=user,
+    #    application=client,
+    #    scope=joined_scope,
+    #    token=random_token_generator(request),
+    #    # TODO: Is timezone information necessary here?
+    #    expires=datetime.datetime.now() + datetime.timedelta(seconds=expire_seconds)
+    #)
+    access_token = request.session['oidc_access_token']
     # Store session ID to be able to delete the access token (and refresh tokens) later on logout
-    AccessTokenSessionId.objects.create(
-        token = access_token,
-        sessionId = get_session_id(request)
-    )
-    refresh_token = RefreshToken.objects.create(
-        user=user,
-        token=random_token_generator(request),
-        access_token=access_token,
-        application=client
-    )
+    #AccessTokenSessionId.objects.create(
+        #token = access_token,
+        #sessionId = get_session_id(request)
+    #)
+    #refresh_token = RefreshToken.objects.create(
+        #user=user,
+        #token=random_token_generator(request),
+        #access_token=access_token,
+        #application=client
+    #)
     return {
-        'access_token': access_token.token,
+        'access_token': access_token,#.token,
         'token_type': 'Bearer',
-        'expires_in': expire_seconds,
-        'refresh_token': refresh_token.token,
+        'expires_in': get_expire_seconds(access_token),
         'scope': joined_scope
     }
+
+def get_expire_seconds(access_token):
+    expire_datetime = datetime.datetime.fromtimestamp(jwt.decode(access_token, options={"verify_signature": False})['exp'])
+    now_datetime = datetime.datetime.now()
+    diff = expire_datetime - now_datetime
+    return diff.total_seconds()
 
 class TokenView(OAuth2ProviderTokenView):
     server_class = BadgrOauthServer
@@ -493,6 +503,7 @@ class TokenView(OAuth2ProviderTokenView):
             if not request.user.is_authenticated:
                 return HttpResponse(json.dumps({"error": "User not authenticated in session!"}), status=HTTP_401_UNAUTHORIZED)
             token = create_access_token(request, request.user, requested_scopes, oauth_app)
+            # token = request.session['oidc_access_token']
             app_authorized.send(
                 sender=self, request=request, token=token.get('access_token')
             )
