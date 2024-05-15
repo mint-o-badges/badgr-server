@@ -54,3 +54,10 @@ class OebOIDCAuthenticationBackend(OIDCAuthenticationBackend):
     
     def verify_token(self, token, nonce):
         return super(OebOIDCAuthenticationBackend, self).verify_token(token, nonce=nonce)
+    
+    # Overwrite to prevent warning, since we don't receive the email
+    def verify_claims(self, claims):
+        scopes = self.get_settings("OIDC_RP_SCOPES", "openid")
+        if "openid" in scopes.split():
+            return "sub" in claims
+        return super().verify_claims(claims)
