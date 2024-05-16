@@ -1,3 +1,4 @@
+from io import BytesIO
 import logging
 import urllib.request
 import urllib.parse
@@ -14,15 +15,140 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.urls import resolve, Resolver404, reverse
 from django.utils.safestring import mark_safe
 
+from issuer.models import BadgeClass, BadgeInstance
 from badgeuser.authcode import authcode_for_accesstoken
-from badgeuser.models import CachedEmailAddress
+from badgeuser.models import BadgeUser, CachedEmailAddress
 import badgrlog
 from badgrsocialauth.utils import set_session_badgr_app
 from mainsite.models import BadgrApp, EmailBlacklist, AccessTokenProxy
 from mainsite.utils import OriginSetting, set_url_query_params
+from backpack.views import add_recipient_name, add_title, add_description, addBadgeImage, add_issuerImage, add_issuedBy, RoundedRectFlowable, AllPageSetup, PageNumCanvas
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, Spacer, PageBreak
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_JUSTIFY, TA_LEFT
 
 logger = badgrlog.BadgrLogger()
 
+def generate_pdf_content(slug):
+        if slug is None:
+            raise ValueError("Missing slug parameter")
+        
+        try:
+            badgeinstance = BadgeInstance.objects.get(entity_id=slug)
+        except BadgeInstance.DoesNotExist:
+            raise ValueError("BadgeInstance not found")
+        try:
+            badgeclass = BadgeClass.objects.get(
+                entity_id=badgeinstance.badgeclass.entity_id
+            )
+        except BadgeClass.DoesNotExist:
+            raise ValueError("BadgeClass not found")
+
+        try: 
+            badgeuser = BadgeUser.objects.get(email=badgeinstance.recipient_identifier)  
+        except BadgeUser.DoesNotExist:
+            raise ValueError("BadgeUser not found")
+        
+        first_name = badgeuser.first_name.capitalize()
+        last_name = badgeuser.last_name.capitalize()
+
+        competencies = badgeclass.json["extensions:CompetencyExtension"]
+        first_page_content = []
+
+        add_recipient_name(first_page_content, first_name, last_name, badgeinstance.issued_on) 
+
+        addBadgeImage(first_page_content, badgeclass.image)
+
+        add_title(first_page_content, badgeclass.name)  
+
+        add_description(first_page_content, badgeclass.description)
+
+        add_issuedBy(first_page_content, badgeinstance.issuer.name)
+
+        add_issuerImage(first_page_content, badgeclass.issuer.image)
+        
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+    
+        styles = getSampleStyleSheet()
+        styles.add(ParagraphStyle(name='Justify', alignment=TA_JUSTIFY))
+        
+        Story = []
+
+        # Add first page content to the story
+        Story.extend(first_page_content)
+
+        num_competencies = len(competencies)
+
+        if num_competencies > 0:
+                esco = any(c['escoID'] for c in competencies)
+                competenciesPerPage = 7
+
+                Story.append(PageBreak())
+                Story.append(Spacer(1, 75))
+
+                title_style = ParagraphStyle(name='Title', fontSize=24, textColor='#492E98', alignment=TA_LEFT)
+                text_style = ParagraphStyle(name='Text', fontSize=14, textColor='#492E98', alignment=TA_LEFT)
+
+                Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
+                Story.append(Spacer(1, 25))
+
+
+                text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
+                Story.append(Paragraph(text, text_style))
+                Story.append(Spacer(1, 20))
+
+
+                text = " <strong>%s</strong> erworben hat:" % badgeclass.name
+                Story.append(Paragraph(text, text_style)) 
+                Story.append(Spacer(1, 20)) 
+
+                text_style = ParagraphStyle(name='Text', fontSize=18, leading=16, textColor='#492E98', alignment=TA_LEFT)      
+
+                for i in range(num_competencies):
+                    if i != 0 and i % competenciesPerPage == 0: 
+                        Story.append(PageBreak())
+                        Story.append(Spacer(1, 75))
+                        Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
+                        Story.append(Spacer(1, 25))
+
+                        text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
+                        Story.append(Paragraph(text, text_style))
+                        Story.append(Spacer(1, 20))
+
+
+                        text = " <strong>%s</strong> erworben hat:" % badgeclass.name
+                        Story.append(Paragraph(text, text_style)) 
+                        Story.append(Spacer(1, 20)) 
+
+                    text = "%s Minuten" % competencies[i]['studyLoad']
+                    if competencies[i]['studyLoad'] > 60:
+                        text = "%s Stunden" % competencies[i]['studyLoad']
+                    rounded_rect = RoundedRectFlowable(0, -15, 120, 35, 15, text=text, strokecolor="#492E98")
+                    competency = competencies[i]['name']
+                    if competencies[i]['escoID'] is not None:
+                        competency = competency + " *"
+                    tbl_data = [
+                            [rounded_rect, Paragraph(competency,text_style)]
+                    ]
+                    Story.append(Table(tbl_data, style=[('VALIGN', (0, 0), (-1, -1), 'MIDDLE')]))     
+                    Story.append(Spacer(1, 20))   
+                    
+                if esco: 
+                    Story.append(Spacer(1, 100))
+                    text_style = ParagraphStyle(name='Text_Style', fontSize=14, alignment=TA_LEFT)
+                    link_text = '<a href="https://esco.ec.europa.eu/de">* Kompetenz nach ESCO: https://esco.ec.europa.eu/de</a>'
+                    paragraph_with_link = Paragraph(link_text, text_style)
+                    Story.append(paragraph_with_link) 
+            
+        doc.build(Story, onFirstPage=AllPageSetup, onLaterPages=AllPageSetup, canvasmaker=PageNumCanvas) 
+        
+        pdf_content = buffer.getvalue()
+        
+        buffer.close()
+        
+        return pdf_content
 
 class BadgrAccountAdapter(DefaultAccountAdapter):
 
@@ -49,6 +175,9 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
         self.EMAIL_FROM_STRING = self.set_email_string(context)
 
         msg = self.render_mail(template_prefix, email, context)
+        pdf_document = generate_pdf_content(context['badge_id'])
+        if template_prefix == 'issuer/email/notify_account_holder':
+            msg.attach("badgeName_pdf", pdf_document,'application/pdf')
         logger.event(badgrlog.EmailRendered(msg))
         msg.send()
 
