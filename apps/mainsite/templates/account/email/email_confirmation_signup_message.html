@@ -1,4 +1,4 @@
-<!-- {% extends "email/base.html" %} -->
+{% extends "email/base.html" %}
 {% load static %}
 {% load i18n %}
 {% block beforebutton %}
@@ -29,7 +29,7 @@
           </div>
         </td>
       </tr>
-
+   
       <!-- Welcome text -->
 
       <tr>
@@ -38,7 +38,7 @@
             <tbody>
               <tr>
                 <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                  <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:32px;line-height: 40px;text-align:left;color:#492e98;">
+                  <div style="font-family: Rubik;font-size:32px;line-height: 40px;text-align:left;color:#492e98;">
                     {% blocktrans with site_name=site.name site_domain=site.domain %}Herzlich Willkommen bei <br> <b>Open Educational Badges.</b>{% endblocktrans %}
                   </div>
                 </td>
@@ -57,9 +57,9 @@
                       <tbody>
                         <tr>
                           <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                            <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:18px;line-height:26px;text-align:left;color:#191919;">
+                            <div style="font-family: Rubik;font-size:18px;line-height:26px;text-align:left;color:#191919;">
                               {% blocktrans with site_name=site.name site_domain=site.domain %}Bitte bestätige Deinen
-                              Account um Badges zu <b>sammeln</b>, zu <b>erstellen</b> und zu <b>vergeben.</b>{% endblocktrans %}
+                              Account um Badges <br> zu <b>sammeln</b>, zu <b>erstellen</b> und zu <b>vergeben.</b>{% endblocktrans %}
                             </div>
                           </td>
                         </tr>
@@ -79,5 +79,5 @@
 {% endblock %}
 {% block button_url %}{{ activate_url }}{% endblock %}
 {% block button_url_copy %}{{ activate_url }}{% endblock %}
-{% block button_text %}Jetzt bestätigen{% endblock %}
+{% block button_text %}Meinen Account bestätigen{% endblock %}
 {% block unsubscribe %}{% endblock %}
