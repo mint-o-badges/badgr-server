@@ -1,8 +1,9 @@
-{% extends "email/base.html" %}
+<!-- {% extends "email/base.html" %} -->
+{% load static %}
 {% load i18n %}
 {% block beforebutton %}
 <div style="background:#FFFFFF;background-color:#FFFFFF;Margin:0px auto;max-width:600px;">
-  <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#FFFFFF;background-color:#FFFFFF;width:100%;">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#ecfeed;background-color:#ecfeed;width:100%;">
     <tbody>
       <tr>
         <td style="border-left:1px solid #DBD8DF;border-right:1px solid #DBD8DF;direction:ltr;font-size:0px;padding:12px;padding-top:32px;text-align:center;vertical-align:top;">
@@ -17,14 +18,48 @@
             <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top;" width="100%">
               <tbody>
                 <tr>
-                  <td align="center" style="font-size:0px;padding:10px 25px;word-break:break-word;">
+                  <td rowspan="2" align="left" style="font-size:0px;padding:10px 10px 10px 25px;word-break:break-word;">
+                    <a href="https://openbadges.education" target="_blank">
+                      <img src="{% static '/images/Logo-New.png' %}" align="left" style="width: auto; height: 158px;">
+                    </a>
+                  </td>
+                </tr>
+                </tbody>
+            </table>
+          </div>
+        </td>
+      </tr>
+
+      <!-- Welcome text -->
+
+      <tr>
+        <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
+          <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;border-spacing:0px;">
+            <tbody>
+              <tr>
+                <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
+                  <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:32px;line-height: 40px;text-align:left;color:#492e98;">
+                    {% blocktrans with site_name=site.name site_domain=site.domain %}Herzlich Willkommen bei <br> <b>Open Educational Badges.</b>{% endblocktrans %}
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+</div>
+</td>
+</tr>
+      
+
+      <!-- Confirm account text -->
+                <tr>
+                  <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                     <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;border-spacing:0px;">
                       <tbody>
                         <tr>
-                          <td align="center" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                            <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:32px;font-weight:bold;line-height:40px;text-align:center;color:#191919;">
+                          <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
+                            <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:18px;line-height:26px;text-align:left;color:#191919;">
                               {% blocktrans with site_name=site.name site_domain=site.domain %}Bitte bestätige Deinen
-                              {{site_name}} Account.{% endblocktrans %}
+                              Account um Badges zu <b>sammeln</b>, zu <b>erstellen</b> und zu <b>vergeben.</b>{% endblocktrans %}
                             </div>
                           </td>
                         </tr>
