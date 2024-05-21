@@ -154,7 +154,7 @@
                                           <tr>
                                             <td align="center" bgcolor="#492e98" role="presentation" style="border:none;cursor:auto;background:#492e98;"
                                               valign="middle">
-                                              <a href="{% block button_url %}{% endblock %}" style="background:#492e98;color:#FFFFFF;font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none;display:block;border-radius:2px;padding:15px 30px;"
+                                              <a href="{% block button_url %}{% endblock %}" style="background:#492e98;color:#FFFFFF;font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none;display:block;border-radius:15px;padding:15px 30px;"
                                                 target="_blank">
                                                 {% block button_text %}{% endblock %}
                                               </a>
@@ -211,10 +211,10 @@
         <v:fill  origin="0.5, 0" position="0.5, 0" src="{% static '/images/image-bg-graphic-1.png' %}" color="#FFFFFF" type="tile" />
         <v:textbox style="mso-fit-shape-to-text:true" inset="0,0,0,0">
       <![endif]-->
-    <div style="background:#FFFFFF url('{% static '/images/image-bg-graphic-1.png' %}') top center / auto repeat;Margin:0px auto;max-width:600px;">
+    <div style="background:#F5F5F5;Margin:0px auto;max-width:600px;">
       <div style="line-height:0;font-size:0;">
         <table align="center" background="{% static '/images/image-bg-graphic-1.png' %}" border="0" cellpadding="0"
-          cellspacing="0" role="presentation" style="background:#FFFFFF url({% static '/images/image-bg-graphic-1.png' %}) top center / auto repeat;width:100%;">
+          cellspacing="0" role="presentation" style="background:#F5F5F5;width:100%;">
           <tbody>
             <tr>
               <td style="border:1px solid #DBD8DF;border-left:1px solid #DBD8DF;border-right:1px solid #DBD8DF;direction:ltr;font-size:0px;padding:12px;text-align:center;vertical-align:top;">
@@ -238,24 +238,22 @@
                                   <img src="{% static '/images/logo-square.png' %}" align="left" style="width: auto; height: 80px;">
                                 </a>
                               </td>
-                              <td align="left" style="font-size:0px;padding:10px 25px 10px 15px;word-break:break-word;">
-                                <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:24px;font-weight:400;line-height:24px;text-align:left;color:#191919;">
+                              <td align="left" style="font-size:0px;word-break:break-word;">
+                                <div style="padding-bottom: 5px; font-family:'Rubik', Helvetica, Arial, sans-serif;font-size:22px;font-weight:400;line-height:27px;text-align:left;color:#323232;">
                                   Neu bei Open Educational Badges?
                                 </div>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td align="left" style="font-size:0px;padding:10px 25px 10px 15px;word-break:break-word;">
-                                <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#666666;">
-                                  <a href="https://openbadges.education" class="linkstyle" style="color: #515dc6; font-weight: bold; text-decoration: none;"> Mehr erfahren
+                                <div style="font-family:'Rubik', Helvetica, Arial, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#666666;">
+                                  <a href="https://openbadges.education" class="linkstyle" style="color: #1400ff; font-weight: bold; text-decoration: underline;"> Mehr erfahren
                                   </a>
                                 </div>
+
                               </td>
                             </tr>
+                            
                             {% if GDPR_INFO_URL %}
                             <tr>
                               <td colspan="2" align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                                <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:24px;font-weight:400;line-height:24px;text-align:left;color:#191919;">
+                                <div style="font-family:'Rubik', Helvetica, Arial, sans-serif;font-size:24px;font-weight:400;line-height:24px;text-align:left;color:#323232;">
                                   We’re GDPR-compliant
                                 </div>
                               </td>
