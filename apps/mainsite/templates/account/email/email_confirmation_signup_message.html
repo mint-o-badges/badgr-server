@@ -3,7 +3,7 @@
 {% load i18n %}
 {% block beforebutton %}
 <div style="background:#FFFFFF;background-color:#FFFFFF;Margin:0px auto;max-width:600px;">
-  <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#ecfeed;background-color:#ecfeed;width:100%;">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#ecfeed;background-color:#ecfeed;width:100%;position: relative;">
     <tbody>
       <tr>
         <td style="border-left:1px solid #DBD8DF;border-right:1px solid #DBD8DF;direction:ltr;font-size:0px;padding:12px;padding-top:32px;text-align:center;vertical-align:top;">
@@ -14,9 +14,12 @@
            class="" style="vertical-align:top;width:574px;"
         >
       <![endif]-->
-          <div class="mj-column-per-100 outlook-group-fix" style="font-size:13px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;">
-            <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top;" width="100%">
-              <tbody>
+          <div style="position: absolute; top: 60px; right: 20px;">
+            <img src="{% static '/images/sun.svg' %}" align="left" style="width: auto; height: 300px;">
+          </div>          
+          <div class="mj-column-per-100 outlook-group-fix" style="font-size:13px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;position: relative; z-index:1;">
+            <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top;" width="100%">        
+              <tbody class="position: relative">
                 <tr>
                   <td rowspan="2" align="left" style="font-size:0px;padding:10px 10px 10px 25px;word-break:break-word;">
                     <a href="https://openbadges.education" target="_blank">
@@ -32,7 +35,7 @@
    
       <!-- Welcome text -->
 
-      <tr>
+      <tr style="position: relative; z-index: 1">
         <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
           <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;border-spacing:0px;">
             <tbody>
@@ -45,10 +48,9 @@
               </tr>
             </tbody>
           </table>
-</div>
-</td>
-</tr>
-      
+        </div>
+      </td>
+    </tr>
 
       <!-- Confirm account text -->
                 <tr>
@@ -63,8 +65,12 @@
                             </div>
                           </td>
                         </tr>
+                        <tr>
+                          {% block button_text %}Meinen Account bestätigen{% endblock %}
+                        </tr>
                       </tbody>
                     </table>
+
           </div>
           <!--[if mso | IE]>
         </td>
@@ -79,5 +85,4 @@
 {% endblock %}
 {% block button_url %}{{ activate_url }}{% endblock %}
 {% block button_url_copy %}{{ activate_url }}{% endblock %}
-{% block button_text %}Meinen Account bestätigen{% endblock %}
 {% block unsubscribe %}{% endblock %}
