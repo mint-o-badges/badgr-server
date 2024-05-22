@@ -51,7 +51,7 @@ class RoundedRectFlowable(Flowable):
 
         svg_file = "{}images/clock_icon.svg".format(settings.STATIC_URL)
         drawing = svg2rlg(svg_file)
-        renderPDF.draw(drawing, self.canv, 10, -7.5)
+        renderPDF.draw(drawing, self.canv, 10, -10)
         
 def AllPageSetup(canvas, doc):
 
@@ -205,9 +205,10 @@ def createMultiPage(response, first_page_content, competencies, first_name, last
                 Story.append(Spacer(1, 20)) 
 
               text = "%s Minuten" % competencies[i]['studyLoad']
-              if competencies[i]['studyLoad'] > 60:
-                  text = "%s Stunden" % competencies[i]['studyLoad']
-              rounded_rect = RoundedRectFlowable(0, -15, 120, 35, 15, text=text, strokecolor="#492E98")
+              if competencies[i]['studyLoad'] > 120:
+                  studyLoadInHours = competencies[i]['studyLoad'] / 120
+                  text = "%s Stunden" % int(studyLoadInHours)
+              rounded_rect = RoundedRectFlowable(0, -15, 120, 30, 15, text=text, strokecolor="#492E98")
               competency = competencies[i]['name']
               if competencies[i]['escoID'] is not None:
                   competency = competency + " *"
