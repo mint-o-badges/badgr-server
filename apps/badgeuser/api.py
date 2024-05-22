@@ -353,7 +353,12 @@ class BadgeUserForgotPassword(BaseUserRecoveryView):
         except DjangoValidationError as e:
             return Response(dict(password=e.messages), status=HTTP_400_BAD_REQUEST)
 
+
+        # use delete many due to an incompatibility with python-memcached and django v3.2
+        # TODO: maybe replace python-memcached with pylibmc  
         cache.delete_many([backoff_cache_key(user.email)])
+        # cache.delete(backoff_cache_key(user.email))
+        
 
         user.set_password(password)
         user.save()
