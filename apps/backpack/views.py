@@ -275,8 +275,8 @@ def add_issuedBy(first_page_content, issued_by):
     first_page_content.append(Spacer(1, 15))
 
 def add_issuerImage(first_page_content, issuerImage): 
-    image_width = 75
-    image_height = 75
+    image_width = 60
+    image_height = 60
     first_page_content.append(Image(issuerImage, width=image_width, height=image_height))
 
 @api_view(["GET"])
