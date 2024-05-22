@@ -178,7 +178,8 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
         # badge_id is equal to the badge instance slug
         pdf_document = generate_pdf_content(context['badge_id'])
         if template_prefix == 'issuer/email/notify_account_holder':
-            msg.attach("badgeName_pdf", pdf_document,'application/pdf')
+            pdf_name = f"{context['badge_name']}.pdf"
+            msg.attach(pdf_name, pdf_document,'application/pdf')
         logger.event(badgrlog.EmailRendered(msg))
         msg.send()
 
