@@ -4,6 +4,7 @@ import urllib.request
 import urllib.parse
 import urllib.error
 import urllib.parse
+import os
 
 from allauth.account.adapter import DefaultAccountAdapter, get_adapter
 from allauth.account.models import EmailConfirmation, EmailConfirmationHMAC
@@ -58,7 +59,7 @@ def generate_pdf_content(slug):
 
         add_recipient_name(first_page_content, first_name, last_name, badgeinstance.issued_on) 
 
-        addBadgeImage(first_page_content, badgeclass.image)
+        # addBadgeImage(first_page_content, badgeclass.image)
 
         add_title(first_page_content, badgeclass.name)  
 
@@ -66,7 +67,7 @@ def generate_pdf_content(slug):
 
         add_issuedBy(first_page_content, badgeinstance.issuer.name)
 
-        add_issuerImage(first_page_content, badgeclass.issuer.image)
+        # add_issuerImage(first_page_content, badgeclass.issuer.image)
         
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4)
@@ -178,8 +179,12 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
         # badge_id is equal to the badge instance slug
         pdf_document = generate_pdf_content(context['badge_id'])
         if template_prefix == 'issuer/email/notify_account_holder':
-            pdf_name = f"{context['badge_name']}.pdf"
-            msg.attach(pdf_name, pdf_document,'application/pdf')
+            badge_name = f"{context['badge_name']}.badge"
+            img_path = os.path.join(settings.MEDIA_ROOT, "uploads", "badges", "assertion-{}.png".format(context.get('badge_id', None)))
+            with open(img_path, 'rb') as f:
+                badge_img = f.read()
+            msg.attach(badge_name, badge_img, "image/png")
+            msg.attach(badge_name, pdf_document,'application/pdf')
         logger.event(badgrlog.EmailRendered(msg))
         msg.send()
 
