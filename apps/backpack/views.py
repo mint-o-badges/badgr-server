@@ -58,7 +58,7 @@ def AllPageSetup(canvas, doc):
     canvas.saveState()
 
     # Sunburst Background
-    color = PCMYKColor(0, 0, 0, 10)  
+    color = PCMYKColor(0, 0, 0, 5)  
     num_rays = 100
     ray_angle = 2 * math.pi / num_rays
     sweep_angle = ray_angle * 2
@@ -320,7 +320,8 @@ def pdf(request, *args, **kwargs):
 
     add_issuedBy(first_page_content, badgeinstance.issuer.name)
 
-    add_issuerImage(first_page_content, badgeclass.issuer.image)
+    if badgeclass.issuer.image is not None:
+        add_issuerImage(first_page_content, badgeclass.issuer.image)
 
     createMultiPage(response, first_page_content, competencies, first_name, last_name, badgeclass.name)
 
