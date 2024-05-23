@@ -115,3 +115,7 @@ uwsgi
 tox
 
 pyopenssl==24.0.0
+
+reportlab
+svg2rlg
+svglib
