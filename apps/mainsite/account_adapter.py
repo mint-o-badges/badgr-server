@@ -178,8 +178,8 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
 
         msg = self.render_mail(template_prefix, email, context)
         # badge_id is equal to the badge instance slug
-        pdf_document = generate_pdf_content(context['badge_id'])
         if template_prefix == 'issuer/email/notify_account_holder':
+            pdf_document = generate_pdf_content(context['badge_id'])
             badge_name = f"{context['badge_name']}.badge"
             img_path = os.path.join(settings.MEDIA_ROOT, "uploads", "badges", "assertion-{}.png".format(context.get('badge_id', None)))
             with open(img_path, 'rb') as f:
