@@ -70,7 +70,6 @@ from mainsite.utils import (
     throttleable,
 )
 from mainsite.serializers import ApplicationInfoSerializer
-
 RATE_LIMIT_DELTA = datetime.timedelta(minutes=5)
 
 logger = badgrlog.BadgrLogger()
@@ -117,7 +116,8 @@ class BadgeUserDetail(BaseEntityDetailView):
             params = {"apiKey": apiKey}
             headers = {
                 "Content-Type": "application/json",
-                "referer": "https://api.openbadges.education/",
+                "referer": getattr(settings, "HTTP_ORIGIN"),
+                # "referer": "https://api.openbadges.education/",
             }
             response = requests.post(
                 endpoint, params=params, data=json.dumps(payload), headers=headers
