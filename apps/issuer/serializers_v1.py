@@ -20,7 +20,7 @@ from mainsite.drf_fields import ValidImageField
 from mainsite.models import BadgrApp
 from mainsite.serializers import DateTimeWithUtcZAtEndField, HumanReadableBooleanField, \
         StripTagsCharField, MarkdownCharField, OriginalJsonSerializerMixin
-from mainsite.utils import OriginSetting, validate_altcha
+from mainsite.utils import OriginSetting, validate_altcha, verifyIssuerAutomatically
 from mainsite.validators import ChoicesValidator, BadgeExtensionValidator, PositiveIntegerValidator, TelephoneValidator
 from .models import Issuer, BadgeClass, IssuerStaff, BadgeInstance, BadgeClassExtension, \
         RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL
@@ -143,6 +143,10 @@ class IssuerSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
                 new_issuer.city = validated_data.get('city')
                 new_issuer.country = validated_data.get('country')
 
+                # Check whether issuer email domain matches institution website domain to verify it automatically 
+                if verifyIssuerAutomatically(validated_data.get('url'), validated_data.get('email')):
+                    new_issuer.verified = True
+                    
                 # set badgrapp
                 new_issuer.badgrapp = BadgrApp.objects.get_current(self.context.get('request', None))
 

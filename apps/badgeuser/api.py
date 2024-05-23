@@ -419,7 +419,7 @@ class BadgeUserForgotPassword(BaseUserRecoveryView):
         except DjangoValidationError as e:
             return Response(dict(password=e.messages), status=HTTP_400_BAD_REQUEST)
 
-        cache.delete(backoff_cache_key(user.email))
+        cache.delete_many([backoff_cache_key(user.email)])
 
         user.set_password(password)
         user.save()
