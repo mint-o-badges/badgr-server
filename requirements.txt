@@ -23,7 +23,7 @@ python-memcached==1.58
 djangorestframework==3.12.2
 
 # Django Allauth
-django-allauth==0.46.0
+django-allauth==0.63.2
 oauthlib==3.1.0
 requests==2.25.0
 requests-oauthlib==0.4.2
