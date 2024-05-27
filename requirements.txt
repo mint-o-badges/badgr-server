@@ -117,3 +117,6 @@ tox
 pyopenssl==24.0.0
 
 mozilla-django-oidc
+reportlab
+svg2rlg
+svglib
