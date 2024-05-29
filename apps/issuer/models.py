@@ -650,6 +650,20 @@ class BadgeClass(ResizeUploadedImage,
 
     class Meta:
         verbose_name_plural = "Badge classes"
+    
+    def save(self, *args, **kwargs):
+        # It's best practice to run full clean on saving. This (also) runs
+        # The clean method you find below
+        self.full_clean()
+        return super().save(*args, **kwargs)
+    
+    def clean(self):
+        # Check if the issuer for this badge is verified, otherwise throw an error
+        if not self.issuer.verified:
+            raise ValidationError(
+                "Only verified issuers can create / update badges",
+                code="invalid"
+            )
 
     def publish(self):
         fields_cache = self._state.fields_cache  # stash the fields cache to avoid publishing related objects here
