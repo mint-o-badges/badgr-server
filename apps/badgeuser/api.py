@@ -99,40 +99,40 @@ class BadgeUserDetail(BaseEntityDetailView):
         """
         if request.version == "v1":
 
-            email = request.data.get("email")
+            # email = request.data.get("email")
             # TODO: investigate how we can use this to improve the spam filter
             # only send email domain to spamfilter API to protect users privacy
             # _, email_domain = email.split("@", 1)
-            firstname = request.data.get("first_name")
-            lastname = request.data.get("last_name")
+            # firstname = request.data.get("first_name")
+            # lastname = request.data.get("last_name")
 
-            apiKey = getattr(settings, "ALTCHA_API_KEY")
-            endpoint = getattr(settings, "ALTCHA_SPAMFILTER_ENDPOINT")
-            payload = {
-                "text": [firstname, lastname],
+            # apiKey = getattr(settings, "ALTCHA_API_KEY")
+            # endpoint = getattr(settings, "ALTCHA_SPAMFILTER_ENDPOINT")
+            # payload = {
+            #     "text": [firstname, lastname],
                 # the following options seem to classify too much data as spam, i commented them out for now
                 # "email": email_domain,
                 # "expectedLanguages": ["en", "de"],
-            }
-            params = {"apiKey": apiKey}
-            headers = {
-                "Content-Type": "application/json",
-                "referer": getattr(settings, "HTTP_ORIGIN"),
-            }
-            response = requests.post(
-                endpoint, params=params, data=json.dumps(payload), headers=headers
-            )
-            if response.status_code == 200:
-                data = response.json()
-                classification = data["classification"]
-                if classification == "BAD":
-                    # TODO: show reasons why data was classified as spam
-                    return JsonResponse(
-                        {
-                            "error": "Spam filter detected spam. Your account was not created."
-                        },
-                        status=status.HTTP_403_FORBIDDEN,
-                    )
+            # }
+            # params = {"apiKey": apiKey}
+            # headers = {
+            #     "Content-Type": "application/json",
+            #     "referer": getattr(settings, "HTTP_ORIGIN"),
+            # }
+            # response = requests.post(
+            #     endpoint, params=params, data=json.dumps(payload), headers=headers
+            # )
+            # if response.status_code == 200:
+            #     data = response.json()
+            #     classification = data["classification"]
+            #     if classification == "BAD":
+            #         # TODO: show reasons why data was classified as spam
+            #         return JsonResponse(
+            #             {
+            #                 "error": "Spam filter detected spam. Your account was not created."
+            #             },
+            #             status=status.HTTP_403_FORBIDDEN,
+            #         )
 
             serializer_cls = self.get_serializer_class()
             captcha = request.data.get("captcha")
