@@ -100,8 +100,9 @@ class BadgeUserDetail(BaseEntityDetailView):
         if request.version == "v1":
 
             email = request.data.get("email")
+            # TODO: investigate how we can use this to improve the spam filter
             # only send email domain to spamfilter API to protect users privacy
-            _, email_domain = email.split("@", 1)
+            # _, email_domain = email.split("@", 1)
             firstname = request.data.get("first_name")
             lastname = request.data.get("last_name")
 
