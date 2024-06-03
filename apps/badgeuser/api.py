@@ -118,7 +118,6 @@ class BadgeUserDetail(BaseEntityDetailView):
             headers = {
                 "Content-Type": "application/json",
                 "referer": getattr(settings, "HTTP_ORIGIN"),
-                # "referer": "https://api.openbadges.education/",
             }
             response = requests.post(
                 endpoint, params=params, data=json.dumps(payload), headers=headers
