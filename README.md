@@ -66,6 +66,8 @@ Set or adjust these values in your `settings_local.dev.py` and/or `settings_loca
   - Set these values to be able to search for icons with in the badge creation process.
 * `AISKILLS_API_KEY` and `AISKILLS_ENDPOINT`:
   - Set these values to be able to get AI skill suggestions within the badge creation process.
+* `ALTCHA_API_KEY` and `ALTCHA_SECRET`:
+  - Set these values for captcha protection during the registration and issuer creation process. They can be obtained at [altcha.org](https://altcha.org/).
 
 ### Running the Django Server in Development
 
