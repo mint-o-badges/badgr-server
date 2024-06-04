@@ -27,13 +27,13 @@ from rest_framework.exceptions import ValidationError as RestframeworkValidation
 from rest_framework.response import Response
 from rest_framework.serializers import BaseSerializer
 from rest_framework.status import (HTTP_302_FOUND, HTTP_200_OK, HTTP_404_NOT_FOUND,
-        HTTP_201_CREATED, HTTP_400_BAD_REQUEST,)
+        HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT)
 from oauth2_provider.models import get_application_model
 
 from badgeuser.authcode import authcode_for_accesstoken, decrypt_authcode
 from badgeuser.models import BadgeUser, CachedEmailAddress, TermsVersion
 from badgeuser.permissions import BadgeUserIsAuthenticatedUser
-from badgeuser.serializers_v1 import BadgeUserProfileSerializerV1, BadgeUserTokenSerializerV1
+from badgeuser.serializers_v1 import BadgeUserProfileSerializerV1, BadgeUserTokenSerializerV1, EmailSerializerV1
 from badgeuser.serializers_v2 import (BadgeUserTokenSerializerV2, BadgeUserSerializerV2,
         AccessTokenSerializerV2, TermsVersionSerializerV2,)
 from badgeuser.tasks import process_email_verification
@@ -622,3 +622,42 @@ class LatestTermsVersionDetail(BaseEntityDetailView):
             return latest
 
         raise Http404("No TermsVersion has been defined. Please contact server administrator.")
+
+class BadgeUserResendEmailConfirmation(BaseUserRecoveryView):
+    permission_classes = (permissions.AllowAny,)
+
+    def put(self, request, email, **kwargs):        
+        try:
+            email_address = CachedEmailAddress.cached.get(email=email)
+        except CachedEmailAddress.DoesNotExist:
+            # return 200 here because we don't want to expose information about which emails we know about
+            return self.get_response()
+
+        if email_address.verified:
+            return Response({"Your email address is already confirmed. You can login."}, status=status.HTTP_409_CONFLICT)
+        else:
+            if request.data.get('resend'):
+                # email rate limiting
+                resend_confirmation = False
+                current_time = datetime.datetime.now()
+                last_request_time = email_address.get_last_verification_sent_time()
+
+                if last_request_time is None:
+                    email_address.set_last_verification_sent_time(datetime.datetime.now())
+                    resend_confirmation = True
+                else:
+                    time_delta = current_time - last_request_time
+                    if time_delta > RATE_LIMIT_DELTA:
+                        resend_confirmation = True
+
+                if resend_confirmation:
+                    email_address.send_confirmation(request=request)
+                    email_address.set_last_verification_sent_time(datetime.datetime.now())
+                else:
+                    return Response("You have reached a limit for resending verification email. Please check your"
+                            + " inbox for an existing message or retry after 5 minutes.",
+                            status=status.HTTP_429_TOO_MANY_REQUESTS)
+
+        serializer = EmailSerializerV1(email_address, context={'request': request})
+        serialized = serializer.data
+        return Response(serialized, status=status.HTTP_200_OK)
