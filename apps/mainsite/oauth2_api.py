@@ -401,41 +401,29 @@ class PublicRegisterApiView(APIView):
 def get_session_id(request):
     return jwt.decode(request.session['oidc_id_token'], options={"verify_signature": False})['sid']
 
-def create_access_token(request, user, scope, client):
+def extract_oidc_access_token(request, scope):
+    """
+    Extracts the OIDC access token from the request
+
+    The scope is merely used for compatibility reasons;
+    Actually OIDC access tokens always have acess to all scopes.
+    """
     joined_scope = ' '.join(scope)
-    expire_seconds = oauth2_settings.user_settings['ACCESS_TOKEN_EXPIRE_SECONDS']
-    # TODO: Decide which token generation mechanism to use. If the access token
-    # from the request is taken, this also means that the AccessTokenSessionId table
-    # and the logout endpoint can be safely deleted
-    # TODO: It would be nice to re-use existing tokens if they're still valid
-    #access_token = AccessToken.objects.create(
-    #    user=user,
-    #    application=client,
-    #    scope=joined_scope,
-    #    token=random_token_generator(request),
-    #    # TODO: Is timezone information necessary here?
-    #    expires=datetime.datetime.now() + datetime.timedelta(seconds=expire_seconds)
-    #)
     access_token = request.session['oidc_access_token']
-    # Store session ID to be able to delete the access token (and refresh tokens) later on logout
-    #AccessTokenSessionId.objects.create(
-        #token = access_token,
-        #sessionId = get_session_id(request)
-    #)
-    #refresh_token = RefreshToken.objects.create(
-        #user=user,
-        #token=random_token_generator(request),
-        #access_token=access_token,
-        #application=client
-    #)
     return {
-        'access_token': access_token,#.token,
+        'access_token': access_token,
         'token_type': 'Bearer',
         'expires_in': get_expire_seconds(access_token),
         'scope': joined_scope
     }
 
 def get_expire_seconds(access_token):
+    """
+    Calculates how many more seconds the access token will be valid
+    
+    It first extracts the datetime (skipping signature verifications)
+    and then calculates the diff to the current datetime
+    """
     expire_datetime = datetime.datetime.fromtimestamp(jwt.decode(access_token, options={"verify_signature": False})['exp'])
     now_datetime = datetime.datetime.now()
     diff = expire_datetime - now_datetime
@@ -499,8 +487,7 @@ class TokenView(OAuth2ProviderTokenView):
         elif grant_type == "oidc":
             if not request.user.is_authenticated:
                 return HttpResponse(json.dumps({"error": "User not authenticated in session!"}), status=HTTP_401_UNAUTHORIZED)
-            token = create_access_token(request, request.user, requested_scopes, oauth_app)
-            # token = request.session['oidc_access_token']
+            token = extract_oidc_access_token(request, requested_scopes)
             app_authorized.send(
                 sender=self, request=request, token=token.get('access_token')
             )
