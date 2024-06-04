@@ -651,9 +651,7 @@ class BadgeClass(ResizeUploadedImage,
         verbose_name_plural = "Badge classes"
     
     def save(self, *args, **kwargs):
-        # It's best practice to run full clean on saving. This (also) runs
-        # The clean method you find below
-        self.full_clean()
+        self.clean()
         return super().save(*args, **kwargs)
     
     def clean(self):
