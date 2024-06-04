@@ -160,6 +160,11 @@ If your [badgr-ui](https://github.com/concentricsky/badgr-ui) is running on http
     * Name: `Badgr UI`
     * Redirect uris: blank (for Resource owner password-based. You can use this to set up additional OAuth applications that use authorization code token grants as well.)
 
+#### OIDC authentication
+If you set up the *Additional configuration options* (or at least the parts relevant for OIDC authentication), you shouldn't have to configure anything else; the "Anmelden mit Mein Bildungsraum" button should work out of the box.
+Do note that the OIDC authentication mechanism produces access tokens that, in contrast to the ones we generate ourselves, aren't restricted to any scopes.
+They can thus access anything on the page not limited to admin / superuser users. This also is the default behavior for the tokens we generate ourselves.
+
 ### Run the tests
 For the tests to run you first need to run docker (`docker-compose up`).
 Then within docker, run `tox`: `docker-compose exec api tox`.
