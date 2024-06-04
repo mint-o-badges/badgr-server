@@ -19,7 +19,7 @@ from oauth2_provider.models import get_application_model, get_grant_model, get_a
 
 import badgrlog
 from badgeuser.models import CachedEmailAddress, ProxyEmailConfirmation
-from mainsite.models import BadgrApp, EmailBlacklist, ApplicationInfo, AccessTokenProxy, LegacyTokenProxy, AccessTokenSessionId
+from mainsite.models import BadgrApp, EmailBlacklist, ApplicationInfo, AccessTokenProxy, LegacyTokenProxy
 from mainsite.utils import backoff_cache_key, set_url_query_params
 
 badgrlogger = badgrlog.BadgrLogger()
@@ -195,26 +195,13 @@ class SecuredRefreshTokenInline(TabularInline):
             return "{}***".format(obj.token[:4])
     obscured_token.allow_tags = True
 
-class SecuredAccessTokenSessionIdInline(TabularInline):
-    fields = ('obscured_token', 'sessionId',)
-    raw_id_fields = ('token',)
-    readonly_fields = ('obscured_token', 'sessionId',)
-    model = AccessTokenSessionId
-    extra = 0
-
-    def obscured_token(self, obj):
-        if obj.token:
-            return "{}***".format(obj.token.token[:4])
-    obscured_token.allow_tags = True
-
-
 class SecuredAccessTokenAdmin(AccessTokenAdmin):
     list_display = ("obscured_token", "user", "application", "expires")
     raw_id_fields = ('user', 'application')
     fields = ('obscured_token', 'user', 'application', 'expires', 'scope',)
     readonly_fields = ('obscured_token',)
     inlines = [
-        SecuredRefreshTokenInline, SecuredAccessTokenSessionIdInline
+        SecuredRefreshTokenInline
     ]
 
 

@@ -133,7 +133,6 @@ urlpatterns = [
     # A debug view for OIDC
     # path('oidcview/login', OidcView.login, name="oidcviewLogin"),
     url(r'^oidcview/logoutRedirect/', OidcView.oidcLogoutRedirect, name="oidcLogoutRedirect"),
-    url(r'^oidcview/triggerLogout/', OidcView.oidcTriggerLogout, name="oidcLogoutRedirect"),
 ]
 # add to serve files
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

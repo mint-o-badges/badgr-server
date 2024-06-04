@@ -30,7 +30,7 @@ from rest_framework.views import APIView
 import badgrlog
 from badgeuser.authcode import accesstoken_for_authcode
 from backpack.badge_connect_api import BADGE_CONNECT_SCOPES
-from mainsite.models import ApplicationInfo, AccessTokenSessionId
+from mainsite.models import ApplicationInfo
 from mainsite.oauth_validator import BadgrRequestValidator, BadgrOauthServer
 from mainsite.serializers import ApplicationInfoSerializer, AuthorizationSerializer
 from mainsite.utils import fetch_remote_file_to_storage, throttleable, set_url_query_params
@@ -401,9 +401,6 @@ class PublicRegisterApiView(APIView):
 def get_session_id(request):
     return jwt.decode(request.session['oidc_id_token'], options={"verify_signature": False})['sid']
 
-# This code is inspired the [OAuth2 provider library](https://github.com/caffeinehit/django-oauth2-provider/blob/master/provider/oauth2/views.py)
-# and [this SO Post](https://stackoverflow.com/a/25095375)
-# TODO: If the new mode is retained, rename this method
 def create_access_token(request, user, scope, client):
     joined_scope = ' '.join(scope)
     expire_seconds = oauth2_settings.user_settings['ACCESS_TOKEN_EXPIRE_SECONDS']
