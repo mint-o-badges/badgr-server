@@ -13,5 +13,5 @@ urlpatterns = [
         BadgeUserEmailConfirm.as_view(), name='legacy_user_email_confirm'),
     url(r'^confirmemail/(?P<confirm_id>[^/]+)$', BadgeUserEmailConfirm.as_view(),
         name='v1_api_user_email_confirm'),
-    url(r'^resendemail/(?P<email>[^/]+)$', BadgeUserResendEmailConfirmation.as_view(), name='v1_api_resend_user_verification_email')
+    url(r'^resendemail$', BadgeUserResendEmailConfirmation.as_view(), name='v1_api_resend_user_verification_email')
 ]
