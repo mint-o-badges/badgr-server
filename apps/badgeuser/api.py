@@ -651,7 +651,7 @@ class BadgeUserResendEmailConfirmation(BaseUserRecoveryView):
                         resend_confirmation = True
 
                 if resend_confirmation:
-                    email_address.send_confirmation(request=request)
+                    email_address.send_confirmation(signup=True)
                     email_address.set_last_verification_sent_time(datetime.datetime.now())
                 else:
                     return Response("You have reached a limit for resending verification email. Please check your"
