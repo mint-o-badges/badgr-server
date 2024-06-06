@@ -19,6 +19,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.urls import reverse
+from django.shortcuts import get_object_or_404
 from django.db import models, transaction
 from django.db.models import ProtectedError
 from json import loads as json_loads
@@ -36,6 +37,7 @@ from mainsite.mixins import HashUploadedImage, ResizeUploadedImage, ScrubUploade
 from mainsite.models import BadgrApp, EmailBlacklist
 from mainsite import blacklist
 from mainsite.utils import OriginSetting, generate_entity_uri
+import logging
 
 from .utils import (add_obi_version_ifneeded, CURRENT_OBI_VERSION, generate_rebaked_filename,
                     generate_sha256_hashstring, get_obi_context, parse_original_datetime, UNVERSIONED_BAKED_VERSION)
@@ -50,7 +52,7 @@ RECIPIENT_TYPE_TELEPHONE = 'telephone'
 RECIPIENT_TYPE_URL = 'url'
 
 logger = badgrlog.BadgrLogger()
-
+log = logging.getLogger(__name__)
 
 class BaseAuditedModel(cachemodel.CacheModel):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
@@ -1153,6 +1155,31 @@ class BadgeInstance(BaseAuditedModel,
         """
         Sends an email notification to the badge recipient.
         """
+        competencyExtensions = {}
+
+        if len(self.badgeclass.cached_extensions()) > 0:
+            for extension in self.badgeclass.cached_extensions():
+                if(extension.name == 'extensions:CompetencyExtension'):
+                    competencyExtensions[extension.name] = json_loads(extension.original_json)
+
+        log.error(competencyExtensions)
+        competencies = []
+
+        for competency in competencyExtensions.get('extensions:CompetencyExtension', []):
+            competency_entry = {
+                'name': competency.get('name'),
+                'description': competency.get('description'),
+                'escoID': competency.get('escoID'),
+                'studyLoad': competency.get('studyLoad'),
+                'skill': competency.get('category')
+            }
+            competencies.append(competency_entry)
+
+        log.error(competencies)                        
+
+        # item = get_object_or_404(extensions, badgeclass='extension:CompetencyExtension')
+        # competencyExtension = [item.CompetencyExtension for item in extensions]
+        # log.error(extensions)
         if self.recipient_type != RECIPIENT_TYPE_EMAIL:
             return
 
@@ -1180,6 +1207,7 @@ class BadgeInstance(BaseAuditedModel,
                 'badge_name': self.badgeclass.name,
                 'badge_id': self.entity_id,
                 'badge_description': self.badgeclass.description,
+                'badge_competencies': competencies,
                 'help_email': getattr(settings, 'HELP_EMAIL', 'info@opensenselab.org'),
                 'issuer_name': re.sub(r'[^\w\s]+', '', self.issuer.name, 0, re.I),
                 'issuer_url': self.issuer.url,
