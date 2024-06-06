@@ -31,7 +31,7 @@
       <![endif]-->
   
   <div style="position: absolute; top: 25px; right: 20px;">
-    <img src="{% static '/images/sun.svg' %}" style="width: auto; height: 166px;">
+    <img src="{% static '/images/was_bringen_mir_badges.png' %}" style="width: auto; height: 166px;">
   </div> 
   <div class="mj-column-per-100 outlook-group-fix" style="font-size:13px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;">
     
@@ -61,82 +61,56 @@
   <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;border-spacing:0px;">
     <tbody>
       <tr>
-        <td style="width:160px;">
+        <td style="width:169px;">
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+
             <a href="{{ badge_instance_url }}" style="
             text-decoration: none;
           ">
-  <img alt="" height="auto" src="{{ image_url }}" style="border:0;display:block;outline:none;text-decoration:none;height:auto;width:100%;" width="160">
-        </a>
+              <img alt="" height="auto" src="{{ image_url }}" style="border:0;display:block;outline:none;text-decoration:none;height:auto;width:100%;" width="169">
+            </a>
+            <div style="width: 100%; justify-content: center;">
+              <span style="font-family:Rubik;font-size:13px;font-weight: 400;line-height:15.6px;text-align:left;color:#323232;font-style: italic">Vergeben von:</span>
+              <div style="font-family:Rubik, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#000000;">
+                <a href="{{ issuer_detail }}" class="linkstyle" style="color: #515dc6; font-weight: bold; text-decoration: none;">{{ issuer_name }}</a>
+              </div>
+            </div>
+          </div>
         </td>
       </tr>
     </tbody>
   </table>
 
           </td>
-          <td align="right" style="font-size:0px;padding:10px 25px;word-break:break-word; width: 300px;">
+          <td align="right" style="font-size:0px;padding:10px 25px;word-break:break-word; width: 352px;">
 
-            <div style="font-family: Rubik, sans-serif;font-size:13px;font-weight: 400; line-height:15.6px;text-align:left;color:#323232; font-style: italic; right: 100px; display: flex; flex-direction: column;">
+            <div style="font-family: Rubik, sans-serif;font-size:13px;font-weight: 400; line-height:15.6px;text-align:left;color:#323232; right: 100px; display: flex; flex-direction: column;">
               <p>Du hast erfolgreich an dem Lehrangebot  <br> <span style="color: #492e98">{{ badge_name }}</span> teilgenommen.</p>
               <p style="font-weight: 500; font-size:13px; line-height:16.9px; ">
                 Dabei hast du folgende Kompetenzen gestärkt: 
               </p>
+              <ul >
+                {% for item in badge_competencies %}
+                    <div style="background-color: #ecfeed; border-width: 1px; border-style: solid; border-color:#492e98; border-radius: 15px; padding: 0.5rem; margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-family: Rubik, sans-serif;font-size:13px;font-weight: 500; line-height:15.6px">
+                        {{ item.name }}
+                      </span>
+                      <div style="display: flex;">
+                        <div style="display: flex; gap: 3.5px; padding: 5px; border-width: 1px; border-radius: 15px; border-style:solid; border-color:#492e98; background-color: white;">
+                            <img src="{% static '/images/clock_icon.svg' %}" style="width: 14px; height: auto;">
+                            <span style="font-family: Rubik, sans-serif;font-size:11px;font-weight: 300; line-height:15px"> 
+                              {{item.studyLoad}} Min.
+                            </span>
+
+                        </div>
+                      </div>
+                    </div>
+                {% endfor %}
+            </ul>
             </div>
 
           </td>
-        </tr>
-      
-        <tr>
-          <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-            
-  <div style="font-family:Rubik, sans-serif;font-size:18px;font-weight:bold;line-height:24px;text-align:left;color:#191919;">
-      {{ badge_name }}
-  </div>
-
-          </td>
-        </tr>
-      
-        <tr>
-          <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-            
-  <div style="font-family:Rubik, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#666666;">
-      {{ badge_description }}
-  </div>
-
-          </td>
-        </tr>
-      
-        <tr>
-          <td style="font-size:0px;padding:10px 25px;word-break:break-word;">
-            
-  <p style="border-top:solid 1px #f2f2f2;font-size:1;margin:0px auto;width:100%;">
-  </p>
-  
-  <!--[if mso | IE]>
-    <table
-       align="center" border="0" cellpadding="0" cellspacing="0" style="border-top:solid 1px #f2f2f2;font-size:1;margin:0px auto;width:524px;" role="presentation" width="524px"
-    >
-      <tr>
-        <td style="height:0;line-height:0;">
-          &nbsp;
-        </td>
-      </tr>
-    </table>
-  <![endif]-->
-
-
-          </td>
-        </tr>
-      
-        <tr>
-          <td align="left" style="font-size:0px;padding:10px 25px;padding-top:32px;word-break:break-word;">
-            
-  <div style="font-family:Rubik, sans-serif;font-size:16px;font-weight:bold;line-height:24px;text-align:left;color:#666666;">
-    Vergeben von:
-  </div>
-
-          </td>
-        </tr>
-      
+        </tr>      
   </table>
 
   </div>
@@ -218,24 +192,6 @@
            class="" style="vertical-align:top;width:459.2px;"
         >
       <![endif]-->
-        
-  <div class="mj-column-per-80 outlook-group-fix" style="font-size:13px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;">
-    
-  <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top;" width="100%">
-    
-        <tr>
-          <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-            
-  <div style="font-family:Rubik, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#000000;">
-    <a href="{{ issuer_detail }}" class="linkstyle" style="color: #515dc6; font-weight: bold; text-decoration: none;">{{ issuer_name }}</a>
-  </div>
-
-          </td>
-        </tr>
-      
-  </table>
-
-  </div>
 
       <!--[if mso | IE]>
         </td>
@@ -458,6 +414,12 @@
       </tr>
     </tbody>
   </table>
+
+  </div>
+
+  <div style="background-color: #ecfeed; width: 580px; margin-top: 0.5rem;">
+    <span>blabla</span>
+    <span>blabla</span>
 
   </div>
 
