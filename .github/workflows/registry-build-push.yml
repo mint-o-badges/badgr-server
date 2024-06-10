@@ -2,7 +2,7 @@ name: 🏗️ Build and publish to Github Container Registry
 
 on:
   push:
-    branches: [main]
+    branches: [main,release,develop]
     tags: ["v*.*.*"]
   pull_request:
     branches:
@@ -24,11 +24,11 @@ jobs:
 
     steps:
       - name: ⬇️ Checkout repository
-        uses: actions/checkout@v4.1.4
+        uses: actions/checkout@v4.1.5
 
       - name: 📋 Create release
         id: create-release
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             const { data } = await github.rest.repos.createRelease({
@@ -51,13 +51,13 @@ jobs:
 
     steps:
       - name: ⬇️ Checkout repository
-        uses: actions/checkout@v4.1.4
+        uses: actions/checkout@v4.1.5
 
       - name: 🏄 Copy default env vars
         run: cp .docker/etc/settings_local.prod.py.example .docker/etc/settings_local.py
 
       - name: 🔑 Log in to the Container registry
-        uses: docker/login-action@v3.1.0
+        uses: docker/login-action@v3.2.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -90,7 +90,7 @@ jobs:
 
     steps:
       - name: 🚢 Publish release
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         env:
           release_id: ${{ needs.create-release.outputs.release_id }}
         with:

@@ -18,12 +18,12 @@ django-basic-models==4.0.0
 
 django-object-actions==1.1.0
 
-python-memcached==1.58
+pymemcache 
 
 djangorestframework==3.12.2
 
 # Django Allauth
-django-allauth==0.46.0
+django-allauth==0.63.3
 oauthlib==3.1.0
 requests==2.25.0
 requests-oauthlib==0.4.2
