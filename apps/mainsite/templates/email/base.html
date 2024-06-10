@@ -1,155 +1,124 @@
-{% load account %}
-{% load static %}
-{% load i18n %}
+{% load account %} {% load static %} {% load i18n %}
 
-<!doctype html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
-<head>
-  <title>
-    {% firstof email_title "openbadges.education" %}
-  </title>
-  <!--[if !mso]><!-- -->
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <!--<![endif]-->
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style type="text/css">
-    #outlook a {
-      padding: 0;
-    }
-    .ReadMsgBody {
-      width: 100%;
-    }
-    .ExternalClass {
-      width: 100%;
-    }
-    .ExternalClass * {
-      line-height: 100%;
-    }
-    body {
-      margin: 0;
-      padding: 0;
-      -webkit-text-size-adjust: 100%;
-      -ms-text-size-adjust: 100%;
-    }
-    table,
-    td {
-      border-collapse: collapse;
-      mso-table-lspace: 0pt;
-      mso-table-rspace: 0pt;
-    }
-    img {
-      border: 0;
-      height: auto;
-      line-height: 100%;
-      outline: none;
-      text-decoration: none;
-      -ms-interpolation-mode: bicubic;
-    }
-    p {
-      display: block;
-      margin: 13px 0;
-    }
-  </style>
-  <!--[if !mso]><!-->
-  <style type="text/css">
-    @media only screen and (max-width:480px) {
-      @-ms-viewport {
-        width: 320px;
+<!DOCTYPE html>
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:v="urn:schemas-microsoft-com:vml"
+  xmlns:o="urn:schemas-microsoft-com:office:office"
+>
+  <head>
+    <title>{% firstof email_title "openbadges.education" %}</title>
+    <!--[if !mso]> -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <!--<![endif]-->
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type="text/css">
+      #outlook a {
+        padding: 0;
       }
-      @viewport {
-        width: 320px;
+      .ReadMsgBody {
+        width: 100%;
       }
-    }
-  </style>
-  <!--<![endif]-->
-  <!--[if mso]>
-        <xml>
+      .ExternalClass {
+        width: 100%;
+      }
+      .ExternalClass * {
+        line-height: 100%;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+      }
+      table,
+      td {
+        border-collapse: collapse;
+        mso-table-lspace: 0pt;
+        mso-table-rspace: 0pt;
+      }
+      img {
+        border: 0;
+        height: auto;
+        line-height: 100%;
+        outline: none;
+        text-decoration: none;
+        -ms-interpolation-mode: bicubic;
+      }
+      p {
+        display: block;
+        margin: 13px 0;
+      }
+    </style>
+    <!--[if !mso]><!-->
+    <style type="text/css">
+      @media only screen and (max-width: 480px) {
+        @-ms-viewport {
+          width: 320px;
+        }
+        @viewport {
+          width: 320px;
+        }
+      }
+    </style>
+    <!--<![endif]-->
+    <!--[if mso]>
+      <xml>
         <o:OfficeDocumentSettings>
-          <o:AllowPNG/>
+          <o:AllowPNG />
           <o:PixelsPerInch>96</o:PixelsPerInch>
         </o:OfficeDocumentSettings>
-        </xml>
-        <![endif]-->
-  <!--[if lte mso 11]>
-        <style type="text/css">
-          .outlook-group-fix { width:100% !important; }
-        </style>
-        <![endif]-->
-  <!--[if !mso]><!-->
-  <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet" type="text/css">
-  <style type="text/css">
-    @import url(https://fonts.googleapis.com/css?family=Open+Sans:400,700);
-    @import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
-  </style>
-  <!--<![endif]-->
-  <style type="text/css">
-    @media only screen and (min-width:480px) {
-      .mj-column-per-100 {
-        width: 100% !important;
-        max-width: 100%;
+      </xml>
+    <![endif]-->
+    <!--[if lte mso 11]>
+      <style type="text/css">
+        .outlook-group-fix {
+          width: 100% !important;
+        }
+      </style>
+    <![endif]-->
+    <!--[if !mso]><!-->
+    <link
+      href="https://fonts.googleapis.com/css?family=Open+Sans:400,700"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <style type="text/css">
+      @import url(https://fonts.googleapis.com/css?family=Open+Sans:400,700);
+      @import url("https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap");
+    </style>
+    <!--<![endif]-->
+    <style type="text/css">
+      @media only screen and (min-width: 480px) {
+        .mj-column-per-100 {
+          width: 100% !important;
+          max-width: 100%;
+        }
       }
-    }
-  </style>
-  <style type="text/css">
-    @media only screen and (max-width:480px) {
-      table.full-width-mobile {
-        width: 100% !important;
+    </style>
+    <style type="text/css">
+      @media only screen and (max-width: 480px) {
+        table.full-width-mobile {
+          width: 100% !important;
+        }
+        td.full-width-mobile {
+          width: auto !important;
+        }
       }
-      td.full-width-mobile {
-        width: auto !important;
-      }
-    }
-  </style>
-</head>
-<body style="background-color:#F5F6FA;">
-  <div style="background-color:#F5F6FA;">
-    <!--[if mso | IE]>
+    </style>
+  </head>
+  <body style="background-color: #f5f6fa">
+    <div style="background-color: #f5f6fa">
+      <!--[if mso | IE]>
       <table
          align="center" border="0" cellpadding="0" cellspacing="0" class="" style="width:600px;" width="600"
       >
         <tr>
           <td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;">
       <![endif]-->
-    <div style="background:#492e98;background-color:#492e98;Margin:0px auto;max-width:600px;">
-      <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#492e98;background-color:#492e98;width:100%;">
-        <tbody>
-          <tr>
-            <td style="direction:ltr;font-size:0px;padding:0px;text-align:center;vertical-align:top;">
-              <!--[if mso | IE]>
-                  <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-        <tr>
-            <td
-               class="" style="vertical-align:top;width:600px;"
-            >
-          <![endif]-->
-              <div class="mj-column-per-100 outlook-group-fix" style="font-size:13px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;">
-                <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top;" width="100%">
-                  <tr>
-                    <td align="left" style="font-size:0px;padding:8px;word-break:break-word;">
-                      <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;border-spacing:0px;">
-                        <tbody>
-                          <tr>
-                            <td style="width:130px;min-height:24px">
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </td>
-                  </tr>
-                </table>
-              </div>
-              <!--[if mso | IE]>
-            </td>
-        </tr>
-                  </table>
-                <![endif]-->
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <!--[if mso | IE]>
+
+      <!--[if mso | IE]>
           </td>
         </tr>
       </table>
@@ -159,86 +128,221 @@
         <tr>
           <td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;">
       <![endif]-->
-    <div style="background:#FFFFFF;background-color:#FFFFFF;Margin:0px auto;max-width:600px;">
-      <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#FFFFFF;background-color:#FFFFFF;width:100%;">
-        <tbody>
-          {% block main %}
-          {% block beforebutton %}{% endblock beforebutton %}
-          {% block button %}
-          <div style="background:#FFFFFF;background-color:#FFFFFF;Margin:0px auto;max-width:600px;">
-            <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#FFFFFF;background-color:#FFFFFF;width:100%;">
-              <tbody>
-                <tr>
-                  <td style="border-left:1px solid #DBD8DF;border-right:1px solid #DBD8DF;direction:ltr;font-size:0px;padding:12px;text-align:center;vertical-align:top;">
-                    <!--[if mso | IE]>
+      <div
+        style="
+          background: #ecfeed;
+          background-color: #ecfeed;
+          margin: 0px auto;
+          max-width: 600px;
+        "
+      >
+        <table
+          align="center"
+          border="0"
+          cellpadding="0"
+          cellspacing="0"
+          role="presentation"
+          style="background: #ecfeed; background-color: #ecfeed; width: 100%"
+        >
+          <tbody>
+            {% block main %} {% block beforebutton %}{% endblock beforebutton %}{% block button %}
+            <div
+              style="
+                background: #ecfeed;
+                background-color: #ecfeed;
+                margin: 0px auto;
+                max-width: 600px;
+              "
+            >
+              <table
+                align="center"
+                border="0"
+                cellpadding="0"
+                cellspacing="0"
+                role="presentation"
+                style="
+                  background: #ecfeed;
+                  background-color: #ecfeed;
+                  width: 100%;
+                "
+              >
+                <tbody>
+                  <tr>
+                    <td
+                      style="
+                        border-left: 1px solid #dbd8df;
+                        border-right: 1px solid #dbd8df;
+                        direction: ltr;
+                        font-size: 0px;
+                        padding: 12px;
+                        text-align: center;
+                        vertical-align: top;
+                      "
+                    >
+                      <!--[if mso | IE]>
                               <table role="presentation" border="0" cellpadding="0" cellspacing="0">
                     <tr>
                         <td
                           class="" style="vertical-align:top;width:574px;"
                         >
                       <![endif]-->
-                    <div class="mj-column-per-100 outlook-group-fix" style="font-size:13px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;">
-                      <table border="0" cellpadding="0" cellspacing="0" role="presentation" width="100%">
-                        <tbody>
-                          <tr>
-                            <td style="vertical-align:top;padding-bottom:32px;">
-                              <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="" width="100%">
-                                <tbody>
-                                  <tr>
-                                    <td align="center" vertical-align="middle" style="font-size:0px;padding:10px 25px;padding-bottom:8px;word-break:break-word;">
-                                      <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:separate;width:100%;line-height:100%;">
-                                        <tbody>
-                                          <tr>
-                                            <td align="center" bgcolor="#492e98" role="presentation" style="border:none;cursor:auto;background:#492e98;"
-                                              valign="middle">
-                                              <a href="{% block button_url %}{% endblock %}" style="background:#492e98;color:#FFFFFF;font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none;display:block;border-radius:2px;padding:15px 30px;"
-                                                target="_blank">
-                                                {% block button_text %}{% endblock %}
-                                              </a>
-                                            </td>
-                                          </tr>
-                                        </tbody>
-                                      </table>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td align="center" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                                      <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;line-height:14px;text-align:center;color:#aaaaaa;">
-                                        Alternativ kannst du diesen Link kopieren und in deinen Browser einfügen: <br>
-                                        <strong>{% block button_url_copy %}{% endblock %}</strong>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                </tbody>
-                              </table>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                    <!--[if mso | IE]>
+                      <div
+                        class="mj-column-per-100 outlook-group-fix"
+                        style="
+                          font-size: 13px;
+                          text-align: left;
+                          direction: ltr;
+                          display: inline-block;
+                          vertical-align: top;
+                          width: 100%;
+                        "
+                      >
+                        <table
+                          border="0"
+                          cellpadding="0"
+                          cellspacing="0"
+                          role="presentation"
+                          width="100%"
+                        >
+                          <tbody>
+                            <tr>
+                              <td
+                                style="
+                                  vertical-align: top;
+                                  padding-bottom: 32px;
+                                "
+                              >
+                                <table
+                                  border="0"
+                                  cellpadding="0"
+                                  cellspacing="0"
+                                  role="presentation"
+                                  style=""
+                                  width="100%"
+                                >
+                                  <tbody>
+                                    <tr>
+                                      <td
+                                        align="center"
+                                        vertical-align="middle"
+                                        style="
+                                          font-size: 0px;
+                                          padding: 10px 25px;
+                                          padding-bottom: 8px;
+                                          word-break: break-word;
+                                        "
+                                      >
+                                        <table
+                                          border="0"
+                                          cellpadding="0"
+                                          cellspacing="0"
+                                          role="presentation"
+                                          style="
+                                            border-collapse: separate;
+                                            width: 100%;
+                                            line-height: 100%;
+                                            border-radius: 15px;
+                                            overflow: hidden;
+                                          "
+                                        >
+                                          <tbody>
+                                            <tr>
+                                              <td
+                                                align="center"
+                                                bgcolor="#492e98"
+                                                role="presentation"
+                                                style="
+                                                  border: none;
+                                                  cursor: auto;
+                                                  background: #492e98;
+                                                "
+                                                valign="middle"
+                                              >
+                                                <a
+                                                  href="{% block button_url %}{% endblock %}"
+                                                  style="
+                                                    background: #492e98;
+                                                    color: #ffffff;
+                                                    font-family: 'Open Sans',
+                                                      Helvetica, Arial,
+                                                      sans-serif;
+                                                    font-size: 16px;
+                                                    font-weight: bold;
+                                                    line-height: 120%;
+                                                    margin: 0;
+                                                    text-decoration: none;
+                                                    text-transform: none;
+                                                    display: block;
+                                                    border-radius: 15px;
+                                                    padding: 15px 30px;
+                                                  "
+                                                  target="_blank"
+                                                >
+                                                  {% block button_text %}{% endblock %}
+                                                </a>
+                                              </td>
+                                            </tr>
+                                          </tbody>
+                                        </table>
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <td
+                                        align="center"
+                                        style="
+                                          font-size: 0px;
+                                          padding: 10px 25px;
+                                          word-break: break-word;
+                                        "
+                                      >
+                                        <div
+                                          style="
+                                            font-family: 'Open Sans', Helvetica,
+                                              Arial, sans-serif;
+                                            font-size: 10px;
+                                            font-weight: 400;
+                                            line-height: 14px;
+                                            text-align: center;
+                                            color: #aaaaaa;
+                                          "
+                                        >
+                                          Alternativ kannst du diesen Link
+                                          kopieren und in deinen Browser
+                                          einfügen: <br />
+                                          <strong> {% block button_url_copy %}{% endblock %}
+                                          </strong
+                                          >
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <!--[if mso | IE]>
                       </td>
                   </tr>
                             </table>
                           <![endif]-->
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          {% endblock button %}
-          {% block afterbutton %}{% endblock %}
-          {% endblock main %}
-        </tbody>
-      </table>
-    </div>
-    <!--[if mso | IE]>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            {% endblock button %} {% block afterbutton %}{% endblock %} {% endblock main %}
+          </tbody>
+        </table>
+      </div>
+      <!--[if mso | IE]>
           </td>
         </tr>
       </table>
       <![endif]-->
-    <!-- Footer -->
-    <!--[if mso | IE]>
+      <!-- Footer -->
+      <!--[if mso | IE]>
       <table
          align="center" border="0" cellpadding="0" cellspacing="0" class="" style="width:600px;" width="600"
       >
@@ -248,132 +352,504 @@
         <v:fill  origin="0.5, 0" position="0.5, 0" src="{% static '/images/image-bg-graphic-1.png' %}" color="#FFFFFF" type="tile" />
         <v:textbox style="mso-fit-shape-to-text:true" inset="0,0,0,0">
       <![endif]-->
-    <div style="background:#FFFFFF url('{% static '/images/image-bg-graphic-1.png' %}') top center / auto repeat;Margin:0px auto;max-width:600px;">
-      <div style="line-height:0;font-size:0;">
-        <table align="center" background="{% static '/images/image-bg-graphic-1.png' %}" border="0" cellpadding="0"
-          cellspacing="0" role="presentation" style="background:#FFFFFF url({% static '/images/image-bg-graphic-1.png' %}) top center / auto repeat;width:100%;">
-          <tbody>
-            <tr>
-              <td style="border:1px solid #DBD8DF;border-left:1px solid #DBD8DF;border-right:1px solid #DBD8DF;direction:ltr;font-size:0px;padding:12px;text-align:center;vertical-align:top;">
-                <!--[if mso | IE]>
+      
+      <!-- MBR info box -->
+      {% if mbr_block %} 
+      <div style="background: #f5f5f5; margin: 0px auto; max-width: 600px">
+        <div style="line-height: 0; font-size: 0">
+          <table
+            cellpadding="0"
+            cellspacing="0"
+            role="presentation"
+            style="background: #B0D9EE; width: 100%"
+          >
+            <tbody>
+              <tr>
+                <td
+                  style="
+                    border: 1px solid #dbd8df;
+                    border-left: 1px solid #dbd8df;
+                    border-right: 1px solid #dbd8df;
+                    direction: ltr;
+                    font-size: 0px;
+                    padding: 12px;
+                    text-align: center;
+                    vertical-align: top;
+                  "
+                >
+                  <div
+                    class="mj-column-per-100 outlook-group-fix"
+                    style="
+                      font-size: 13px;
+                      text-align: left;
+                      direction: ltr;
+                      display: inline-block;
+                      vertical-align: top;
+                      width: 100%;
+                    "
+                  >
+                    <table
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      width="100%"
+                    >
+                      <tbody>
+                        <tr>
+                          <td
+                            style="
+                              
+                            "
+                          >
+                            <table
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation"
+                              width="100%"
+                            >
+                              <tr>
+                                <td
+                                  style="
+                                    font-size: 0px;
+                                    word-break: break-word;
+                                    background-color: #ffffff;
+                                  "
+                                >
+                                <a href="https://www.meinbildungsraum.de/" target="_blank">
+                                  <img 
+                                    src="{% static '/images/logo-mbr.png' %}"
+                                    style="width: 280px; height: auto" />
+                                </a>
+                                
+                                  
+                                </td>
+                                <td
+                                  style="width: 50%;"
+                                >
+                                  <div
+                                    style="
+                                      font-family: 'Rubik', Helvetica, Arial,
+                                        sans-serif;
+                                      font-size: 12px;
+                                      font-weight: 400;
+                                      line-height: 16px;
+                                      padding: 0px 10px;
+                                      color: #323232;
+                                    "
+                                  >
+                                    Open Educational Badges ist eines der etwa 40 Förderprojekte, die im Rahmen von „Mein Bildungsraum“ durch das Bundesministerium für Bildung und Forschung gefördert werden.
+                                  </div>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td
+                            style="
+                              padding-top: 10px;
+                            "
+                          >
+                            <table
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation"
+                              width="100%"
+                            >
+                              <tr>
+                                <td
+                                >
+                                <div
+                                style="
+                                  font-family: 'Rubik', Helvetica, Arial,
+                                  sans-serif;
+                                  font-size: 12px;
+                                  font-weight: 400;
+                                  line-height: 16px;
+                                  color: #323232;
+                                "
+                              >
+                                Mit „Mein Bildungsraum“ wird eine digitale Vernetzungsinfrastruktur geschaffen. Sie vernetzt bestehende Plattformen, Lernmanagementsysteme und Bildungsangebote. „Mein Bildungsraum“ bietet allen die Möglichkeit, selbstsouverän und sicher Bildungsnachweise (wie beispielsweise Zeugnisse) zu verwalten. Ziel ist es, einen einheitlichen und sicheren Zugang zu einer Vielzahl von Bildungsangeboten zu bieten und Verwaltungsprozesse in der Bildung für die Lernenden zu vereinfachen. <a href="https://openbadges.education/public/about" style="
+                                color: #1400ff;
+                                text-decoration: underline;
+                              " target="_blank">Hier</a> kannst du sehen, wie die Vernetzung funktioniert.
+                              </div>
+                                </td>
+                                
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- OEB footer -->
+      <div style="background: #f5f5f5; margin: 0px auto; max-width: 600px">
+        <div style="line-height: 0; font-size: 0">
+          <table
+            align="center"
+            background="{% static '/images/image-bg-graphic-1.png' %}"
+            border="0"
+            cellpadding="0"
+            cellspacing="0"
+            role="presentation"
+            style="background: #f5f5f5; width: 100%"
+          >
+            <tbody>
+              <tr>
+                <td
+                  style="
+                    border: 1px solid #dbd8df;
+                    border-left: 1px solid #dbd8df;
+                    border-right: 1px solid #dbd8df;
+                    direction: ltr;
+                    font-size: 0px;
+                    padding: 12px;
+                    text-align: center;
+                    vertical-align: top;
+                  "
+                >
+                  <!--[if mso | IE]>
                   <table role="presentation" border="0" cellpadding="0" cellspacing="0">
         <tr>
             <td
                class="" style="vertical-align:top;width:574px;"
             >
           <![endif]-->
-                <div class="mj-column-per-100 outlook-group-fix" style="font-size:13px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;">
-                  <table border="0" cellpadding="0" cellspacing="0" role="presentation" width="100%">
-                    <tbody>
-                      {% block beforeabout %}{% endblock %}
-                      <tr>
-                        <td style="vertical-align:top;padding-top:32px;padding-bottom:32px;">
-                          <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="" width="100%">
-                            <tr>
-                              <td rowspan="2" align="left" style="font-size:0px;padding:10px 10px 10px 25px;word-break:break-word;">
-                                <a href="https://openbadges.education" target="_blank">
-                                  <img src="{% static '/images/logo-square.png' %}" align="left" style="width: auto; height: 80px;">
-                                </a>
-                              </td>
-                              <td align="left" style="font-size:0px;padding:10px 25px 10px 15px;word-break:break-word;">
-                                <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:24px;font-weight:400;line-height:24px;text-align:left;color:#191919;">
-                                  Neu bei Open Educational Badges?
-                                </div>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td align="left" style="font-size:0px;padding:10px 25px 10px 15px;word-break:break-word;">
-                                <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#666666;">
-                                  <a href="https://openbadges.education" class="linkstyle" style="color: #515dc6; font-weight: bold; text-decoration: none;"> Mehr erfahren
+                  <div
+                    class="mj-column-per-100 outlook-group-fix"
+                    style="
+                      font-size: 13px;
+                      text-align: left;
+                      direction: ltr;
+                      display: inline-block;
+                      vertical-align: top;
+                      width: 100%;
+                    "
+                  >
+                    <table
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      width="100%"
+                    >
+                      <tbody>
+                        {% block beforeabout %}{% endblock %}
+                        <tr>
+                          <td
+                            style="
+                              vertical-align: top;
+                              padding-top: 32px;
+                              padding-bottom: 32px;
+                            "
+                          >
+                            <table
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation"
+                              width="100%"
+                            >
+                              <tr>
+                                <td
+                                  rowspan="2"
+                                  align="left"
+                                  style="
+                                    font-size: 0px;
+                                    padding: 10px 10px 10px 25px;
+                                    word-break: break-word;
+                                  "
+                                >
+                                  <a
+                                    href="https://openbadges.education"
+                                    target="_blank"
+                                  >
+                                    <img
+                                      src="{% static '/images/logo-square.png' %}"
+                                      align="left"
+                                      style="width: auto; height: 80px"
+                                    />
                                   </a>
-                                </div>
-                              </td>
-                            </tr>
-                            {% if GDPR_INFO_URL %}
-                            <tr>
-                              <td colspan="2" align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                                <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:24px;font-weight:400;line-height:24px;text-align:left;color:#191919;">
-                                  We’re GDPR-compliant
-                                </div>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td colspan="2" align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                                <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#666666;">
-                                  <a href="{{ GDPR_INFO_URL }}" class="linkstyle"
-                                    style="color: #515dc6; font-weight: bold; text-decoration: none;"> Know your rights
-                                  </a>
-                                </div>
-                              </td>
-                            </tr>
-                            {% endif %}
-                            <!-- ToDo: remove display none when user can unsubscribe from newsletter  -->
-                            <tr style="display: none;">
-                              <td colspan="2" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                                <p style="border-top:solid 1px #dddddd;font-size:1;margin:0px auto;width:100%;">
-                                </p>
-                                <!--[if mso | IE]>
-        <table
-           align="center" border="0" cellpadding="0" cellspacing="0" style="border-top:solid 1px #dddddd;font-size:1;margin:0px auto;width:524px;" role="presentation" width="524px"
-        >
-          <tr>
-            <td style="height:0;line-height:0;">
-              &nbsp;
-            </td>
-          </tr>
-        </table>
-      <![endif]-->
-                              </td>
-                            </tr>
-                            {% if OPERATOR_ADDRESS and OPERATOR_NAME %}
-                            <tr>
-                              <td colspan="2" align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                                <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#666666;">
-                                  Sent from {% if OPERATOR_URL %}
-                                    <a href="{{ OPERATOR_URL }}" class="linkstyle" style="color: #515dc6; font-weight: bold; text-decoration: none;">{{ OPERATOR_NAME }}</a>
-                                {% else %}{{ OPERATOR_NAME }}{% endif %}<br/>
-                                  {{ OPERATOR_ADDRESS }}
-                                </div>
-                              </td>
-                            </tr>
+                                </td>
+                                <td
+                                  align="left"
+                                  style="font-size: 0px; word-break: break-word"
+                                >
+                                  <div
+                                    style="
+                                      padding-bottom: 5px;
+                                      font-family: 'Rubik', Helvetica, Arial,
+                                        sans-serif;
+                                      font-size: 22px;
+                                      font-weight: 400;
+                                      line-height: 27px;
+                                      text-align: left;
+                                      color: #323232;
+                                    "
+                                  >
+                                    Neu bei Open Educational Badges?
+                                  </div>
+                                  <div
+                                    style="
+                                      font-family: 'Rubik', Helvetica, Arial,
+                                        sans-serif;
+                                      font-size: 16px;
+                                      font-weight: 400;
+                                      line-height: 24px;
+                                      text-align: left;
+                                      color: #666666;
+                                    "
+                                  >
+                                    <a
+                                      href="https://openbadges.education"
+                                      class="linkstyle"
+                                      style="
+                                        color: #1400ff;
+                                        font-weight: bold;
+                                        text-decoration: underline;
+                                      "
+                                    >
+                                      Mehr erfahren
+                                    </a>
+                                  </div>
+                                </td>
+                              </tr>
+
+                              {% if GDPR_INFO_URL %}
+                              <tr>
+                                <td
+                                  colspan="2"
+                                  align="left"
+                                  style="
+                                    font-size: 0px;
+                                    padding: 10px 25px;
+                                    word-break: break-word;
+                                  "
+                                >
+                                  <div
+                                    style="
+                                      font-family: 'Rubik', Helvetica, Arial,
+                                        sans-serif;
+                                      font-size: 24px;
+                                      font-weight: 400;
+                                      line-height: 24px;
+                                      text-align: left;
+                                      color: #323232;
+                                    "
+                                  >
+                                    We’re GDPR-compliant
+                                  </div>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td
+                                  colspan="2"
+                                  align="left"
+                                  style="
+                                    font-size: 0px;
+                                    padding: 10px 25px;
+                                    word-break: break-word;
+                                  "
+                                >
+                                  <div
+                                    style="
+                                      font-family: 'Open Sans', Helvetica, Arial,
+                                        sans-serif;
+                                      font-size: 16px;
+                                      font-weight: 400;
+                                      line-height: 24px;
+                                      text-align: left;
+                                      color: #666666;
+                                    "
+                                  >
+                                    <a
+                                      href="{{ GDPR_INFO_URL }}"
+                                      class="linkstyle"
+                                      style="
+                                        color: #515dc6;
+                                        font-weight: bold;
+                                        text-decoration: none;
+                                      "
+                                    >
+                                      Know your rights
+                                    </a>
+                                  </div>
+                                </td>
+                              </tr>
                               {% endif %}
-                            <!-- unsubscribe is hidden, since users are not subscribed to a newsletter atm -->
-                            <tr style="display: none;">
-                              <td colspan="2" align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                                <div style="font-family:'Open Sans', Helvetica, Arial, sans-serif;font-size:12px;font-weight:400;line-height:16px;text-align:left;color:#666666;">
-                                  {% block unsubscribe %}
-                                  <a href="{{ unsubscribe_url }}" class="linkstyle" style="color: #515dc6; font-weight: bold; text-decoration: none;">Abmelden</a>
-                                  {% endblock %}
-                                  {% if PRIVACY_POLICY_URL %} • <a href="{{ PRIVACY_POLICY_URL }}" class="linkstyle" style="color: #515dc6; font-weight: bold; text-decoration: none;">Privacy
-                                    Policy</a> {% endif %}{% if TERMS_OF_SERVICE_URL %}•
-                                  <a href="{{ TERMS_OF_SERVICE_URL }}" class="linkstyle" style="color: #515dc6; font-weight: bold; text-decoration: none;">Terms</a>{% endif %}
-                                </div>
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <!--[if mso | IE]>
+                              <!-- ToDo: remove display none when user can unsubscribe from newsletter  -->
+                              <tr style="display: none">
+                                <td
+                                  colspan="2"
+                                  style="
+                                    font-size: 0px;
+                                    padding: 10px 25px;
+                                    word-break: break-word;
+                                  "
+                                >
+                                  <p
+                                    style="
+                                      border-top: solid 1px #dddddd;
+                                      font-size: 1;
+                                      margin: 0px auto;
+                                      width: 100%;
+                                    "
+                                  ></p>
+                                  <!--[if mso | IE]>
+                                    <table
+                                      align="center"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      style="
+                                        border-top: solid 1px #dddddd;
+                                        font-size: 1;
+                                        margin: 0px auto;
+                                        width: 524px;
+                                      "
+                                      role="presentation"
+                                      width="524px"
+                                    >
+                                      <tr>
+                                        <td style="height: 0; line-height: 0">
+                                          &nbsp;
+                                        </td>
+                                      </tr>
+                                    </table>
+                                  <![endif]-->
+                                </td>
+                              </tr>
+                              {% if OPERATOR_ADDRESS and OPERATOR_NAME %}
+                              <tr>
+                                <td
+                                  colspan="2"
+                                  align="left"
+                                  style="
+                                    font-size: 0px;
+                                    padding: 10px 25px;
+                                    word-break: break-word;
+                                  "
+                                >
+                                  <div
+                                    style="
+                                      font-family: 'Open Sans', Helvetica, Arial,
+                                        sans-serif;
+                                      font-size: 16px;
+                                      font-weight: 400;
+                                      line-height: 24px;
+                                      text-align: left;
+                                      color: #666666;
+                                    "
+                                  >
+                                    Sent from {% if OPERATOR_URL %}
+                                    <a
+                                      href="{{ OPERATOR_URL }}"
+                                      class="linkstyle"
+                                      style="
+                                        color: #515dc6;
+                                        font-weight: bold;
+                                        text-decoration: none;
+                                      "
+                                      >{{ OPERATOR_NAME }}</a
+                                    >
+                                    {% else %}{{ OPERATOR_NAME }}{% endif %}<br />
+                                    {{ OPERATOR_ADDRESS }}
+                                  </div>
+                                </td>
+                              </tr>
+                              {% endif %}
+                              <!-- unsubscribe is hidden, since users are not subscribed to a newsletter atm -->
+                              <tr style="display: none">
+                                <td
+                                  colspan="2"
+                                  align="left"
+                                  style="
+                                    font-size: 0px;
+                                    padding: 10px 25px;
+                                    word-break: break-word;
+                                  "
+                                >
+                                  <div
+                                    style="
+                                      font-family: 'Open Sans', Helvetica, Arial,
+                                        sans-serif;
+                                      font-size: 12px;
+                                      font-weight: 400;
+                                      line-height: 16px;
+                                      text-align: left;
+                                      color: #666666;
+                                    "
+                                  >
+                                    {% block unsubscribe %}
+                                    <a
+                                      href="{{ unsubscribe_url }}"
+                                      class="linkstyle"
+                                      style="
+                                        color: #515dc6;
+                                        font-weight: bold;
+                                        text-decoration: none;
+                                      "
+                                      >Abmelden</a
+                                    >
+                                    {% endblock %} {% if PRIVACY_POLICY_URL %} •
+                                    <a
+                                      href="{{ PRIVACY_POLICY_URL }}"
+                                      class="linkstyle"
+                                      style="
+                                        color: #515dc6;
+                                        font-weight: bold;
+                                        text-decoration: none;
+                                      "
+                                      >Privacy Policy</a
+                                    >
+                                    {% endif %}{% if TERMS_OF_SERVICE_URL %}•
+                                    <a
+                                      href="{{ TERMS_OF_SERVICE_URL }}"
+                                      class="linkstyle"
+                                      style="
+                                        color: #515dc6;
+                                        font-weight: bold;
+                                        text-decoration: none;
+                                      "
+                                      >Terms</a
+                                    >{% endif %}
+                                  </div>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <!--[if mso | IE]>
             </td>
         </tr>
                   </table>
                 <![endif]-->
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-    <!--[if mso | IE]>
+      <!--[if mso | IE]>
         </v:textbox>
       </v:rect>
           </td>
         </tr>
       </table>
       <![endif]-->
-  </div>
-</body>
+    </div>
+  </body>
 </html>

@@ -230,10 +230,12 @@ class BadgeClassExpirationSerializerV1(serializers.Serializer):
 
 class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, serializers.Serializer):
     created_at = DateTimeWithUtcZAtEndField(read_only=True)
+    updated_at = DateTimeWithUtcZAtEndField(read_only=True)
     created_by = BadgeUserIdentifierFieldV1()
     id = serializers.IntegerField(required=False, read_only=True)
     name = StripTagsCharField(max_length=255)
     image = ValidImageField(required=False)
+    imageFrame = serializers.BooleanField(default=True, required=False)
     slug = StripTagsCharField(max_length=255, read_only=True, source='entity_id')
     criteria = MarkdownCharField(allow_blank=True, required=False, write_only=True)
     criteria_text = MarkdownCharField(required=False, allow_null=True, allow_blank=True)
