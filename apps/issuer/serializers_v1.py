@@ -20,7 +20,7 @@ from mainsite.drf_fields import ValidImageField
 from mainsite.models import BadgrApp
 from mainsite.serializers import DateTimeWithUtcZAtEndField, HumanReadableBooleanField, \
         StripTagsCharField, MarkdownCharField, OriginalJsonSerializerMixin
-from mainsite.utils import OriginSetting, verifyIssuerAutomatically
+from mainsite.utils import OriginSetting, validate_altcha, verifyIssuerAutomatically
 from mainsite.validators import ChoicesValidator, BadgeExtensionValidator, PositiveIntegerValidator, TelephoneValidator
 from .models import Issuer, BadgeClass, IssuerStaff, BadgeInstance, BadgeClassExtension, \
         RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL
@@ -123,29 +123,41 @@ class IssuerSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
         user = validated_data['created_by']
         potential_email = validated_data['email']
 
+
         if not user.is_email_verified(potential_email):
             raise serializers.ValidationError(
                 "Issuer email must be one of your verified addresses. "
                 "Add this email to your profile and try again.")
 
-        new_issuer = Issuer(**validated_data)
+        captcha = self.context['request'].data.get("captcha") if 'request' in self.context else None
+        
+        if captcha is not None:
+            if validate_altcha(captcha):
+              
+                new_issuer = Issuer(**validated_data)
 
-        new_issuer.category = validated_data.get('category')
-        new_issuer.street = validated_data.get('street')
-        new_issuer.streetnumber = validated_data.get('streetnumber')
-        new_issuer.zip = validated_data.get('zip')
-        new_issuer.city = validated_data.get('city')
-        new_issuer.country = validated_data.get('country')
+                new_issuer.category = validated_data.get('category')
+                new_issuer.street = validated_data.get('street')
+                new_issuer.streetnumber = validated_data.get('streetnumber')
+                new_issuer.zip = validated_data.get('zip')
+                new_issuer.city = validated_data.get('city')
+                new_issuer.country = validated_data.get('country')
 
-        # Check whether issuer email domain matches institution website domain to verify it automatically 
-        if verifyIssuerAutomatically(validated_data.get('url'), validated_data.get('email')):
-            new_issuer.verified = True
-            
-        # set badgrapp
-        new_issuer.badgrapp = BadgrApp.objects.get_current(self.context.get('request', None))
+                # Check whether issuer email domain matches institution website domain to verify it automatically 
+                if verifyIssuerAutomatically(validated_data.get('url'), validated_data.get('email')):
+                    new_issuer.verified = True
+                    
+                # set badgrapp
+                new_issuer.badgrapp = BadgrApp.objects.get_current(self.context.get('request', None))
 
-        new_issuer.save()
-        return new_issuer
+                new_issuer.save()
+                return new_issuer
+            else:
+                raise serializers.ValidationError("Invalid captcha")
+        else:
+            raise serializers.ValidationError("Captcha required")
+
+
 
     def update(self, instance, validated_data):
         force_image_resize = False
