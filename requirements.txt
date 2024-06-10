@@ -18,7 +18,7 @@ django-basic-models==4.0.0
 
 django-object-actions==1.1.0
 
-python-memcached==1.58
+pymemcache 
 
 djangorestframework==3.12.2
 
