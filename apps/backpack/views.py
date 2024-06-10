@@ -13,6 +13,8 @@ from rest_framework.decorators import (
     authentication_classes,
     api_view,
 )
+
+import requests
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
 from django.http import HttpResponse
@@ -49,9 +51,21 @@ class RoundedRectFlowable(Flowable):
         text_y = self.y + (self.height - 14) / 2
         self.canv.drawString(text_x, text_y, self.text)
 
-        svg_file = "{}images/clock_icon.svg".format(settings.STATIC_URL)
-        drawing = svg2rlg(svg_file)
+        svg_url = "{}images/clock_icon.svg".format(settings.STATIC_URL)
+        response = requests.get(svg_url)
+        svg_content = response.content
+
+        with open('tempfile.svg', 'wb') as file:
+            file.write(svg_content)
+
+        drawing = svg2rlg('tempfile.svg')
         renderPDF.draw(drawing, self.canv, 10, -10)
+
+        try:
+            if drawing is not None:
+               renderPDF.draw(drawing, self.canv, 10, -10)
+        except Exception as e:
+            print(e)
         
 def AllPageSetup(canvas, doc):
 
