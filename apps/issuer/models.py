@@ -508,7 +508,11 @@ class Issuer(ResizeUploadedImage,
             # 'badgr_app': badgr_app
         }
 
-        template_name = 'issuer/email/notify_admins'
+        # Notify admin whether issuer was automatically verified or needs to be verified manually
+        if self.verified:
+            template_name = 'issuer/email/notify_admins_issuer_verified'
+        else: 
+            template_name = 'issuer/email/notify_admins'
 
         adapter = get_adapter()
         for user in users:
@@ -628,6 +632,7 @@ class BadgeClass(ResizeUploadedImage,
 
     name = models.CharField(max_length=255)
     image = models.FileField(upload_to='uploads/badges', blank=True)
+    imageFrame = models.BooleanField(default=True)
     image_preview = models.FileField(upload_to='uploads/badges', blank=True, null=True)
     description = models.TextField(blank=True, null=True, default=None)
 
@@ -645,6 +650,18 @@ class BadgeClass(ResizeUploadedImage,
 
     class Meta:
         verbose_name_plural = "Badge classes"
+    
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super().save(*args, **kwargs)
+    
+    def clean(self):
+        # Check if the issuer for this badge is verified, otherwise throw an error
+        if not self.issuer.verified:
+            raise ValidationError(
+                "Only verified issuers can create / update badges",
+                code="invalid"
+            )
 
     def publish(self):
         fields_cache = self._state.fields_cache  # stash the fields cache to avoid publishing related objects here

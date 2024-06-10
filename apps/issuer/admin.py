@@ -108,7 +108,7 @@ class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
             'classes': ("collapse",)
         }),
         (None, {
-            'fields': ('issuer', 'image', 'name', 'description')
+            'fields': ('issuer', 'image', 'imageFrame', 'name', 'description')
         }),
         ('Configuration', {
             'fields': ('criteria_url', 'criteria_text', 'expires_duration', 'expires_amount',)
