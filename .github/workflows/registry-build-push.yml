@@ -2,7 +2,7 @@ name: 🏗️ Build and publish to Github Container Registry
 
 on:
   push:
-    branches: [main,release]
+    branches: [main,release,develop]
     tags: ["v*.*.*"]
   pull_request:
     branches:

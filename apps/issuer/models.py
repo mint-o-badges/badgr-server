@@ -632,6 +632,7 @@ class BadgeClass(ResizeUploadedImage,
 
     name = models.CharField(max_length=255)
     image = models.FileField(upload_to='uploads/badges', blank=True)
+    imageFrame = models.BooleanField(default=True)
     image_preview = models.FileField(upload_to='uploads/badges', blank=True, null=True)
     description = models.TextField(blank=True, null=True, default=None)
 
@@ -651,9 +652,7 @@ class BadgeClass(ResizeUploadedImage,
         verbose_name_plural = "Badge classes"
     
     def save(self, *args, **kwargs):
-        # It's best practice to run full clean on saving. This (also) runs
-        # The clean method you find below
-        self.full_clean()
+        self.clean()
         return super().save(*args, **kwargs)
     
     def clean(self):
