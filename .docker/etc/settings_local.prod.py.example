@@ -41,7 +41,7 @@ DATABASES = {
 ###
 CACHES = {
      'default': {
-         'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+         'BACKEND': 'django.core.cache.backends.memcached.PyMemcacheCache',
          'LOCATION': 'memcached:11211',
          'KEY_FUNCTION': 'mainsite.utils.filter_cache_key'
      }
@@ -147,3 +147,7 @@ NOUNPROJECT_SECRET = ''
 
 AISKILLS_API_KEY = ''
 AISKILLS_ENDPOINT = ''
+
+ALTCHA_API_KEY = ''
+ALTCHA_SECRET = ''
+ALTCHA_SPAMFILTER_ENDPOINT = "https://eu.altcha.org/api/v1/classify?"

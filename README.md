@@ -66,6 +66,8 @@ Set or adjust these values in your `settings_local.dev.py` and/or `settings_loca
   - Set these values to be able to search for icons with in the badge creation process.
 * `AISKILLS_API_KEY` and `AISKILLS_ENDPOINT`:
   - Set these values to be able to get AI skill suggestions within the badge creation process.
+* `ALTCHA_API_KEY` and `ALTCHA_SECRET`:
+  - Set these values for captcha protection during the registration and issuer creation process. They can be obtained at [altcha.org](https://altcha.org/).
 
 ### Running the Django Server in Development
 
@@ -98,6 +100,11 @@ you will need to stop and then rebuild the production containers:
 * `docker-compose -f docker-compose.prod.yml build` - (re)build the production containers
 
 * If the extension urls aren't adjusted (or the url changes, or for some other reason it seems as if extension schemas can't be loaded, e.g. because of 401 errors in the badge creation process), run the script in `scripts/change-extension-url.sh`.
+
+#### Deployment
+
+To get the image on the prod server, simply update the `release` branch and push it to github.
+The rest should happen automatically (thanks to github actions and watchtower keeping the deployed image up to date).
 
 
 ### Accessing the Django Server Running in Docker
