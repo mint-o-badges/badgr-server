@@ -117,7 +117,7 @@ tox
 pyopenssl==24.0.0
 
 mozilla-django-oidc
-jwt
+pyjwt
 
 reportlab
 svg2rlg

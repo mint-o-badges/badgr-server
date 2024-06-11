@@ -407,11 +407,13 @@ def extract_oidc_access_token(request, scope):
     """
     joined_scope = ' '.join(scope)
     access_token = request.session['oidc_access_token']
+    refresh_token = request.session['oidc_refresh_token']
     return {
         'access_token': access_token,
         'token_type': 'Bearer',
         'expires_in': get_expire_seconds(access_token),
-        'scope': joined_scope
+        'scope': joined_scope,
+        'refresh_token': refresh_token
     }
 
 def get_expire_seconds(access_token):
@@ -421,7 +423,6 @@ def get_expire_seconds(access_token):
     It first extracts the datetime (skipping signature verifications)
     and then calculates the diff to the current datetime
     """
-    # TODO: jwt apparently can't decode (anymore)
     expire_datetime = datetime.datetime.fromtimestamp(jwt.decode(access_token, options={"verify_signature": False})['exp'])
     now_datetime = datetime.datetime.now()
     diff = expire_datetime - now_datetime

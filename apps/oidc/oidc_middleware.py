@@ -1,12 +1,14 @@
 # This file is heavily inspired from [here](https://dev.to/hesbon/customizing-mozilla-django-oidc-544p),
 # which in turn is an almost exact copy of the original mozilla-django-oidc
 # implementation of the ID token refresh middleware.
+# TODO: Probably I can't solve this with a middleware
 
 import logging
 import time
 
 import requests
 from mozilla_django_oidc.middleware import SessionRefresh as OIDCSessionRefresh
+from rest_framework import authentication
 
 LOGGER = logging.getLogger(__name__)
 
@@ -43,11 +45,18 @@ class OIDCSessionRefreshMiddleware(OIDCSessionRefresh):
             }
         )
         return True
+    
+    def get_tokens(self, request):
+        header = authentication.get_authorization_header(request)
 
     def process_request(self, request):
         # TODO: This will have to be changed
         if not self.is_refreshable_url(request):
             LOGGER.debug("request is not refreshable")
+            return
+        
+        if not request.session.get("refresh_token", False):
+            LOGGER.debug("Can't refresh token due to missing refresh token")
             return
 
         # TODO: Potentially this'll have to be changed
