@@ -266,7 +266,7 @@ def add_recipient_name(first_page_content, first_name, last_name, issuedOn):
 
 def add_title(first_page_content, badge_class_name):
 
-    title_style = ParagraphStyle(name='Title', fontSize=24, textColor='#492E98', alignment=TA_CENTER)
+    title_style = ParagraphStyle(name='Title', fontSize=24, textColor='#492E98', leading=30, alignment=TA_CENTER)
     first_page_content.append(Paragraph(f"<strong>{badge_class_name}</strong>", title_style))
     first_page_content.append(Spacer(1, 35))
 
@@ -326,7 +326,7 @@ def pdf(request, *args, **kwargs):
 
     add_recipient_name(first_page_content, first_name, last_name, badgeinstance.issued_on) 
 
-    addBadgeImage(first_page_content, badgeclass.image)
+    # addBadgeImage(first_page_content, badgeclass.image)
 
     add_title(first_page_content, badgeclass.name)  
 
@@ -334,8 +334,8 @@ def pdf(request, *args, **kwargs):
 
     add_issuedBy(first_page_content, badgeinstance.issuer.name)
 
-    if badgeclass.issuer.image is not None:
-        add_issuerImage(first_page_content, badgeclass.issuer.image)
+    # if badgeclass.issuer.image is not None:
+    #     add_issuerImage(first_page_content, badgeclass.issuer.image)
 
     createMultiPage(response, first_page_content, competencies, first_name, last_name, badgeclass.name)
 
