@@ -49,11 +49,13 @@ class OebOIDCAuthenticationBackend(OIDCAuthenticationBackend):
         # Don't update based on data from OIDC
         return user
 
-    def verify_jws(self, payload, key):
-        return super(OebOIDCAuthenticationBackend, self).verify_jws(payload, key)
-    
-    def verify_token(self, token, nonce):
-        return super(OebOIDCAuthenticationBackend, self).verify_token(token, nonce=nonce)
+# TODO: I don't understand why I put this here, if it's not
+# needed remove the commented code
+   # def verify_jws(self, payload, key):
+   #     return super(OebOIDCAuthenticationBackend, self).verify_jws(payload, key)
+   # 
+   # def verify_token(self, token, nonce):
+   #     return super(OebOIDCAuthenticationBackend, self).verify_token(token, nonce=nonce)
     
     # Overwrite to prevent warning, since we don't receive the email
     def verify_claims(self, claims):
@@ -61,3 +63,67 @@ class OebOIDCAuthenticationBackend(OIDCAuthenticationBackend):
         if "openid" in scopes.split():
             return "sub" in claims
         return super().verify_claims(claims)
+
+
+    def authenticate(self, request, **kwargs):
+        """Authenticates a user based on the OIDC code flow.
+
+        This is copied from [here](https://dev.to/hesbon/customizing-mozilla-django-oidc-544p),
+        which in turn is *almost* an exact copy of the original code,
+        except for the addition of the refresh token.
+        """
+
+        self.request = request
+        if not self.request:
+            return None
+
+        state = self.request.GET.get("state")
+        code = self.request.GET.get("code")
+        nonce = kwargs.pop("nonce", None)
+
+        if not code or not state:
+            return None
+
+        reverse_url = self.get_settings(
+            "OIDC_AUTHENTICATION_CALLBACK_URL", "oidc_authentication_callback"
+        )
+
+        token_payload = {
+            "client_id": self.OIDC_RP_CLIENT_ID,
+            "client_secret": self.OIDC_RP_CLIENT_SECRET,
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": absolutify(self.request, reverse(reverse_url)),
+        }
+
+        # Get the token
+        token_info = self.get_token(token_payload)
+        id_token = token_info.get("id_token")
+        access_token = token_info.get("access_token")
+        # In addition we also get the refresh token
+        refresh_token = token_info.get("refresh_token")
+
+        # Validate the token
+        payload = self.verify_token(id_token, nonce=nonce)
+
+        if payload:
+            self.store_tokens(access_token, id_token, refresh_token)
+            try:
+                return self.get_or_create_user(access_token, id_token, payload)
+            except SuspiciousOperation as exc:
+                LOGGER.warning("failed to get or create user: %s", exc)
+                return None
+
+        return None
+
+    def store_tokens(self, access_token, id_token, refresh_token):
+        # Differently to the [tutorial](https://dev.to/hesbon/customizing-mozilla-django-oidc-544p)
+        # I call the super method here, to reduce the duplicate code
+        super(OebOIDCAuthenticationBackend, self).store_tokens(access_token, id_token)
+
+        session = self.request.session
+        if self.get_settings("OIDC_STORE_REFRESH_TOKEN", True):
+            session["oidc_refresh_token"] = refresh_token
+
+
+

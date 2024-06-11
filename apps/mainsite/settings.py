@@ -512,14 +512,13 @@ OIDC_RP_SIGN_ALGO = 'RS256'
 OIDC_USERNAME_ALGO = 'badgeuser.utils.generate_badgr_username'
 OIDC_AUTHENTICATE_CLASS = 'oidc.oeb_oidc_authentication_request_view.OebOIDCAuthenticationRequestView'
 OIDC_USE_PKCE = True
-# The access token itself doesn't need to be stored in the session,
-# since the user is marked as authenticated in the Django session
-# TODO: Validate that this should be True
+# We store the access and refresh tokens because we use them
+# for authentication
 OIDC_STORE_ACCESS_TOKEN = True
-# We store the ID token in the session, since we need the session ID (sid) contained in it
-# in order to later identify the access token to revoke on a triggered logout
-# TODO: We do *not* need this if we use the OIDC access token
-OIDC_STORE_ID_TOKEN = True
+OIDC_STORE_REFRESH_TOKEN = True
+# TODO: Maybe we want to store the ID token and use it to prevent
+# prompts in the logout sequence
+OIDC_STORE_ID_TOKEN = False
 
 # Make the Django session expire after 1 minute, so that the UI has 1 minute to convert the session authentication
 # into an access token
