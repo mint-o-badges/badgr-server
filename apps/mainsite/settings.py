@@ -511,8 +511,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 OIDC_RP_SCOPES = 'openid'
 OIDC_RP_SIGN_ALGO = 'RS256'
 OIDC_USERNAME_ALGO = 'badgeuser.utils.generate_badgr_username'
-OIDC_AUTHENTICATE_CLASS = 'oidc.oeb_oidc_authentication_request_view.OebOIDCAuthenticationRequestView'
-OIDC_USE_PKCE = True
+# TODO: Currently this fails with PKCE
+#OIDC_USE_PKCE = True
 # We store the access and refresh tokens because we use them
 # for authentication
 OIDC_STORE_ACCESS_TOKEN = True

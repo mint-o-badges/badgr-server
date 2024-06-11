@@ -1,6 +1,13 @@
+import logging
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
+from mozilla_django_oidc.utils import absolutify
+
+from django.core.exceptions import SuspiciousOperation
+from django.urls import reverse
+
 from badgeuser.utils import generate_badgr_username
-from django.conf import settings
+
+LOGGER = logging.getLogger(__name__)
 
 # Since we only get the subject identifier from meinBildungsraum,
 # we don't necessarily know the E-Mail address of the user.

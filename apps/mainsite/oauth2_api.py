@@ -421,6 +421,7 @@ def get_expire_seconds(access_token):
     It first extracts the datetime (skipping signature verifications)
     and then calculates the diff to the current datetime
     """
+    # TODO: jwt apparently can't decode (anymore)
     expire_datetime = datetime.datetime.fromtimestamp(jwt.decode(access_token, options={"verify_signature": False})['exp'])
     now_datetime = datetime.datetime.now()
     diff = expire_datetime - now_datetime
