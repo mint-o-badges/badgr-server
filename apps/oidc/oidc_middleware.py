@@ -1,39 +1,17 @@
-# This file is copied from [here](https://dev.to/hesbon/customizing-mozilla-django-oidc-544p),
+# This file is heavily inspired from [here](https://dev.to/hesbon/customizing-mozilla-django-oidc-544p),
 # which in turn is an almost exact copy of the original mozilla-django-oidc
 # implementation of the ID token refresh middleware.
 
 import logging
 import time
-from re import Pattern as re_Pattern
 
 import requests
-from django.urls import reverse
-from django.utils.functional import cached_property
 from mozilla_django_oidc.middleware import SessionRefresh as OIDCSessionRefresh
 
 LOGGER = logging.getLogger(__name__)
 
 
 class OIDCSessionRefreshMiddleware(OIDCSessionRefresh):
-    @cached_property
-    def exempt_urls(self):
-        """Generate and return a set of url paths to exempt from SessionRefresh
-
-        This takes the value of ``settings.OIDC_EXEMPT_URLS`` and appends three
-        urls that mozilla-django-oidc uses. These values can be view names or
-        absolute url paths.
-
-        :returns: list of url paths (for example "/oidc/callback/")
-
-        """
-        exempt_urls = []
-        for url in self.OIDC_EXEMPT_URLS:
-            if not isinstance(url, re_Pattern):
-                exempt_urls.append(url)
-        return set(
-            [url if url.startswith("/") else reverse(url) for url in exempt_urls]
-        )
-
     def refresh_session(self, request):
         """Refresh the session with new data from the request session store."""
 

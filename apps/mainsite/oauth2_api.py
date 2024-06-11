@@ -398,9 +398,6 @@ class PublicRegisterApiView(APIView):
         serializer.save()
         return Response(serializer.data, status=HTTP_201_CREATED)
 
-def get_session_id(request):
-    return jwt.decode(request.session['oidc_id_token'], options={"verify_signature": False})['sid']
-
 def extract_oidc_access_token(request, scope):
     """
     Extracts the OIDC access token from the request

@@ -20,11 +20,6 @@ from django.conf.urls import include, url
 from django.urls import path
 
 from mainsite.admin import badgr_admin
-<<<<<<< HEAD
-from backpack.badge_connect_api import BadgeConnectManifestView, BadgeConnectManifestRedirectView
-from mainsite.oauth2_api import AuthorizationApiView, TokenView, AuthCodeExchange, RegisterApiView, PublicRegisterApiView
-from oidc.oidc_views import OidcView
-=======
 from backpack.badge_connect_api import (
     BadgeConnectManifestView,
     BadgeConnectManifestRedirectView,
@@ -36,7 +31,7 @@ from mainsite.oauth2_api import (
     RegisterApiView,
     PublicRegisterApiView,
 )
->>>>>>> main
+from oidc.oidc_views import OidcView
 
 badgr_admin.autodiscover()
 # make sure that any view/model/form imports occur AFTER admin.autodiscover
