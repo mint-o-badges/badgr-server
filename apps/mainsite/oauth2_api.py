@@ -1,11 +1,14 @@
 # encoding: utf-8
 
 import base64
+from typing import Any, Dict
+import requests
 import json
 import re
 from urllib.parse import urlparse
 import datetime
 import jwt
+import logging
 
 from django.core.files.storage import default_storage
 from django.conf import settings
@@ -36,6 +39,7 @@ from mainsite.serializers import ApplicationInfoSerializer, AuthorizationSeriali
 from mainsite.utils import fetch_remote_file_to_storage, throttleable, set_url_query_params
 
 badgrlogger = badgrlog.BadgrLogger()
+LOGGER = logging.getLogger(__name__)
 
 
 class AuthorizationApiView(OAuthLibMixin, APIView):
@@ -408,13 +412,43 @@ def extract_oidc_access_token(request, scope):
     joined_scope = ' '.join(scope)
     access_token = request.session['oidc_access_token']
     refresh_token = request.session['oidc_refresh_token']
+    return build_token(access_token,
+                       get_expire_seconds(access_token),
+                       joined_scope,
+                       refresh_token)
+
+def build_token(access_token, expires_in, scope, refresh_token):
     return {
         'access_token': access_token,
         'token_type': 'Bearer',
-        'expires_in': get_expire_seconds(access_token),
-        'scope': joined_scope,
+        'expires_in': expires_in,
+        'scope': scope,
         'refresh_token': refresh_token
     }
+
+def extract_oidc_refresh_token(request):
+    """
+    Extracts the OIDC refresh token from the request
+    """
+    return request.POST.get("refresh_token")
+
+def request_renewed_oidc_access_token(self, refresh_token):
+    token_refresh_payload = {
+        "refresh_token": refresh_token,
+        "client_id": getattr(settings, "OIDC_RP_CLIENT_ID"),
+        "client_secret": getattr(settings, "OIDC_RP_CLIENT_SECRET"),
+        "grant_type": "refresh_token",
+    }
+
+    try:
+        response = requests.post(
+            getattr(settings, "OIDC_OP_TOKEN_ENDPOINT"), data=token_refresh_payload
+        )
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        LOGGER.error("Failed to refresh session: %s", e)
+        return None
+    return response.json()
 
 def get_expire_seconds(access_token):
     """
@@ -494,6 +528,18 @@ class TokenView(OAuth2ProviderTokenView):
             # Log out of the django session, since from now on we use token authentication; the session authentication was
             # only used to obtain the access token
             logout(request)
+        elif grant_type == "refresh_token":
+            # Refreshes OIDC access tokens.
+            # Normal access tokens don't need to be refreshed,
+            # since they are valid for 24h
+            refresh_token = extract_oidc_refresh_token(request)
+            token = request_renewed_oidc_access_token(self, refresh_token)
+            if token == None:
+                return HttpResponse(json.dumps({"error": "Token refresh failed!"}), status=HTTP_401_UNAUTHORIZED)
+            # Adding the scope for compatibility reasons, even though OIDC access tokens
+            # have access to everything
+            token["scope"] = requested_scopes
+            response = HttpResponse(content=json.dumps(token), status=200)
 
         if oauth_app and not oauth_app.applicationinfo.issue_refresh_token:
             data = json.loads(response.content)
