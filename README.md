@@ -80,6 +80,8 @@ Set or adjust these values in your `settings_local.dev.py` and/or `settings_loca
   - This is done with the `auth/login?validateToken` url
   - E.g. `http://localhost:4200/auth/login?validateToken` and `http://localhost:4200/auth/login`
   - Typically you don't need to change these if you used the example with `LOGIN_BASE_URL`
+* `ALTCHA_API_KEY` and `ALTCHA_SECRET`:
+  - Set these values for captcha protection during the registration and issuer creation process. They can be obtained at [altcha.org](https://altcha.org/).
 
 ### Running the Django Server in Development
 

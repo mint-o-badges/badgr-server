@@ -33,9 +33,7 @@ INSTALLED_APPS = [
     'badgrsocialauth.providers.facebook',
     'badgrsocialauth.providers.kony',
     'badgrsocialauth.providers.twitter',
-    'allauth.socialaccount.providers.azure',
     'allauth.socialaccount.providers.auth0',
-    'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.linkedin_oauth2',
     'allauth.socialaccount.providers.oauth2',
     'corsheaders',
@@ -72,6 +70,8 @@ MIDDLEWARE = [
     'mainsite.middleware.XframeExempt500Middleware',
     'mainsite.middleware.MaintenanceMiddleware',
     'badgeuser.middleware.InactiveUserMiddleware',
+    # Since allauth 0.56.0 this middleware needs to be present
+    'allauth.account.middleware.AccountMiddleware',
     # 'mainsite.middleware.TrailingSlashMiddleware',
 ]
 
@@ -180,9 +180,6 @@ SOCIALACCOUNT_EMAIL_VERIFICATION = 'optional'
 SOCIALACCOUNT_PROVIDERS = {
     'kony': {
         'environment': 'dev'
-    },
-    'azure': {
-        'VERIFIED_EMAIL': True
     },
     'linkedin_oauth2': {
         'VERIFIED_EMAIL': True

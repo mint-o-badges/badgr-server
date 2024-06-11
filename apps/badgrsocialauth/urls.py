@@ -47,7 +47,7 @@ urlpatterns = [
         name='saml2_provision'),
 ]
 
-provider_list = providers.registry.get_list()
+provider_list = providers.registry.provider_map.values()
 configured_providers = getattr(settings, 'SOCIALACCOUNT_PROVIDERS', dict()).keys()
 for provider in [p for p in provider_list if p.id in configured_providers]:
     try:

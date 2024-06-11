@@ -41,7 +41,7 @@ DATABASES = {
 ###
 CACHES = {
      'default': {
-         'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+         'BACKEND': 'django.core.cache.backends.memcached.PyMemcacheCache',
          'LOCATION': 'memcached:11211',
          'KEY_FUNCTION': 'mainsite.utils.filter_cache_key'
      }
@@ -169,3 +169,8 @@ LOGIN_BASE_URL = ''
 # Don't change these
 LOGIN_REDIRECT_URL = f'{LOGIN_BASE_URL}?validateToken'
 LOGOUT_REDIRECT_URL = f'{LOGIN_BASE_URL}'
+
+ALTCHA_API_KEY = ''
+ALTCHA_SECRET = ''
+
+ALTCHA_SPAMFILTER_ENDPOINT = 'https://eu.altcha.org/api/v1/classify?'
