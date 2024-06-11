@@ -38,3 +38,6 @@ api_spec_v2.json
 api_spec_bcv1.json
 
 django.log
+
+venv/
+venv
