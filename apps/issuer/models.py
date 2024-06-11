@@ -634,6 +634,7 @@ class BadgeClass(ResizeUploadedImage,
 
     name = models.CharField(max_length=255)
     image = models.FileField(upload_to='uploads/badges', blank=True)
+    imageFrame = models.BooleanField(default=True)
     image_preview = models.FileField(upload_to='uploads/badges', blank=True, null=True)
     description = models.TextField(blank=True, null=True, default=None)
 
