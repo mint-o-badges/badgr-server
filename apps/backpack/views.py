@@ -326,7 +326,7 @@ def pdf(request, *args, **kwargs):
 
     add_recipient_name(first_page_content, first_name, last_name, badgeinstance.issued_on) 
 
-    # addBadgeImage(first_page_content, badgeclass.image)
+    addBadgeImage(first_page_content, badgeclass.image)
 
     add_title(first_page_content, badgeclass.name)  
 
@@ -334,8 +334,8 @@ def pdf(request, *args, **kwargs):
 
     add_issuedBy(first_page_content, badgeinstance.issuer.name)
 
-    # if badgeclass.issuer.image is not None:
-    #     add_issuerImage(first_page_content, badgeclass.issuer.image)
+    if badgeclass.issuer.image is not None:
+        add_issuerImage(first_page_content, badgeclass.issuer.image)
 
     createMultiPage(response, first_page_content, competencies, first_name, last_name, badgeclass.name)
 
