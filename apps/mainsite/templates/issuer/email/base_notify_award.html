@@ -32,7 +32,7 @@
   
   <div style="position: absolute; top: 25px; right: 20px;">
     <a href="#about-section">
-      <img src="{% static '/images/was_bringen_mir_badges.png' %}" style="width: auto; height: 166px;">
+      <img class="faq-badges-image" src="{% static '/images/was_bringen_mir_badges.png' %}" style="width: auto;">
     </a>
   </div> 
   <div class="mj-column-per-100 outlook-group-fix" style="font-size:13px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;">
@@ -48,11 +48,11 @@
         </tr>
         </tbody>
         <tr>
-          <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
+          <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word">
             
-  <div style="font-family: Rubik, sans-serif;font-size:26px;font-weight: 500; line-height:28.6px;text-align:left;color:#492e98;">
-    Herzlichen Glückwunsch, <br> Du hast einen <span style="font-weight: 800">Badge</span> erhalten!
-  </div>
+          <div class="badge-award-title" style="font-family: Rubik, sans-serif;font-size:26px;font-weight: 500; line-height:28.6px;text-align:left;color:#492e98;">
+            Herzlichen Glück&shy;wunsch, <br> Du hast einen <span style="font-weight: 800">Badge</span> erhalten!
+          </div>
 
           </td>
         </tr>
@@ -62,56 +62,64 @@
             
   <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;border-spacing:0px;">
     <tbody>
-      <tr>
-        <td style="width:169px;">
-          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+      <tr class="awarded-badge-info" style="display: flex">
+        <td class="awarded-badge-info-issuer-data">
+          <div class="issuer-info" style="display: flex; gap: 0.5rem;">
 
             <a href="{{ badge_instance_url }}" style="
             text-decoration: none;
           ">
               <img alt="" height="auto" src="{{ image_url }}" style="border:0;display:block;outline:none;text-decoration:none;height:auto;width:100%;" width="169">
             </a>
-            <div style="width: 100%; justify-content: center;">
+            <div style="width: 100%; justify-content: center; display: flex; flex-direction: column;">
               <span style="font-family:Rubik;font-size:13px;font-weight: 400;line-height:15.6px;text-align:left;color:#323232;font-style: italic">Vergeben von:</span>
               <div style="font-family:Rubik, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#000000;">
                 <a href="{{ issuer_detail }}" class="linkstyle" style="color: #515dc6; font-weight: bold; text-decoration: none;">{{ issuer_name }}</a>
               </div>
+              {% if issuer_image_url %}
+              <img alt="" height="auto" src="{{ issuer_image_url }}" style="border:0;display:block;outline:none;text-decoration:none;" width="150">
+              {% endif %}
             </div>
           </div>
+        </td>
+        <td class="badge-competencies" align="right" style="font-size:0px;word-break:break-word; max-width: 352px;">
+
+          <div style="font-family: Rubik, sans-serif;font-size:13px;font-weight: 400; line-height:15.6px;text-align:left;color:#323232; right: 100px; display: flex; flex-direction: column;">
+            <p>Du hast erfolgreich an dem Lehrangebot  <br> <span style="color: #492e98">{{ badge_name }}</span> teilgenommen.</p>
+            <p style="font-weight: 500; font-size:13px; line-height:16.9px; ">
+              Dabei hast du folgende Kompetenzen gestärkt: 
+            </p>
+            <ul style="margin:0px; padding: 0px">
+              {% for item in badge_competencies %}
+                  <div style="background-color: #ecfeed; border-width: 1px; border-style: solid; border-color:#492e98; border-radius: 15px; padding: 0.5rem; margin-top: 0.25rem; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-family: Rubik, sans-serif;font-size:13px;font-weight: 500; line-height:15.6px">
+                      {{ item.name }}
+                    </span>
+                    <div style="display: flex;">
+                      <div style="display: flex; gap: 3.5px; padding: 5px; border-width: 1px; border-radius: 15px; border-style:solid; border-color:#492e98; background-color: white;">
+                          <img src="{% static '/images/clock_icon.svg' %}" style="width: 14px; height: auto;">
+                          <span style="font-family: Rubik, sans-serif;font-size:11px;font-weight: 300; line-height:15px"> 
+                            {{item.studyLoad}} Min.
+                          </span>
+
+                      </div>
+                    </div>
+                  </div>
+              {% endfor %}
+          </ul>
+            <a href="{{ site_url }}" style="background:#492e98;color:#FFFFFF;font-family:Rubik, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none; display: block; padding:15px 30px; border-radius: 10px; margin-top: 1em; text-align: center;">
+              {% block call_to_action_label %}
+              {% endblock %}
+          </a>
+          </div>
+
         </td>
       </tr>
     </tbody>
   </table>
 
           </td>
-          <td align="right" style="font-size:0px;padding:10px 25px;word-break:break-word; width: 352px;">
 
-            <div style="font-family: Rubik, sans-serif;font-size:13px;font-weight: 400; line-height:15.6px;text-align:left;color:#323232; right: 100px; display: flex; flex-direction: column;">
-              <p>Du hast erfolgreich an dem Lehrangebot  <br> <span style="color: #492e98">{{ badge_name }}</span> teilgenommen.</p>
-              <p style="font-weight: 500; font-size:13px; line-height:16.9px; ">
-                Dabei hast du folgende Kompetenzen gestärkt: 
-              </p>
-              <ul >
-                {% for item in badge_competencies %}
-                    <div style="background-color: #ecfeed; border-width: 1px; border-style: solid; border-color:#492e98; border-radius: 15px; padding: 0.5rem; margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
-                      <span style="font-family: Rubik, sans-serif;font-size:13px;font-weight: 500; line-height:15.6px">
-                        {{ item.name }}
-                      </span>
-                      <div style="display: flex;">
-                        <div style="display: flex; gap: 3.5px; padding: 5px; border-width: 1px; border-radius: 15px; border-style:solid; border-color:#492e98; background-color: white;">
-                            <img src="{% static '/images/clock_icon.svg' %}" style="width: 14px; height: auto;">
-                            <span style="font-family: Rubik, sans-serif;font-size:11px;font-weight: 300; line-height:15px"> 
-                              {{item.studyLoad}} Min.
-                            </span>
-
-                        </div>
-                      </div>
-                    </div>
-                {% endfor %}
-            </ul>
-            </div>
-
-          </td>
         </tr>      
   </table>
 
@@ -131,147 +139,6 @@
     
   </div>
 
-  
-  <!--[if mso | IE]>
-      </td>
-    </tr>
-  </table>
-  
-  <table
-     align="center" border="0" cellpadding="0" cellspacing="0" class="" style="width:600px;" width="600"
-  >
-    <tr>
-      <td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;">
-  <![endif]-->
-
-  
-  <div style="background:#F5F5F5;background-color:#F5F5F5;Margin:0px auto;max-width:600px;">
-    
-    <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#F5F5F5;background-color:#F5F5F5;width:100%;">
-      <tbody>
-        <tr>
-          <td style="border-left:1px solid #DBD8DF;border-right:1px solid #DBD8DF;direction:ltr;font-size:0px;padding:12px;text-align:center;vertical-align:top;">
-            <!--[if mso | IE]>
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-            
-    <tr>
-  
-        <td
-           class="" style="vertical-align:top;width:114.8px;"
-        >
-      <![endif]-->
-        
-  <div class="mj-column-per-20 outlook-group-fix" style="font-size:13px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;">
-    
-  <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top;" width="100%">
-    
-        <tr>
-          <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-            
-  <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;border-spacing:0px;">
-    <tbody>
-      <tr>
-        <td style="width:48px;">
-            {% if issuer_image_url %}
-  <img alt="" height="auto" src="{{ issuer_image_url }}" style="border:0;display:block;outline:none;text-decoration:none;height:auto;width:100%;" width="48">
-  {% endif %}
-        </td>
-      </tr>
-    </tbody>
-  </table>
-
-          </td>
-        </tr>
-      
-  </table>
-
-  </div>
-
-      <!--[if mso | IE]>
-        </td>
-      
-        <td
-           class="" style="vertical-align:top;width:459.2px;"
-        >
-      <![endif]-->
-
-      <!--[if mso | IE]>
-        </td>
-      
-    </tr>
-  
-              </table>
-            <![endif]-->
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    
-  </div>
-
-  
-  <!--[if mso | IE]>
-      </td>
-    </tr>
-  </table>
-  
-  <table
-     align="center" border="0" cellpadding="0" cellspacing="0" class="" style="width:600px;" width="600"
-  >
-    <tr>
-      <td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;">
-  <![endif]-->
-
-  
-  <div style="background:#F5F5F5;background-color:#F5F5F5;Margin:0px auto;max-width:600px;">
-    
-    <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#F5F5F5;background-color:#F5F5F5;width:100%;">
-      <tbody>
-        <tr>
-          <td style="border-left:1px solid #DBD8DF;border-right:1px solid #DBD8DF;direction:ltr;font-size:0px;padding:12px;text-align:center;vertical-align:top;">
-            <!--[if mso | IE]>
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-            
-    <tr>
-  
-        <td
-           class="" style="vertical-align:top;width:574px;"
-        >
-      <![endif]-->
-        
-  <div class="mj-column-per-100 outlook-group-fix" style="font-size:13px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;">
-    
-  <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top;" width="100%">
-    
-        <tr>
-          <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-            
-  <div style="font-family:Rubik, sans-serif;font-size:12px;font-weight:400;line-height:24px;text-align:left;color:#666666;">
-    {% if issued_on %}
-    Ausgestellt am {{issued_on}}
-    {% endif %}
-  </div>
-
-          </td>
-        </tr>
-      
-  </table>
-
-  </div>
-
-      <!--[if mso | IE]>
-        </td>
-      
-    </tr>
-  
-              </table>
-            <![endif]-->
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    
-  </div>
 
   
   <!--[if mso | IE]>
@@ -313,17 +180,13 @@
   <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:separate;width:100%;line-height:100%;">
     <tr>
       <td align="center" bgcolor="#492e98" role="presentation" style="border:none;border-radius:2px;cursor:auto;background:#492e98;" valign="middle">
-        <a href="{{ site_url }}" style="background:#492e98;color:#FFFFFF;font-family:Rubik, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none; display: block; padding:15px 30px;" target="_blank">
-            {% block call_to_action_label %}
-            {% endblock %}
-        </a>
       </td>
     </tr>
   </table>
   <div style="background:#F5F5F5;background-color:#F5F5F5;Margin:0px auto;max-width:600px; font-family:Rubik; margin-top: 1rem;">
-    <div style="background-color: #93F993; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
-      <p style="font-size: 13px; font-weight: 400; line-height: 16.9px; width: 342.74px; text-align: left">Alle deine erhaltenen Badges kannst du in deinem Rucksack auf <a href="https://openbadges.education">Open Educational Badges</a> sammeln und mit anderen teilen. Lege jetzt ganz einfach einen Account an oder logge dich mit deiner <span style="color: #492e98; font-weight: 800; ">MBR-ID</span> ein.</p>
-      <a href="https://openbadges.education/recipient/badges" style="background:#492e98;color:#FFFFFF;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none; display: block; padding:8.91px, 35.64px; border-radius: 10px; margin-right: 20px" target="_blank">
+    <div class="collect-badges" style="background-color: #93F993; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; padding: 0.5rem;">
+      <p style="font-size: 13px; font-weight: 400; line-height: 16.9px; text-align: left;">Alle deine erhaltenen Badges kannst du in deinem Rucksack auf <a href="https://openbadges.education">Open Educational Badges</a> sammeln und mit anderen teilen. Lege jetzt ganz einfach einen Account an oder logge dich mit deiner <span style="color: #492e98; font-weight: 800; ">MBR-ID</span> ein.</p>
+      <a href="https://openbadges.education/recipient/badges" style="background:#492e98;color:#FFFFFF;font-family:Rubik, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none; display: block; padding:10px 30px; border-radius: 10px; text-wrap: nowrap; margin-right: 5px">
         Jetzt Badges sammeln
     </a>
     </div>
@@ -373,66 +236,6 @@
   <![endif]-->
 
   
-  <div style="background:#FFFFFF;background-color:#FFFFFF;Margin:0px auto;max-width:600px;">
-    
-    <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#FFFFFF;background-color:#FFFFFF;width:100%;">
-      <tbody>
-        <tr>
-          <td style="border-left:1px solid #DBD8DF;border-right:1px solid #DBD8DF;direction:ltr;font-size:0px;padding:12px;text-align:center;vertical-align:top;">
-            <!--[if mso | IE]>
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-            
-    <tr>
-  
-        <td
-           class="" style="vertical-align:top;width:574px;"
-        >
-      <![endif]-->
-        
-  <div class="mj-column-per-100 outlook-group-fix" style="font-size:13px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;">
-    
-  <table border="0" cellpadding="0" cellspacing="0" role="presentation" width="100%">
-    <tbody>
-      <tr>
-        <td style="vertical-align:top;padding-bottom:32px;">
-          
-  <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="" width="100%">
-    
-        <tr>
-          <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-            
-  <div style="font-family:Rubik, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#000000;">
-      <a href="{{ HTTP_ORIGIN }}{% url 'v1_api_analytics_share_badge' slug=badge_id %}?provider=facebook&source=awardemail"><img src="{% static '/images/icon-facebook@2x.png' %}" align="left" width="32px" style="padding-right:16px;"></a>
-      <a href="{{ HTTP_ORIGIN }}{% url 'v1_api_analytics_share_badge' slug=badge_id %}?provider=linkedin&source=awardemail"><img src="{% static '/images/icon-linkedin@2x.png' %}" align="left" width="32px" style="padding-right:16px;"></a>
-      <a href="{{ HTTP_ORIGIN }}{% url 'v1_api_analytics_share_badge' slug=badge_id %}?provider=pinterest&source=awardemail"><img src="{% static '/images/icon-pinterest@2x.png' %}" align="left" width="32px" style="padding-right:16px;"></a>
-      <a href="{{ HTTP_ORIGIN }}{% url 'v1_api_analytics_share_badge' slug=badge_id %}?provider=twitter&source=awardemail"><img src="{% static '/images/icon-twitter@2x.png' %}" align="left" width="32px" style="padding-right:16px;"></a>
-  </div>
-
-          </td>
-        </tr>
-      
-  </table>
-
-        </td>
-      </tr>
-    </tbody>
-  </table>
-
-  </div>
-
-      <!--[if mso | IE]>
-        </td>
-      
-    </tr>
-  
-              </table>
-            <![endif]-->
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    
-  </div>
 
   <div style="background: #f5f5f5; margin: 0px auto; max-width: 600px">
     <div style="line-height: 0; font-size: 0">
@@ -451,6 +254,9 @@
                 padding: 12px;
                 text-align: center;
                 vertical-align: top;
+                border: 1px solid #dbd8df;
+                border-left: 1px solid #dbd8df;
+                border-right: 1px solid #dbd8df;
               "
             >
               <div
@@ -510,7 +316,7 @@
                                   color: #492e98;
                                 "
                               >
-                                Du hast Fragen? <span style="font-weight: 800;">Wir haben Antworten!</span> 
+                                Du hast Fragen? <span class="break-on-small" style="font-weight: 800;">Wir haben Antworten!</span> 
                               </div>
                               <div style="
                                   margin-top: 1rem;
