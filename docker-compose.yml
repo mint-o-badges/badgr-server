@@ -10,7 +10,10 @@ services:
     depends_on:
       - "db"
       - "memcached"
-    command: /badgr_server/manage.py runserver 0.0.0.0:8000
+    command: >
+      sh -c "/badgr_server/manage.py collectstatic --noinput &&
+             /badgr_server/manage.py migrate &&
+             /badgr_server/manage.py runserver 0.0.0.0:8000"
     volumes:
       - ./apps:/badgr_server/apps
       - ./manage.py:/badgr_server/manage.py
