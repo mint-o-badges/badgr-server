@@ -86,9 +86,11 @@
 
           <div style="font-family: Rubik, sans-serif;font-size:13px;font-weight: 400; line-height:15.6px;text-align:left;color:#323232; right: 100px; display: flex; flex-direction: column;">
             <p>Du hast erfolgreich an dem Lehrangebot  <br> <span style="color: #492e98">{{ badge_name }}</span> teilgenommen.</p>
+            {% if badge_competencies %}
             <p style="font-weight: 500; font-size:13px; line-height:16.9px; ">
               Dabei hast du folgende Kompetenzen gestärkt: 
             </p>
+            {% endif %}
             <ul style="margin:0px; padding: 0px">
               {% for item in badge_competencies %}
                   <div style="background-color: #ecfeed; border-width: 1px; border-style: solid; border-color:#492e98; border-radius: 15px; padding: 0.5rem; margin-top: 0.25rem; display: flex; justify-content: space-between; align-items: center;">
