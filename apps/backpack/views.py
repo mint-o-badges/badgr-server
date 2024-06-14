@@ -162,7 +162,7 @@ class PageNumCanvas(canvas.Canvas):
 
 def createMultiPage(response, first_page_content, competencies, first_name, last_name, badge_name):
     """
-    Create a multi-page document
+    Create a multi-page pdf document
     """
     
     doc = SimpleDocTemplate(response,pagesize=A4)
