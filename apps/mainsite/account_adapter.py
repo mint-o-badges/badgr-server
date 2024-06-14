@@ -67,8 +67,8 @@ def generate_pdf_content(slug):
 
         add_issuedBy(first_page_content, badgeinstance.issuer.name)
 
-        # if badgeclass.issuer.image is not None:
-        #     add_issuerImage(first_page_content, badgeclass.issuer.image)
+        if badgeclass.issuer.image is not None:
+            add_issuerImage(first_page_content, badgeclass.issuer.image)
         
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4)
@@ -187,8 +187,8 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
             img_path = os.path.join(settings.MEDIA_ROOT, "uploads", "badges", "assertion-{}.png".format(context.get('badge_id', None)))
             with open(img_path, 'rb') as f:
                 badge_img = f.read()
-            msg.attach(badge_name, badge_img, "badge_image/png")
-            msg.attach(badge_name, pdf_document,'badge_certificate/pdf')
+            msg.attach(badge_name + '.png', badge_img, "badge_image/png")
+            msg.attach(badge_name + '.pdf', pdf_document,'badge_certificate/pdf')
         logger.event(badgrlog.EmailRendered(msg))
         msg.send()
 
