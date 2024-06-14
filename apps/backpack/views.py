@@ -222,12 +222,13 @@ def createMultiPage(response, first_page_content, competencies, first_name, last
               if competencies[i]['studyLoad'] > 120:
                   studyLoadInHours = competencies[i]['studyLoad'] / 120
                   text = "%s Stunden" % int(studyLoadInHours)
-              rounded_rect = RoundedRectFlowable(0, -15, 120, 30, 15, text=text, strokecolor="#492E98")
+              rounded_rect = RoundedRectFlowable(0, -7.5, 120, 30, 15, text=text, strokecolor="#492E98")
               competency = competencies[i]['name']
               if competencies[i]['escoID'] is not None:
-                  competency = competency + " *"
+                    competency = competency + " *"
+              info = (competency[:20] + '...') if len(competency) > 20 else competency
               tbl_data = [
-                    [rounded_rect, Paragraph(competency,text_style)]
+                    [rounded_rect, Paragraph(info,text_style)]
               ]
               Story.append(Table(tbl_data, style=[('VALIGN', (0, 0), (-1, -1), 'MIDDLE')]))     
               Story.append(Spacer(1, 20))   
