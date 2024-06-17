@@ -62,7 +62,7 @@ class RoundedRectFlowable(Flowable):
 
         try:
             if drawing is not None:
-               renderPDF.draw(drawing, self.canv, 10, -7.5)
+               renderPDF.draw(drawing, self.canv, 10, -2.5)
         except Exception as e:
             print(e)
         
