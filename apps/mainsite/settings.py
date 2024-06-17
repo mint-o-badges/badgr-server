@@ -70,8 +70,6 @@ MIDDLEWARE = [
     'mainsite.middleware.XframeExempt500Middleware',
     'mainsite.middleware.MaintenanceMiddleware',
     'badgeuser.middleware.InactiveUserMiddleware',
-    # Since allauth 0.56.0 this middleware needs to be present
-    'allauth.account.middleware.AccountMiddleware',
     # 'mainsite.middleware.TrailingSlashMiddleware',
 ]
 
