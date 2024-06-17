@@ -7,9 +7,6 @@ from rest_framework import status
 from rest_framework.decorators import permission_classes, authentication_classes, api_view
 
 class OidcView():
-    def login(request):
-        return render(request, 'login.html')
-    
     @api_view(['GET'])
     @authentication_classes([])
     @permission_classes([])

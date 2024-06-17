@@ -73,7 +73,7 @@ Set or adjust these values in your `settings_local.dev.py` and/or `settings_loca
   - For the demo as specified [here](https://aai.demo.meinbildungsraum.de/realms/nbp-aai/.well-known/openid-configuration)
 * `LOGIN_BASE_URL`
   - The base url for the redirect urls
-  - E.g. `http://localhost:4200//auth/login`
+  - E.g. `http://localhost:4200/auth/login`
 * `LOGIN_REDIRECT_URL` and `LOGOUT_REDIRECT_URL`
   - The redirect urls to our application after login / logout via meinBildungsraum
   - After the login with meinBildungsraum, the OIDC session authentication needs to be converted to an access token

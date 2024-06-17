@@ -171,8 +171,6 @@ urlpatterns = [
 
     # meinBildungsraum OIDC connection
     path('oidc/', include('mozilla_django_oidc.urls')),
-    # A debug view for OIDC
-    # path('oidcview/login', OidcView.login, name="oidcviewLogin"),
     url(r'^oidcview/logoutRedirect/', OidcView.oidcLogoutRedirect, name="oidcLogoutRedirect"),
 
     url(r"^altcha", createCaptchaChallenge, name="create_captcha_challenge"),
