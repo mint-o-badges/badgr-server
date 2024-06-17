@@ -59,11 +59,10 @@ class RoundedRectFlowable(Flowable):
             file.write(svg_content)
 
         drawing = svg2rlg('tempfile.svg')
-        renderPDF.draw(drawing, self.canv, 10, -10)
 
         try:
             if drawing is not None:
-               renderPDF.draw(drawing, self.canv, 10, -10)
+               renderPDF.draw(drawing, self.canv, 10, -7.5)
         except Exception as e:
             print(e)
         
@@ -269,7 +268,10 @@ def add_title(first_page_content, badge_class_name):
 
     title_style = ParagraphStyle(name='Title', fontSize=24, textColor='#492E98', leading=30, alignment=TA_CENTER)
     first_page_content.append(Paragraph(f"<strong>{badge_class_name}</strong>", title_style))
-    first_page_content.append(Spacer(1, 35))
+    if(len(badge_class_name) > 30):
+        first_page_content.append(Spacer(1, 15))
+    else:
+        first_page_content.append(Spacer(1, 35))
 
 def truncate_text(text, max_words=50):
     words = text.split()
@@ -281,7 +283,7 @@ def truncate_text(text, max_words=50):
 def add_description(first_page_content, description):
     description_style = ParagraphStyle(name='Description', fontSize=14, leading=16, alignment=TA_CENTER)
     first_page_content.append(Paragraph(truncate_text(description), description_style))
-    first_page_content.append(Spacer(1, 20))
+    first_page_content.append(Spacer(1, 10))
 
 def add_issuedBy(first_page_content, issued_by):
     issued_by_style = ParagraphStyle(name='Issued_By', fontSize=18, textColor='#492E98', alignment=TA_CENTER)
