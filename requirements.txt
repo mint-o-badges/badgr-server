@@ -23,7 +23,7 @@ pymemcache
 djangorestframework==3.12.2
 
 # Django Allauth
-django-allauth==0.63.3
+django-allauth==0.46.0
 oauthlib==3.1.0
 requests==2.25.0
 requests-oauthlib==0.4.2
@@ -115,3 +115,7 @@ uwsgi
 tox
 
 pyopenssl==24.0.0
+
+reportlab
+svg2rlg
+svglib
