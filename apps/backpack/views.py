@@ -335,8 +335,10 @@ def pdf(request, *args, **kwargs):
 
     add_issuedBy(first_page_content, badgeinstance.issuer.name)
 
-    if badgeclass.issuer.image is not None:
+    try:
         add_issuerImage(first_page_content, badgeclass.issuer.image)
+    except: 
+        pass    
 
     createMultiPage(response, first_page_content, competencies, first_name, last_name, badgeclass.name)
 

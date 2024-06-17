@@ -67,8 +67,10 @@ def generate_pdf_content(slug):
 
         add_issuedBy(first_page_content, badgeinstance.issuer.name)
 
-        if badgeclass.issuer.image is not None:
+        try:
             add_issuerImage(first_page_content, badgeclass.issuer.image)
+        except:
+            pass    
         
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4)
@@ -179,9 +181,10 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
         if template_prefix == 'issuer/email/notify_account_holder':
             context['mbr_block'] = True
 
+
         msg = self.render_mail(template_prefix, email, context)
         # badge_id is equal to the badge instance slug
-        if template_prefix == 'issuer/email/notify_account_holder':
+        if template_prefix == 'issuer/email/notify_account_holder' or template_prefix == 'issuer/email/notify_earner':
             pdf_document = generate_pdf_content(context['badge_id'])
             badge_name = f"{context['badge_name']}.badge"
             img_path = os.path.join(settings.MEDIA_ROOT, "uploads", "badges", "assertion-{}.png".format(context.get('badge_id', None)))
