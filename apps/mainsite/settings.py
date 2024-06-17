@@ -65,7 +65,6 @@ MIDDLEWARE = [
     'oauth2_provider.middleware.OAuth2TokenMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'oidc.oidc_middleware.OIDCSessionRefreshMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'mainsite.middleware.XframeExempt500Middleware',
@@ -358,7 +357,6 @@ REST_FRAMEWORK = {
         'mainsite.authentication.BadgrOAuth2Authentication',
         'mainsite.authentication.LoggedLegacyTokenAuthentication',
         'entity.authentication.ExplicitCSRFSessionAuthentication',
-        # TODO: Validate that we want to use this authentication
         'mozilla_django_oidc.contrib.drf.OIDCAuthentication',
     ),
     'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
@@ -511,8 +509,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 OIDC_RP_SCOPES = 'openid'
 OIDC_RP_SIGN_ALGO = 'RS256'
 OIDC_USERNAME_ALGO = 'badgeuser.utils.generate_badgr_username'
-# TODO: Currently this fails with PKCE
-#OIDC_USE_PKCE = True
+OIDC_USE_PKCE = True
 # We store the access and refresh tokens because we use them
 # for authentication
 OIDC_STORE_ACCESS_TOKEN = True
