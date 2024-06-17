@@ -46,18 +46,23 @@ def generate_pdf_content(slug):
         except BadgeClass.DoesNotExist:
             raise ValueError("BadgeClass not found")
 
+        badgeuser = None
         try: 
             badgeuser = BadgeUser.objects.get(email=badgeinstance.recipient_identifier)  
         except BadgeUser.DoesNotExist:
-            raise ValueError("BadgeUser not found")
+            logger = logging.getLogger(__name__)
+            logger.warning("Could not find badgeuser")
         
-        first_name = badgeuser.first_name.capitalize()
-        last_name = badgeuser.last_name.capitalize()
+        first_page_content = []
+        if badgeuser is not None: 
+            first_name = badgeuser.first_name.capitalize()
+            last_name = badgeuser.last_name.capitalize()
+            add_recipient_name(first_page_content, first_name, last_name, badgeinstance.issued_on) 
+        else: 
+            add_recipient_name(first_page_content, badgeinstance.recipient_identifier, '', badgeinstance.issued_on)    
 
         competencies = badgeclass.json["extensions:CompetencyExtension"]
-        first_page_content = []
 
-        add_recipient_name(first_page_content, first_name, last_name, badgeinstance.issued_on) 
 
         addBadgeImage(first_page_content, badgeclass.image)
 
@@ -131,7 +136,7 @@ def generate_pdf_content(slug):
                         text = "%s Stunden" % competencies[i]['studyLoad']
                     rounded_rect = RoundedRectFlowable(0, -15, 120, 35, 15, text=text, strokecolor="#492E98")
                     competency = competencies[i]['name']
-                    if competencies[i]['escoID'] is not None:
+                    if competencies[i]['escoID']:
                         competency = competency + " *"
                     tbl_data = [
                             [rounded_rect, Paragraph(competency,text_style)]
