@@ -56,14 +56,6 @@ class OebOIDCAuthenticationBackend(OIDCAuthenticationBackend):
         # Don't update based on data from OIDC
         return user
 
-# TODO: I don't understand why I put this here, if it's not
-# needed remove the commented code
-   # def verify_jws(self, payload, key):
-   #     return super(OebOIDCAuthenticationBackend, self).verify_jws(payload, key)
-   # 
-   # def verify_token(self, token, nonce):
-   #     return super(OebOIDCAuthenticationBackend, self).verify_token(token, nonce=nonce)
-    
     # Overwrite to prevent warning, since we don't receive the email
     def verify_claims(self, claims):
         scopes = self.get_settings("OIDC_RP_SCOPES", "openid")
