@@ -7,6 +7,7 @@ import urllib.error
 import dateutil
 import re
 import uuid
+import base64
 from collections import OrderedDict
 
 import cachemodel
@@ -37,7 +38,6 @@ from mainsite.mixins import HashUploadedImage, ResizeUploadedImage, ScrubUploade
 from mainsite.models import BadgrApp, EmailBlacklist
 from mainsite import blacklist
 from mainsite.utils import OriginSetting, generate_entity_uri
-import logging
 
 from .utils import (add_obi_version_ifneeded, CURRENT_OBI_VERSION, generate_rebaked_filename,
                     generate_sha256_hashstring, get_obi_context, parse_original_datetime, UNVERSIONED_BAKED_VERSION)
@@ -52,7 +52,6 @@ RECIPIENT_TYPE_TELEPHONE = 'telephone'
 RECIPIENT_TYPE_URL = 'url'
 
 logger = badgrlog.BadgrLogger()
-log = logging.getLogger(__name__)
 
 class BaseAuditedModel(cachemodel.CacheModel):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
@@ -1150,6 +1149,7 @@ class BadgeInstance(BaseAuditedModel,
         self.revocation_reason = revocation_reason
         self.image.delete()
         self.save()
+  
 
     # TODO: Use email related to the new domain, when one is created. Not urgent in this phase.
     def notify_earner(self, badgr_app=None, renotify=False):
@@ -1163,7 +1163,6 @@ class BadgeInstance(BaseAuditedModel,
                 if(extension.name == 'extensions:CompetencyExtension'):
                     competencyExtensions[extension.name] = json_loads(extension.original_json)
 
-        log.error(competencyExtensions)
         competencies = []
 
         for competency in competencyExtensions.get('extensions:CompetencyExtension', []):
@@ -1176,11 +1175,7 @@ class BadgeInstance(BaseAuditedModel,
             }
             competencies.append(competency_entry)
 
-        log.error(competencies)                        
 
-        # item = get_object_or_404(extensions, badgeclass='extension:CompetencyExtension')
-        # competencyExtension = [item.CompetencyExtension for item in extensions]
-        # log.error(extensions)
         if self.recipient_type != RECIPIENT_TYPE_EMAIL:
             return
 
@@ -1197,6 +1192,12 @@ class BadgeInstance(BaseAuditedModel,
             badgr_app = self.cached_issuer.cached_badgrapp
         if badgr_app is None:
             badgr_app = BadgrApp.objects.get_current(None)
+
+        adapter = get_adapter()
+
+        pdf_document = adapter.generate_pdf_content(slug =  self.entity_id)
+        encoded_pdf_document = base64.b64encode(pdf_document).decode('utf-8')
+        data_url = f"data:application/pdf;base64,{encoded_pdf_document}"
 
         try:
             if self.issuer.image:
@@ -1216,6 +1217,8 @@ class BadgeInstance(BaseAuditedModel,
                 'issuer_detail': self.issuer.public_url,
                 'issuer_image_url': issuer_image_url,
                 'badge_instance_url': self.public_url,
+                'pdf_download': data_url,
+                'pdf_document': pdf_document,
                 'image_url': self.public_url + '/image?type=png',
                 'download_url': self.public_url + "?action=download",
                 'site_name': "Open Educational Badges",
@@ -1239,7 +1242,6 @@ class BadgeInstance(BaseAuditedModel,
         except CachedEmailAddress.DoesNotExist:
             pass
 
-        adapter = get_adapter()
         adapter.send_mail(template_name, self.recipient_identifier, context=email_context)
 
     def get_extensions_manager(self):
