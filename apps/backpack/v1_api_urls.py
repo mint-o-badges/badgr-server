@@ -6,6 +6,8 @@ from backpack.api import BackpackAssertionList, BackpackAssertionDetail, \
 from backpack.api_v1 import CollectionLocalBadgeInstanceList, \
         CollectionLocalBadgeInstanceDetail, CollectionGenerateShare
 
+from backpack.views import pdf
+
 urlpatterns = [
 
     url(r'^badges$', BackpackAssertionList.as_view(), name='v1_api_localbadgeinstance_list'),
@@ -31,4 +33,7 @@ urlpatterns = [
         name='v1_api_analytics_share_badge'),
     url(r'^share/collection/(?P<slug>[^/]+)$', ShareBackpackCollection.as_view(),
         name='v1_api_analytics_share_collection'),
+
+    url(r'^badges/pdf/(?P<slug>[^/]+)$', pdf, name='generate-pdf')    
+
 ]
