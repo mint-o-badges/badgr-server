@@ -109,7 +109,7 @@
                   </div>
               {% endfor %}
           </ul>
-            <a href="{{ site_url }}" style="background:#492e98;color:#FFFFFF;font-family:Rubik, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none; display: block; padding:15px 30px; border-radius: 10px; margin-top: 1em; text-align: center;">
+            <a href="https://openbadges.education/recipient/badges" onclick="downloadImage('{{ download_url }}')" style="background:#492e98;color:#FFFFFF;font-family:Rubik, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none; display: block; padding:15px 30px; border-radius: 10px; margin-top: 1em; text-align: center;" >
               {% block call_to_action_label %}
               {% endblock %}
           </a>
@@ -187,7 +187,7 @@
   </table>
   <div style="background:#F5F5F5;background-color:#F5F5F5;Margin:0px auto;max-width:600px; font-family:Rubik; margin-top: 1rem;">
     <div class="collect-badges" style="background-color: #93F993; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; padding: 0.5rem;">
-      <p style="font-size: 13px; font-weight: 400; line-height: 16.9px; text-align: left;">Alle deine erhaltenen Badges kannst du in deinem Rucksack auf <a href="https://openbadges.education">Open Educational Badges</a> sammeln und mit anderen teilen. Lege jetzt ganz einfach einen Account an oder logge dich mit deiner <span style="color: #492e98; font-weight: 800; ">MBR-ID</span> ein.</p>
+      <p style="font-size: 13px; font-weight: 400; line-height: 16.9px; text-align: left;">Alle deine erhaltenen Badges kannst du in deinem Rucksack auf <a href="https://openbadges.education/recipient/badges" target="_blank">Open Educational Badges</a> sammeln und mit anderen teilen. Lege jetzt ganz einfach einen Account an oder logge dich mit deiner <span style="color: #492e98; font-weight: 800; ">MBR-ID</span> ein.</p>
       <a href="https://openbadges.education/recipient/badges" style="background:#492e98;color:#FFFFFF;font-family:Rubik, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none; display: block; padding:10px 30px; border-radius: 10px; text-wrap: nowrap; margin-right: 5px">
         Jetzt Badges sammeln
     </a>
@@ -197,7 +197,7 @@
 
   <div style="background:#F5F5F5;background-color:#F5F5F5;Margin:0px auto;max-width:600px; font-family:Rubik; margin-top: 1rem;">
     <p style="font-size: 13px; font-weight: 400; line-height: 16.9px; font-style: italic; text-align: left;">
-      Im Anhang dieser Mail findest du ein <a href="..." style="text-decoration: underline; color: blue">PDF-Zertifikat</a>, das deinen Lernerfolg ebenfalls ausweist. Die aktuellste Version findest du in deinem <a href="..." style="text-decoration: underline; color: blue">Rucksack auf OEB</a>.
+      Im Anhang dieser Mail findest du ein <a href="{{pdf_download}}" download="{{badge_name}}" style="text-decoration: underline; color: blue">PDF-Zertifikat</a>, das deinen Lernerfolg ebenfalls ausweist. Die aktuellste Version findest du in deinem <a href="https://openbadges.education/recipient/badges" style="text-decoration: underline; color: blue">Rucksack auf OEB</a>.
     </p>
   </div>
   </table>
@@ -369,6 +369,21 @@
       </table>
     </div>
   </div>
+
+  <script>
+    function downloadImage(url) {
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = download_url; 
+
+        document.body.appendChild(a);
+
+        a.click();
+
+        document.body.removeChild(a);
+    }
+</script>
+
 
   
   <!--[if mso | IE]>
