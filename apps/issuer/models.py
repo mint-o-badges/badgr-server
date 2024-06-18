@@ -275,8 +275,8 @@ class Issuer(ResizeUploadedImage,
     # override init method to save original address
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.__original_address = {'street': self.street, 'streetnumber': self.streetnumber,
-            'city': self.city, 'zip': self.zip, 'country': self.country}
+        self.__original_address = {'street': self.street if self.street else None , 'streetnumber': self.streetnumber if self.streetnumber else None,
+            'city': self.city if self.city else None, 'zip': self.zip if self.zip else None, 'country': self.country if self.country else None}
         self.__original_verified = self.verified
 
     def save(self, *args, **kwargs):
