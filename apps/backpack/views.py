@@ -223,7 +223,7 @@ def createMultiPage(response, first_page_content, competencies, first_name, last
                   text = "%s Stunden" % int(studyLoadInHours)
               rounded_rect = RoundedRectFlowable(0, -10, 120, 30, 15, text=text, strokecolor="#492E98")
               competency = competencies[i]['name']
-              if competencies[i]['escoID'] is not None:
+              if competencies[i]['escoID']:
                     competency = competency + " *"
               info = (competency[:20] + '...') if len(competency) > 20 else competency
               tbl_data = [
