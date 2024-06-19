@@ -33,7 +33,7 @@ logger = badgrlog.BadgrLogger()
 
 class BadgrAccountAdapter(DefaultAccountAdapter):
 
-    def generate_pdf_content(slug):
+    def generate_pdf_content(self, slug):
         if slug is None:
             raise ValueError("Missing slug parameter")
         
