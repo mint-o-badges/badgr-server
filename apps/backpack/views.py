@@ -62,7 +62,7 @@ class RoundedRectFlowable(Flowable):
 
         try:
             if drawing is not None:
-               renderPDF.draw(drawing, self.canv, 10, -7.5)
+               renderPDF.draw(drawing, self.canv, 10, -5)
         except Exception as e:
             print(e)
         
@@ -221,7 +221,7 @@ def createMultiPage(response, first_page_content, competencies, first_name, last
               if competencies[i]['studyLoad'] > 120:
                   studyLoadInHours = competencies[i]['studyLoad'] / 120
                   text = "%s Stunden" % int(studyLoadInHours)
-              rounded_rect = RoundedRectFlowable(0, -7.5, 120, 30, 15, text=text, strokecolor="#492E98")
+              rounded_rect = RoundedRectFlowable(0, -10, 120, 30, 15, text=text, strokecolor="#492E98")
               competency = competencies[i]['name']
               if competencies[i]['escoID'] is not None:
                     competency = competency + " *"
