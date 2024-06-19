@@ -105,19 +105,17 @@
               {% endif %}
               <ul style="margin:0px; padding: 0px">
                 {% for item in badge_competencies %}
-                    <div style="background-color: #ecfeed; border-width: 1px; border-style: solid; border-color:#492e98; border-radius: 15px; padding: 0.5rem; margin-top: 0.25rem; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="background-color: #ecfeed; border-width: 1px; border-style: solid; border-color:#492e98; border-radius: 15px; padding: 0.5rem; margin-top: 0.25rem; align-items: center;">
                       <span style="font-family: Rubik, sans-serif;font-size:13px;font-weight: 500; line-height:15.6px">
                         {{ item.name }}
                       </span>
-                      <div style="display: flex;">
-                        <div style="display: flex; gap: 3.5px; padding: 5px; border-width: 1px; border-radius: 15px; border-style:solid; border-color:#492e98; background-color: white;">
-                            <img src="{% static '/images/clock_icon.svg' %}" style="width: 14px; height: auto;">
+                        <div style="padding: 5px; border-width: 1px; border-radius: 15px; border-style:solid; border-color:#492e98; background-color: white;">
+                            <img src="{% static '/images/clock_icon.svg' %}" style="width: 14px; height: auto; right: 0">
                             <span style="font-family: Rubik, sans-serif;font-size:11px;font-weight: 300; line-height:15px"> 
                               {{item.studyLoad}} Min.
                             </span>
   
                         </div>
-                      </div>
                     </div>
                 {% endfor %}
             </ul>
@@ -157,49 +155,6 @@
       <td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;">
   <![endif]-->
 
-  
-  <div style="background:#FFFFFF;background-color:#FFFFFF;Margin:0px auto;max-width:600px;">
-    
-    <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#FFFFFF;background-color:#FFFFFF;width:100%;">
-      <tbody>
-        <tr>
-          <td style="border-left:1px solid #DBD8DF;border-right:1px solid #DBD8DF;direction:ltr;font-size:0px;padding:12px;text-align:center;vertical-align:top;">
-            <!--[if mso | IE]>
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-            
-    <tr>
-  
-        <td
-           class="" style="vertical-align:top;width:114.8px;"
-        >
-      <![endif]-->
-        
-  <div class="mj-column-per-20 outlook-group-fix" style="font-size:13px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;">
-    
-  <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top;" width="100%">
-    
-        <tr>
-          <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-            
-  <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;border-spacing:0px;">
-    <tbody>
-      <tr>
-        <td style="width:48px;">
-            {% if issuer_image_url %}
-  <img alt="" height="auto" src="{{ issuer_image_url }}" style="border:0;display:block;outline:none;text-decoration:none;height:auto;width:100%;" width="48">
-  {% endif %}
-        </td>
-      </tr>
-    </tbody>
-  </table>
-
-          </td>
-        </tr>
-      
-  </table>
-
-  </div>
-
       <!--[if mso | IE]>
         </td>
       
@@ -236,41 +191,6 @@
   <![endif]-->
 
   
-  <div style="background:#FFFFFF;background-color:#FFFFFF;Margin:0px auto;max-width:600px;">
-    
-    <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#FFFFFF;background-color:#FFFFFF;width:100%;">
-      <tbody>
-        <tr>
-          <td style="border-left:1px solid #DBD8DF;border-right:1px solid #DBD8DF;direction:ltr;font-size:0px;padding:12px;text-align:center;vertical-align:top;">
-            <!--[if mso | IE]>
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-            
-    <tr>
-  
-        <td
-           class="" style="vertical-align:top;width:574px;"
-        >
-      <![endif]-->
-        
-  <div class="mj-column-per-100 outlook-group-fix" style="font-size:13px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;">
-    
-  <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top;" width="100%">
-    
-        <tr>
-          <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-            
-  <div style="font-family:Rubik, sans-serif;font-size:12px;font-weight:400;line-height:24px;text-align:left;color:#666666;">
-    {% if issued_on %}
-    Ausgestellt am {{issued_on}}
-    {% endif %}
-  </div>
-
-          </td>
-        </tr>
-      
-  </table>
-
-  </div>
 
       <!--[if mso | IE]>
         </td>
@@ -302,7 +222,7 @@
   
   <div style="background:#FFFFFF;background-color:#FFFFFF;Margin:0px auto;max-width:600px;">
     
-    <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#FFFFFF;background-color:#FFFFFF;width:100%;">
+    <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#F5F5F5;background-color:#F5F5F5;width:100%;">
       <tbody>
         <tr>
           <td style="border-left:1px solid #DBD8DF;border-right:1px solid #DBD8DF;direction:ltr;font-size:0px;padding:12px;text-align:center;vertical-align:top;">
@@ -321,7 +241,6 @@
   <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top;" width="100%">
     
         <tr>
-          <td align="center" vertical-align="middle" style="font-size:0px;padding:10px 25px;padding-bottom:8px;word-break:break-word;">
             
   <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:separate;width:100%;line-height:100%;">
     <tr>
@@ -337,7 +256,7 @@
   <div style="background:#F5F5F5;background-color:#F5F5F5;Margin:0px auto;max-width:600px; font-family:Rubik; margin-top: 1rem;">
     <div style="background-color: #93F993; border-radius: 10px; padding: 0.5rem;">
       <p style="font-size: 13px; font-weight: 400; line-height: 16.9px; text-align: center;">Alle deine erhaltenen Badges kannst du in deinem Rucksack auf <a href="https://openbadges.education/recipient/badges" target="_blank">Open Educational Badges</a> sammeln und mit anderen teilen. Lege jetzt ganz einfach einen Account an oder logge dich mit deiner <span style="color: #492e98; font-weight: 800; ">MBR-ID</span> ein.</p>
-      <a href="https://openbadges.education/recipient/badges" style="background:#492e98;color:#FFFFFF;font-family:Rubik, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none; display: block; padding:10px 30px; border-radius: 10px; text-wrap: nowrap; margin-right: 5px">
+      <a href="https://openbadges.education/recipient/badges" style="background:#492e98;color:#FFFFFF;font-family:Rubik, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none; display: block; padding:10px 30px; border-radius: 10px; text-align: center; margin-right: 5px">
         Jetzt Badges sammeln
     </a>
     </div>
@@ -349,22 +268,6 @@
       Im Anhang dieser Mail findest du ein <a href="{{pdf_download}}" download="{{badge_name}}" style="text-decoration: underline; color: blue">PDF-Zertifikat</a>, das deinen Lernerfolg ebenfalls ausweist. Die aktuellste Version findest du in deinem <a href="https://openbadges.education/recipient/badges" style="text-decoration: underline; color: blue">Rucksack auf OEB</a>.
     </p>
   </div>
-
-          </td>
-        </tr>
-      
-        <tr>
-          <td align="center" vertical-align="middle" style="font-size:0px;padding:10px 25px;padding-bottom:8px;word-break:break-word;">
-            
-  <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:separate;width:100%;line-height:100%;">
-    <tr>
-      <td align="center" bgcolor="#ffffff" role="presentation" style="border:solid 1px #492e98;border-radius:2px;cursor:auto; background:#ffffff;" valign="middle">
-        <a href="{{ download_url }}" style="background:#ffffff;color:#492e98;font-family:Rubik, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none; display: block; padding:15px 30px;" target="_blank">
-          Download
-        </a>
-      </td>
-    </tr>
-  </table>
 
           </td>
         </tr>
