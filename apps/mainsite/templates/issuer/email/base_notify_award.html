@@ -96,8 +96,8 @@
         <tr>
           <td align="center" >
             
-            <div style="font-family: Rubik, sans-serif;font-size:13px;font-weight: 400; line-height:15.6px;text-align:left;color:#323232; right: 100px;">
-              <p>Du hast erfolgreich an dem Lehrangebot  <br> <span style="color: #492e98">{{ badge_name }}</span> teilgenommen.</p>
+            <div style="font-family: Rubik, sans-serif;font-size:13px;font-weight: 400; line-height:15.6px;text-align:left;color:#323232;">
+              <p>Du hast erfolgreich an dem Lehrangebot  <span style="color: #492e98">{{ badge_name }}</span> teilgenommen.</p>
               {% if badge_competencies %}
               <p style="font-weight: 500; font-size:13px; line-height:16.9px; ">
                 Dabei hast du folgende Kompetenzen gestärkt: 
@@ -342,21 +342,7 @@
                           width="100%"
                         >
                           <tr>
-                            <td
-                              style="
-                                position: absolute;
-                                right: 0;
-                                top: 0;
-                              "
-                            >
-                            <a href="https://www.meinbildungsraum.de/" target="_blank">
-                              <img 
-                                src="{% static '/images/logo-square.png' %}"
-                                style="width: 75px; height: auto" />
-                            </a>
 
-
-                            </td>
                             <td
                             >
                               <div
@@ -408,6 +394,22 @@
 
                               </div>
                             </td>
+                            <td
+                              style="
+                                position: absolute;
+                                right: 0;
+                                top: 0;
+                              "
+                            >
+                            <a href="https://www.meinbildungsraum.de/" target="_blank">
+                              <img 
+                                src="{% static '/images/logo-square.png' %}"
+                                style="width: 75px; height: auto" />
+                            </a>
+
+
+                            </td>
+                         
                           </tr>
                         </table>
                       </td>
