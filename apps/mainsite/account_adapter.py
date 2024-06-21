@@ -31,7 +31,10 @@ from reportlab.lib.enums import TA_JUSTIFY, TA_LEFT
 
 logger = badgrlog.BadgrLogger()
 
-def generate_pdf_content(slug):
+
+class BadgrAccountAdapter(DefaultAccountAdapter):
+
+    def generate_pdf_content(self, slug):
         if slug is None:
             raise ValueError("Missing slug parameter")
         
@@ -159,8 +162,6 @@ def generate_pdf_content(slug):
         
         return pdf_content
 
-class BadgrAccountAdapter(DefaultAccountAdapter):
-
     EMAIL_FROM_STRING = ''
 
     def send_mail(self, template_prefix, email, context):
@@ -190,7 +191,7 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
         msg = self.render_mail(template_prefix, email, context)
         # badge_id is equal to the badge instance slug
         if template_prefix == 'issuer/email/notify_account_holder' or template_prefix == 'issuer/email/notify_earner':
-            pdf_document = generate_pdf_content(context['badge_id'])
+            pdf_document = context['pdf_document']
             badge_name = f"{context['badge_name']}.badge"
             img_path = os.path.join(settings.MEDIA_ROOT, "uploads", "badges", "assertion-{}.png".format(context.get('badge_id', None)))
             with open(img_path, 'rb') as f:
