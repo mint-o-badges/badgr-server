@@ -212,7 +212,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ##
 
 # CORS_ORIGIN_ALLOW_ALL = True
-COR_URLS_REGEX = r'^.*$'
+CORS_URLS_REGEX = r'^.*$'
 BADGR_CORS_MODEL = 'mainsite.BadgrApp'
 # Needed for OIDC authentication
 CORS_ALLOW_CREDENTIALS = True
