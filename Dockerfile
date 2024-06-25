@@ -24,7 +24,8 @@ FROM python:3.8.14-slim-buster
 RUN apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-cairo \
-                       libxml2
+                       libxml2 \
+                       cron
 
 RUN groupadd -g 999 python && \
     useradd -r -u 999 -g python python

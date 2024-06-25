@@ -22,6 +22,8 @@ pymemcache
 
 djangorestframework==3.12.2
 
+django-cron
+
 # Django Allauth
 django-allauth==0.46.0
 oauthlib==3.1.0

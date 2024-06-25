@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.admin',
+    'django_cron',
     'django_object_actions',
     'markdownify',
 
@@ -68,6 +69,10 @@ MIDDLEWARE = [
     'mainsite.middleware.MaintenanceMiddleware',
     'badgeuser.middleware.InactiveUserMiddleware',
     # 'mainsite.middleware.TrailingSlashMiddleware',
+]
+
+CRON_CLASSES = [
+    "mainsite.cron.MyCronJob",
 ]
 
 ROOT_URLCONF = 'mainsite.urls'
@@ -327,6 +332,14 @@ SPHINX_API_VERSION = 0x116  # Sphinx 0.9.9
 ##
 TEST_RUNNER = 'mainsite.testrunner.BadgrRunner'
 
+##
+#
+# Cronjobs
+##
+CRONJOBS = [
+     ('* * * * *', 'django.core.management.call_command', ['cleartokens'], '>> logfile.log 2>&1'),
+]
+
 
 ##
 #
@@ -433,7 +446,8 @@ OAUTH2_PROVIDER = {
     'DEFAULT_SCOPES': ['r:profile'],
 
     'OAUTH2_VALIDATOR_CLASS': 'mainsite.oauth_validator.BadgrRequestValidator',
-    'ACCESS_TOKEN_EXPIRE_SECONDS': 86400
+    'ACCESS_TOKEN_EXPIRE_SECONDS': 60,
+    'REFRESH_TOKEN_EXPIRATION_SECONDS': 60, # 7 days
 
 }
 OAUTH2_PROVIDER_APPLICATION_MODEL = 'oauth2_provider.Application'

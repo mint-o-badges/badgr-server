@@ -1,0 +1,1 @@
+* * * * * /usr/local/bin/python /badgr_server/manage.py runcrons >> /badgr_server/cron.log 2>&1

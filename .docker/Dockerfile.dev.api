@@ -10,10 +10,24 @@ RUN apt-get install -y default-libmysqlclient-dev \
                        build-essential \
                        xmlsec1 \
                        libxmlsec1-dev \
-                       pkg-config
+                       pkg-config \ 
+                       cron
 
 RUN pip install uwsgi
 
+RUN mkdir /cron
+RUN touch /cron/cron.log
+
+COPY django.cron /etc/cron.d/
+RUN crontab /etc/cron.d/django.cron
+
 COPY requirements.txt              /badgr_server
+COPY start.sh                      /badgr_server
+
+
 RUN pip install -r requirements.txt
 RUN pip install debugpy
+
+CMD /usr/sbin/cron 
+
+# ENTRYPOINT ["/badgr_server/start.sh"]

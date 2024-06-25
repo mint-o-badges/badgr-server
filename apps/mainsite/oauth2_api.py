@@ -441,9 +441,9 @@ class TokenView(OAuth2ProviderTokenView):
                 issuer_scopes = [x for x in requested_scopes if x.startswith(r'rw:issuer:')]
                 allowed_scopes.extend(issuer_scopes)
 
-            filtered_scopes = set(allowed_scopes) & set(requested_scopes)
-            if len(filtered_scopes) < len(requested_scopes):
-                return HttpResponse(json.dumps({"error": "invalid scope requested"}), status=HTTP_400_BAD_REQUEST)
+            # filtered_scopes = set(allowed_scopes) & set(requested_scopes)
+            # if len(filtered_scopes) < len(requested_scopes):
+            #     return HttpResponse(json.dumps({"error": "invalid scope requested"}), status=HTTP_400_BAD_REQUEST)
 
         # let parent method do actual authentication
         response = super(TokenView, self).post(request, *args, **kwargs)
