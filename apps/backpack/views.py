@@ -303,6 +303,9 @@ def pdf(request, *args, **kwargs):
     slug = kwargs["slug"]
     try:
         badgeinstance = BadgeInstance.objects.get(entity_id=slug)
+        # TODO: Check other recipient types 
+        if request.user.email != badgeinstance.recipient_identifier:
+            raise Http404
     except BadgeInstance.DoesNotExist:
         raise Http404
     try:
