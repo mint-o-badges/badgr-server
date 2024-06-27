@@ -215,9 +215,10 @@ pre-commit install
 
 This command sets up the pre-commit hooks defined in the `pre-commit-config.yaml` file.
 
-To run the configured hooks on all files of the project run:
+To run the configured hooks on some / all files of the project run:
 
 ```bash
+pre-commit run --files <file-name>
 pre-commit run --all-files
 ```
 
