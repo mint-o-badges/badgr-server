@@ -96,7 +96,7 @@ def error500(request, *args, **kwargs):
 
 
 def info_view(request, *args, **kwargs):
-    return redirect(getattr(settings, "LOGIN_REDIRECT_URL"))
+    return redirect(getattr(settings, "LOGIN_BASE_URL"))
 
 
 # TODO: It is possible to call this method without authentication, thus storing files on the server

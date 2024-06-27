@@ -195,7 +195,6 @@ class SecuredRefreshTokenInline(TabularInline):
             return "{}***".format(obj.token[:4])
     obscured_token.allow_tags = True
 
-
 class SecuredAccessTokenAdmin(AccessTokenAdmin):
     list_display = ("obscured_token", "user", "application", "expires")
     raw_id_fields = ('user', 'application')
