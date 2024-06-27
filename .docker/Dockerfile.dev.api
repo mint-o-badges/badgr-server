@@ -10,10 +10,19 @@ RUN apt-get install -y default-libmysqlclient-dev \
                        build-essential \
                        xmlsec1 \
                        libxmlsec1-dev \
-                       pkg-config
+                       pkg-config \
+                       cron
 
 RUN pip install uwsgi
 
-COPY requirements.txt              /badgr_server
+COPY requirements.txt                  /badgr_server
+COPY entrypoint.dev.sh                 /entrypoint.dev.sh
+
+RUN chmod +x /entrypoint.dev.sh
+
 RUN pip --timeout=1000 install -r requirements.txt
 RUN pip --timeout=1000 install debugpy
+
+ENTRYPOINT ["/entrypoint.dev.sh"]
+# CMD service cron start && /badgr_server/manage.py runserver 0.0.0.0:8000
+
