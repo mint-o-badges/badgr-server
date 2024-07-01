@@ -76,10 +76,10 @@
   <img alt="" height="auto" src="{{ image_url }}" style="border:0;display:block;outline:none;text-decoration:none;height:auto;width:100%;" width="160">
         </a>
         </td>
-        <td style="padding-left: 50px">
+        <td style="padding-left: 50px;">
           <span style="font-family:Rubik;font-size:13px;font-weight: 400;line-height:15.6px;text-align:left;color:#323232;font-style: italic">Vergeben von:</span>
           <div style="font-family:Rubik, sans-serif;font-size:16px;font-weight:400;line-height:24px;text-align:left;color:#000000;">
-            <a href="{{ issuer_detail }}" class="linkstyle" style="color: #515dc6; font-weight: bold; text-decoration: none;">{{ issuer_name }}</a>
+            <a href="{{ issuer_detail }}" class="linkstyle" style="color: #492e98; font-weight: bold; text-decoration: none;">{{ issuer_name }}</a>
           </div>
           {% if issuer_image_url %}
           <img alt="" height="auto" src="{{ issuer_image_url }}" style="border:0;display:block;outline:none;text-decoration:none;" width="150">
@@ -109,13 +109,13 @@
                       <span style="font-family: Rubik, sans-serif;font-size:13px;font-weight: 500; line-height:15.6px">
                         {{ item.name }}
                       </span>
-                        <!-- <div style="padding: 5px; border-width: 1px; border-radius: 15px; border-style:solid; border-color:#492e98; background-color: white;">
-                            <img src="{% static '/images/clock_icon.svg' %}" style="width: 14px; height: auto; right: 0">
+                        <div style="padding-left: 5px; padding-right: 5px; float: right; border-width: 1px; border-radius: 15px; border-style:solid; border-color:#492e98; background-color: white;">
+                            <!-- <img src="{% static '/images/clock_icon.svg' %}" style="width: 14px; height: auto; right: 0"> -->
                             <span style="font-family: Rubik, sans-serif;font-size:11px;font-weight: 300; line-height:15px"> 
                               {{item.studyLoad}} Min.
                             </span>
   
-                        </div> -->
+                        </div>
                     </div>
                 {% endfor %}
             </ul>

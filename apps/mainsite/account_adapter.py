@@ -183,8 +183,9 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
 
         self.EMAIL_FROM_STRING = self.set_email_string(context)
         
-        if template_prefix == 'issuer/email/notify_account_holder':
-            context['mbr_block'] = True
+        # TODO: comment this back in once mbr is implemented
+        # if template_prefix == 'issuer/email/notify_account_holder':
+        #     context['mbr_block'] = True
 
 
         msg = self.render_mail(template_prefix, email, context)
