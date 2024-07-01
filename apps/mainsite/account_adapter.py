@@ -59,6 +59,8 @@ def generate_pdf_content(slug):
             last_name = badgeuser.last_name.capitalize()
             add_recipient_name(first_page_content, first_name, last_name, badgeinstance.issued_on) 
         else: 
+            first_name = None
+            last_name = None
             add_recipient_name(first_page_content, badgeinstance.recipient_identifier, '', badgeinstance.issued_on)    
 
         competencies = badgeclass.json["extensions:CompetencyExtension"]
@@ -104,7 +106,10 @@ def generate_pdf_content(slug):
                 Story.append(Spacer(1, 25))
 
 
-                text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
+                if first_name and last_name:
+                    text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
+                else: 
+                    text = "die <strong>%s</strong> mit dem Badge" % badgeinstance.recipient_identifier    
                 Story.append(Paragraph(text, text_style))
                 Story.append(Spacer(1, 20))
 
@@ -122,7 +127,10 @@ def generate_pdf_content(slug):
                         Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
                         Story.append(Spacer(1, 25))
 
-                        text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
+                        if first_name and last_name:
+                            text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
+                        else: 
+                            text = "die <strong>%s</strong> mit dem Badge" % badgeinstance.recipient_identifier    
                         Story.append(Paragraph(text, text_style))
                         Story.append(Spacer(1, 20))
 
