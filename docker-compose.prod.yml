@@ -40,7 +40,7 @@ services:
 
   # this container runs mysql (database)
   db:
-    image: mysql:5.6.39
+    image: mysql:5.7.31
     volumes:
       - badgr_server_prod_db:/var/lib/mysql:rw
       - ./.docker/etc/init.sql:/docker-entrypoint-initdb.d/init.sql

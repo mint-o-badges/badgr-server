@@ -275,8 +275,8 @@ class Issuer(ResizeUploadedImage,
     # override init method to save original address
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.__original_address = {'street': self.street, 'streetnumber': self.streetnumber,
-            'city': self.city, 'zip': self.zip, 'country': self.country}
+        self.__original_address = {'street': self.street if self.street else None , 'streetnumber': self.streetnumber if self.streetnumber else None,
+            'city': self.city if self.city else None, 'zip': self.zip if self.zip else None, 'country': self.country if self.country else None}
         self.__original_verified = self.verified
 
     def save(self, *args, **kwargs):
@@ -632,6 +632,7 @@ class BadgeClass(ResizeUploadedImage,
 
     name = models.CharField(max_length=255)
     image = models.FileField(upload_to='uploads/badges', blank=True)
+    imageFrame = models.BooleanField(default=True)
     image_preview = models.FileField(upload_to='uploads/badges', blank=True, null=True)
     description = models.TextField(blank=True, null=True, default=None)
 
@@ -649,6 +650,18 @@ class BadgeClass(ResizeUploadedImage,
 
     class Meta:
         verbose_name_plural = "Badge classes"
+    
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super().save(*args, **kwargs)
+    
+    def clean(self):
+        # Check if the issuer for this badge is verified, otherwise throw an error
+        if not self.issuer.verified:
+            raise ValidationError(
+                "Only verified issuers can create / update badges",
+                code="invalid"
+            )
 
     def publish(self):
         fields_cache = self._state.fields_cache  # stash the fields cache to avoid publishing related objects here
