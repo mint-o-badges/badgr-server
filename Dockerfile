@@ -9,7 +9,8 @@ RUN apt-get install -y default-libmysqlclient-dev \
                        build-essential \
                        xmlsec1 \
                        libxmlsec1-dev \
-                       pkg-config
+                       pkg-config \
+                       cron
 
 RUN mkdir /badgr_server
 WORKDIR /badgr_server
@@ -24,10 +25,11 @@ FROM python:3.8.14-slim-buster
 RUN apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-cairo \
-                       libxml2
+                       libxml2 \
+                       cron
 
 RUN groupadd -g 999 python && \
-    useradd -r -u 999 -g python python
+    useradd -r -u 999 -g python python 
 
 RUN mkdir /badgr_server && chown python:python /badgr_server
 WORKDIR /badgr_server
@@ -41,8 +43,16 @@ COPY --chown=python:python  .docker/etc/uwsgi.ini              .
 COPY --chown=python:python  .docker/etc/wsgi.py                .
 COPY --chown=python:python  apps                               ./apps
 COPY --chown=python:python  .docker/etc/settings_local.py      ./apps/mainsite/settings_local.py
+COPY --chown=python:python  entrypoint.sh                      .
+
+RUN chmod +x entrypoint.sh
+
+# cron requires root permissions
+RUN chmod u+s /usr/sbin/cron 
 
 USER 999
 
+
 ENV PATH="/badgr_server/venv/bin:$PATH"
-CMD ["uwsgi","--socket", "sock/app.sock", "--ini", "uwsgi.ini"]
+ENTRYPOINT ["./entrypoint.sh"]
+# CMD ["uwsgi","--socket", "sock/app.sock", "--ini", "uwsgi.ini"]

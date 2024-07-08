@@ -13,7 +13,4 @@ service cron start
 /badgr_server/manage.py migrate
 
 # Start the Django server
-exec /badgr_server/manage.py runserver 0.0.0.0:8000
-
-
-
+exec uwsgi --socket sock/app.sock --ini uwsgi.ini

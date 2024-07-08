@@ -20,6 +20,9 @@ COPY entrypoint.dev.sh                 /entrypoint.dev.sh
 
 RUN chmod +x /entrypoint.dev.sh
 
+# cron requires root permissions
+RUN chmod u+s /usr/sbin/cron 
+
 RUN pip --timeout=1000 install -r requirements.txt
 RUN pip --timeout=1000 install debugpy
 
