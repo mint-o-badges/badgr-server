@@ -219,17 +219,6 @@ class Issuer(ResizeUploadedImage,
     lat = models.FloatField(null=True, blank=True)
     lon = models.FloatField(null=True, blank=True)
 
-    __original_address = {
-        'street': None,
-        'streetnumber': None,
-        'zip': None,
-        'city': None,
-        'country': None
-    }
-
-    # stores the original verified variable to detect changes and notify the issuer
-    __original_verified = False
-
     def publish(self, publish_staff=True, *args, **kwargs):
         fields_cache = self._state.fields_cache  # stash the fields cache to avoid publishing related objects here
         self._state.fields_cache = dict()
@@ -272,24 +261,20 @@ class Issuer(ResizeUploadedImage,
 
         return ret
 
-    # override init method to save original address
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.__original_address = {'street': self.street if self.street else None , 'streetnumber': self.streetnumber if self.streetnumber else None,
-            'city': self.city if self.city else None, 'zip': self.zip if self.zip else None, 'country': self.country if self.country else None}
-        self.__original_verified = self.verified
-
     def save(self, *args, **kwargs):
+        original_verified = None
         if not self.pk:
             self.notify_admins(self)
-
         # geocoding if address in model changed
-        if self.__original_address:
-            if (self.street != self.__original_address['street']
-                    or self.streetnumber != self.__original_address['streetnumber']
-                    or self.city != self.__original_address['city']
-                    or self.zip != self.__original_address['zip']
-                    or self.country != self.__original_address['country']):
+        else:
+            original_object = Issuer.objects.get(pk=self.pk)
+            original_verified = original_object.verified
+
+            if (self.street != original_object.street
+                    or self.streetnumber != original_object.streetnumber
+                    or self.city != original_object.city
+                    or self.zip != original_object.zip
+                    or self.country != original_object.country):
                 addr_string = ((self.street if self.street is not None else '') + " "
                 + (str(self.streetnumber) if self.streetnumber is not None else '') + " "
                 + (str(self.zip) if self.zip is not None else '') + " "
@@ -303,7 +288,7 @@ class Issuer(ResizeUploadedImage,
         ret = super(Issuer, self).save(*args, **kwargs)
 
         # notify the owner of the Issuer on verification
-        if self.__original_verified == False and self.verified:
+        if original_verified == False and self.verified:
             self.notify_issuer_owner(self)
         # The user who created the issuer should always be an owner
         self.ensure_owner()
