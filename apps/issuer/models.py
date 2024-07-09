@@ -309,9 +309,27 @@ class Issuer(ResizeUploadedImage,
         # If the creator is already the owner, nothing is to do
         if self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_OWNER, issuerstaff__user=self.created_by):
             return
-        # If I don't have a creator, I can't do anything about it
-        if not self.created_by_id:
-            return
+        # If I don't have a creator, this means they were deleted.
+        # If there are other users associated, I can chose the one with the highest privileges
+        if not self.created_by:
+            owners = self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_OWNER)
+            editors = self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_EDITOR)
+            staff = self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_STAFF)
+            if owners.exists():
+                self.created_by = owners.first()
+                self.save()
+                # Is already owner
+                return
+            elif editors.exists():
+                self.created_by = editors.first()
+                self.save()
+            elif staff.exists():
+                self.created_by = staff.first()
+                self.save()
+            else:
+                # With no other staff, there's nothing we can do
+                return
+            
         # If there already is an IssuerStaff entry I have to edit it
         if IssuerStaff.objects.filter(user=self.created_by, issuer=self).exists():
             issuerStaff = IssuerStaff.objects.get(user=self.created_by, issuer=self)
@@ -319,6 +337,18 @@ class Issuer(ResizeUploadedImage,
             issuerStaff.save()
         else:
             IssuerStaff.objects.create(issuer=self, user=self.created_by, role=IssuerStaff.ROLE_OWNER)
+    
+    def new_contact_email(self):
+        # If this method is called, this typically means that the owner got deleted.
+        # This implicates that we have to take measures to ensure a new owner is applied.
+        self.ensure_owner()
+        if not self.created_by:
+            # If there's still no creator, there's nothing we can do
+            return
+        # We set the contact email to the first email of the new creator
+        self.email = self.created_by.primary_email
+        self.save()
+
 
     def get_absolute_url(self):
         return reverse('issuer_json', kwargs={'entity_id': self.entity_id})
@@ -556,10 +586,26 @@ class IssuerStaff(cachemodel.CacheModel):
 
     def delete(self, *args, **kwargs):
         publish_issuer = kwargs.pop('publish_issuer', True)
+        new_contact = self.is_staff_contact()
         super(IssuerStaff, self).delete()
         if publish_issuer:
             self.issuer.publish(publish_staff=False)
         self.user.publish()
+        # Note that this delete method is not called if the user is deleted,
+        # since the cascade is done on the database level. That means that this logic
+        # *also* has to be contained in the delete method of the user
+        if (new_contact):
+            self.issuer.new_contact_email()
+    
+    def is_staff_contact(self) -> bool:
+        # Get verified emails of associated user
+        user_emails = self.user.verified_emails
+        # Get email of issuer
+        issuer_email = self.issuer.email
+        # Check if overlap exists
+        if (issuer_email == None):
+            return False
+        return any(user_email.email == issuer_email for user_email in user_emails)
 
     @property
     def cached_user(self):
