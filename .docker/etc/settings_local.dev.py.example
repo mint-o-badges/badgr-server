@@ -154,8 +154,6 @@ LOGGING = {
 # Cronjobs
 ##
 
-# CRONTAB_COMMAND_SUFFIX = '2>&1'
-
 CRONJOBS = [
     ('* * * * *', 'django.core.management.call_command', ['cleartokens']),
 ]

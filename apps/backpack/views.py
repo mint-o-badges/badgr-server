@@ -4,8 +4,6 @@ from django.conf import settings
 from django.http import Http404
 from django.views.generic import RedirectView
 
-from django.core.exceptions import PermissionDenied
-
 from backpack.models import BackpackCollection
 from issuer.models import BadgeInstance, BadgeClass
 from badgeuser.models import BadgeUser
@@ -305,9 +303,6 @@ def pdf(request, *args, **kwargs):
     slug = kwargs["slug"]
     try:
         badgeinstance = BadgeInstance.objects.get(entity_id=slug)
-        # TODO: Check other recipient types 
-        if request.user.email != badgeinstance.recipient_identifier:
-            raise PermissionDenied
     except BadgeInstance.DoesNotExist:
         raise Http404
     try:

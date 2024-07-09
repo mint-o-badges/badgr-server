@@ -27,5 +27,4 @@ RUN pip --timeout=1000 install -r requirements.txt
 RUN pip --timeout=1000 install debugpy
 
 ENTRYPOINT ["/entrypoint.dev.sh"]
-# CMD service cron start && /badgr_server/manage.py runserver 0.0.0.0:8000
 

@@ -142,6 +142,13 @@ LOGGING = {
     },
 }
 
+# Cronjobs
+##
+
+CRONJOBS = [
+    ('* * * * *', 'django.core.management.call_command', ['cleartokens']),
+]
+
 NOUNPROJECT_API_KEY = ''
 NOUNPROJECT_SECRET = ''
 
