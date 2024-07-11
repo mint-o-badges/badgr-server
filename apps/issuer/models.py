@@ -300,15 +300,27 @@ class Issuer(ResizeUploadedImage,
 
         An issuer staff relation is either created with role owner
         (if none existed), or updated to contain the role
-        ROLE_OWNER. This doesn't work if the created_by_id
-        of the issuer (self) isn't set.
-        Note that this does *not* ensure the owner, if the role
-        of the staff was the very thing that just changed.
+        ROLE_OWNER. 
+        Earlier this also made sure that the creator was the owner;
+        since this doesn't seem to be required anymore though,
+        this now merely makes sure that both a creator and an
+        owner exist (if possible)
         """
 
-        # If the creator is already the owner, nothing is to do
-        if self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_OWNER, issuerstaff__user=self.created_by):
+        # If there exists both a creator and an owner, there's nothing to do
+        # (I think; it's not clearly specified)
+        if self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_OWNER) and \
+            self.staff.filter(issuerstaff__user=self.created_by):
             return
+
+        # If there already is an IssuerStaff entry I have to edit it
+        if self.created_by and \
+              IssuerStaff.objects.filter(user=self.created_by, issuer=self).exists():
+            issuerStaff = IssuerStaff.objects.get(user=self.created_by, issuer=self)
+            issuerStaff.role = IssuerStaff.ROLE_OWNER
+            issuerStaff.save()
+            return
+
         # If I don't have a creator, this means they were deleted.
         # If there are other users associated, I can chose the one with the highest privileges
         if not self.created_by:
@@ -329,24 +341,37 @@ class Issuer(ResizeUploadedImage,
             else:
                 # With no other staff, there's nothing we can do
                 return
-            
-        # If there already is an IssuerStaff entry I have to edit it
-        if IssuerStaff.objects.filter(user=self.created_by, issuer=self).exists():
+            # The new "creator" should also be the owner
             issuerStaff = IssuerStaff.objects.get(user=self.created_by, issuer=self)
             issuerStaff.role = IssuerStaff.ROLE_OWNER
             issuerStaff.save()
+            return
+        
+        # The last remaining case is that the created_by user still exists, but got removed as owner
+        # In this case there must be no owner assigned currently, so we chose a new owner
+        editors = self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_EDITOR)
+        staff = self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_STAFF)
+        if editors.exists():
+            new_owner = editors.first()
+        elif staff.exists():
+            new_owner = staff.first()
         else:
-            IssuerStaff.objects.create(issuer=self, user=self.created_by, role=IssuerStaff.ROLE_OWNER)
+            # Nothing we can do
+            return
+        new_owner.role = IssuerStaff.ROLE_OWNER
+        new_owner.save()
     
     def new_contact_email(self):
-        # If this method is called, this typically means that the owner got deleted.
+        # If this method is called, this may mean that the owner got deleted.
         # This implicates that we have to take measures to ensure a new owner is applied.
         self.ensure_owner()
-        if not self.created_by:
-            # If there's still no creator, there's nothing we can do
+        # We set the contact email to the first email of the first owner we find
+        owners = self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_OWNER)
+        if not owners.exists():
+            # Without an owner, there's nothing we can do
             return
-        # We set the contact email to the first email of the new creator
-        self.email = self.created_by.primary_email
+        owner = owners.first()
+        self.email = owner.primary_email
         self.save()
 
 
