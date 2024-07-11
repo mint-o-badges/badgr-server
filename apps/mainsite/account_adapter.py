@@ -140,6 +140,7 @@ def generate_pdf_content(slug):
                         Story.append(Spacer(1, 20)) 
 
                     studyload = "%s Minuten" % competencies[i]['studyLoad']
+
                     if competencies[i]['studyLoad'] > 120:
                         studyload = "%s Stunden" % int(competencies[i]['studyLoad'] / 60 )
                     competency = competencies[i]['name']
