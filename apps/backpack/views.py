@@ -61,7 +61,7 @@ class RoundedRectFlowable(Flowable):
         if self.esco:
             self.canv.drawString(self.x + 10 + text_width, self.y + 15, " [E]")
             # the whole rectangle links to esco, instead of just the "[E]"
-            self.canv.linkURL("http://example.com", (self.x, self.y, self.width, self.height), relative=1, thickness=0)
+            self.canv.linkURL(f"http://data.europa.eu/{self.esco}", (self.x, self.y, self.width, self.height), relative=1, thickness=0)
 
         
         self.canv.setFillColor('#492E98')
