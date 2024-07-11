@@ -139,17 +139,12 @@ def generate_pdf_content(slug):
                         Story.append(Paragraph(text, text_style)) 
                         Story.append(Spacer(1, 20)) 
 
-                    text = "%s Minuten" % competencies[i]['studyLoad']
+                    studyload = "%s Minuten" % competencies[i]['studyLoad']
                     if competencies[i]['studyLoad'] > 60:
-                        text = "%s Stunden" % competencies[i]['studyLoad']
-                    rounded_rect = RoundedRectFlowable(0, -15, 120, 35, 15, text=text, strokecolor="#492E98")
+                        studyload = "%s Stunden" % competencies[i]['studyLoad']
                     competency = competencies[i]['name']
-                    if competencies[i]['escoID']:
-                        competency = competency + " *"
-                    tbl_data = [
-                            [rounded_rect, Paragraph(competency,text_style)]
-                    ]
-                    Story.append(Table(tbl_data, style=[('VALIGN', (0, 0), (-1, -1), 'MIDDLE')]))     
+                    rounded_rect = RoundedRectFlowable(0, -15, 120, 45, 15, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload = studyload, esco = competencies[i]['escoID'])
+                    Story.append(rounded_rect)    
                     Story.append(Spacer(1, 20))   
                     
                 if esco: 
