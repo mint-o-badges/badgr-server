@@ -141,9 +141,9 @@ def generate_pdf_content(slug):
 
                     studyload = "%s Minuten" % competencies[i]['studyLoad']
                     if competencies[i]['studyLoad'] > 60:
-                        studyload = "%s Stunden" % competencies[i]['studyLoad']
+                        studyload = "%s Stunden" % int(competencies[i]['studyLoad'] / 60 )
                     competency = competencies[i]['name']
-                    rounded_rect = RoundedRectFlowable(0, -15, 120, 45, 15, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload = studyload, esco = competencies[i]['escoID'])
+                    rounded_rect = RoundedRectFlowable(0, -1, 450, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload = studyload, esco = competencies[i]['escoID'])
                     Story.append(rounded_rect)    
                     Story.append(Spacer(1, 20))   
                     
