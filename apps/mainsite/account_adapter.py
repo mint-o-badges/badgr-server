@@ -94,7 +94,7 @@ def generate_pdf_content(slug):
 
         if num_competencies > 0:
                 esco = any(c['escoID'] for c in competencies)
-                competenciesPerPage = 7
+                competenciesPerPage = 5
 
                 Story.append(PageBreak())
                 Story.append(Spacer(1, 75))
@@ -142,7 +142,8 @@ def generate_pdf_content(slug):
                     studyload = "%s Minuten" % competencies[i]['studyLoad']
                     if competencies[i]['studyLoad'] > 120:
                         studyload = "%s Stunden" % int(competencies[i]['studyLoad'] / 60 )
-                    competency = competencies[i]['name']
+                    competency_name = competencies[i]['name']
+                    competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name 
                     rounded_rect = RoundedRectFlowable(0, -1, 450, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload = studyload, esco = competencies[i]['escoID'])
 
                     Story.append(rounded_rect)    
@@ -150,8 +151,9 @@ def generate_pdf_content(slug):
                     
                 if esco: 
                     Story.append(Spacer(1, 100))
-                    text_style = ParagraphStyle(name='Text_Style', fontSize=14, alignment=TA_LEFT)
-                    link_text = '<a href="https://esco.ec.europa.eu/de">* Kompetenz nach ESCO: https://esco.ec.europa.eu/de</a>'
+                    text_style = ParagraphStyle(name='Text_Style', fontSize=12, leading=20, alignment=TA_LEFT)
+                    link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations) <br/>' \
+                    'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
                     paragraph_with_link = Paragraph(link_text, text_style)
                     Story.append(paragraph_with_link) 
             
