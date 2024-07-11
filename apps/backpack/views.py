@@ -196,7 +196,7 @@ def createMultiPage(response, first_page_content, competencies, first_name, last
 
     if num_competencies > 0:
             esco = any(c['escoID'] for c in competencies)
-            competenciesPerPage = 7
+            competenciesPerPage = 5
 
             Story.append(PageBreak())
             Story.append(Spacer(1, 75))
@@ -233,7 +233,8 @@ def createMultiPage(response, first_page_content, competencies, first_name, last
               if competencies[i]['studyLoad'] > 120:
                   studyLoadInHours = competencies[i]['studyLoad'] / 60
                   studyload = "%s Stunden" % int(studyLoadInHours)
-              competency = competencies[i]['name']
+              competency_name = competencies[i]['name']
+              competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name
               rounded_rect = RoundedRectFlowable(0, -10, 450, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload= studyload, esco=competencies[i]['escoID'])    
               Story.append(rounded_rect)
               Story.append(Spacer(1, 20))   
