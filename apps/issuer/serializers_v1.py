@@ -367,6 +367,8 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
         instance.expires_amount = validated_data.get('expires_amount', None)
         instance.expires_duration = validated_data.get('expires_duration', None)
 
+        instance.imageFrame = validated_data.get('imageFrame', True)
+
         logger.debug("SAVING EXTENSION")
         self.save_extensions(validated_data, instance)
 

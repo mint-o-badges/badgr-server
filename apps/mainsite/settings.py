@@ -14,6 +14,7 @@ INSTALLED_APPS = [
     'mainsite',
 
     'django.contrib.auth',
+    'mozilla_django_oidc', # Load after auth
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
@@ -42,6 +43,8 @@ INSTALLED_APPS = [
 
     # OAuth 2 provider
     'oauth2_provider',
+
+    'oidc',
 
     'entity',
     'issuer',
@@ -141,6 +144,7 @@ LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/docs'
 
 AUTHENTICATION_BACKENDS = [
+    'oidc.oeb_oidc_authentication_backend.OebOIDCAuthenticationBackend',
     'oauth2_provider.backends.OAuth2Backend',
 
     # Object permissions for issuing badges
@@ -210,6 +214,8 @@ AUTH_PASSWORD_VALIDATORS = [
 # CORS_ORIGIN_ALLOW_ALL = True
 CORS_URLS_REGEX = r'^.*$'
 BADGR_CORS_MODEL = 'mainsite.BadgrApp'
+# Needed for OIDC authentication
+CORS_ALLOW_CREDENTIALS = True
 
 CORS_EXPOSE_HEADERS = (
     'link',
@@ -349,6 +355,7 @@ REST_FRAMEWORK = {
         'mainsite.authentication.BadgrOAuth2Authentication',
         'mainsite.authentication.LoggedLegacyTokenAuthentication',
         'entity.authentication.ExplicitCSRFSessionAuthentication',
+        'mozilla_django_oidc.contrib.drf.OIDCAuthentication',
     ),
     'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
     'DEFAULT_VERSION': 'v1',
@@ -493,3 +500,22 @@ SVG_HTTP_CONVERSION_ENABLED = False
 SVG_HTTP_CONVERSION_ENDPOINT = ''  # Include scheme, e.g. 'http://example.com/convert-to-png'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+# OIDC Global settings
+# The document specifies nbp-enmeshed-address to also be an option, but at least in the demo it doesn't work
+#OIDC_RP_SCOPES = 'openid nbp-enmeshed-address'
+OIDC_RP_SCOPES = 'openid'
+OIDC_RP_SIGN_ALGO = 'RS256'
+OIDC_USERNAME_ALGO = 'badgeuser.utils.generate_badgr_username'
+OIDC_USE_PKCE = True
+# We store the access and refresh tokens because we use them
+# for authentication
+OIDC_STORE_ACCESS_TOKEN = True
+OIDC_STORE_REFRESH_TOKEN = True
+# TODO: Maybe we want to store the ID token and use it to prevent
+# prompts in the logout sequence
+OIDC_STORE_ID_TOKEN = False
+
+# Make the Django session expire after 1 minute, so that the UI has 1 minute to convert the session authentication
+# into an access token
+SESSION_COOKIE_AGE = 60

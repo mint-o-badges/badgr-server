@@ -17,8 +17,8 @@ django-basic-models==4.0.0
 
 django-object-actions==1.1.0
 
-python-memcached
-pymemcache 
+#python-memcached==1.62
+pymemcache==4.0.0
 
 djangorestframework==3.12.2
 
@@ -115,6 +115,9 @@ uwsgi
 tox
 
 pyopenssl==24.0.0
+
+mozilla-django-oidc
+pyjwt
 
 reportlab
 svg2rlg
