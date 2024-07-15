@@ -356,7 +356,9 @@ class Issuer(ResizeUploadedImage,
         elif staff.exists():
             new_owner = staff.first()
         else:
-            # Nothing we can do
+            # If there is no other user, we (re-)assign the creator as owner.
+            # This is also the case for the initial creation
+            new_owner = IssuerStaff.objects.create(issuer=self, user=self.created_by, role=IssuerStaff.ROLE_OWNER)
             return
         new_owner.role = IssuerStaff.ROLE_OWNER
         new_owner.save()
