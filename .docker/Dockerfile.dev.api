@@ -11,7 +11,7 @@ RUN apt-get install -y --fix-missing default-libmysqlclient-dev \
                        xmlsec1 \
                        libxmlsec1-dev \
                        pkg-config \
-                       cron
+                       curl
 
 RUN pip install uwsgi
 
