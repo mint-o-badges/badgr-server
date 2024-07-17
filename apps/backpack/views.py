@@ -123,7 +123,7 @@ def AllPageSetup(canvas, doc):
 
     # Header
     logo = ImageReader("{}images/Logo-Oeb.png".format(settings.STATIC_URL))
-    canvas.drawImage(logo, 10, 650, width=200, height=200, mask="auto", preserveAspectRatio=True)
+    canvas.drawImage(logo, 20, 675, width=150, height=150, mask="auto", preserveAspectRatio=True)
     page_width = canvas._pagesize[0]
     canvas.setStrokeColor("#492E98")
     canvas.line(page_width / 2 - 100, 750, page_width / 2 + 250, 750)
