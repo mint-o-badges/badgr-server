@@ -310,7 +310,7 @@ class Issuer(ResizeUploadedImage,
         # If there exists both a creator and an owner, there's nothing to do
         # (I think; it's not clearly specified)
         if self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_OWNER) and \
-            self.staff.filter(issuerstaff__user=self.created_by):
+            self.created_by:
             return
 
         # If there already is an IssuerStaff entry I have to edit it
