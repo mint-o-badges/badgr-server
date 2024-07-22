@@ -4,6 +4,8 @@ from django.conf import settings
 from django.http import Http404
 from django.views.generic import RedirectView
 
+from django.core.exceptions import PermissionDenied
+
 from backpack.models import BackpackCollection
 from issuer.models import BadgeInstance, BadgeClass
 from badgeuser.models import BadgeUser
@@ -29,7 +31,7 @@ from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPDF
 
 class RoundedRectFlowable(Flowable):
-    def __init__(self, x, y, width, height, radius, text, strokecolor):
+    def __init__(self, x, y, width, height, radius, text, strokecolor, fillcolor, studyload, esco = ''):
         super().__init__()
         self.x = x
         self.y = y
@@ -37,19 +39,35 @@ class RoundedRectFlowable(Flowable):
         self.height = height
         self.radius = radius
         self.strokecolor = strokecolor
+        self.fillcolor = fillcolor 
         self.text = text
+        self.studyload = studyload
+        self.esco = esco
 
     def draw(self):
-        self.canv.setFillColor(self.strokecolor)
+        self.canv.setFillColor(self.fillcolor)
         self.canv.setStrokeColor(self.strokecolor)
         self.canv.roundRect(self.x, self.y, self.width, self.height, self.radius,
-                             stroke=1, fill=0)
+                             stroke=1, fill=1)
         
-        self.canv.setFontSize(14)
+        self.canv.setFillColor('#323232')
+        self.canv.setFont('Helvetica-Bold', 14)
+
         text_width = self.canv.stringWidth(self.text)
-        text_x = self.x + (self.width - text_width) / 2 + 10
-        text_y = self.y + (self.height - 14) / 2
-        self.canv.drawString(text_x, text_y, self.text)
+        name = self.text
+        self.canv.drawString(self.x + 10, self.y + 15, name)
+        
+        self.canv.setFillColor('blue')
+        if self.esco:
+            self.canv.drawString(self.x + 10 + text_width, self.y + 15, " [E]")
+            # the whole rectangle links to esco, instead of just the "[E]"
+            self.canv.linkURL(f"http://data.europa.eu/{self.esco}", (self.x, self.y, self.width, self.height), relative=1, thickness=0)
+
+        
+        self.canv.setFillColor('#492E98')
+        self.canv.setFont('Helvetica', 14)
+        studyload_width = self.canv.stringWidth(self.studyload)
+        self.canv.drawString(self.x + 450 -(studyload_width + 10), self.y + 15, self.studyload)
 
         svg_url = "{}images/clock_icon.svg".format(settings.STATIC_URL)
         response = requests.get(svg_url)
@@ -62,7 +80,7 @@ class RoundedRectFlowable(Flowable):
 
         try:
             if drawing is not None:
-               renderPDF.draw(drawing, self.canv, 10, -5)
+               renderPDF.draw(drawing, self.canv, 450 - (studyload_width + 30), self.y + 12.5 )
         except Exception as e:
             print(e)
         
@@ -104,8 +122,8 @@ def AllPageSetup(canvas, doc):
         canvas.drawPath(path, fill=1, stroke=1)
 
     # Header
-    logo = ImageReader("{}images/Logo-New.png".format(settings.STATIC_URL))
-    canvas.drawImage(logo, 10, 650, width=200, height=200, mask="auto", preserveAspectRatio=True)
+    logo = ImageReader("{}images/Logo-Oeb.png".format(settings.STATIC_URL))
+    canvas.drawImage(logo, 20, 675, width=150, height=150, mask="auto", preserveAspectRatio=True)
     page_width = canvas._pagesize[0]
     canvas.setStrokeColor("#492E98")
     canvas.line(page_width / 2 - 100, 750, page_width / 2 + 250, 750)
@@ -178,26 +196,20 @@ def createMultiPage(response, first_page_content, competencies, first_name, last
 
     if num_competencies > 0:
             esco = any(c['escoID'] for c in competencies)
-            competenciesPerPage = 7
+            competenciesPerPage = 5
 
             Story.append(PageBreak())
             Story.append(Spacer(1, 75))
 
             title_style = ParagraphStyle(name='Title', fontSize=24, textColor='#492E98', alignment=TA_LEFT)
-            text_style = ParagraphStyle(name='Text', fontSize=14, textColor='#492E98', alignment=TA_LEFT)
+            text_style = ParagraphStyle(name='Text', fontSize=18, leading=20, textColor='#323232', alignment=TA_LEFT)
 
             Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
             Story.append(Spacer(1, 25))
-
-
-            text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
+            
+            text = "die <strong>%s %s</strong> mit dem Badge <strong>%s</strong> erworben hat:" % (first_name, last_name, badge_name) 
             Story.append(Paragraph(text, text_style))
             Story.append(Spacer(1, 20))
-
-
-            text = " <strong>%s</strong> erworben hat:" % badge_name
-            Story.append(Paragraph(text, text_style)) 
-            Story.append(Spacer(1, 20)) 
 
             text_style = ParagraphStyle(name='Text', fontSize=18, leading=16, textColor='#492E98', alignment=TA_LEFT)      
 
@@ -217,25 +229,21 @@ def createMultiPage(response, first_page_content, competencies, first_name, last
                 Story.append(Paragraph(text, text_style)) 
                 Story.append(Spacer(1, 20)) 
 
-              text = "%s Minuten" % competencies[i]['studyLoad']
+              studyload = "%s Minuten" % competencies[i]['studyLoad']
               if competencies[i]['studyLoad'] > 120:
-                  studyLoadInHours = competencies[i]['studyLoad'] / 120
-                  text = "%s Stunden" % int(studyLoadInHours)
-              rounded_rect = RoundedRectFlowable(0, -10, 120, 30, 15, text=text, strokecolor="#492E98")
-              competency = competencies[i]['name']
-              if competencies[i]['escoID']:
-                    competency = competency + " *"
-              info = (competency[:20] + '...') if len(competency) > 20 else competency
-              tbl_data = [
-                    [rounded_rect, Paragraph(info,text_style)]
-              ]
-              Story.append(Table(tbl_data, style=[('VALIGN', (0, 0), (-1, -1), 'MIDDLE')]))     
+                  studyLoadInHours = competencies[i]['studyLoad'] / 60
+                  studyload = "%s Stunden" % int(studyLoadInHours)
+              competency_name = competencies[i]['name']
+              competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name
+              rounded_rect = RoundedRectFlowable(0, -10, 450, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload= studyload, esco=competencies[i]['escoID'])    
+              Story.append(rounded_rect)
               Story.append(Spacer(1, 20))   
                  
             if esco: 
                 Story.append(Spacer(1, 100))
-                text_style = ParagraphStyle(name='Text_Style', fontSize=14, alignment=TA_LEFT)
-                link_text = '<a href="https://esco.ec.europa.eu/de">* Kompetenz nach ESCO: https://esco.ec.europa.eu/de</a>'
+                text_style = ParagraphStyle(name='Text_Style', fontSize=12, leading=20, alignment=TA_LEFT)
+                link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations) <br/>' \
+                    'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
                 paragraph_with_link = Paragraph(link_text, text_style)
                 Story.append(paragraph_with_link) 
            
@@ -303,6 +311,9 @@ def pdf(request, *args, **kwargs):
     slug = kwargs["slug"]
     try:
         badgeinstance = BadgeInstance.objects.get(entity_id=slug)
+        # TODO: Check other recipient types 
+        if request.user.email != badgeinstance.recipient_identifier:
+            raise PermissionDenied
     except BadgeInstance.DoesNotExist:
         raise Http404
     try:

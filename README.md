@@ -192,3 +192,38 @@ This process is heavily inspired by [this tutorial](https://dev.to/ferkarchiloff
 Start in your `badgr` directory and clone badgr-ui source code: `git clone https://github.com/concentricsky/badgr-ui.git badgr-ui`
 
 For more details view the Readme for [Badgr UI](https://github.com/concentricsky/badgr-ui).
+
+### Code Quality
+
+To ensure consistency and quality in code contributions, we use pre-commit hooks to adhere to commit message conventions and code quality guidelines. Follow these steps to set up your development environment:
+
+- Install Pre-commit
+
+Make sure you have `pre-commit` installed on your machine. You can install it using pip:
+
+```bash
+pip install pre-commit
+```
+
+- Initialize Pre-commit Hooks
+
+Navigate to the root directory of the repository and run the following command to initialize pre-commit hooks:
+
+```bash
+pre-commit install
+```
+
+This command sets up the pre-commit hooks defined in the `pre-commit-config.yaml` file.
+
+To run the configured hooks on some / all files of the project run:
+
+```bash
+pre-commit run --files <file-name>
+pre-commit run --all-files
+```
+
+You will also need to have `commitizen` installed, e.g. via
+
+```bash
+pip install commitizen
+```

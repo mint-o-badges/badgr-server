@@ -3,6 +3,7 @@ import datetime
 import urllib.request
 import urllib.parse
 import urllib.error
+import base64
 
 import dateutil
 import re
@@ -15,6 +16,7 @@ from allauth.account.adapter import get_adapter
 from django.apps import apps
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
@@ -1154,6 +1156,26 @@ class BadgeInstance(BaseAuditedModel,
         """
         Sends an email notification to the badge recipient.
         """
+
+        competencyExtensions = {}
+
+        if len(self.badgeclass.cached_extensions()) > 0:
+            for extension in self.badgeclass.cached_extensions():
+                if(extension.name == 'extensions:CompetencyExtension'):
+                    competencyExtensions[extension.name] = json_loads(extension.original_json)
+
+        competencies = []
+
+        for competency in competencyExtensions.get('extensions:CompetencyExtension', []):
+            competency_entry = {
+                'name': competency.get('name'),
+                'description': competency.get('description'),
+                'escoID': competency.get('escoID'),
+                'studyLoad': competency.get('studyLoad'),
+                'skill': competency.get('category')
+            }
+            competencies.append(competency_entry)
+
         if self.recipient_type != RECIPIENT_TYPE_EMAIL:
             return
 
@@ -1171,6 +1193,12 @@ class BadgeInstance(BaseAuditedModel,
         if badgr_app is None:
             badgr_app = BadgrApp.objects.get_current(None)
 
+        adapter = get_adapter()
+
+        pdf_document = adapter.generate_pdf_content(slug =  self.entity_id)
+        encoded_pdf_document = base64.b64encode(pdf_document).decode('utf-8')
+        data_url = f"data:application/pdf;base64,{encoded_pdf_document}"    
+
         try:
             if self.issuer.image:
                 issuer_image_url = self.issuer.public_url + '/image'
@@ -1181,6 +1209,7 @@ class BadgeInstance(BaseAuditedModel,
                 'badge_name': self.badgeclass.name,
                 'badge_id': self.entity_id,
                 'badge_description': self.badgeclass.description,
+                'badge_competencies': competencies,
                 'help_email': getattr(settings, 'HELP_EMAIL', 'info@opensenselab.org'),
                 'issuer_name': re.sub(r'[^\w\s]+', '', self.issuer.name, 0, re.I),
                 'issuer_url': self.issuer.url,
@@ -1188,6 +1217,8 @@ class BadgeInstance(BaseAuditedModel,
                 'issuer_detail': self.issuer.public_url,
                 'issuer_image_url': issuer_image_url,
                 'badge_instance_url': self.public_url,
+                'pdf_download': data_url,
+                'pdf_document': pdf_document,
                 'image_url': self.public_url + '/image?type=png',
                 'download_url': self.public_url + "?action=download",
                 'site_name': "Open Educational Badges",
@@ -1211,7 +1242,6 @@ class BadgeInstance(BaseAuditedModel,
         except CachedEmailAddress.DoesNotExist:
             pass
 
-        adapter = get_adapter()
         adapter.send_mail(template_name, self.recipient_identifier, context=email_context)
 
     def get_extensions_manager(self):

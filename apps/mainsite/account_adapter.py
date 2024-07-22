@@ -31,7 +31,9 @@ from reportlab.lib.enums import TA_JUSTIFY, TA_LEFT
 
 logger = badgrlog.BadgrLogger()
 
-def generate_pdf_content(slug):
+class BadgrAccountAdapter(DefaultAccountAdapter):
+
+    def generate_pdf_content(self, slug):
         if slug is None:
             raise ValueError("Missing slug parameter")
         
@@ -59,6 +61,8 @@ def generate_pdf_content(slug):
             last_name = badgeuser.last_name.capitalize()
             add_recipient_name(first_page_content, first_name, last_name, badgeinstance.issued_on) 
         else: 
+            first_name = None
+            last_name = None
             add_recipient_name(first_page_content, badgeinstance.recipient_identifier, '', badgeinstance.issued_on)    
 
         competencies = badgeclass.json["extensions:CompetencyExtension"]
@@ -92,7 +96,7 @@ def generate_pdf_content(slug):
 
         if num_competencies > 0:
                 esco = any(c['escoID'] for c in competencies)
-                competenciesPerPage = 7
+                competenciesPerPage = 5
 
                 Story.append(PageBreak())
                 Story.append(Spacer(1, 75))
@@ -104,7 +108,10 @@ def generate_pdf_content(slug):
                 Story.append(Spacer(1, 25))
 
 
-                text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
+                if first_name and last_name:
+                    text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
+                else: 
+                    text = "die <strong>%s</strong> mit dem Badge" % badgeinstance.recipient_identifier    
                 Story.append(Paragraph(text, text_style))
                 Story.append(Spacer(1, 20))
 
@@ -122,7 +129,10 @@ def generate_pdf_content(slug):
                         Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
                         Story.append(Spacer(1, 25))
 
-                        text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
+                        if first_name and last_name:
+                            text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
+                        else: 
+                            text = "die <strong>%s</strong> mit dem Badge" % badgeinstance.recipient_identifier    
                         Story.append(Paragraph(text, text_style))
                         Story.append(Spacer(1, 20))
 
@@ -131,23 +141,21 @@ def generate_pdf_content(slug):
                         Story.append(Paragraph(text, text_style)) 
                         Story.append(Spacer(1, 20)) 
 
-                    text = "%s Minuten" % competencies[i]['studyLoad']
-                    if competencies[i]['studyLoad'] > 60:
-                        text = "%s Stunden" % competencies[i]['studyLoad']
-                    rounded_rect = RoundedRectFlowable(0, -15, 120, 35, 15, text=text, strokecolor="#492E98")
-                    competency = competencies[i]['name']
-                    if competencies[i]['escoID']:
-                        competency = competency + " *"
-                    tbl_data = [
-                            [rounded_rect, Paragraph(competency,text_style)]
-                    ]
-                    Story.append(Table(tbl_data, style=[('VALIGN', (0, 0), (-1, -1), 'MIDDLE')]))     
+                    studyload = "%s Minuten" % competencies[i]['studyLoad']
+                    if competencies[i]['studyLoad'] > 120:
+                        studyload = "%s Stunden" % int(competencies[i]['studyLoad'] / 60 )
+                    competency_name = competencies[i]['name']
+                    competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name 
+                    rounded_rect = RoundedRectFlowable(0, -1, 450, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload = studyload, esco = competencies[i]['escoID'])
+
+                    Story.append(rounded_rect)    
                     Story.append(Spacer(1, 20))   
                     
                 if esco: 
                     Story.append(Spacer(1, 100))
-                    text_style = ParagraphStyle(name='Text_Style', fontSize=14, alignment=TA_LEFT)
-                    link_text = '<a href="https://esco.ec.europa.eu/de">* Kompetenz nach ESCO: https://esco.ec.europa.eu/de</a>'
+                    text_style = ParagraphStyle(name='Text_Style', fontSize=12, leading=20, alignment=TA_LEFT)
+                    link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations) <br/>' \
+                    'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
                     paragraph_with_link = Paragraph(link_text, text_style)
                     Story.append(paragraph_with_link) 
             
@@ -158,8 +166,6 @@ def generate_pdf_content(slug):
         buffer.close()
         
         return pdf_content
-
-class BadgrAccountAdapter(DefaultAccountAdapter):
 
     EMAIL_FROM_STRING = ''
 
@@ -190,7 +196,7 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
         msg = self.render_mail(template_prefix, email, context)
         # badge_id is equal to the badge instance slug
         if template_prefix == 'issuer/email/notify_account_holder' or template_prefix == 'issuer/email/notify_earner':
-            pdf_document = generate_pdf_content(context['badge_id'])
+            pdf_document = context['pdf_document']
             badge_name = f"{context['badge_name']}.badge"
             img_path = os.path.join(settings.MEDIA_ROOT, "uploads", "badges", "assertion-{}.png".format(context.get('badge_id', None)))
             with open(img_path, 'rb') as f:
