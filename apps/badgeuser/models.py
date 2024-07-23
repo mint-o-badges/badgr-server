@@ -16,7 +16,7 @@ from rest_framework.authtoken.models import Token
 from backpack.models import BackpackCollection
 from badgeuser.tasks import process_post_recipient_id_deletion, process_post_recipient_id_verification_change
 from entity.models import BaseVersionedEntity
-from issuer.models import Issuer, BadgeInstance, BaseAuditedModel, BaseAuditedModelDeletedWithUser
+from issuer.models import Issuer, BadgeInstance, BaseAuditedModel, BaseAuditedModelDeletedWithUser, IssuerStaff
 from badgeuser.managers import CachedEmailAddressManager, BadgeUserManager
 from badgeuser.utils import generate_badgr_username
 from mainsite.models import ApplicationInfo
@@ -247,11 +247,24 @@ class BadgeUser(BaseVersionedEntity, AbstractUser, cachemodel.CacheModel):
         self.publish_by('username')
 
     def delete(self, *args, **kwargs):
+        # If the user is staff for an institution, the ownership needs to be transferred.
+        # Therefore we remember the pks of the relevant institutions
+        staff_contact_pks = [o.pk for o in self.issuerstaff_set.all() if o.is_staff_contact()] 
+        staff_issuers = Issuer.objects.filter(issuerstaff__in=staff_contact_pks)
+        staff_issuers_pks = [o.pk for o in staff_issuers]
+
         cached_emails = self.cached_emails()
         if cached_emails.exists():
             for email in cached_emails:
                 email.delete()
         super(BadgeUser, self).delete(*args, **kwargs)
+
+        # Here we transfer the ownership by restoring a valid contact email
+        # (which also makes sure ownership exists)
+        staff_issuers = Issuer.objects.filter(pk__in=staff_issuers_pks)
+        for staff_issuer in staff_issuers:
+            staff_issuer.new_contact_email()
+
         self.publish_delete('username')
 
     @cachemodel.cached_method(auto_publish=True)
