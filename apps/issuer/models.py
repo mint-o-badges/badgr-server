@@ -287,13 +287,15 @@ class Issuer(ResizeUploadedImage,
                     self.lon = geoloc.longitude
                     self.lat = geoloc.latitude
 
+        ensureOwner = kwargs.pop('ensureOwner', True)
         ret = super(Issuer, self).save(*args, **kwargs)
 
         # notify the owner of the Issuer on verification
         if original_verified == False and self.verified:
             self.notify_issuer_owner(self)
         # The user who created the issuer should always be an owner
-        self.ensure_owner()
+        if ensureOwner:
+            self.ensure_owner()
 
         return ret
 
@@ -331,17 +333,19 @@ class Issuer(ResizeUploadedImage,
             staff = self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_STAFF)
             if owners.exists():
                 self.created_by = owners.first()
-                self.save()
+                self.save(ensureOwner = False)
                 # Is already owner
                 return
             elif editors.exists():
                 self.created_by = editors.first()
-                self.save()
+                self.save(ensureOwner = False)
             elif staff.exists():
                 self.created_by = staff.first()
-                self.save()
+                self.save(ensureOwner = False)
             else:
-                # With no other staff, there's nothing we can do
+                # With no other staff, there's nothing we can do. So we unverify the issuer
+                self.verified = False
+                self.save(ensureOwner = False)
                 return
             # The new "creator" should also be the owner
             issuerStaff = IssuerStaff.objects.get(user=self.created_by, issuer=self)
