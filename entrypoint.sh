@@ -3,6 +3,7 @@
 set -e
 
 /badgr_server/manage.py migrate
+/badgr_server/manage.py collectstatic --noinput
 
 /badgr_server/manage.py crontab remove
 /badgr_server/manage.py crontab add
