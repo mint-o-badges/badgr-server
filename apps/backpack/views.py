@@ -126,7 +126,7 @@ def AllPageSetup(canvas, doc):
     canvas.drawImage(logo, 20, 675, width=150, height=150, mask="auto", preserveAspectRatio=True)
     page_width = canvas._pagesize[0]
     canvas.setStrokeColor("#492E98")
-    canvas.line(page_width / 2 - 100, 750, page_width / 2 + 250, 750)
+    canvas.line(page_width / 2 - 75, 750, page_width / 2 + 250, 750)
 
     canvas.restoreState()
 
