@@ -1263,7 +1263,21 @@ class BadgeInstance(BaseAuditedModel,
             else:
                 issuer_image_url = None
 
+            first_name = ''
+            last_name = ''
+
+            try:
+                from badgeuser.models import BadgeUser
+                if self.recipient_type == RECIPIENT_TYPE_EMAIL:
+                    user = BadgeUser.objects.get(email=self.recipient_identifier)
+                    first_name = user.first_name
+                    last_name = user.last_name
+            except BadgeUser.DoesNotExist:
+                pass
+
             email_context = {
+                 'first_name': first_name,
+                'last_name': last_name,
                 'badge_name': self.badgeclass.name,
                 'badge_id': self.entity_id,
                 'badge_description': self.badgeclass.description,

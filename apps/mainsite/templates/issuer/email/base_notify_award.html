@@ -67,9 +67,16 @@
                                                     color:#492e98;
                                                     width: 400px;
                                                     margin-right: auto">
-                                            Herzlichen Glückwunsch,
+                                            Herzlichen Glückwunsch
+                                            {% if first_name and last_name %}
+                                            <span style="font-weight: 800">
+                                              {{ first_name }} {{ last_name }},
+                                            </span> 
+                                            {% else %}
+                                            ,
+                                            {% endif %} 
                                             <br />
-                                            <span style="font-weight: 800">Du hast von {{ issuer_name }} einen Badge erhalten!</span>
+                                            <span>du hast einen <span style="font-weight: 800">Badge</span> erhalten!</span>
                                         </div>
                                     </td>
                                 </tr>
