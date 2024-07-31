@@ -56,7 +56,12 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
             logger.warning("Could not find badgeuser")
         
         first_page_content = []
-        if badgeuser is not None: 
+        recipientProfileName = badgeinstance.json["extensions:recipientProfile"]["name"] if "extensions:recipientProfile" in badgeinstance.json else None
+        if recipientProfileName is not None:
+            first_name = None
+            last_name = None
+            add_recipient_name(first_page_content, recipientProfileName, '', badgeinstance.issued_on)
+        elif badgeuser is not None: 
             first_name = badgeuser.first_name.capitalize()
             last_name = badgeuser.last_name.capitalize()
             add_recipient_name(first_page_content, first_name, last_name, badgeinstance.issued_on) 
@@ -105,10 +110,11 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                 text_style = ParagraphStyle(name='Text', fontSize=14, textColor='#492E98', alignment=TA_LEFT)
 
                 Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
-                Story.append(Spacer(1, 25))
+                Story.append(Spacer(1, 25))        
 
-
-                if first_name and last_name:
+                if recipientProfileName is not None:
+                    text = "die <strong>%s</strong> mit dem Badge" % recipientProfileName 
+                elif first_name and last_name:
                     text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
                 else: 
                     text = "die <strong>%s</strong> mit dem Badge" % badgeinstance.recipient_identifier    
@@ -129,7 +135,9 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                         Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
                         Story.append(Spacer(1, 25))
 
-                        if first_name and last_name:
+                        if recipientProfileName is not None:
+                            text = "die <strong>%s</strong> mit dem Badge" % recipientProfileName     
+                        elif first_name and last_name:
                             text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
                         else: 
                             text = "die <strong>%s</strong> mit dem Badge" % badgeinstance.recipient_identifier    
