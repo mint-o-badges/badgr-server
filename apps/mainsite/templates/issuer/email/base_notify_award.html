@@ -38,21 +38,11 @@
                                                padding:10px 10px 10px 25px;
                                                word-break:break-word">
                                         <a href="https://openbadges.education" target="_blank">
-                                            <img src="{% static '/images/Logo-New.png' %}"
+                                            <img src="{% static '/images/Logo-Oeb.png' %}"
                                                  align="left"
                                                  style="width: auto;
                                                         height: 60px;
                                                         max-height: 60px">
-                                        </a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td align="right">
-                                        <a href="#about-section">
-                                            <img class="faq-badges-image"
-                                                 src="{% static '/images/was_bringen_mir_badges.png' %}"
-                                                 style="width: auto;
-                                                        max-height: 166px">
                                         </a>
                                     </td>
                                 </tr>
@@ -77,9 +67,16 @@
                                                     color:#492e98;
                                                     width: 400px;
                                                     margin-right: auto">
-                                            Herzlichen Glückwunsch,
+                                            Herzlichen Glückwunsch
+                                            {% if first_name and last_name %}
+                                            <span style="font-weight: 800">
+                                              {{ first_name }} {{ last_name }},
+                                            </span> 
+                                            {% else %}
+                                            ,
+                                            {% endif %} 
                                             <br />
-                                            <span style="font-weight: 800">Du hast von {{ issuer_name }} einen Badge erhalten!</span>
+                                            <span>du hast einen <span style="font-weight: 800">Badge</span> erhalten!</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -313,7 +310,7 @@
                         
                                                           <span style="font-weight: 700; line-height: 15.6px;">Wo kann ich meine Badges sammeln?</span>
                                                           <p style="margin-top:0px;">
-                                                            Auf unserer Plattform kannst du ganz einfach einen Account anlegen und alle deine Badges in deinem Rucksack sammeln – egal, wo du sie erhalten hast. Lege jetzt los auf <a href="https://openbadges.education" style="text-decoration: underline; color: blue">https://openbadges.education</a>.  
+                                                            Auf unserer Plattform kannst du ganz einfach einen Account anlegen und alle deine Badges in deinem Rucksack sammeln – egal, wo du sie erhalten hast. Lege jetzt los auf <a href="https://openbadges.education/signup" style="text-decoration: underline; color: blue">https://openbadges.education/signup</a>.  
                                                           </p>
                                                           <span style="font-weight: 700; line-height: 15.6px;">Was sind Open Educational Badges?</span>
                                                           <p style="margin-top:0px;">

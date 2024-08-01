@@ -126,7 +126,7 @@ def AllPageSetup(canvas, doc):
     canvas.drawImage(logo, 20, 675, width=150, height=150, mask="auto", preserveAspectRatio=True)
     page_width = canvas._pagesize[0]
     canvas.setStrokeColor("#492E98")
-    canvas.line(page_width / 2 - 100, 750, page_width / 2 + 250, 750)
+    canvas.line(page_width / 2 - 75, 750, page_width / 2 + 250, 750)
 
     canvas.restoreState()
 
@@ -177,7 +177,7 @@ class PageNumCanvas(canvas.Canvas):
         self.setFont("Helvetica", 9)
         self.drawCentredString(page_width / 2, 10, page)
 
-def createMultiPage(response, first_page_content, competencies, first_name, last_name, badge_name):
+def create_multi_page(response, first_page_content, competencies, name, badge_name):
     """
     Create a multi-page pdf document
     """
@@ -207,7 +207,7 @@ def createMultiPage(response, first_page_content, competencies, first_name, last
             Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
             Story.append(Spacer(1, 25))
             
-            text = "die <strong>%s %s</strong> mit dem Badge <strong>%s</strong> erworben hat:" % (first_name, last_name, badge_name) 
+            text = f"die <strong>{name}</strong> mit dem Badge <strong>{badge_name}</strong> erworben hat:"
             Story.append(Paragraph(text, text_style))
             Story.append(Spacer(1, 20))
 
@@ -220,7 +220,7 @@ def createMultiPage(response, first_page_content, competencies, first_name, last
                 Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
                 Story.append(Spacer(1, 25))
 
-                text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
+                text = f"die <strong>{name}</strong> mit dem Badge"
                 Story.append(Paragraph(text, text_style))
                 Story.append(Spacer(1, 20))
 
@@ -254,11 +254,11 @@ def addBadgeImage(first_page_content, badgeImage):
     image_height = 250
     first_page_content.append(Image(badgeImage, width=image_width, height=image_height))
 
-def add_recipient_name(first_page_content, first_name, last_name, issuedOn):
+def add_recipient_name(first_page_content, name, issuedOn):
     first_page_content.append(Spacer(1, 50))
     recipient_style = ParagraphStyle(name='Recipient', fontSize=24, textColor='#492E98', alignment=TA_CENTER)
     
-    recipient_name = f"<strong>{first_name} {last_name}</strong>"
+    recipient_name = f"<strong>{name}</strong>"
     first_page_content.append(Paragraph(recipient_name, recipient_style))
     first_page_content.append(Spacer(1, 35))
 
@@ -304,6 +304,24 @@ def add_issuerImage(first_page_content, issuerImage):
     image_height = 60
     first_page_content.append(Image(issuerImage, width=image_width, height=image_height))
 
+def get_name(badgeinstance: BadgeInstance):
+    """Evaluates the name to be displayed for the recipient of the badge.
+    
+    This is either the name that was specified in the award process of the badge
+    (which is by now mandatory) or, if none was specified, the full profile of the
+    recipient. If no name was specified and the profile can't be found, a
+    `BadgeUser.DoesNotExist` exception is thrown.
+    """
+    recipientProfile = badgeinstance.extension_items.get('extensions:recipientProfile', {})
+    name = recipientProfile.get('name', None)
+    if name:
+        return name
+    
+    badgeuser = BadgeUser.objects.get(email=badgeinstance.recipient_identifier)  
+    first_name = badgeuser.first_name.capitalize()
+    last_name = badgeuser.last_name.capitalize()
+    return f"{first_name} {last_name}"
+
 @api_view(["GET"])
 @authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
 @permission_classes([IsAuthenticated])
@@ -323,11 +341,6 @@ def pdf(request, *args, **kwargs):
     except BadgeClass.DoesNotExist:
         raise Http404
 
-    try: 
-        badgeuser = BadgeUser.objects.get(email=badgeinstance.recipient_identifier)  
-    except BadgeUser.DoesNotExist:
-        raise Http404
-
     response = HttpResponse(content_type="application/pdf")
     response["Content-Disposition"] = 'inline; filename="badge.pdf"'
 
@@ -335,10 +348,11 @@ def pdf(request, *args, **kwargs):
 
     first_page_content = []
 
-    first_name = badgeuser.first_name.capitalize()
-    last_name = badgeuser.last_name.capitalize()
-
-    add_recipient_name(first_page_content, first_name, last_name, badgeinstance.issued_on) 
+    try:
+        name = get_name(badgeinstance)
+    except BadgeUser.DoesNotExist:
+        raise Http404
+    add_recipient_name(first_page_content, name, badgeinstance.issued_on) 
 
     addBadgeImage(first_page_content, badgeclass.image)
 
@@ -353,7 +367,7 @@ def pdf(request, *args, **kwargs):
     except: 
         pass    
 
-    createMultiPage(response, first_page_content, competencies, first_name, last_name, badgeclass.name)
+    create_multi_page(response, first_page_content, competencies, name, badgeclass.name)
 
     return response
 

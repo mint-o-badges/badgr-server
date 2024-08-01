@@ -1010,7 +1010,6 @@ class BadgeInstance(BaseAuditedModel,
 
     # slug has been deprecated for now, but preserve existing values
     slug = models.CharField(max_length=255, db_index=True, blank=True, null=True, default=None)
-    # slug = AutoSlugField(max_length=255, populate_from='get_new_slug', unique=True, blank=False, editable=False)
 
     revoked = models.BooleanField(default=False, db_index=True)
     revocation_reason = models.CharField(max_length=255, blank=True, null=True, default=None)
@@ -1267,7 +1266,21 @@ class BadgeInstance(BaseAuditedModel,
             else:
                 issuer_image_url = None
 
+            first_name = ''
+            last_name = ''
+
+            try:
+                from badgeuser.models import BadgeUser
+                if self.recipient_type == RECIPIENT_TYPE_EMAIL:
+                    user = BadgeUser.objects.get(email=self.recipient_identifier)
+                    first_name = user.first_name
+                    last_name = user.last_name
+            except BadgeUser.DoesNotExist:
+                pass
+
             email_context = {
+                 'first_name': first_name,
+                'last_name': last_name,
                 'badge_name': self.badgeclass.name,
                 'badge_id': self.entity_id,
                 'badge_description': self.badgeclass.description,
