@@ -287,13 +287,15 @@ class Issuer(ResizeUploadedImage,
                     self.lon = geoloc.longitude
                     self.lat = geoloc.latitude
 
+        ensureOwner = kwargs.pop('ensureOwner', True)
         ret = super(Issuer, self).save(*args, **kwargs)
 
         # notify the owner of the Issuer on verification
         if original_verified == False and self.verified:
             self.notify_issuer_owner(self)
         # The user who created the issuer should always be an owner
-        self.ensure_owner()
+        if ensureOwner:
+            self.ensure_owner()
 
         return ret
 
@@ -331,17 +333,19 @@ class Issuer(ResizeUploadedImage,
             staff = self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_STAFF)
             if owners.exists():
                 self.created_by = owners.first()
-                self.save()
+                self.save(ensureOwner = False)
                 # Is already owner
                 return
             elif editors.exists():
                 self.created_by = editors.first()
-                self.save()
+                self.save(ensureOwner = False)
             elif staff.exists():
                 self.created_by = staff.first()
-                self.save()
+                self.save(ensureOwner = False)
             else:
-                # With no other staff, there's nothing we can do
+                # With no other staff, there's nothing we can do. So we unverify the issuer
+                self.verified = False
+                self.save(ensureOwner = False)
                 return
             # The new "creator" should also be the owner
             issuerStaff = IssuerStaff.objects.get(user=self.created_by, issuer=self)
@@ -1006,7 +1010,6 @@ class BadgeInstance(BaseAuditedModel,
 
     # slug has been deprecated for now, but preserve existing values
     slug = models.CharField(max_length=255, db_index=True, blank=True, null=True, default=None)
-    # slug = AutoSlugField(max_length=255, populate_from='get_new_slug', unique=True, blank=False, editable=False)
 
     revoked = models.BooleanField(default=False, db_index=True)
     revocation_reason = models.CharField(max_length=255, blank=True, null=True, default=None)
@@ -1263,7 +1266,21 @@ class BadgeInstance(BaseAuditedModel,
             else:
                 issuer_image_url = None
 
+            first_name = ''
+            last_name = ''
+
+            try:
+                from badgeuser.models import BadgeUser
+                if self.recipient_type == RECIPIENT_TYPE_EMAIL:
+                    user = BadgeUser.objects.get(email=self.recipient_identifier)
+                    first_name = user.first_name
+                    last_name = user.last_name
+            except BadgeUser.DoesNotExist:
+                pass
+
             email_context = {
+                 'first_name': first_name,
+                'last_name': last_name,
                 'badge_name': self.badgeclass.name,
                 'badge_id': self.entity_id,
                 'badge_description': self.badgeclass.description,
