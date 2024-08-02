@@ -1682,3 +1682,19 @@ class BadgeInstanceExtension(BaseOpenBadgeExtension):
     def delete(self, *args, **kwargs):
         super(BadgeInstanceExtension, self).delete(*args, **kwargs)
         self.badgeinstance.publish()
+
+class RequestedBadge(BaseVersionedEntity):
+
+    badgeclass = models.ForeignKey(BadgeClass, blank=False, null=False,
+                                   on_delete=models.CASCADE, related_name='requestedbadges')
+    user = models.ForeignKey('badgeuser.BadgeUser', blank=True, null=True, on_delete=models.SET_NULL,)
+
+    firstName = models.CharField(max_length=254, blank=False, null=False)
+    lastName = models.CharField(max_length=254, blank=False, null=False)
+    email = models.CharField(max_length=254, blank=True, null=True)
+
+    requestedOn = models.DateTimeField(blank=False, null=False, default=timezone.now)
+
+    status = models.CharField(max_length=254, blank=False, null=False, default='Pending')
+ 
+
