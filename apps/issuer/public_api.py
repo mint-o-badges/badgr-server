@@ -706,3 +706,11 @@ class VerifyBadgeAPIEndpoint(JSONComponentView):
         result = self.get_object(entity_id).get_json(expand_badgeclass=True, expand_issuer=True)
 
         return Response(BaseSerializerV2.response_envelope([result], True, 'OK'), status=status.HTTP_200_OK)
+
+class RequestBadgeAPIEndpoint(JSONComponentView): 
+    # permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, **kwargs):
+        entity_id = request.data.get('entity_id')
+        badgeclass = self.get_object(entity_id)
+
