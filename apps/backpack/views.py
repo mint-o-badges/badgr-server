@@ -329,8 +329,9 @@ def pdf(request, *args, **kwargs):
     slug = kwargs["slug"]
     try:
         badgeinstance = BadgeInstance.objects.get(entity_id=slug)
+        # User must be the recipient or issuer of the badge
         # TODO: Check other recipient types 
-        if request.user.email != badgeinstance.recipient_identifier:
+        if request.user.email != badgeinstance.recipient_identifier and request.user.email != badgeinstance.issuer.email:
             raise PermissionDenied
     except BadgeInstance.DoesNotExist:
         raise Http404
