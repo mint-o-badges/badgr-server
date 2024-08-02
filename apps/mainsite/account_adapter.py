@@ -101,8 +101,8 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                 Story.append(Spacer(1, 25))
 
 
-                if first_name and last_name:
-                    text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
+                if name:
+                    text = "die <strong>%s </strong> mit dem Badge" % (name)
                 else: 
                     text = "die <strong>%s</strong> mit dem Badge" % badgeinstance.recipient_identifier    
                 Story.append(Paragraph(text, text_style))
@@ -122,8 +122,8 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                         Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
                         Story.append(Spacer(1, 25))
 
-                        if first_name and last_name:
-                            text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
+                        if name:
+                            text = "die <strong>%s</strong> mit dem Badge" % (name)
                         else: 
                             text = "die <strong>%s</strong> mit dem Badge" % badgeinstance.recipient_identifier    
                         Story.append(Paragraph(text, text_style))
