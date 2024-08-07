@@ -1683,6 +1683,22 @@ class BadgeInstanceExtension(BaseOpenBadgeExtension):
         super(BadgeInstanceExtension, self).delete(*args, **kwargs)
         self.badgeinstance.publish()
 
+class QrCode(BaseVersionedEntity):
+
+    badgeclass = models.ForeignKey(BadgeClass, blank=False, null=False, on_delete=models.CASCADE, related_name='qrcodes')
+
+    issuer = models.ForeignKey(Issuer,
+                               on_delete=models.CASCADE)
+
+    title = models.CharField(max_length=254, blank=False, null=False)
+    
+    createdBy = models.CharField(max_length=254, blank=False, null=False)
+
+    valid_from = models.DateTimeField(blank=True, null=True, default=None)
+
+    expires_at = models.DateTimeField(blank=True, null=True, default=None)
+
+
 class RequestedBadge(BaseVersionedEntity):
 
     badgeclass = models.ForeignKey(BadgeClass, blank=False, null=False,
