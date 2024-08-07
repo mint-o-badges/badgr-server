@@ -1,7 +1,7 @@
 # Best practies taken from here: https://snyk.io/blog/best-practices-containerizing-python-docker/
 
 # ------------------------------> Build image
-FROM python:3.8.14-slim-buster as build
+FROM python:3.11.4-slim-buster as build
 RUN apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-dev \
@@ -20,7 +20,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 # ------------------------------> Final image
-FROM python:3.8.14-slim-buster
+FROM python:3.11.4-slim-buster
 RUN apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-cairo \
