@@ -22,7 +22,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.admin',
     'django_object_actions',
-    'django_crontab',
     'markdownify',
 
     'badgeuser',
@@ -441,8 +440,7 @@ OAUTH2_PROVIDER = {
     'DEFAULT_SCOPES': ['r:profile'],
 
     'OAUTH2_VALIDATOR_CLASS': 'mainsite.oauth_validator.BadgrRequestValidator',
-    'ACCESS_TOKEN_EXPIRE_SECONDS': 86400, # 1 day
-    'REFRESH_TOKEN_EXPIRE_SECONDS': 604800 # 1 week
+    'ACCESS_TOKEN_EXPIRE_SECONDS': 86400
 
 }
 OAUTH2_PROVIDER_APPLICATION_MODEL = 'oauth2_provider.Application'
