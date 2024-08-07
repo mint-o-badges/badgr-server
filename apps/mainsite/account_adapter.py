@@ -23,7 +23,7 @@ import badgrlog
 from badgrsocialauth.utils import set_session_badgr_app
 from mainsite.models import BadgrApp, EmailBlacklist, AccessTokenProxy
 from mainsite.utils import OriginSetting, set_url_query_params
-from backpack.views import add_recipient_name, add_title, add_description, addBadgeImage, add_issuerImage, add_issuedBy, RoundedRectFlowable, AllPageSetup, PageNumCanvas
+from backpack.views import get_name, add_recipient_name, add_title, add_description, addBadgeImage, add_issuerImage, add_issuedBy, RoundedRectFlowable, AllPageSetup, PageNumCanvas
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -48,22 +48,15 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
         except BadgeClass.DoesNotExist:
             raise ValueError("BadgeClass not found")
 
-        badgeuser = None
-        try: 
-            badgeuser = BadgeUser.objects.get(email=badgeinstance.recipient_identifier)  
+        name = None
+        try:
+            name = get_name(badgeinstance)
         except BadgeUser.DoesNotExist:
             logger = logging.getLogger(__name__)
             logger.warning("Could not find badgeuser")
         
         first_page_content = []
-        if badgeuser is not None: 
-            first_name = badgeuser.first_name.capitalize()
-            last_name = badgeuser.last_name.capitalize()
-            add_recipient_name(first_page_content, first_name, last_name, badgeinstance.issued_on) 
-        else: 
-            first_name = None
-            last_name = None
-            add_recipient_name(first_page_content, badgeinstance.recipient_identifier, '', badgeinstance.issued_on)    
+        add_recipient_name(first_page_content, name, badgeinstance.issued_on) 
 
         competencies = badgeclass.json["extensions:CompetencyExtension"]
 
@@ -108,8 +101,8 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                 Story.append(Spacer(1, 25))
 
 
-                if first_name and last_name:
-                    text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
+                if name:
+                    text = "die <strong>%s </strong> mit dem Badge" % (name)
                 else: 
                     text = "die <strong>%s</strong> mit dem Badge" % badgeinstance.recipient_identifier    
                 Story.append(Paragraph(text, text_style))
@@ -129,8 +122,8 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                         Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
                         Story.append(Spacer(1, 25))
 
-                        if first_name and last_name:
-                            text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
+                        if name:
+                            text = "die <strong>%s</strong> mit dem Badge" % (name)
                         else: 
                             text = "die <strong>%s</strong> mit dem Badge" % badgeinstance.recipient_identifier    
                         Story.append(Paragraph(text, text_style))
@@ -152,7 +145,7 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                     Story.append(Spacer(1, 20))   
                     
                 if esco: 
-                    Story.append(Spacer(1, 100))
+                    Story.append(Spacer(1, 25))
                     text_style = ParagraphStyle(name='Text_Style', fontSize=12, leading=20, alignment=TA_LEFT)
                     link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations) <br/>' \
                     'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
