@@ -23,7 +23,7 @@ from mainsite.serializers import DateTimeWithUtcZAtEndField, HumanReadableBoolea
 from mainsite.utils import OriginSetting, validate_altcha, verifyIssuerAutomatically
 from mainsite.validators import ChoicesValidator, BadgeExtensionValidator, PositiveIntegerValidator, TelephoneValidator
 from .models import Issuer, BadgeClass, IssuerStaff, BadgeInstance, BadgeClassExtension, \
-        RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL
+        RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL, QrCode, RequestedBadge
 
 logger = logging.getLogger(__name__)
 
@@ -568,3 +568,36 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
         instance.save()
 
         return instance
+
+class QrCodeSerializerV1 (serializers.Serializer):
+
+    title = serializers.CharField(max_length=254)
+    createdBy = serializers.CharField(max_length=254)
+    badgeclass_id = serializers.CharField(max_length=254)
+    issuer_id = serializers.CharField(max_length=254)
+    valid_from = DateTimeWithUtcZAtEndField(required=False,
+                                        allow_null=True, default_timezone=pytz.utc)
+    expires_at = DateTimeWithUtcZAtEndField(required=False,
+                                        allow_null=True, default_timezone=pytz.utc)
+
+
+    class Meta:
+        apispec_definition = ('QrCode', {})
+
+    def create(self, validated_data, **kwargs):
+        new_qrcode = QrCode()
+        new_qrcode.title = validated_data.get('title')
+        new_qrcode.createdBy = validated_data.get('createdBy')
+        badgeclass_id = validated_data.get('badgeclass_id')
+        issuer_id = validated_data.get('issuer_id')
+        issuer = Issuer.objects.get(entity_id=issuer_id)
+        new_qrcode.issuer = issuer
+        badgeclass = BadgeClass.objects.get(entity_id=badgeclass_id)
+        new_qrcode.badgeclass = badgeclass
+        new_qrcode.save()
+        return new_qrcode
+
+class RequestedBadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RequestedBadge
+        fields = '__all__'  # Adjust fields as necessary    
