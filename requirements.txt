@@ -114,7 +114,7 @@ uwsgi
 
 tox
 
-pyopenssl==24.0.0
+pyopenssl==24.2.1
 
 mozilla-django-oidc
 pyjwt
