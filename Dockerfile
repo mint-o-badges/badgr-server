@@ -10,7 +10,6 @@ RUN apt-get install -y default-libmysqlclient-dev \
                        xmlsec1 \
                        libxmlsec1-dev \
                        pkg-config \
-                       cron \
                        curl
 
 RUN mkdir /badgr_server
@@ -27,7 +26,6 @@ RUN apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-cairo \
                        libxml2 \
-                       cron \
                        curl
 
 RUN groupadd -g 999 python && \
