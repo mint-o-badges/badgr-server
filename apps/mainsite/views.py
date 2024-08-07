@@ -38,6 +38,8 @@ from rest_framework.authentication import (
 )
 
 from issuer.tasks import rebake_all_assertions, update_issuedon_all_assertions
+from issuer.models import BadgeClass, RequestedBadge
+from issuer.serializers_v1 import RequestedBadgeSerializer
 from mainsite.admin_actions import clear_cache
 from mainsite.models import EmailBlacklist, BadgrApp
 from mainsite.serializers import LegacyVerifiedAuthTokenSerializer
@@ -52,8 +54,11 @@ import uuid
 from django.http import JsonResponse
 import requests
 from requests_oauthlib import OAuth1
+import logging
 
 logger = badgrlog.BadgrLogger()
+
+logger2 = logging.getLogger(__name__)
 
 
 ##
@@ -190,6 +195,45 @@ def createCaptchaChallenge(req):
     }
 
     return JsonResponse(ch)
+
+@api_view(["POST", "GET"])
+@permission_classes([AllowAny])
+def requestBadge(req, badgeId):
+    if req.method != "POST" and req.method != "GET":
+        return JsonResponse(
+            {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    
+    badgeclass = BadgeClass.objects.get(entity_id=badgeId)   
+
+    if req.method == "GET":
+        requestedBadges = RequestedBadge.objects.filter(badgeclass=badgeclass)
+        serializer = RequestedBadgeSerializer(requestedBadges, many=True)  
+        return JsonResponse({"requested_badges": serializer.data}, status=status.HTTP_200_OK)
+   
+    elif req.method == "POST": 
+        try:
+            data = json.loads(req.data) 
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+        
+        firstName = data.get('firstname')
+        lastName = data.get('lastname')
+        email = data.get('email')
+
+        badge = RequestedBadge(
+            firstName = firstName,
+            lastName = lastName,
+            email = email,
+        ) 
+
+        badge.badgeclass = badgeclass
+
+
+        badge.save()
+
+    return JsonResponse({"message": "Badge request received"}, status=status.HTTP_200_OK)
 
 
 def extractErrorMessage500(response: Response):
