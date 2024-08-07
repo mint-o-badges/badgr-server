@@ -1,6 +1,6 @@
 from django.views.generic.base import RedirectView, TemplateView
 from django.conf.urls.static import static
-from mainsite.views import upload, nounproject, aiskills, createCaptchaChallenge
+from mainsite.views import upload, nounproject, aiskills, requestBadge, createCaptchaChallenge
 from mainsite.views import (
     info_view,
     email_unsubscribe,
@@ -167,6 +167,9 @@ urlpatterns = [
         name="nounproject"),
 
     url(r'^aiskills/(?P<searchterm>[^/]+)$', aiskills, name="aiskills"),
+
+    url(r'^request-badge/(?P<badgeId>[^/]+)$', requestBadge, name="request-badge"),
+
 
 
     # meinBildungsraum OIDC connection
