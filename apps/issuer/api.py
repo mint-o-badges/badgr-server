@@ -12,17 +12,19 @@ from rest_framework import status, serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.status import HTTP_404_NOT_FOUND, HTTP_200_OK, HTTP_400_BAD_REQUEST
+from rest_framework.views import APIView
+
 
 import badgrlog
 from entity.api import BaseEntityListView, BaseEntityDetailView, VersionedObjectMixin, BaseEntityView, \
     UncachedPaginatedViewMixin
 from entity.serializers import BaseSerializerV2, V2ErrorSerializer
-from issuer.models import Issuer, BadgeClass, BadgeInstance, IssuerStaff
+from issuer.models import Issuer, BadgeClass, BadgeInstance, IssuerStaff, QrCode
 from issuer.permissions import (MayIssueBadgeClass, MayEditBadgeClass, IsEditor, IsEditorButOwnerForDelete,
                                 IsStaff, ApprovedIssuersOnly, BadgrOAuthTokenHasScope,
                                 BadgrOAuthTokenHasEntityScope, AuthorizationIsBadgrOAuthToken)
 from issuer.serializers_v1 import (IssuerSerializerV1, BadgeClassSerializerV1,
-                                   BadgeInstanceSerializerV1)
+                                   BadgeInstanceSerializerV1, QrCodeSerializerV1)
 from issuer.serializers_v2 import IssuerSerializerV2, BadgeClassSerializerV2, BadgeInstanceSerializerV2, \
     IssuerAccessTokenSerializerV2
 from apispec_drf.decorators import apispec_get_operation, apispec_put_operation, \
@@ -30,6 +32,7 @@ from apispec_drf.decorators import apispec_get_operation, apispec_put_operation,
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAdmin
 from mainsite.serializers import CursorPaginatedListSerializer
 from mainsite.models import AccessTokenProxy
+
 
 logger = badgrlog.BadgrLogger()
 
@@ -830,3 +833,37 @@ class IssuersChangedSince(BaseEntityView):
             context=context)
         serializer.is_valid()
         return Response(serializer.data)
+
+class QRCodeList(BaseEntityListView):
+    """
+    QrCode list resource for the authenticated user
+    """
+    model = QrCode
+    v1_serializer_class = QrCodeSerializerV1
+    # v2_serializer_class = IssuerSerializerV2
+    permission_classes = (BadgrOAuthTokenHasScope,)
+    valid_scopes = ["rw:issuer"]
+
+    def get_objects(self, request, **kwargs):
+        return QrCode.objects.all()
+
+    # create_event = badgrlog.IssuerCreatedEvent
+
+    # def get_objects(self, request, **kwargs):
+    #     return QrCode.objects.all()
+
+    @apispec_list_operation('QrCode',
+        summary="Get a list of QrCodes for authenticated user",
+        tags=["QrCodes"],
+    )
+    def get(self, request, **kwargs):
+        return super(QRCodeList, self).get(request, **kwargs)
+
+    @apispec_post_operation('QrCode',
+        summary="Create a new QrCode",
+        tags=["QrCodes"],
+    )
+    def post(self, request, **kwargs):
+        serializer = self.get_serializer_class()
+
+        return super(QRCodeList, self).post(request, **kwargs)
