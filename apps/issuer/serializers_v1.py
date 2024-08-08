@@ -572,6 +572,7 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
 class QrCodeSerializerV1 (serializers.Serializer):
 
     title = serializers.CharField(max_length=254)
+    slug = StripTagsCharField(max_length=255, source='entity_id', read_only=True)
     createdBy = serializers.CharField(max_length=254)
     badgeclass_id = serializers.CharField(max_length=254)
     issuer_id = serializers.CharField(max_length=254)
