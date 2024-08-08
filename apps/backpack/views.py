@@ -7,7 +7,7 @@ from django.views.generic import RedirectView
 from django.core.exceptions import PermissionDenied
 
 from backpack.models import BackpackCollection
-from issuer.models import BadgeInstance, BadgeClass
+from issuer.models import BadgeInstance, BadgeClass, Issuer, IssuerStaff
 from badgeuser.models import BadgeUser
 
 from rest_framework.decorators import (
@@ -29,6 +29,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPDF
+from operator import attrgetter
 
 class RoundedRectFlowable(Flowable):
     def __init__(self, x, y, width, height, radius, text, strokecolor, fillcolor, studyload, esco = ''):
@@ -329,9 +330,15 @@ def pdf(request, *args, **kwargs):
     slug = kwargs["slug"]
     try:
         badgeinstance = BadgeInstance.objects.get(entity_id=slug)
-        # User must be the recipient or issuer of the badge
+
+        # Get emails of all issuer owners
+        issuer= Issuer.objects.get(entity_id=badgeinstance.issuer.entity_id)
+        issuer_owners = issuer.staff.filter(issuerstaff__role=IssuerStaff.ROLE_OWNER)
+        issuer_owners_emails = list(map(attrgetter('primary_email'), issuer_owners))
+
+        # User must be the recipient or an issuer staff with OWNER role
         # TODO: Check other recipient types 
-        if request.user.email != badgeinstance.recipient_identifier and request.user.email != badgeinstance.issuer.email:
+        if request.user.email != badgeinstance.recipient_identifier and request.user.email not in issuer_owners_emails:
             raise PermissionDenied
     except BadgeInstance.DoesNotExist:
         raise Http404
