@@ -1705,6 +1705,8 @@ class RequestedBadge(BaseVersionedEntity):
                                    on_delete=models.CASCADE, related_name='requestedbadges')
     user = models.ForeignKey('badgeuser.BadgeUser', blank=True, null=True, on_delete=models.SET_NULL,)
 
+    qrcode = models.ForeignKey(QrCode, blank=False, null=False, on_delete=models.CASCADE, related_name='requestedbadges')
+
     firstName = models.CharField(max_length=254, blank=False, null=False)
     lastName = models.CharField(max_length=254, blank=False, null=False)
     email = models.CharField(max_length=254, blank=True, null=True)
