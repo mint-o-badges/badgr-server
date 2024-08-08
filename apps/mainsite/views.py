@@ -38,7 +38,7 @@ from rest_framework.authentication import (
 )
 
 from issuer.tasks import rebake_all_assertions, update_issuedon_all_assertions
-from issuer.models import BadgeClass, RequestedBadge
+from issuer.models import BadgeClass, QrCode, RequestedBadge
 from issuer.serializers_v1 import RequestedBadgeSerializer
 from mainsite.admin_actions import clear_cache
 from mainsite.models import EmailBlacklist, BadgrApp
@@ -198,17 +198,17 @@ def createCaptchaChallenge(req):
 
 @api_view(["POST", "GET"])
 @permission_classes([AllowAny])
-def requestBadge(req, badgeId):
+def requestBadge(req, qrCodeId):
     if req.method != "POST" and req.method != "GET":
         return JsonResponse(
             {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
         )
-    
-    
-    badgeclass = BadgeClass.objects.get(entity_id=badgeId)   
+    logger2.error("qrCodeId: %s", qrCodeId)
+    qrCode = QrCode.objects.get(entity_id=qrCodeId) 
+    logger2.error("qrCode: %s", qrCode)
 
     if req.method == "GET":
-        requestedBadges = RequestedBadge.objects.filter(badgeclass=badgeclass)
+        requestedBadges = RequestedBadge.objects.filter(qrCode=qrCode)
         serializer = RequestedBadgeSerializer(requestedBadges, many=True)  
         return JsonResponse({"requested_badges": serializer.data}, status=status.HTTP_200_OK)
    
@@ -221,6 +221,13 @@ def requestBadge(req, badgeId):
         firstName = data.get('firstname')
         lastName = data.get('lastname')
         email = data.get('email')
+        qrCodeId = data.get('qrCodeId')
+
+        try: 
+            qrCode = QrCode.objects.get(entity_id=qrCodeId)
+
+        except QrCode.DoesNotExist:
+            return JsonResponse({'error': 'Invalid qrCodeId'}, status=400)            
 
         badge = RequestedBadge(
             firstName = firstName,
@@ -229,6 +236,7 @@ def requestBadge(req, badgeId):
         ) 
 
         badge.badgeclass = badgeclass
+        badge.qrcode = qrCode
 
 
         badge.save()
