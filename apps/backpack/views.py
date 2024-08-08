@@ -336,7 +336,6 @@ def pdf(request, *args, **kwargs):
     except BadgeInstance.DoesNotExist:
         raise Http404
     try:
-        print("try-------11")
         badgeclass = BadgeClass.objects.get(
             entity_id=badgeinstance.badgeclass.entity_id
         )
