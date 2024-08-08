@@ -168,7 +168,7 @@ urlpatterns = [
 
     url(r'^aiskills/(?P<searchterm>[^/]+)$', aiskills, name="aiskills"),
 
-    url(r'^request-badge/(?P<badgeId>[^/]+)$', requestBadge, name="request-badge"),
+    url(r'^request-badge/(?P<qrCodeId>[^/]+)$', requestBadge, name="request-badge"),
 
 
 
