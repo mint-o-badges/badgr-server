@@ -336,6 +336,7 @@ def pdf(request, *args, **kwargs):
     except BadgeInstance.DoesNotExist:
         raise Http404
     try:
+        print("try-------11")
         badgeclass = BadgeClass.objects.get(
             entity_id=badgeinstance.badgeclass.entity_id
         )
@@ -352,7 +353,10 @@ def pdf(request, *args, **kwargs):
     try:
         name = get_name(badgeinstance)
     except BadgeUser.DoesNotExist:
-        raise Http404
+        # To resolve the issue with old awarded badges that doesn't include recipient-name and only have recipient-email
+        # We use email as this is the only identifier we have 
+        name = badgeinstance.recipient_identifier
+        # raise Http404
     add_recipient_name(first_page_content, name, badgeinstance.issued_on) 
 
     addBadgeImage(first_page_content, badgeclass.image)
