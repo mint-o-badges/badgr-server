@@ -32,10 +32,11 @@ from apispec_drf.decorators import apispec_get_operation, apispec_put_operation,
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAdmin
 from mainsite.serializers import CursorPaginatedListSerializer
 from mainsite.models import AccessTokenProxy
+import logging
 
 
 logger = badgrlog.BadgrLogger()
-
+logger2 = logging.getLogger(__name__)
 
 class IssuerList(BaseEntityListView):
     """
@@ -845,7 +846,11 @@ class QRCodeList(BaseEntityListView):
     valid_scopes = ["rw:issuer"]
 
     def get_objects(self, request, **kwargs):
-        return QrCode.objects.all()
+        badgeSlug = kwargs.get('slug')
+        issuerSlug = kwargs.get('issuerSlug')
+        qrcode = QrCode.objects.first()
+        return QrCode.objects.filter(badgeclass__entity_id=badgeSlug, issuer__entity_id=issuerSlug)
+    
 
     # create_event = badgrlog.IssuerCreatedEvent
 
