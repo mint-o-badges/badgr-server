@@ -338,8 +338,9 @@ def pdf(request, *args, **kwargs):
 
         # User must be the recipient or an issuer staff with OWNER role
         # TODO: Check other recipient types 
-        if request.user.email != badgeinstance.recipient_identifier and request.user.email not in issuer_owners_emails:
-            raise PermissionDenied
+        # Temporary commented out
+        """ if request.user.email != badgeinstance.recipient_identifier and request.user.email not in issuer_owners_emails:
+            raise PermissionDenied """
     except BadgeInstance.DoesNotExist:
         raise Http404
     try:
