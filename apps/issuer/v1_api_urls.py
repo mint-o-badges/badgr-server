@@ -16,7 +16,7 @@ urlpatterns = [
     url(r'^issuers/(?P<slug>[^/]+)/staff$', IssuerStaffList.as_view(), name='v1_api_issuer_staff'),
 
     url(r'^issuers/(?P<slug>[^/]+)/badges$', IssuerBadgeClassList.as_view(), name='v1_api_badgeclass_list'),
-    url(r'^issuers/(?P<slug>[^/]+)/qrcodes$', QRCodeList.as_view(), name='v1_api_qrcode_list'),
+    url(r'^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<slug>[^/]+)/qrcodes$', QRCodeList.as_view(), name='v1_api_qrcode_list'),
     url(r'^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<slug>[^/]+)$',
         BadgeClassDetail.as_view(), name='v1_api_badgeclass_detail'),
 
