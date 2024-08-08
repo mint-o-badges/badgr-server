@@ -332,9 +332,9 @@ def pdf(request, *args, **kwargs):
         badgeinstance = BadgeInstance.objects.get(entity_id=slug)
 
         # Get emails of all issuer owners
-        issuer= Issuer.objects.get(entity_id=badgeinstance.issuer.entity_id)
+        """ issuer= Issuer.objects.get(entity_id=badgeinstance.issuer.entity_id)
         issuer_owners = issuer.staff.filter(issuerstaff__role=IssuerStaff.ROLE_OWNER)
-        issuer_owners_emails = list(map(attrgetter('primary_email'), issuer_owners))
+        issuer_owners_emails = list(map(attrgetter('primary_email'), issuer_owners)) """
 
         # User must be the recipient or an issuer staff with OWNER role
         # TODO: Check other recipient types 
