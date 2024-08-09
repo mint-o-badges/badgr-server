@@ -7,11 +7,13 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
 from django.http import Http404
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
+
 from oauthlib.oauth2.rfc6749.tokens import random_token_generator
 from rest_framework import status, serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from rest_framework.status import HTTP_404_NOT_FOUND, HTTP_200_OK, HTTP_400_BAD_REQUEST
+from rest_framework.status import HTTP_404_NOT_FOUND, HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 from rest_framework.views import APIView
 
 
@@ -835,7 +837,7 @@ class IssuersChangedSince(BaseEntityView):
         serializer.is_valid()
         return Response(serializer.data)
 
-class QRCodeList(BaseEntityListView):
+class QRCodeDetail(BaseEntityView):
     """
     QrCode list resource for the authenticated user
     """
@@ -848,9 +850,12 @@ class QRCodeList(BaseEntityListView):
     def get_objects(self, request, **kwargs):
         badgeSlug = kwargs.get('slug')
         issuerSlug = kwargs.get('issuerSlug')
-        qrcode = QrCode.objects.first()
         return QrCode.objects.filter(badgeclass__entity_id=badgeSlug, issuer__entity_id=issuerSlug)
     
+    def get_object(self, request, **kwargs):
+        qr_code_id = kwargs.get('slug')
+        logger2.error('qr_code_id: %s', qr_code_id)
+        return QrCode.objects.get(entity_id=qr_code_id)
 
     # create_event = badgrlog.IssuerCreatedEvent
 
@@ -862,13 +867,52 @@ class QRCodeList(BaseEntityListView):
         tags=["QrCodes"],
     )
     def get(self, request, **kwargs):
-        return super(QRCodeList, self).get(request, **kwargs)
+        objects = self.get_objects(request, **kwargs)
+        context = self.get_context_data(**kwargs)
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(objects, many=True, context=context)
+
+        return Response(serializer.data)
 
     @apispec_post_operation('QrCode',
         summary="Create a new QrCode",
         tags=["QrCodes"],
     )
     def post(self, request, **kwargs):
-        serializer = self.get_serializer_class()
+        # if not request.user or request.user.is_anonymous:
+        #     raise NotAuthenticated()
 
-        return super(QRCodeList, self).post(request, **kwargs)
+        context = self.get_context_data(**kwargs)
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(data=request.data, context=context)
+        serializer.is_valid(raise_exception=True)
+        new_instance = serializer.save(created_by=request.user)
+        self.log_create(new_instance)
+        return Response(serializer.data, status=HTTP_201_CREATED)
+        # serializer = self.get_serializer_class()
+
+        # return super(QRCodeList, self).post(request, **kwargs)
+    
+    @apispec_put_operation('QrCode',
+       summary="Update a single QrCode",
+       tags=["QrCodes"],
+    )
+
+    def put(self, request, **kwargs):
+        logger2.error('PUT PUT PUT: %s', request.data)
+        qr_code = self.get_object(request, **kwargs)
+        context = self.get_context_data(**kwargs)
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(qr_code, data=request.data, context=context)
+        serializer.is_valid(raise_exception=True)
+        updated_instance = serializer.save(updated_by=request.user)
+        return Response(serializer.data, status=HTTP_200_OK)
+    
+    @apispec_delete_operation('QrCode',
+        summary="Delete an existing QrCode",
+        tags=["QrCodes"],
+    )
+    def delete(self, request, **kwargs):
+        qr_code = self.get_object(request, **kwargs)
+        qr_code.delete()
+        return Response(status=HTTP_204_NO_CONTENT)
