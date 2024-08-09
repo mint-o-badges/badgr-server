@@ -29,6 +29,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPDF
+from mainsite.utils import get_name
 
 class RoundedRectFlowable(Flowable):
     def __init__(self, x, y, width, height, radius, text, strokecolor, fillcolor, studyload, esco = ''):
@@ -303,24 +304,6 @@ def add_issuerImage(first_page_content, issuerImage):
     image_width = 60
     image_height = 60
     first_page_content.append(Image(issuerImage, width=image_width, height=image_height))
-
-def get_name(badgeinstance: BadgeInstance):
-    """Evaluates the name to be displayed for the recipient of the badge.
-    
-    This is either the name that was specified in the award process of the badge
-    (which is by now mandatory) or, if none was specified, the full profile of the
-    recipient. If no name was specified and the profile can't be found, a
-    `BadgeUser.DoesNotExist` exception is thrown.
-    """
-    recipientProfile = badgeinstance.extension_items.get('extensions:recipientProfile', {})
-    name = recipientProfile.get('name', None)
-    if name:
-        return name
-    
-    badgeuser = BadgeUser.objects.get(email=badgeinstance.recipient_identifier)  
-    first_name = badgeuser.first_name.capitalize()
-    last_name = badgeuser.last_name.capitalize()
-    return f"{first_name} {last_name}"
 
 @api_view(["GET"])
 @authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
