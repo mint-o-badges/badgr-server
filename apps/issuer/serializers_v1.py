@@ -23,7 +23,7 @@ from mainsite.serializers import DateTimeWithUtcZAtEndField, HumanReadableBoolea
 from mainsite.utils import OriginSetting, validate_altcha, verifyIssuerAutomatically
 from mainsite.validators import ChoicesValidator, BadgeExtensionValidator, PositiveIntegerValidator, TelephoneValidator
 from .models import Issuer, BadgeClass, IssuerStaff, BadgeInstance, BadgeClassExtension, \
-        RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL
+        RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL, QrCode, RequestedBadge
 
 logger = logging.getLogger(__name__)
 
@@ -568,3 +568,66 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
         instance.save()
 
         return instance
+
+class QrCodeSerializerV1(serializers.Serializer):
+    title = serializers.CharField(max_length=254)
+    slug = StripTagsCharField(max_length=255, source='entity_id', read_only=True)
+    createdBy = serializers.CharField(max_length=254)
+    badgeclass_id = serializers.CharField(max_length=254)
+    issuer_id = serializers.CharField(max_length=254)
+    request_count = serializers.SerializerMethodField()
+
+    valid_from = DateTimeWithUtcZAtEndField(
+        required=False, allow_null=True, default_timezone=pytz.utc
+    )
+    expires_at = DateTimeWithUtcZAtEndField(
+        required=False, allow_null=True, default_timezone=pytz.utc
+    )
+
+    class Meta:
+        apispec_definition = ('QrCode', {})
+
+    def create(self, validated_data, **kwargs):
+        title = validated_data.get('title')
+        createdBy = validated_data.get('createdBy')
+        badgeclass_id = validated_data.get('badgeclass_id')
+        issuer_id = validated_data.get('issuer_id')
+
+        try:
+            issuer = Issuer.objects.get(entity_id=issuer_id)
+        except Issuer.DoesNotExist:
+            raise serializers.ValidationError(f"Issuer with ID '{issuer_id}' does not exist.")
+
+        try:
+            badgeclass = BadgeClass.objects.get(entity_id=badgeclass_id)
+        except BadgeClass.DoesNotExist:
+            raise serializers.ValidationError(f"BadgeClass with ID '{badgeclass_id}' does not exist.")
+
+        new_qrcode = QrCode.objects.create(
+            title=title,
+            createdBy=createdBy,
+            issuer=issuer,
+            badgeclass=badgeclass,
+            valid_from=validated_data.get('valid_from'),
+            expires_at=validated_data.get('expires_at')
+        )
+
+        return new_qrcode
+
+    def update(self, instance, validated_data):
+        instance.title = validated_data.get('title', instance.title)
+        instance.createdBy = validated_data.get('createdBy', instance.createdBy)
+        instance.valid_from = validated_data.get('valid_from', instance.valid_from)
+        instance.expires_at = validated_data.get('expires_at', instance.expires_at)
+        instance.save()
+        return instance
+    
+    def get_request_count(self, obj):
+        return obj.requestedbadges.count()
+
+   
+
+class RequestedBadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RequestedBadge
+        fields = '__all__'     
