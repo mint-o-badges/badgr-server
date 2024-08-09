@@ -203,12 +203,10 @@ def requestBadge(req, qrCodeId):
         return JsonResponse(
             {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
         )
-    logger2.error("qrCodeId: %s", qrCodeId)
     qrCode = QrCode.objects.get(entity_id=qrCodeId) 
-    logger2.error("qrCode: %s", qrCode)
 
     if req.method == "GET":
-        requestedBadges = RequestedBadge.objects.filter(qrCode=qrCode)
+        requestedBadges = RequestedBadge.objects.filter(qrcode=qrCode)
         serializer = RequestedBadgeSerializer(requestedBadges, many=True)  
         return JsonResponse({"requested_badges": serializer.data}, status=status.HTTP_200_OK)
    
@@ -235,7 +233,7 @@ def requestBadge(req, qrCodeId):
             email = email,
         ) 
 
-        badge.badgeclass = badgeclass
+        badge.badgeclass = qrCode.badgeclass
         badge.qrcode = qrCode
 
 
