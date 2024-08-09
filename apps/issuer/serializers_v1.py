@@ -615,7 +615,6 @@ class QrCodeSerializerV1(serializers.Serializer):
         return new_qrcode
 
     def update(self, instance, validated_data):
-        logger.error("UPDATE QR CODE")
         instance.title = validated_data.get('title', instance.title)
         instance.createdBy = validated_data.get('createdBy', instance.createdBy)
         instance.valid_from = validated_data.get('valid_from', instance.valid_from)
@@ -626,24 +625,6 @@ class QrCodeSerializerV1(serializers.Serializer):
     def get_request_count(self, obj):
         return obj.requestedbadges.count()
 
-
-# class QrCodeSerializerV1(serializers.ModelSerializer):
-#     badgeclass_id = serializers.CharField(write_only=True)
-#     issuer_id = serializers.CharField(write_only=True)
-#     slug = serializers.CharField(source='entity_id', read_only=True)
-
-#     class Meta:
-#         apispec_definition = ('QrCode', {})
-
-#     def create(self, validated_data):
-#         badgeclass_id = validated_data.pop('badgeclass_id')
-#         issuer_id = validated_data.pop('issuer_id')
-        
-#         badgeclass = BadgeClass.objects.get(entity_id=badgeclass_id)
-#         issuer = Issuer.objects.get(entity_id=issuer_id)
-
-#         new_qrcode = QrCode.objects.create(**validated_data, badgeclass=badgeclass, issuer=issuer)
-#         return new_qrcode
    
 
 class RequestedBadgeSerializer(serializers.ModelSerializer):

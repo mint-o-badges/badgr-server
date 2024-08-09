@@ -854,13 +854,7 @@ class QRCodeDetail(BaseEntityView):
     
     def get_object(self, request, **kwargs):
         qr_code_id = kwargs.get('slug')
-        logger2.error('qr_code_id: %s', qr_code_id)
         return QrCode.objects.get(entity_id=qr_code_id)
-
-    # create_event = badgrlog.IssuerCreatedEvent
-
-    # def get_objects(self, request, **kwargs):
-    #     return QrCode.objects.all()
 
     @apispec_list_operation('QrCode',
         summary="Get a list of QrCodes for authenticated user",
@@ -868,9 +862,8 @@ class QRCodeDetail(BaseEntityView):
     )
     def get(self, request, **kwargs):
         objects = self.get_objects(request, **kwargs)
-        context = self.get_context_data(**kwargs)
         serializer_class = self.get_serializer_class()
-        serializer = serializer_class(objects, many=True, context=context)
+        serializer = serializer_class(objects, many=True)
 
         return Response(serializer.data)
 
@@ -879,19 +872,12 @@ class QRCodeDetail(BaseEntityView):
         tags=["QrCodes"],
     )
     def post(self, request, **kwargs):
-        # if not request.user or request.user.is_anonymous:
-        #     raise NotAuthenticated()
 
-        context = self.get_context_data(**kwargs)
         serializer_class = self.get_serializer_class()
-        serializer = serializer_class(data=request.data, context=context)
+        serializer = serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        new_instance = serializer.save(created_by=request.user)
-        self.log_create(new_instance)
+        new_instance = serializer.save()
         return Response(serializer.data, status=HTTP_201_CREATED)
-        # serializer = self.get_serializer_class()
-
-        # return super(QRCodeList, self).post(request, **kwargs)
     
     @apispec_put_operation('QrCode',
        summary="Update a single QrCode",
@@ -899,11 +885,9 @@ class QRCodeDetail(BaseEntityView):
     )
 
     def put(self, request, **kwargs):
-        logger2.error('PUT PUT PUT: %s', request.data)
         qr_code = self.get_object(request, **kwargs)
-        context = self.get_context_data(**kwargs)
         serializer_class = self.get_serializer_class()
-        serializer = serializer_class(qr_code, data=request.data, context=context)
+        serializer = serializer_class(qr_code, data=request.data)
         serializer.is_valid(raise_exception=True)
         updated_instance = serializer.save(updated_by=request.user)
         return Response(serializer.data, status=HTTP_200_OK)
