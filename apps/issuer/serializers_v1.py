@@ -569,36 +569,84 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
 
         return instance
 
-class QrCodeSerializerV1 (serializers.Serializer):
-
+class QrCodeSerializerV1(serializers.Serializer):
     title = serializers.CharField(max_length=254)
     slug = StripTagsCharField(max_length=255, source='entity_id', read_only=True)
     createdBy = serializers.CharField(max_length=254)
     badgeclass_id = serializers.CharField(max_length=254)
     issuer_id = serializers.CharField(max_length=254)
-    valid_from = DateTimeWithUtcZAtEndField(required=False,
-                                        allow_null=True, default_timezone=pytz.utc)
-    expires_at = DateTimeWithUtcZAtEndField(required=False,
-                                        allow_null=True, default_timezone=pytz.utc)
+    request_count = serializers.SerializerMethodField()
 
+    valid_from = DateTimeWithUtcZAtEndField(
+        required=False, allow_null=True, default_timezone=pytz.utc
+    )
+    expires_at = DateTimeWithUtcZAtEndField(
+        required=False, allow_null=True, default_timezone=pytz.utc
+    )
 
     class Meta:
         apispec_definition = ('QrCode', {})
 
     def create(self, validated_data, **kwargs):
-        new_qrcode = QrCode()
-        new_qrcode.title = validated_data.get('title')
-        new_qrcode.createdBy = validated_data.get('createdBy')
+        title = validated_data.get('title')
+        createdBy = validated_data.get('createdBy')
         badgeclass_id = validated_data.get('badgeclass_id')
         issuer_id = validated_data.get('issuer_id')
-        issuer = Issuer.objects.get(entity_id=issuer_id)
-        new_qrcode.issuer = issuer
-        badgeclass = BadgeClass.objects.get(entity_id=badgeclass_id)
-        new_qrcode.badgeclass = badgeclass
-        new_qrcode.save()
+
+        try:
+            issuer = Issuer.objects.get(entity_id=issuer_id)
+        except Issuer.DoesNotExist:
+            raise serializers.ValidationError(f"Issuer with ID '{issuer_id}' does not exist.")
+
+        try:
+            badgeclass = BadgeClass.objects.get(entity_id=badgeclass_id)
+        except BadgeClass.DoesNotExist:
+            raise serializers.ValidationError(f"BadgeClass with ID '{badgeclass_id}' does not exist.")
+
+        new_qrcode = QrCode.objects.create(
+            title=title,
+            createdBy=createdBy,
+            issuer=issuer,
+            badgeclass=badgeclass,
+            valid_from=validated_data.get('valid_from'),
+            expires_at=validated_data.get('expires_at')
+        )
+
         return new_qrcode
+
+    def update(self, instance, validated_data):
+        logger.error("UPDATE QR CODE")
+        instance.title = validated_data.get('title', instance.title)
+        instance.createdBy = validated_data.get('createdBy', instance.createdBy)
+        instance.valid_from = validated_data.get('valid_from', instance.valid_from)
+        instance.expires_at = validated_data.get('expires_at', instance.expires_at)
+        instance.save()
+        return instance
+    
+    def get_request_count(self, obj):
+        return obj.requestedbadges.count()
+
+
+# class QrCodeSerializerV1(serializers.ModelSerializer):
+#     badgeclass_id = serializers.CharField(write_only=True)
+#     issuer_id = serializers.CharField(write_only=True)
+#     slug = serializers.CharField(source='entity_id', read_only=True)
+
+#     class Meta:
+#         apispec_definition = ('QrCode', {})
+
+#     def create(self, validated_data):
+#         badgeclass_id = validated_data.pop('badgeclass_id')
+#         issuer_id = validated_data.pop('issuer_id')
+        
+#         badgeclass = BadgeClass.objects.get(entity_id=badgeclass_id)
+#         issuer = Issuer.objects.get(entity_id=issuer_id)
+
+#         new_qrcode = QrCode.objects.create(**validated_data, badgeclass=badgeclass, issuer=issuer)
+#         return new_qrcode
+   
 
 class RequestedBadgeSerializer(serializers.ModelSerializer):
     class Meta:
         model = RequestedBadge
-        fields = '__all__'  # Adjust fields as necessary    
+        fields = '__all__'     
