@@ -37,7 +37,7 @@ from mainsite.managers import SlugOrJsonIdCacheModelManager
 from mainsite.mixins import HashUploadedImage, ResizeUploadedImage, ScrubUploadedSvgImage, PngImagePreview
 from mainsite.models import BadgrApp, EmailBlacklist
 from mainsite import blacklist
-from mainsite.utils import OriginSetting, generate_entity_uri
+from mainsite.utils import OriginSetting, generate_entity_uri, get_name
 
 from .utils import (add_obi_version_ifneeded, CURRENT_OBI_VERSION, generate_rebaked_filename,
                     generate_sha256_hashstring, get_obi_context, parse_original_datetime, UNVERSIONED_BAKED_VERSION)
@@ -1270,17 +1270,13 @@ class BadgeInstance(BaseAuditedModel,
             last_name = ''
 
             try:
-                from badgeuser.models import BadgeUser
                 if self.recipient_type == RECIPIENT_TYPE_EMAIL:
-                    user = BadgeUser.objects.get(email=self.recipient_identifier)
-                    first_name = user.first_name
-                    last_name = user.last_name
+                    name = get_name(self)
             except BadgeUser.DoesNotExist:
                 pass
 
             email_context = {
-                 'first_name': first_name,
-                'last_name': last_name,
+                'name': name,
                 'badge_name': self.badgeclass.name,
                 'badge_id': self.entity_id,
                 'badge_description': self.badgeclass.description,
