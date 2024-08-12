@@ -240,7 +240,7 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
               Story.append(Spacer(1, 20))   
                  
             if esco: 
-                Story.append(Spacer(1, 100))
+                Story.append(Spacer(1, 25))
                 text_style = ParagraphStyle(name='Text_Style', fontSize=12, leading=20, alignment=TA_LEFT)
                 link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations) <br/>' \
                     'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
@@ -329,8 +329,9 @@ def pdf(request, *args, **kwargs):
     slug = kwargs["slug"]
     try:
         badgeinstance = BadgeInstance.objects.get(entity_id=slug)
+        # User must be the recipient or issuer of the badge
         # TODO: Check other recipient types 
-        if request.user.email != badgeinstance.recipient_identifier:
+        if request.user.email != badgeinstance.recipient_identifier and request.user.email != badgeinstance.issuer.email:
             raise PermissionDenied
     except BadgeInstance.DoesNotExist:
         raise Http404
