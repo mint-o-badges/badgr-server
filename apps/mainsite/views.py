@@ -239,7 +239,25 @@ def requestBadge(req, qrCodeId):
 
         badge.save()
 
-    return JsonResponse({"message": "Badge request received"}, status=status.HTTP_200_OK)
+        return JsonResponse({"message": "Badge request received"}, status=status.HTTP_200_OK)
+
+@api_view(["DELETE"])
+@permission_classes([AllowAny])
+def deleteBadgeRequest(req, requestId):
+    if req.method != "DELETE":
+        return JsonResponse(
+            {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        badge = RequestedBadge.objects.get(id=requestId)
+    except RequestedBadge.DoesNotExist:
+        return JsonResponse({'error': 'Invalid requestId'}, status=400)            
+
+    badge.delete()
+
+    return JsonResponse({"message": "Badge request deleted"}, status=status.HTTP_200_OK)
+
 
 
 def extractErrorMessage500(response: Response):
