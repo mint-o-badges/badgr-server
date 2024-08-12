@@ -848,7 +848,7 @@ class QRCodeDetail(BaseEntityView):
     valid_scopes = ["rw:issuer"]
 
     def get_objects(self, request, **kwargs):
-        badgeSlug = kwargs.get('slug')
+        badgeSlug = kwargs.get('badgeSlug')
         issuerSlug = kwargs.get('issuerSlug')
         return QrCode.objects.filter(badgeclass__entity_id=badgeSlug, issuer__entity_id=issuerSlug)
     
@@ -861,11 +861,20 @@ class QRCodeDetail(BaseEntityView):
         tags=["QrCodes"],
     )
     def get(self, request, **kwargs):
-        objects = self.get_objects(request, **kwargs)
         serializer_class = self.get_serializer_class()
-        serializer = serializer_class(objects, many=True)
 
-        return Response(serializer.data)
+        if 'slug' in kwargs:
+            try:
+                qr_code = self.get_object(request, **kwargs)
+                serializer = serializer_class(qr_code)  
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except QrCode.DoesNotExist:
+                return Response({"detail": "QR code not found"}, status=status.HTTP_404_NOT_FOUND)
+        else:             
+            objects = self.get_objects(request, **kwargs)
+            serializer = serializer_class(objects, many=True)
+
+            return Response(serializer.data)
 
     @apispec_post_operation('QrCode',
         summary="Create a new QrCode",
