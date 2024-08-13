@@ -54,11 +54,8 @@ import uuid
 from django.http import JsonResponse
 import requests
 from requests_oauthlib import OAuth1
-import logging
 
 logger = badgrlog.BadgrLogger()
-
-logger2 = logging.getLogger(__name__)
 
 
 ##
