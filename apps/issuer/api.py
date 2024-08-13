@@ -34,11 +34,9 @@ from apispec_drf.decorators import apispec_get_operation, apispec_put_operation,
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAdmin
 from mainsite.serializers import CursorPaginatedListSerializer
 from mainsite.models import AccessTokenProxy
-import logging
 
 
 logger = badgrlog.BadgrLogger()
-logger2 = logging.getLogger(__name__)
 
 class IssuerList(BaseEntityListView):
     """
