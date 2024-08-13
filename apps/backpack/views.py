@@ -55,7 +55,8 @@ class RoundedRectFlowable(Flowable):
             if self.canv.stringWidth(test_line, 'Helvetica-Bold', 10) <= max_width:
                 current_line = test_line
             else:
-                lines.append(current_line)
+                if current_line:
+                    lines.append(current_line)
                 current_line = word
 
         lines.append(current_line)
