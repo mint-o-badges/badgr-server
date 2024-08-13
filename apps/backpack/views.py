@@ -44,6 +44,23 @@ class RoundedRectFlowable(Flowable):
         self.studyload = studyload
         self.esco = esco
 
+    def split_text(self, text, max_width):
+        words = text.split()
+        lines = []
+        current_line = ""
+
+        for word in words:
+            test_line = f"{current_line} {word}".strip()
+            if self.canv.stringWidth(test_line, 'Helvetica-Bold', 10) <= max_width:
+                current_line = test_line
+            else:
+                lines.append(current_line)
+                current_line = word
+
+        lines.append(current_line)
+        return lines    
+    
+
     def draw(self):
         self.canv.setFillColor(self.fillcolor)
         self.canv.setStrokeColor(self.strokecolor)
@@ -51,17 +68,28 @@ class RoundedRectFlowable(Flowable):
                              stroke=1, fill=1)
         
         self.canv.setFillColor('#323232')
-        self.canv.setFont('Helvetica-Bold', 14)
-
         text_width = self.canv.stringWidth(self.text)
-        name = self.text
-        self.canv.drawString(self.x + 10, self.y + 15, name)
+        if text_width > self.width - 250:
+            self.canv.setFont('Helvetica-Bold', 10)
+            available_text_width = self.width - 150
+            y_text_position = self.y + 17.5
+        else:
+            self.canv.setFont('Helvetica-Bold', 14)
+            available_text_width = self.width - 250
+            y_text_position = self.y + 15
+
+        text_lines = self.split_text(self.text, available_text_width)
+
+        for line in text_lines:
+            self.canv.drawString(self.x + 10, y_text_position, line)
+            y_text_position -= 12 
         
         self.canv.setFillColor('blue')
         if self.esco:
-            self.canv.drawString(self.x + 10 + text_width, self.y + 15, " [E]")
-            # the whole rectangle links to esco, instead of just the "[E]"
-            self.canv.linkURL(f"http://data.europa.eu/{self.esco}", (self.x, self.y, self.width, self.height), relative=1, thickness=0)
+            last_line_width = self.canv.stringWidth(text_lines[-1])
+            self.canv.setFillColor('blue')
+            self.canv.drawString(self.x + 10 + last_line_width, y_text_position + 12, " [E]")
+            self.canv.linkURL(f"http://data.europa.eu/{self.esco}", (self.x, self.y, self.x + self.width, self.y + self.height), relative=1, thickness=0)
 
         
         self.canv.setFillColor('#492E98')
@@ -126,7 +154,7 @@ def AllPageSetup(canvas, doc):
     canvas.drawImage(logo, 20, 675, width=150, height=150, mask="auto", preserveAspectRatio=True)
     page_width = canvas._pagesize[0]
     canvas.setStrokeColor("#492E98")
-    canvas.line(page_width / 2 - 75, 750, page_width / 2 + 250, 750)
+    canvas.line(page_width / 2 - 120, 750, page_width / 2 + 250, 750)
 
     canvas.restoreState()
 
@@ -234,7 +262,8 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
                   studyLoadInHours = competencies[i]['studyLoad'] / 60
                   studyload = "%s Stunden" % int(studyLoadInHours)
               competency_name = competencies[i]['name']
-              competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name
+              competency = competency_name
+            #   competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name
               rounded_rect = RoundedRectFlowable(0, -10, 450, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload= studyload, esco=competencies[i]['escoID'])    
               Story.append(rounded_rect)
               Story.append(Spacer(1, 20))   
@@ -281,7 +310,7 @@ def add_title(first_page_content, badge_class_name):
     else:
         first_page_content.append(Spacer(1, 35))
 
-def truncate_text(text, max_words=50):
+def truncate_text(text, max_words=70):
     words = text.split()
     if len(words) > max_words:
         return ' '.join(words[:max_words]) + '...'
@@ -289,7 +318,7 @@ def truncate_text(text, max_words=50):
         return text
 
 def add_description(first_page_content, description):
-    description_style = ParagraphStyle(name='Description', fontSize=14, leading=16, alignment=TA_CENTER)
+    description_style = ParagraphStyle(name='Description', fontSize=12, leading=14, alignment=TA_CENTER)
     first_page_content.append(Paragraph(truncate_text(description), description_style))
     first_page_content.append(Spacer(1, 10))
 
