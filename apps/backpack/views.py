@@ -271,7 +271,7 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
             #   competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name
               rounded_rect = RoundedRectFlowable(0, -10, 450, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload= studyload, esco=competencies[i]['escoID'])    
               Story.append(rounded_rect)
-              Story.append(Spacer(1, 20))   
+              Story.append(Spacer(1, 10))   
                  
             if esco: 
                 Story.append(Spacer(1, 25))
