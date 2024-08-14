@@ -149,9 +149,13 @@ def AllPageSetup(canvas, doc):
         )
         canvas.setFillColor(color)
         canvas.setStrokeColor(color)
+        canvas.setFillAlpha(0.5) # decrease opacity of rays
+        canvas.setStrokeAlpha(0.5)
         canvas.drawPath(path, fill=1, stroke=1)
 
     # Header
+    canvas.setFillAlpha(1)
+    canvas.setStrokeAlpha(1)
     logo = ImageReader("{}images/Logo-Oeb.png".format(settings.STATIC_URL))
     canvas.drawImage(logo, 20, 675, width=150, height=150, mask="auto", preserveAspectRatio=True)
     page_width = canvas._pagesize[0]
