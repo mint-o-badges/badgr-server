@@ -54,9 +54,10 @@ import uuid
 from django.http import JsonResponse
 import requests
 from requests_oauthlib import OAuth1
+from issuer.permissions import is_badgeclass_staff
+
 
 logger = badgrlog.BadgrLogger()
-
 
 ##
 #
@@ -239,15 +240,19 @@ def requestBadge(req, qrCodeId):
         return JsonResponse({"message": "Badge request received"}, status=status.HTTP_200_OK)
 
 @api_view(["DELETE"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def deleteBadgeRequest(req, requestId):
     if req.method != "DELETE":
         return JsonResponse(
             {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
         )
-
+    
     try:
         badge = RequestedBadge.objects.get(id=requestId)
+
+        if (not is_badgeclass_staff(req.user, badge.badgeclass)):
+            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+
     except RequestedBadge.DoesNotExist:
         return JsonResponse({'error': 'Invalid requestId'}, status=400)            
 
