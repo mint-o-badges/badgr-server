@@ -21,12 +21,12 @@ import badgrlog
 from entity.api import BaseEntityListView, BaseEntityDetailView, VersionedObjectMixin, BaseEntityView, \
     UncachedPaginatedViewMixin
 from entity.serializers import BaseSerializerV2, V2ErrorSerializer
-from issuer.models import Issuer, BadgeClass, BadgeInstance, IssuerStaff, QrCode
+from issuer.models import Issuer, BadgeClass, BadgeInstance, IssuerStaff, LearningPath, QrCode
 from issuer.permissions import (MayIssueBadgeClass, MayEditBadgeClass, IsEditor, IsEditorButOwnerForDelete,
                                 IsStaff, ApprovedIssuersOnly, BadgrOAuthTokenHasScope,
                                 BadgrOAuthTokenHasEntityScope, AuthorizationIsBadgrOAuthToken)
 from issuer.serializers_v1 import (IssuerSerializerV1, BadgeClassSerializerV1,
-                                   BadgeInstanceSerializerV1, QrCodeSerializerV1)
+                                   BadgeInstanceSerializerV1, QrCodeSerializerV1, LearningPathSerializerV1)
 from issuer.serializers_v2 import IssuerSerializerV2, BadgeClassSerializerV2, BadgeInstanceSerializerV2, \
     IssuerAccessTokenSerializerV2
 from apispec_drf.decorators import apispec_get_operation, apispec_put_operation, \
@@ -199,6 +199,48 @@ class IssuerBadgeClassList(UncachedPaginatedViewMixin, VersionedObjectMixin, Bas
     def post(self, request, **kwargs):
         self.get_object(request, **kwargs)  # trigger a has_object_permissions() check
         return super(IssuerBadgeClassList, self).post(request, **kwargs)
+
+class AllLearningPathClassesList(UncachedPaginatedViewMixin, BaseEntityListView):
+    """
+    GET a list of learning paths within one issuer context or
+    POST to create a new learningpath within the issuer context
+    """
+    model = LearningPath
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsEditor & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    v1_serializer_class = LearningPathSerializerV1
+    # v2_serializer_class = BadgeClassSerializerV2
+    valid_scopes = ["rw:issuer"]
+
+    # def get_queryset(self, request, **kwargs):
+    #     if self.get_page_size(request) is None:
+    #         return request.user.cached_badgeclasses()
+    #     return BadgeClass.objects.filter(issuer__staff=request.user).order_by('created_at')
+
+    @apispec_list_operation('BadgeClass',
+        summary="Get a list of BadgeClasses for authenticated user",
+        tags=["BadgeClasses"],
+    )
+    def get(self, request, **kwargs):
+        return super(AllLearningPathClassesList, self).get(request, **kwargs)
+
+    @apispec_post_operation('LearningPath',
+        summary="Create a new LearningPath",
+        tags=["LearningPaths"],
+        parameters=[
+            {
+                'in': 'query',
+                'name': "num",
+                'type': "string",
+                'description': 'Request pagination of results'
+            },
+        ]
+    )
+    def post(self, request, **kwargs):
+        return super(AllLearningPathClassesList, self).post(request, **kwargs)
 
 
 class BadgeClassDetail(BaseEntityDetailView):
@@ -907,3 +949,42 @@ class QRCodeDetail(BaseEntityView):
         qr_code = self.get_object(request, **kwargs)
         qr_code.delete()
         return Response(status=HTTP_204_NO_CONTENT)
+
+class LearningPathDetail(BaseEntityDetailView):
+    model = LearningPath
+    v1_serializer_class = LearningPathSerializerV1
+    # v2_serializer_class = IssuerSerializerV2
+    permission_classes = (BadgrOAuthTokenHasScope,)
+    valid_scopes = ["rw:issuer"]
+
+    
+class LearningPathList(BaseEntityListView):
+    """
+    LearningPath list resource for the authenticated user
+    """
+    model = LearningPath
+    v1_serializer_class = LearningPathSerializerV1
+    # v2_serializer_class = IssuerSerializerV2
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope & ApprovedIssuersOnly)
+    ]
+    valid_scopes = ["rw:issuer"]
+
+    # create_event = badgrlog.IssuerCreatedEvent
+
+    def get_objects(self, request, **kwargs):
+        return LearningPath.objects.all()
+    @apispec_list_operation('LearningPath',
+        summary="Get a list of LearningPaths for authenticated user",
+        tags=["LearningPaths"],
+    )
+    def get(self, request, **kwargs):
+        return super(LearningPathList, self).get(request, **kwargs)
+
+    @apispec_post_operation('LearningPath',
+        summary="Create a new LearningPath",
+        tags=["LearningPaths"],
+    )
+    def post(self, request, **kwargs):
+        return super(LearningPathList, self).post(request, **kwargs)    

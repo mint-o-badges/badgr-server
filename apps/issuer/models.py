@@ -266,7 +266,8 @@ class Issuer(ResizeUploadedImage,
     def save(self, *args, **kwargs):
         original_verified = None
         if not self.pk:
-            self.notify_admins(self)
+            # self.notify_admins(self)
+            print('Issuer created')
         # geocoding if address in model changed
         else:
             original_object = Issuer.objects.get(pk=self.pk)
@@ -1640,6 +1641,22 @@ class BadgeClassTag(cachemodel.CacheModel):
         super(BadgeClassTag, self).delete(*args, **kwargs)
         self.badgeclass.publish()
 
+class LearningPathTag(cachemodel.CacheModel):
+    learningPath = models.ForeignKey('issuer.LearningPath',
+                                   on_delete=models.CASCADE)
+    name = models.CharField(max_length=254, db_index=True)
+
+    def __str__(self):
+        return self.name
+
+    def publish(self):
+        super(LearningPathTag, self).publish()
+        self.learningPath.publish()
+
+    def delete(self, *args, **kwargs):
+        super(LearningPathTag, self).delete(*args, **kwargs)
+        self.learningPath.publish()        
+
 
 class IssuerExtension(BaseOpenBadgeExtension):
     issuer = models.ForeignKey('issuer.Issuer',
@@ -1710,5 +1727,65 @@ class RequestedBadge(BaseVersionedEntity):
     requestedOn = models.DateTimeField(blank=False, null=False, default=timezone.now)
 
     status = models.CharField(max_length=254, blank=False, null=False, default='Pending')
- 
 
+class LearningPathParticipant(BaseVersionedEntity):
+    badgeuser = models.ForeignKey('badgeuser.BadgeUser', blank=False, null=False, on_delete=models.CASCADE, related_name='learningpathparticipants')
+    learningpath = models.ForeignKey('LearningPath', blank=False, null=False, on_delete=models.CASCADE, related_name='learningpathparticipants')    
+
+
+class LearningPath(BaseVersionedEntity):
+    name = models.CharField(max_length=254, blank=False, null=False)
+    description = models.TextField(blank=True, null=True, default=None)
+    issuer = models.ForeignKey(Issuer, blank=False, null=False, on_delete=models.CASCADE, related_name='learningpaths')
+    badges = models.ManyToManyField(BadgeClass, through='LearningPathBadge')
+
+    @cachemodel.cached_method(auto_publish=True)
+    def cached_tags(self):
+        return self.learningpathtag_set.all()
+
+    @property
+    def tag_items(self):
+        return self.cached_tags()
+
+    @tag_items.setter
+    def tag_items(self, value):
+        if value is None:
+            value = []
+        existing_idx = [t.name for t in self.tag_items]
+        new_idx = value
+
+        with transaction.atomic():
+            if not self.pk:
+                self.save()
+
+            # add missing
+            for t in value:
+                if t not in existing_idx:
+                    tag = self.learningpathtag_set.create(name=t)
+
+            # remove old
+            for tag in self.tag_items:
+                if tag.name not in new_idx:
+                    tag.delete()
+
+class LearningPathBadge(models.Model):
+    learninPath = models.ForeignKey(LearningPath, on_delete=models.CASCADE)
+    badge = models.ForeignKey(BadgeClass, on_delete=models.CASCADE)
+    order = models.PositiveIntegerField()
+
+    class Meta:
+        ordering = ['order']
+        unique_together = ['learninPath', 'badge']
+
+    def __str__(self):
+        return f"{self.badge.name} in {self.learninPath.name} at position {self.order}"
+
+class LearningPathParticipant(models.Model):
+    user = models.ForeignKey('badgeuser.BadgeUser', on_delete=models.CASCADE)
+    learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE)
+    completed_badges = models.IntegerField(default=0)
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ['user', 'learning_path']
