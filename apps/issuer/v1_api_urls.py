@@ -34,6 +34,8 @@ urlpatterns = [
 
     url(r'^issuers/(?P<issuerSlug>[^/]+)/learningpath$',
         LearningPathList.as_view(), name='v1_api_learningpath_list'),
+    url(r'^issuers/(?P<issuerSlug>[^/]+)/learningpath/(?P<slug>[^/]+)$',
+        LearningPathDetail.as_view(), name='v1_api_learningpath_detail'),
     url(r'^learningpath/(?P<slug>[^/]+)$',
         LearningPathDetail.as_view(), name='v1_api_learningpath_detail'),    
 ]

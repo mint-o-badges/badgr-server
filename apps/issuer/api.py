@@ -956,6 +956,13 @@ class LearningPathDetail(BaseEntityDetailView):
     )
     def get(self, request, **kwargs):
         return super(LearningPathDetail, self).get(request, **kwargs)
+    
+    @apispec_delete_operation('LearningPath',
+        summary="Delete a single LearningPath",
+        tags=["LearningPaths"],
+    )
+    def delete(self, request, **kwargs):
+        return super(LearningPathDetail, self).delete(request, **kwargs)
 
     
 class LearningPathList(BaseEntityListView):
