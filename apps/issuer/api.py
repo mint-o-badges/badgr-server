@@ -950,6 +950,13 @@ class LearningPathDetail(BaseEntityDetailView):
     permission_classes = (BadgrOAuthTokenHasScope,)
     valid_scopes = ["rw:issuer"]
 
+    @apispec_get_operation('LearningPath',
+        summary="Get a single LearningPath",
+        tags=["Learningpaths"],
+    )
+    def get(self, request, **kwargs):
+        return super(LearningPathDetail, self).get(request, **kwargs)
+
     
 class LearningPathList(BaseEntityListView):
     """

@@ -654,7 +654,19 @@ class LearningPathSerializerV1(serializers.Serializer):
 
 
     class Meta:
-        apispec_definition = ('LearningPath', {})       
+        apispec_definition = ('LearningPath', {}) 
+
+    def to_representation(self, instance):
+        representation = super(LearningPathSerializerV1, self).to_representation(instance)
+        representation['tags'] = list(instance.tag_items.values_list('name', flat=True))
+        representation['badges'] = [
+            {
+                'badge': BadgeClassSerializerV1(badge.badge).data,
+                'order': badge.order
+            }
+            for badge in instance.learningpathbadge_set.all().order_by('order')
+        ]
+        return representation          
 
     def create(self, validated_data, **kwargs):
         

@@ -1726,7 +1726,7 @@ class RequestedBadge(BaseVersionedEntity):
 
     status = models.CharField(max_length=254, blank=False, null=False, default='Pending')
 
-class LearningPath(models.Model):
+class LearningPath(BaseVersionedEntity):
     name = models.CharField(max_length=254, blank=False, null=False)
     description = models.TextField(blank=True, null=True, default=None)
     issuer = models.ForeignKey(Issuer, blank=False, null=False, on_delete=models.CASCADE, related_name='learningpaths')
