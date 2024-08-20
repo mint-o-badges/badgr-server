@@ -212,17 +212,11 @@ class AllLearningPathClassesList(UncachedPaginatedViewMixin, BaseEntityListView)
         | BadgrOAuthTokenHasEntityScope
     ]
     v1_serializer_class = LearningPathSerializerV1
-    # v2_serializer_class = BadgeClassSerializerV2
     valid_scopes = ["rw:issuer"]
 
-    # def get_queryset(self, request, **kwargs):
-    #     if self.get_page_size(request) is None:
-    #         return request.user.cached_badgeclasses()
-    #     return BadgeClass.objects.filter(issuer__staff=request.user).order_by('created_at')
-
-    @apispec_list_operation('BadgeClass',
-        summary="Get a list of BadgeClasses for authenticated user",
-        tags=["BadgeClasses"],
+    @apispec_list_operation('LearningPath',
+        summary="Get a list of LearningPaths for authenticated user",
+        tags=["LearningPaths"],
     )
     def get(self, request, **kwargs):
         return super(AllLearningPathClassesList, self).get(request, **kwargs)
@@ -953,7 +947,6 @@ class QRCodeDetail(BaseEntityView):
 class LearningPathDetail(BaseEntityDetailView):
     model = LearningPath
     v1_serializer_class = LearningPathSerializerV1
-    # v2_serializer_class = IssuerSerializerV2
     permission_classes = (BadgrOAuthTokenHasScope,)
     valid_scopes = ["rw:issuer"]
 
@@ -964,14 +957,12 @@ class LearningPathList(BaseEntityListView):
     """
     model = LearningPath
     v1_serializer_class = LearningPathSerializerV1
-    # v2_serializer_class = IssuerSerializerV2
     permission_classes = [
         IsServerAdmin
         | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope & ApprovedIssuersOnly)
     ]
     valid_scopes = ["rw:issuer"]
 
-    # create_event = badgrlog.IssuerCreatedEvent
 
     def get_objects(self, request, **kwargs):
         return LearningPath.objects.all()
@@ -987,4 +978,4 @@ class LearningPathList(BaseEntityListView):
         tags=["LearningPaths"],
     )
     def post(self, request, **kwargs):
-        return super(LearningPathList, self).post(request, **kwargs)    
+        return super(LearningPathList, self).post(request, **kwargs)

@@ -1651,11 +1651,9 @@ class LearningPathTag(cachemodel.CacheModel):
 
     def publish(self):
         super(LearningPathTag, self).publish()
-        self.learningPath.publish()
 
     def delete(self, *args, **kwargs):
         super(LearningPathTag, self).delete(*args, **kwargs)
-        self.learningPath.publish()        
 
 
 class IssuerExtension(BaseOpenBadgeExtension):
@@ -1728,16 +1726,25 @@ class RequestedBadge(BaseVersionedEntity):
 
     status = models.CharField(max_length=254, blank=False, null=False, default='Pending')
 
-class LearningPathParticipant(BaseVersionedEntity):
-    badgeuser = models.ForeignKey('badgeuser.BadgeUser', blank=False, null=False, on_delete=models.CASCADE, related_name='learningpathparticipants')
-    learningpath = models.ForeignKey('LearningPath', blank=False, null=False, on_delete=models.CASCADE, related_name='learningpathparticipants')    
-
-
-class LearningPath(BaseVersionedEntity):
+class LearningPath(models.Model):
     name = models.CharField(max_length=254, blank=False, null=False)
     description = models.TextField(blank=True, null=True, default=None)
     issuer = models.ForeignKey(Issuer, blank=False, null=False, on_delete=models.CASCADE, related_name='learningpaths')
-    badges = models.ManyToManyField(BadgeClass, through='LearningPathBadge')
+
+    @cachemodel.cached_method(auto_publish=True)
+    def cached_learningpathbadges(self):
+        return self.learningpathbadge_set.all()
+
+    @property
+    def learningpath_badges(self):
+        return self.cached_learningpathbadges()
+    
+    @learningpath_badges.setter
+    def learningpath_badges(self, badges_with_order):
+        self.learningpathbadge_set.all().delete()
+
+        for badge, order in badges_with_order:
+            LearningPathBadge.objects.create(learning_path=self, badge=badge, order=order)
 
     @cachemodel.cached_method(auto_publish=True)
     def cached_tags(self):
@@ -1768,17 +1775,16 @@ class LearningPath(BaseVersionedEntity):
                 if tag.name not in new_idx:
                     tag.delete()
 
-class LearningPathBadge(models.Model):
-    learninPath = models.ForeignKey(LearningPath, on_delete=models.CASCADE)
+class LearningPathBadge(cachemodel.CacheModel):
+    learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE)
     badge = models.ForeignKey(BadgeClass, on_delete=models.CASCADE)
     order = models.PositiveIntegerField()
 
-    class Meta:
-        ordering = ['order']
-        unique_together = ['learninPath', 'badge']
+    def publish(self):
+        super(LearningPathBadge, self).publish()
 
-    def __str__(self):
-        return f"{self.badge.name} in {self.learninPath.name} at position {self.order}"
+    def delete(self, *args, **kwargs):
+        super(LearningPathBadge, self).delete(*args, **kwargs)
 
 class LearningPathParticipant(models.Model):
     user = models.ForeignKey('badgeuser.BadgeUser', on_delete=models.CASCADE)
