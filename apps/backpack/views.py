@@ -72,11 +72,11 @@ class RoundedRectFlowable(Flowable):
         self.canv.setFillColor('#323232')
         text_width = self.canv.stringWidth(self.text)
         self.canv.setFont('Helvetica-Bold', 12)
-        if text_width > self.width - 250:
+        if text_width > self.width - 175:
             available_text_width = self.width - 150
             y_text_position = self.y + 25
         else:
-            available_text_width = self.width - 250
+            available_text_width = self.width - 175
             y_text_position = self.y + 15
 
         text_lines = self.split_text(self.text, available_text_width)
@@ -156,10 +156,10 @@ def AllPageSetup(canvas, doc):
     canvas.setFillAlpha(1)
     canvas.setStrokeAlpha(1)
     logo = ImageReader("{}images/Logo-Oeb.png".format(settings.STATIC_URL))
-    canvas.drawImage(logo, 20, 675, width=150, height=150, mask="auto", preserveAspectRatio=True)
+    canvas.drawImage(logo, 20, 700, width=150, height=150, mask="auto", preserveAspectRatio=True)
     page_width = canvas._pagesize[0]
     canvas.setStrokeColor("#492E98")
-    canvas.line(page_width / 2 - 120, 750, page_width / 2 + 250, 750)
+    canvas.line(page_width / 2 - 120, 775, page_width / 2 + 250, 775)
 
     canvas.restoreState()
 
@@ -229,10 +229,10 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
 
     if num_competencies > 0:
             esco = any(c['escoID'] for c in competencies)
-            competenciesPerPage = 5
+            competenciesPerPage = 9
 
             Story.append(PageBreak())
-            Story.append(Spacer(1, 75))
+            Story.append(Spacer(1, 50))
 
             title_style = ParagraphStyle(name='Title', fontSize=24, textColor='#492E98', alignment=TA_LEFT)
             text_style = ParagraphStyle(name='Text', fontSize=18, leading=20, textColor='#323232', alignment=TA_LEFT)
@@ -242,14 +242,14 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
             
             text = f"die <strong>{name}</strong> mit dem Badge <strong>{badge_name}</strong> erworben hat:"
             Story.append(Paragraph(text, text_style))
-            Story.append(Spacer(1, 20))
+            Story.append(Spacer(1, 10))
 
             text_style = ParagraphStyle(name='Text', fontSize=18, leading=16, textColor='#492E98', alignment=TA_LEFT)      
 
             for i in range(num_competencies):
               if i != 0 and i % competenciesPerPage == 0: 
                 Story.append(PageBreak())
-                Story.append(Spacer(1, 75))
+                Story.append(Spacer(1, 50))
                 Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
                 Story.append(Spacer(1, 25))
 
@@ -260,7 +260,7 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
 
                 text = " <strong>%s</strong> erworben hat:" % badge_name
                 Story.append(Paragraph(text, text_style)) 
-                Story.append(Spacer(1, 20)) 
+                Story.append(Spacer(1, 10)) 
 
               studyload = "%s Minuten" % competencies[i]['studyLoad']
               if competencies[i]['studyLoad'] > 120:
@@ -274,9 +274,9 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
               Story.append(Spacer(1, 10))   
                  
             if esco: 
-                Story.append(Spacer(1, 25))
-                text_style = ParagraphStyle(name='Text_Style', fontSize=12, leading=20, alignment=TA_LEFT)
-                link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations) <br/>' \
+                Story.append(Spacer(1, 15))
+                text_style = ParagraphStyle(name='Text_Style', fontSize=10, leading=18, alignment=TA_LEFT, leftIndent=0)
+                link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations). <br/>' \
                     'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
                 paragraph_with_link = Paragraph(link_text, text_style)
                 Story.append(paragraph_with_link) 
@@ -289,7 +289,7 @@ def addBadgeImage(first_page_content, badgeImage):
     first_page_content.append(Image(badgeImage, width=image_width, height=image_height))
 
 def add_recipient_name(first_page_content, name, issuedOn):
-    first_page_content.append(Spacer(1, 50))
+    first_page_content.append(Spacer(1, 25))
     recipient_style = ParagraphStyle(name='Recipient', fontSize=24, textColor='#492E98', alignment=TA_CENTER)
     
     recipient_name = f"<strong>{name}</strong>"

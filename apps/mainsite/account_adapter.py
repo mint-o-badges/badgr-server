@@ -89,7 +89,7 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
 
         if num_competencies > 0:
                 esco = any(c['escoID'] for c in competencies)
-                competenciesPerPage = 5
+                competenciesPerPage = 9
 
                 Story.append(PageBreak())
                 Story.append(Spacer(1, 75))
