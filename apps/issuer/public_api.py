@@ -30,8 +30,8 @@ from entity.api import VersionedObjectMixin, BaseEntityListView, UncachedPaginat
 from mainsite.models import BadgrApp
 from mainsite.utils import (OriginSetting, set_url_query_params, first_node_match, fit_image_to_height,
                             convert_svg_to_png)
-from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1
-from .models import Issuer, BadgeClass, BadgeInstance
+from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, LearningPathSerializerV1
+from .models import Issuer, BadgeClass, BadgeInstance, LearningPath
 logger = badgrlog.BadgrLogger()
 
 
@@ -707,4 +707,13 @@ class VerifyBadgeAPIEndpoint(JSONComponentView):
 
         return Response(BaseSerializerV2.response_envelope([result], True, 'OK'), status=status.HTTP_200_OK)
 
+class LearningPathList(JSONListView):
+    permission_classes = (permissions.AllowAny,)
+    model = LearningPath
+    serializer_class = LearningPathSerializerV1
 
+    # def log(self, obj):
+    #     logger.event(badgrlog.BadgeClassRetrievedEvent(obj, self.request))
+
+    def get_json(self, request):
+        return super(LearningPathList, self).get_json(request)

@@ -4,7 +4,7 @@ from rest_framework.urlpatterns import format_suffix_patterns
 
 from .public_api import (IssuerJson, IssuerList, IssuerBadgesJson, IssuerImage, BadgeClassJson, BadgeClassList,
                          BadgeClassImage, BadgeClassCriteria, BadgeInstanceJson,
-                         BadgeInstanceImage, BackpackCollectionJson, BakedBadgeInstanceImage,
+                         BadgeInstanceImage, BackpackCollectionJson, BakedBadgeInstanceImage, LearningPathList,
                          OEmbedAPIEndpoint, VerifyBadgeAPIEndpoint)
 
 json_patterns = [
@@ -16,6 +16,7 @@ json_patterns = [
     url(r'^badges/(?P<entity_id>[^/.]+)$',
         xframe_options_exempt(BadgeClassJson.as_view(slugToEntityIdRedirect=True)), name='badgeclass_json'),
     url(r'^all-badges$', xframe_options_exempt(BadgeClassList.as_view()), name='badgeclass_list_json'),
+    url(r'^all-learningpaths$', xframe_options_exempt(LearningPathList.as_view()), name='learningpath_list_json'),
     url(r'^assertions/(?P<entity_id>[^/.]+)$', xframe_options_exempt(
         BadgeInstanceJson.as_view(slugToEntityIdRedirect=True)), name='badgeinstance_json'),
 
