@@ -702,3 +702,31 @@ class LearningPathSerializerV1(serializers.Serializer):
 
         new_learningpath.learningpath_badges = badges_with_order
         return new_learningpath
+    
+    def update(self, instance, validated_data):
+        instance.name = validated_data.get('name', instance.name)
+        instance.description = validated_data.get('description', instance.description)
+        
+        tags = validated_data.get('tag_items', None)
+        if tags is not None:
+            instance.tag_items = tags
+
+        badges_data = validated_data.get('badges', None)
+        if badges_data is not None:
+            badges_with_order = []
+            for badge_data in badges_data:
+                slug = badge_data.get('slug')
+                order = badge_data.get('order')
+
+                try:
+                    badge = BadgeClass.objects.get(entity_id=slug)
+                except BadgeClass.DoesNotExist:
+                    raise serializers.ValidationError(f"Badge with slug '{slug}' does not exist.")
+
+                badges_with_order.append((badge, order))
+
+            instance.learningpath_badges = badges_with_order
+
+        instance.save()
+
+        return instance
