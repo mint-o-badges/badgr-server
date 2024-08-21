@@ -205,10 +205,13 @@ class PageNumCanvas(canvas.Canvas):
         page = "%s / %s" % (self._pageNumber, page_count)
         self.setStrokeColor("#492E98")
         page_width = self._pagesize[0]
-        self.line(10, 10, page_width / 2 - 20, 10)
-        self.line(page_width  / 2 + 20, 10, page_width - 10, 10)
-        self.setFont("Helvetica", 9)
-        self.drawCentredString(page_width / 2, 10, page)
+        self.line(10, 25, page_width / 2 - 20, 25)
+        self.line(page_width  / 2 + 20, 25, page_width - 10, 25)
+        self.setFont("Helvetica", 14)
+        self.drawCentredString(page_width / 2, 20, page)
+        if self._pageNumber == page_count:
+            self.setLineWidth(3)
+            self.line(10, 10, page_width - 10, 10)
 
 def create_multi_page(response, first_page_content, competencies, name, badge_name):
     """
