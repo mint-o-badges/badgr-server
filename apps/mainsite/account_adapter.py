@@ -23,7 +23,7 @@ import badgrlog
 from badgrsocialauth.utils import set_session_badgr_app
 from mainsite.models import BadgrApp, EmailBlacklist, AccessTokenProxy
 from mainsite.utils import OriginSetting, set_url_query_params
-from backpack.views import get_name, add_recipient_name, add_title, add_description, addBadgeImage, add_issuerImage, add_issuedBy, RoundedRectFlowable, AllPageSetup, PageNumCanvas
+from backpack.views import get_name, add_recipient_name, add_title, add_description, addBadgeImage, add_issuedBy, RoundedRectFlowable, AllPageSetup, PageNumCanvas
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -67,12 +67,7 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
 
         add_description(first_page_content, badgeclass.description)
 
-        add_issuedBy(first_page_content, badgeinstance.issuer.name)
-
-        try:
-            add_issuerImage(first_page_content, badgeclass.issuer.image)
-        except:
-            pass    
+        add_issuedBy(first_page_content, badgeinstance.issuer.name, badgeclass.issuer.image)    
         
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4)
@@ -92,7 +87,7 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                 competenciesPerPage = 9
 
                 Story.append(PageBreak())
-                Story.append(Spacer(1, 75))
+                Story.append(Spacer(1, 50))
 
                 title_style = ParagraphStyle(name='Title', fontSize=24, textColor='#492E98', alignment=TA_LEFT)
                 text_style = ParagraphStyle(name='Text', fontSize=14, textColor='#492E98', alignment=TA_LEFT)
@@ -111,14 +106,14 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
 
                 text = " <strong>%s</strong> erworben hat:" % badgeclass.name
                 Story.append(Paragraph(text, text_style)) 
-                Story.append(Spacer(1, 20)) 
+                Story.append(Spacer(1, 10)) 
 
                 text_style = ParagraphStyle(name='Text', fontSize=18, leading=16, textColor='#492E98', alignment=TA_LEFT)      
 
                 for i in range(num_competencies):
                     if i != 0 and i % competenciesPerPage == 0: 
                         Story.append(PageBreak())
-                        Story.append(Spacer(1, 75))
+                        Story.append(Spacer(1, 50))
                         Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
                         Story.append(Spacer(1, 25))
 
@@ -132,7 +127,7 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
 
                         text = " <strong>%s</strong> erworben hat:" % badgeclass.name
                         Story.append(Paragraph(text, text_style)) 
-                        Story.append(Spacer(1, 20)) 
+                        Story.append(Spacer(1, 10)) 
 
                     studyload = "%s Minuten" % competencies[i]['studyLoad']
                     if competencies[i]['studyLoad'] > 120:
@@ -142,11 +137,11 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                     rounded_rect = RoundedRectFlowable(0, -1, 450, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload = studyload, esco = competencies[i]['escoID'])
 
                     Story.append(rounded_rect)    
-                    Story.append(Spacer(1, 20))   
+                    Story.append(Spacer(1, 10))   
                     
                 if esco: 
-                    Story.append(Spacer(1, 25))
-                    text_style = ParagraphStyle(name='Text_Style', fontSize=12, leading=20, alignment=TA_LEFT)
+                    Story.append(Spacer(1, 10))
+                    text_style = ParagraphStyle(name='Text_Style', fontSize=12, leading=15.6, alignment=TA_LEFT, leftIndent=-35, rightIndent=-35)
                     link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations) <br/>' \
                     'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
                     paragraph_with_link = Paragraph(link_text, text_style)

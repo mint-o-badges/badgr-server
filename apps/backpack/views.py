@@ -24,12 +24,21 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import PCMYKColor
 from reportlab.lib.utils import ImageReader
-from reportlab.platypus import SimpleDocTemplate, Flowable, Table, Paragraph, Spacer, Image, PageBreak
+from reportlab.platypus import SimpleDocTemplate, Flowable, Paragraph, Spacer, Image, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPDF
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
 from operator import attrgetter
+import os
+
+font_path_rubik_regular = os.path.join(os.path.dirname(__file__), 'Rubik-Regular.ttf')
+font_path_rubik_bold = os.path.join(os.path.dirname(__file__), 'Rubik-Bold.ttf')
+
+pdfmetrics.registerFont(TTFont('Rubik-Regular', font_path_rubik_regular))
+pdfmetrics.registerFont(TTFont('Rubik-Bold', font_path_rubik_bold))
 
 class RoundedRectFlowable(Flowable):
     def __init__(self, x, y, width, height, radius, text, strokecolor, fillcolor, studyload, esco = ''):
@@ -52,7 +61,7 @@ class RoundedRectFlowable(Flowable):
 
         for word in words:
             test_line = f"{current_line} {word}".strip()
-            if self.canv.stringWidth(test_line, 'Helvetica-Bold', 10) <= max_width:
+            if self.canv.stringWidth(test_line, 'Rubik-Bold', 10) <= max_width:
                 current_line = test_line
             else:
                 if current_line:
@@ -71,7 +80,7 @@ class RoundedRectFlowable(Flowable):
         
         self.canv.setFillColor('#323232')
         text_width = self.canv.stringWidth(self.text)
-        self.canv.setFont('Helvetica-Bold', 12)
+        self.canv.setFont('Rubik-Bold', 12)
         if text_width > self.width - 175:
             available_text_width = self.width - 150
             y_text_position = self.y + 25
@@ -94,7 +103,7 @@ class RoundedRectFlowable(Flowable):
 
         
         self.canv.setFillColor('#492E98')
-        self.canv.setFont('Helvetica', 14)
+        self.canv.setFont('Rubik-Regular', 14)
         studyload_width = self.canv.stringWidth(self.studyload)
         self.canv.drawString(self.x + 450 -(studyload_width + 10), self.y + 15, self.studyload)
 
@@ -207,7 +216,7 @@ class PageNumCanvas(canvas.Canvas):
         page_width = self._pagesize[0]
         self.line(10, 25, page_width / 2 - 20, 25)
         self.line(page_width  / 2 + 20, 25, page_width - 10, 25)
-        self.setFont("Helvetica", 14)
+        self.setFont("Rubik-Regular", 14)
         self.drawCentredString(page_width / 2, 20, page)
         if self._pageNumber == page_count:
             self.setLineWidth(3)
@@ -277,8 +286,8 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
               Story.append(Spacer(1, 10))   
                  
             if esco: 
-                Story.append(Spacer(1, 15))
-                text_style = ParagraphStyle(name='Text_Style', fontSize=10, leading=18, alignment=TA_LEFT, leftIndent=0)
+                Story.append(Spacer(1, 10))
+                text_style = ParagraphStyle(name='Text_Style', fontSize=12, leading=15.6, alignment=TA_LEFT, leftIndent=-35, rightIndent=-35)
                 link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations). <br/>' \
                     'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
                 paragraph_with_link = Paragraph(link_text, text_style)
@@ -326,20 +335,32 @@ def truncate_text(text, max_words=70):
         return text
 
 def add_description(first_page_content, description):
-    description_style = ParagraphStyle(name='Description', fontSize=12, leading=14, alignment=TA_CENTER)
-    first_page_content.append(Paragraph(truncate_text(description), description_style))
+    description_style = ParagraphStyle(name='Description', fontSize=11, leading=16.5, alignment=TA_CENTER)
+    first_page_content.append(Paragraph(description, description_style))
     first_page_content.append(Spacer(1, 10))
 
-def add_issuedBy(first_page_content, issued_by):
-    issued_by_style = ParagraphStyle(name='Issued_By', fontSize=18, textColor='#492E98', alignment=TA_CENTER)
-    text = "- Vergeben von: " + f"<strong>{issued_by}</strong> -"
-    first_page_content.append(Paragraph(text, issued_by_style))
-    first_page_content.append(Spacer(1, 15))
+# def add_issuedBy(first_page_content, issued_by, issuerImage):
+#     issued_by_style = ParagraphStyle(name='Issued_By', fontSize=18, textColor='#492E98', alignment=TA_CENTER)
+#     text = "- <strong>Vergeben von:</strong> " + Image(issuerImage, width=40, height=40) + f"<strong>{issued_by}</strong> -"
+#     first_page_content.append(Paragraph(text, issued_by_style))
+#     first_page_content.append(Spacer(1, 15))
 
-def add_issuerImage(first_page_content, issuerImage): 
-    image_width = 60
-    image_height = 60
-    first_page_content.append(Image(issuerImage, width=image_width, height=image_height))
+def add_issuedBy(first_page_content, issued_by, issuerImage=None):
+    issued_by_style = ParagraphStyle(name='Issued_By', fontSize=11, textColor='#492E98', alignment=TA_CENTER, leftIndent=-35, rightIndent=-35)
+    image = None
+    if issuerImage is not None: 
+            try:
+                image = Image(issuerImage, width=40, height=40)
+            except: 
+                pass
+
+    if image is not None:
+        first_page_content.append(image)
+        first_page_content.append(Spacer(1, 10))
+
+    text = f"<strong>- Vergeben von: </strong>" + f"<strong>{issued_by}</strong>  -"
+    first_page_content.append(Paragraph(text, issued_by_style))
+    
 
 def get_name(badgeinstance: BadgeInstance):
     """Evaluates the name to be displayed for the recipient of the badge.
@@ -408,12 +429,7 @@ def pdf(request, *args, **kwargs):
 
     add_description(first_page_content, badgeclass.description)
 
-    add_issuedBy(first_page_content, badgeinstance.issuer.name)
-
-    try:
-        add_issuerImage(first_page_content, badgeclass.issuer.image)
-    except: 
-        pass    
+    add_issuedBy(first_page_content, badgeinstance.issuer.name, badgeclass.issuer.image)    
 
     create_multi_page(response, first_page_content, competencies, name, badgeclass.name)
 
