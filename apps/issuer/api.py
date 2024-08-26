@@ -21,12 +21,12 @@ import badgrlog
 from entity.api import BaseEntityListView, BaseEntityDetailView, VersionedObjectMixin, BaseEntityView, \
     UncachedPaginatedViewMixin
 from entity.serializers import BaseSerializerV2, V2ErrorSerializer
-from issuer.models import Issuer, BadgeClass, BadgeInstance, IssuerStaff, LearningPath, QrCode
+from issuer.models import Issuer, BadgeClass, BadgeInstance, IssuerStaff, LearningPath, LearningPathParticipant, QrCode
 from issuer.permissions import (MayIssueBadgeClass, MayEditBadgeClass, IsEditor, IsEditorButOwnerForDelete,
                                 IsStaff, ApprovedIssuersOnly, BadgrOAuthTokenHasScope,
                                 BadgrOAuthTokenHasEntityScope, AuthorizationIsBadgrOAuthToken)
 from issuer.serializers_v1 import (IssuerSerializerV1, BadgeClassSerializerV1,
-                                   BadgeInstanceSerializerV1, QrCodeSerializerV1, LearningPathSerializerV1)
+                                   BadgeInstanceSerializerV1, LearningPathParticipantSerializerV1, QrCodeSerializerV1, LearningPathSerializerV1)
 from issuer.serializers_v2 import IssuerSerializerV2, BadgeClassSerializerV2, BadgeInstanceSerializerV2, \
     IssuerAccessTokenSerializerV2
 from apispec_drf.decorators import apispec_get_operation, apispec_put_operation, \
@@ -34,6 +34,10 @@ from apispec_drf.decorators import apispec_get_operation, apispec_put_operation,
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAdmin
 from mainsite.serializers import CursorPaginatedListSerializer
 from mainsite.models import AccessTokenProxy
+import logging
+
+
+logger2 = logging.getLogger(__name__)
 
 
 logger = badgrlog.BadgrLogger()
@@ -200,7 +204,7 @@ class IssuerBadgeClassList(UncachedPaginatedViewMixin, VersionedObjectMixin, Bas
         self.get_object(request, **kwargs)  # trigger a has_object_permissions() check
         return super(IssuerBadgeClassList, self).post(request, **kwargs)
 
-class AllLearningPathClassesList(UncachedPaginatedViewMixin, BaseEntityListView):
+class AllLearningPathList(UncachedPaginatedViewMixin, BaseEntityListView):
     """
     GET a list of learning paths within one issuer context or
     POST to create a new learningpath within the issuer context
@@ -214,12 +218,15 @@ class AllLearningPathClassesList(UncachedPaginatedViewMixin, BaseEntityListView)
     v1_serializer_class = LearningPathSerializerV1
     valid_scopes = ["rw:issuer"]
 
+    def get_queryset(self, request, **kwargs):
+        return LearningPath.objects.filter(issuer_id=request.user.id)
+
     @apispec_list_operation('LearningPath',
         summary="Get a list of LearningPaths for authenticated user",
         tags=["LearningPaths"],
     )
     def get(self, request, **kwargs):
-        return super(AllLearningPathClassesList, self).get(request, **kwargs)
+        return super(AllLearningPathList, self).get(request, **kwargs)
 
     @apispec_post_operation('LearningPath',
         summary="Create a new LearningPath",
@@ -234,8 +241,42 @@ class AllLearningPathClassesList(UncachedPaginatedViewMixin, BaseEntityListView)
         ]
     )
     def post(self, request, **kwargs):
-        return super(AllLearningPathClassesList, self).post(request, **kwargs)
+        return super(AllLearningPathList, self).post(request, **kwargs)
 
+class LearningPathParticipantsList(BaseEntityListView):
+    """
+    GET a list of learning paths within one issuer context or
+    POST to create a new learningpath within the issuer context
+    """
+    model = LearningPathParticipant
+    # permission_classes = [
+    #     IsServerAdmin
+    #     | (AuthenticatedWithVerifiedIdentifier & IsEditor & BadgrOAuthTokenHasScope)
+    #     | BadgrOAuthTokenHasEntityScope
+    # ]
+    v1_serializer_class = LearningPathParticipantSerializerV1
+    valid_scopes = ["rw:issuer"]
+
+    def get_queryset(self):
+        learningPathSlug = self.kwargs.get('slug')
+        learningPath = LearningPath.objects.get(entity_id=learningPathSlug)
+        return LearningPathParticipant.objects.filter(learning_path=learningPath)
+    
+    @apispec_list_operation('LearningPath',
+        summary="Get a list of LearningPaths for authenticated user",
+        tags=["LearningPaths"],
+    )
+    def get(self, request, **kwargs):
+        learning_path_id = kwargs.get('slug')
+        logger2.error(learning_path_id)
+        try:
+            learning_path = LearningPath.objects.get(entity_id=learning_path_id)
+        except LearningPath.DoesNotExist:
+            return Response({"error": "Learning Path not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        participants = LearningPathParticipant.objects.filter(learning_path=learning_path)
+        serializer = LearningPathParticipantSerializerV1(participants, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class BadgeClassDetail(BaseEntityDetailView):
     """

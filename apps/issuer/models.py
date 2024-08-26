@@ -1775,6 +1775,16 @@ class LearningPath(BaseVersionedEntity):
                 if tag.name not in new_idx:
                     tag.delete()
 
+    def get_json(self, obi_version=CURRENT_OBI_VERSION,):
+
+        json = OrderedDict({})
+        json.update(OrderedDict(
+            name=self.name,
+            description=self.description,
+            slug=self.entity_id))
+
+        return json                
+
 class LearningPathBadge(cachemodel.CacheModel):
     learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE)
     badge = models.ForeignKey(BadgeClass, on_delete=models.CASCADE)
@@ -1795,3 +1805,8 @@ class LearningPathParticipant(models.Model):
 
     class Meta:
         unique_together = ['user', 'learning_path']
+
+    @property
+    def cached_user(self):
+        from badgeuser.models import BadgeUser
+        return BadgeUser.cached.get(pk=self.user_id)    

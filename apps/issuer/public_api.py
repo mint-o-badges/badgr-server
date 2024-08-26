@@ -707,6 +707,20 @@ class VerifyBadgeAPIEndpoint(JSONComponentView):
 
         return Response(BaseSerializerV2.response_envelope([result], True, 'OK'), status=status.HTTP_200_OK)
 
+class LearningPathJson(JSONComponentView):
+    permission_classes = (permissions.AllowAny,)
+    model = LearningPath
+
+    # def log(self, obj):
+    #     logger.event(badgrlog.BadgeClassRetrievedEvent(obj, self.request))
+
+    def get_json(self, request):
+        json = super(LearningPathJson, self).get_json(request)
+        obi_version = self._get_request_obi_version(request)
+
+        return json
+
+
 class LearningPathList(JSONListView):
     permission_classes = (permissions.AllowAny,)
     model = LearningPath
