@@ -654,7 +654,7 @@ class LearningPathSerializerV1(serializers.Serializer):
 
 
     class Meta:
-        apispec_definition = ('LearningPath', {}) 
+        apispec_definition = ('LearningPath', {})
 
     def to_representation(self, instance):
         representation = super(LearningPathSerializerV1, self).to_representation(instance)
@@ -680,6 +680,7 @@ class LearningPathSerializerV1(serializers.Serializer):
             issuer = Issuer.objects.get(entity_id=issuer_id)
         except Issuer.DoesNotExist:
             raise serializers.ValidationError(f"Issuer with ID '{issuer_id}' does not exist.")
+        
 
         new_learningpath = LearningPath.objects.create(
             name=name,

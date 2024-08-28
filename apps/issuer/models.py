@@ -1781,7 +1781,19 @@ class LearningPath(BaseVersionedEntity):
         json.update(OrderedDict(
             name=self.name,
             description=self.description,
-            slug=self.entity_id))
+            slug=self.entity_id,
+            ))
+
+        json['tags'] = [tag.name for tag in self.tag_items]
+
+        json['badges'] = [
+            {
+                'badge_id': badge.badge.id,
+                'badge_name': badge.badge.name,
+                'order': badge.order
+            }
+            for badge in self.learningpath_badges
+        ]
 
         return json                
 
@@ -1789,6 +1801,7 @@ class LearningPathBadge(cachemodel.CacheModel):
     learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE)
     badge = models.ForeignKey(BadgeClass, on_delete=models.CASCADE)
     order = models.PositiveIntegerField()
+    participationBadge = models.BooleanField(default=False)
 
     def publish(self):
         super(LearningPathBadge, self).publish()
