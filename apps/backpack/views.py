@@ -256,8 +256,6 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
             Story.append(Paragraph(text, text_style))
             Story.append(Spacer(1, 10))
 
-            text_style = ParagraphStyle(name='Text', fontSize=18, leading=16, textColor='#492E98', alignment=TA_LEFT)      
-
             for i in range(num_competencies):
               if i != 0 and i % competenciesPerPage == 0: 
                 Story.append(PageBreak())
@@ -265,14 +263,15 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
                 Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
                 Story.append(Spacer(1, 25))
 
-                text = f"die <strong>{name}</strong> mit dem Badge"
+                text = f"die <strong>{name}</strong> mit dem Badge <strong>{badge_name}</strong> erworben hat:"
+
                 Story.append(Paragraph(text, text_style))
                 Story.append(Spacer(1, 20))
 
 
-                text = " <strong>%s</strong> erworben hat:" % badge_name
-                Story.append(Paragraph(text, text_style)) 
-                Story.append(Spacer(1, 10)) 
+                # text = " <strong>%s</strong> erworben hat:" % badge_name
+                # Story.append(Paragraph(text, text_style)) 
+                # Story.append(Spacer(1, 10)) 
 
               studyload = "%s Minuten" % competencies[i]['studyLoad']
               if competencies[i]['studyLoad'] > 120:
@@ -301,7 +300,7 @@ def addBadgeImage(first_page_content, badgeImage):
     first_page_content.append(Image(badgeImage, width=image_width, height=image_height))
 
 def add_recipient_name(first_page_content, name, issuedOn):
-    first_page_content.append(Spacer(1, 25))
+    first_page_content.append(Spacer(1, 15))
     recipient_style = ParagraphStyle(name='Recipient', fontSize=24, textColor='#492E98', alignment=TA_CENTER)
     
     recipient_name = f"<strong>{name}</strong>"
@@ -322,10 +321,10 @@ def add_title(first_page_content, badge_class_name):
 
     title_style = ParagraphStyle(name='Title', fontSize=24, textColor='#492E98', leading=30, alignment=TA_CENTER)
     first_page_content.append(Paragraph(f"<strong>{badge_class_name}</strong>", title_style))
-    if(len(badge_class_name) > 30):
-        first_page_content.append(Spacer(1, 15))
-    else:
-        first_page_content.append(Spacer(1, 35))
+    # if(len(badge_class_name) > 30):
+    first_page_content.append(Spacer(1, 15))
+    # else:
+    #     first_page_content.append(Spacer(1, 35))
 
 def truncate_text(text, max_words=70):
     words = text.split()
@@ -338,6 +337,12 @@ def add_description(first_page_content, description):
     description_style = ParagraphStyle(name='Description', fontSize=11, leading=16.5, alignment=TA_CENTER)
     first_page_content.append(Paragraph(description, description_style))
     first_page_content.append(Spacer(1, 10))
+
+def add_narrative(first_page_content, narrative):
+    if narrative is not None:
+        narrative_style = ParagraphStyle(name='Narrative', fontSize=11, leading=16.5, alignment=TA_CENTER)
+        first_page_content.append(Paragraph(narrative, narrative_style))
+        first_page_content.append(Spacer(1, 10))    
 
 # def add_issuedBy(first_page_content, issued_by, issuerImage):
 #     issued_by_style = ParagraphStyle(name='Issued_By', fontSize=18, textColor='#492E98', alignment=TA_CENTER)
@@ -356,7 +361,7 @@ def add_issuedBy(first_page_content, issued_by, issuerImage=None):
 
     if image is not None:
         first_page_content.append(image)
-        first_page_content.append(Spacer(1, 10))
+        # first_page_content.append(Spacer(1, 10))
 
     text = f"<strong>- Vergeben von: </strong>" + f"<strong>{issued_by}</strong>  -"
     first_page_content.append(Paragraph(text, issued_by_style))
@@ -428,6 +433,8 @@ def pdf(request, *args, **kwargs):
     add_title(first_page_content, badgeclass.name)  
 
     add_description(first_page_content, badgeclass.description)
+
+    add_narrative(first_page_content, badgeinstance.narrative)
 
     add_issuedBy(first_page_content, badgeinstance.issuer.name, badgeclass.issuer.image)    
 

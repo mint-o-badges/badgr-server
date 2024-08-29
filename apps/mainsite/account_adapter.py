@@ -23,7 +23,7 @@ import badgrlog
 from badgrsocialauth.utils import set_session_badgr_app
 from mainsite.models import BadgrApp, EmailBlacklist, AccessTokenProxy
 from mainsite.utils import OriginSetting, set_url_query_params
-from backpack.views import get_name, add_recipient_name, add_title, add_description, addBadgeImage, add_issuedBy, RoundedRectFlowable, AllPageSetup, PageNumCanvas
+from backpack.views import get_name, add_recipient_name, add_title, add_description, add_narrative, addBadgeImage, add_issuedBy, RoundedRectFlowable, AllPageSetup, PageNumCanvas
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -67,6 +67,8 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
 
         add_description(first_page_content, badgeclass.description)
 
+        add_narrative(first_page_content, badgeinstance.narrative)
+
         add_issuedBy(first_page_content, badgeinstance.issuer.name, badgeclass.issuer.image)    
         
         buffer = BytesIO()
@@ -90,25 +92,24 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                 Story.append(Spacer(1, 50))
 
                 title_style = ParagraphStyle(name='Title', fontSize=24, textColor='#492E98', alignment=TA_LEFT)
-                text_style = ParagraphStyle(name='Text', fontSize=14, textColor='#492E98', alignment=TA_LEFT)
+                text_style = ParagraphStyle(name='Text', fontSize=18, leading=20, textColor='#323232', alignment=TA_LEFT)
+
+
 
                 Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
                 Story.append(Spacer(1, 25))
 
 
                 if name:
-                    text = "die <strong>%s </strong> mit dem Badge" % (name)
+                     text = f"die <strong>{name}</strong> mit dem Badge <strong>{badgeclass.name}</strong> erworben hat:"
                 else: 
-                    text = "die <strong>%s</strong> mit dem Badge" % badgeinstance.recipient_identifier    
+                    text = f"die <strong>%s</strong> mit dem Badge <strong>{badgeclass.name}</strong> erworben hat:" % badgeinstance.recipient_identifier    
                 Story.append(Paragraph(text, text_style))
                 Story.append(Spacer(1, 20))
 
 
-                text = " <strong>%s</strong> erworben hat:" % badgeclass.name
-                Story.append(Paragraph(text, text_style)) 
-                Story.append(Spacer(1, 10)) 
-
-                text_style = ParagraphStyle(name='Text', fontSize=18, leading=16, textColor='#492E98', alignment=TA_LEFT)      
+                text_style = ParagraphStyle(name='Text', fontSize=18, leading=20, textColor='#323232', alignment=TA_LEFT)
+      
 
                 for i in range(num_competencies):
                     if i != 0 and i % competenciesPerPage == 0: 
@@ -118,16 +119,11 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                         Story.append(Spacer(1, 25))
 
                         if name:
-                            text = "die <strong>%s</strong> mit dem Badge" % (name)
+                            text = f"die <strong>%s</strong> mit dem Badge <strong>{badgeclass.name}</strong> erworben hat:" % (name)
                         else: 
-                            text = "die <strong>%s</strong> mit dem Badge" % badgeinstance.recipient_identifier    
+                            text = f"die <strong>%s</strong> mit dem Badge <strong>{badgeclass.name}</strong> erworben hat:" % badgeinstance.recipient_identifier    
                         Story.append(Paragraph(text, text_style))
                         Story.append(Spacer(1, 20))
-
-
-                        text = " <strong>%s</strong> erworben hat:" % badgeclass.name
-                        Story.append(Paragraph(text, text_style)) 
-                        Story.append(Spacer(1, 10)) 
 
                     studyload = "%s Minuten" % competencies[i]['studyLoad']
                     if competencies[i]['studyLoad'] > 120:
