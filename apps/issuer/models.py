@@ -266,7 +266,8 @@ class Issuer(ResizeUploadedImage,
     def save(self, *args, **kwargs):
         original_verified = None
         if not self.pk:
-            self.notify_admins(self)
+            # self.notify_admins(self)
+            print('Issuer created')
         # geocoding if address in model changed
         else:
             original_object = Issuer.objects.get(pk=self.pk)
@@ -1640,6 +1641,20 @@ class BadgeClassTag(cachemodel.CacheModel):
         super(BadgeClassTag, self).delete(*args, **kwargs)
         self.badgeclass.publish()
 
+class LearningPathTag(cachemodel.CacheModel):
+    learningPath = models.ForeignKey('issuer.LearningPath',
+                                   on_delete=models.CASCADE)
+    name = models.CharField(max_length=254, db_index=True)
+
+    def __str__(self):
+        return self.name
+
+    def publish(self):
+        super(LearningPathTag, self).publish()
+
+    def delete(self, *args, **kwargs):
+        super(LearningPathTag, self).delete(*args, **kwargs)
+
 
 class IssuerExtension(BaseOpenBadgeExtension):
     issuer = models.ForeignKey('issuer.Issuer',
@@ -1710,5 +1725,126 @@ class RequestedBadge(BaseVersionedEntity):
     requestedOn = models.DateTimeField(blank=False, null=False, default=timezone.now)
 
     status = models.CharField(max_length=254, blank=False, null=False, default='Pending')
- 
 
+class LearningPath(BaseVersionedEntity, BaseAuditedModel):
+    name = models.CharField(max_length=254, blank=False, null=False)
+    description = models.TextField(blank=True, null=True, default=None)
+    issuer = models.ForeignKey(Issuer, blank=False, null=False, on_delete=models.CASCADE, related_name='learningpaths')
+    participationBadge = models.ForeignKey(BadgeClass, blank=False, null=False, on_delete=models.CASCADE)
+    badgrapp = models.ForeignKey('mainsite.BadgrApp', blank=True, null=True, default=None, on_delete=models.SET_NULL)
+    slug = models.CharField(max_length=255, db_index=True, blank=True, null=True, default=None)
+
+
+
+    @property
+    def public_url(self):
+        return OriginSetting.HTTP + self.get_absolute_url()
+    
+    @property
+    def v1_api_participant_count(self):
+        return LearningPathParticipant.objects.filter(learning_path=self).count()
+
+    @property
+    def cached_badgrapp(self):
+        id = self.badgrapp_id if self.badgrapp_id else None
+        return BadgrApp.objects.get_by_id_or_default(badgrapp_id=id)
+
+    @cachemodel.cached_method(auto_publish=True)
+    def cached_learningpathbadges(self):
+        return self.learningpathbadge_set.all()
+
+    @property
+    def learningpath_badges(self):
+        return self.cached_learningpathbadges()
+    
+    @learningpath_badges.setter
+    def learningpath_badges(self, badges_with_order):
+        self.learningpathbadge_set.all().delete()
+
+        for badge, order in badges_with_order:
+            LearningPathBadge.objects.create(learning_path=self, badge=badge, order=order)
+
+    @cachemodel.cached_method(auto_publish=True)
+    def cached_tags(self):
+        return self.learningpathtag_set.all()
+
+    @property
+    def tag_items(self):
+        return self.cached_tags()
+
+    @tag_items.setter
+    def tag_items(self, value):
+        if value is None:
+            value = []
+        existing_idx = [t.name for t in self.tag_items]
+        new_idx = value
+
+        with transaction.atomic():
+            if not self.pk:
+                self.save()
+
+            # add missing
+            for t in value:
+                if t not in existing_idx:
+                    tag = self.learningpathtag_set.create(name=t)
+
+            # remove old
+            for tag in self.tag_items:
+                if tag.name not in new_idx:
+                    tag.delete()
+
+    def get_json(self, obi_version=CURRENT_OBI_VERSION,):
+
+        json = OrderedDict({})
+        json.update(OrderedDict(
+            name=self.name,
+            description=self.description,
+            slug=self.entity_id,
+            issuer_id= self.issuer.entity_id
+            ))
+        
+        #TODO: fix caching
+        tags = self.learningpathtag_set.all()  
+        badges = self.learningpathbadge_set.all() 
+        
+        json['tags'] = list(t.name for t in tags)
+
+        json['badges'] = [
+            {
+                'badge_id': badge.badge.id,
+                'badge_name': badge.badge.name,
+                'order': badge.order
+            }
+            for badge in badges
+        ]
+
+        return json 
+
+    def get_absolute_url(self):
+        return reverse('learningpath_json', kwargs={'entity_id': self.entity_id})               
+
+class LearningPathBadge(cachemodel.CacheModel):
+    learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE)
+    badge = models.ForeignKey(BadgeClass, on_delete=models.CASCADE)
+    order = models.PositiveIntegerField()
+
+    def publish(self):
+        super(LearningPathBadge, self).publish()
+
+    def delete(self, *args, **kwargs):
+        super(LearningPathBadge, self).delete(*args, **kwargs)
+
+class LearningPathParticipant(models.Model):
+    user = models.ForeignKey('badgeuser.BadgeUser', on_delete=models.CASCADE)
+    learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE)
+    completed_badges = models.IntegerField(default=0)
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ['user', 'learning_path']
+
+    @property
+    def cached_user(self):
+        from badgeuser.models import BadgeUser
+        return BadgeUser.cached.get(pk=self.user_id)    

@@ -13,6 +13,7 @@ from django.db.models import Q
 from django.utils.html import strip_tags
 from django.utils import timezone
 from rest_framework import serializers
+from django.db import transaction
 
 from . import utils
 from badgeuser.serializers_v1 import BadgeUserProfileSerializerV1, BadgeUserIdentifierFieldV1
@@ -23,7 +24,7 @@ from mainsite.serializers import DateTimeWithUtcZAtEndField, HumanReadableBoolea
 from mainsite.utils import OriginSetting, validate_altcha, verifyIssuerAutomatically
 from mainsite.validators import ChoicesValidator, BadgeExtensionValidator, PositiveIntegerValidator, TelephoneValidator
 from .models import Issuer, BadgeClass, IssuerStaff, BadgeInstance, BadgeClassExtension, \
-        RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL, QrCode, RequestedBadge
+        RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL, LearningPath, LearningPathBadge, LearningPathParticipant, QrCode, RequestedBadge
 
 logger = logging.getLogger(__name__)
 
@@ -631,3 +632,125 @@ class RequestedBadgeSerializer(serializers.ModelSerializer):
     class Meta:
         model = RequestedBadge
         fields = '__all__'     
+
+class BadgeOrderSerializer(serializers.Serializer):
+    slug = StripTagsCharField(max_length=255)
+    order = serializers.IntegerField()
+    
+    class Meta:
+        apispec_definition = ('LearningPathBadge', {})   
+
+class LearningPathSerializerV1(serializers.Serializer):
+    created_at = DateTimeWithUtcZAtEndField(read_only=True)
+    updated_at = DateTimeWithUtcZAtEndField(read_only=True)
+    issuer_id = serializers.CharField(max_length=254)
+    participationBadge_id = serializers.CharField(max_length=254)
+    participant_count = serializers.IntegerField(required=False, read_only=True, source='v1_api_participant_count')
+
+
+    name = StripTagsCharField(max_length=255)
+    # image = ValidImageField(required=False)
+    slug = StripTagsCharField(max_length=255, read_only=True, source='entity_id')
+    description = StripTagsCharField(max_length=16384, required=True, convert_null=True)
+
+    tags = serializers.ListField(child=StripTagsCharField(max_length=1024), source='tag_items', required=False)
+    badges = BadgeOrderSerializer(many=True, required=False)
+
+    participationBadge_image = serializers.SerializerMethodField()
+
+
+    class Meta:
+        apispec_definition = ('LearningPath', {})
+
+    def get_participationBadge_image(self, obj):
+        return obj.participationBadge.image.url if obj.participationBadge.image else None    
+
+    def to_representation(self, instance):
+        representation = super(LearningPathSerializerV1, self).to_representation(instance)
+        representation['tags'] = list(instance.tag_items.values_list('name', flat=True))
+        representation['badges'] = [
+            {
+                'badge': BadgeClassSerializerV1(badge.badge).data,
+                'order': badge.order
+            }
+            for badge in instance.learningpathbadge_set.all().order_by('order')
+        ]
+        return representation          
+
+    def create(self, validated_data, **kwargs):
+        
+        name = validated_data.get('name')
+        description = validated_data.get('description')
+        tags = validated_data.get('tag_items')
+        issuer_id = validated_data.get('issuer_id')
+        participationBadge_id = validated_data.get('participationBadge_id')
+        badges_data = validated_data.get('badges') 
+
+        try:
+            issuer = Issuer.objects.get(entity_id=issuer_id)
+        except Issuer.DoesNotExist:
+            raise serializers.ValidationError(f"Issuer with ID '{issuer_id}' does not exist.")
+        
+        try:
+            participationBadge = BadgeClass.objects.get(entity_id=participationBadge_id)
+        except BadgeClass.DoesNotExist:
+            raise serializers.ValidationError(f" with ID '{participationBadge_id}' does not exist.")
+        
+
+        new_learningpath = LearningPath.objects.create(
+            name=name,
+            description=description,
+            issuer=issuer,
+            participationBadge=participationBadge
+        )
+        new_learningpath.tag_items = tags
+
+        badges_with_order = []
+        for badge_data in badges_data:
+            slug = badge_data.get('slug')
+            order = badge_data.get('order')
+
+            try:
+                badge = BadgeClass.objects.get(entity_id=slug)
+            except BadgeClass.DoesNotExist:
+                raise serializers.ValidationError(f"Badge with slug '{slug}' does not exist.")
+
+            badges_with_order.append((badge, order))
+
+        new_learningpath.learningpath_badges = badges_with_order
+        return new_learningpath
+    
+    def update(self, instance, validated_data):
+        instance.name = validated_data.get('name', instance.name)
+        instance.description = validated_data.get('description', instance.description)
+        
+        tags = validated_data.get('tag_items', None)
+        if tags is not None:
+            instance.tag_items = tags
+
+        badges_data = validated_data.get('badges', None)
+        if badges_data is not None:
+            badges_with_order = []
+            for badge_data in badges_data:
+                slug = badge_data.get('slug')
+                order = badge_data.get('order')
+
+                try:
+                    badge = BadgeClass.objects.get(entity_id=slug)
+                except BadgeClass.DoesNotExist:
+                    raise serializers.ValidationError(f"Badge with slug '{slug}' does not exist.")
+
+                badges_with_order.append((badge, order))
+
+            instance.learningpath_badges = badges_with_order
+
+        instance.save()
+
+        return instance
+
+class LearningPathParticipantSerializerV1(serializers.ModelSerializer):
+    user = BadgeUserProfileSerializerV1(source='cached_user')
+    
+    class Meta:
+        model = LearningPathParticipant
+        fields = ['user', 'completed_badges', 'started_at', 'completed_at']
