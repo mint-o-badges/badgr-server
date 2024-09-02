@@ -34,7 +34,6 @@ from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, Learning
 from .models import Issuer, BadgeClass, BadgeInstance, LearningPath
 logger = badgrlog.BadgrLogger()
 
-
 class SlugToEntityIdRedirectMixin(object):
     slugToEntityIdRedirect = False
 

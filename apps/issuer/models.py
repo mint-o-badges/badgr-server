@@ -1726,10 +1726,28 @@ class RequestedBadge(BaseVersionedEntity):
 
     status = models.CharField(max_length=254, blank=False, null=False, default='Pending')
 
-class LearningPath(BaseVersionedEntity):
+class LearningPath(BaseVersionedEntity, BaseAuditedModel):
     name = models.CharField(max_length=254, blank=False, null=False)
     description = models.TextField(blank=True, null=True, default=None)
     issuer = models.ForeignKey(Issuer, blank=False, null=False, on_delete=models.CASCADE, related_name='learningpaths')
+    participationBadge = models.ForeignKey(BadgeClass, blank=False, null=False, on_delete=models.CASCADE)
+    badgrapp = models.ForeignKey('mainsite.BadgrApp', blank=True, null=True, default=None, on_delete=models.SET_NULL)
+    slug = models.CharField(max_length=255, db_index=True, blank=True, null=True, default=None)
+
+
+
+    @property
+    def public_url(self):
+        return OriginSetting.HTTP + self.get_absolute_url()
+    
+    @property
+    def v1_api_participant_count(self):
+        return LearningPathParticipant.objects.filter(learning_path=self).count()
+
+    @property
+    def cached_badgrapp(self):
+        id = self.badgrapp_id if self.badgrapp_id else None
+        return BadgrApp.objects.get_by_id_or_default(badgrapp_id=id)
 
     @cachemodel.cached_method(auto_publish=True)
     def cached_learningpathbadges(self):
@@ -1782,9 +1800,14 @@ class LearningPath(BaseVersionedEntity):
             name=self.name,
             description=self.description,
             slug=self.entity_id,
+            issuer_id= self.issuer.entity_id
             ))
-
-        json['tags'] = [tag.name for tag in self.tag_items]
+        
+        #TODO: fix caching
+        tags = self.learningpathtag_set.all()  
+        badges = self.learningpathbadge_set.all() 
+        
+        json['tags'] = list(t.name for t in tags)
 
         json['badges'] = [
             {
@@ -1792,16 +1815,18 @@ class LearningPath(BaseVersionedEntity):
                 'badge_name': badge.badge.name,
                 'order': badge.order
             }
-            for badge in self.learningpath_badges
+            for badge in badges
         ]
 
-        return json                
+        return json 
+
+    def get_absolute_url(self):
+        return reverse('learningpath_json', kwargs={'entity_id': self.entity_id})               
 
 class LearningPathBadge(cachemodel.CacheModel):
     learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE)
     badge = models.ForeignKey(BadgeClass, on_delete=models.CASCADE)
     order = models.PositiveIntegerField()
-    participationBadge = models.BooleanField(default=False)
 
     def publish(self):
         super(LearningPathBadge, self).publish()

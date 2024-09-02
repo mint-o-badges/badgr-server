@@ -644,6 +644,10 @@ class LearningPathSerializerV1(serializers.Serializer):
     created_at = DateTimeWithUtcZAtEndField(read_only=True)
     updated_at = DateTimeWithUtcZAtEndField(read_only=True)
     issuer_id = serializers.CharField(max_length=254)
+    participationBadge_id = serializers.CharField(max_length=254)
+    participant_count = serializers.IntegerField(required=False, read_only=True, source='v1_api_participant_count')
+
+
     name = StripTagsCharField(max_length=255)
     # image = ValidImageField(required=False)
     slug = StripTagsCharField(max_length=255, read_only=True, source='entity_id')
@@ -652,9 +656,14 @@ class LearningPathSerializerV1(serializers.Serializer):
     tags = serializers.ListField(child=StripTagsCharField(max_length=1024), source='tag_items', required=False)
     badges = BadgeOrderSerializer(many=True, required=False)
 
+    participationBadge_image = serializers.SerializerMethodField()
+
 
     class Meta:
         apispec_definition = ('LearningPath', {})
+
+    def get_participationBadge_image(self, obj):
+        return obj.participationBadge.image.url if obj.participationBadge.image else None    
 
     def to_representation(self, instance):
         representation = super(LearningPathSerializerV1, self).to_representation(instance)
@@ -674,6 +683,7 @@ class LearningPathSerializerV1(serializers.Serializer):
         description = validated_data.get('description')
         tags = validated_data.get('tag_items')
         issuer_id = validated_data.get('issuer_id')
+        participationBadge_id = validated_data.get('participationBadge_id')
         badges_data = validated_data.get('badges') 
 
         try:
@@ -681,11 +691,17 @@ class LearningPathSerializerV1(serializers.Serializer):
         except Issuer.DoesNotExist:
             raise serializers.ValidationError(f"Issuer with ID '{issuer_id}' does not exist.")
         
+        try:
+            participationBadge = BadgeClass.objects.get(entity_id=participationBadge_id)
+        except BadgeClass.DoesNotExist:
+            raise serializers.ValidationError(f" with ID '{participationBadge_id}' does not exist.")
+        
 
         new_learningpath = LearningPath.objects.create(
             name=name,
             description=description,
             issuer=issuer,
+            participationBadge=participationBadge
         )
         new_learningpath.tag_items = tags
 
