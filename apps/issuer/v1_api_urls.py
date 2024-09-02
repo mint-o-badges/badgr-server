@@ -1,7 +1,7 @@
 from django.conf.urls import url
 
-from issuer.api import (IssuerList, IssuerDetail, IssuerBadgeClassList, BadgeClassDetail, BadgeInstanceList,
-                        BadgeInstanceDetail, IssuerBadgeInstanceList, AllBadgeClassesList, BatchAssertionsIssue,
+from issuer.api import (AllLearningPathList, IssuerList, IssuerDetail, IssuerBadgeClassList, BadgeClassDetail, BadgeInstanceList,
+                        BadgeInstanceDetail, IssuerBadgeInstanceList, AllBadgeClassesList, BatchAssertionsIssue, LearningPathDetail, LearningPathList, LearningPathParticipantsList,
                         QRCodeDetail)
 from issuer.api_v1 import FindBadgeClassDetail, IssuerStaffList
 
@@ -31,4 +31,16 @@ urlpatterns = [
     url(r'^issuers/(?P<slug>[^/]+)/assertions$', IssuerBadgeInstanceList.as_view(), name='v1_api_issuer_instance_list'),
     url(r'^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/assertions/(?P<slug>[^/]+)$',
         BadgeInstanceDetail.as_view(), name='v1_api_badgeinstance_detail'),
+
+    url(r'^issuers/(?P<issuerSlug>[^/]+)/learningpath$',
+        LearningPathList.as_view(), name='v1_api_learningpath_list'),
+    url(r'^issuers/(?P<issuerSlug>[^/]+)/learningpath/(?P<slug>[^/]+)$',
+        LearningPathDetail.as_view(), name='v1_api_learningpath_detail'),
+    url(r'^learningpath/(?P<slug>[^/]+)$',
+        LearningPathDetail.as_view(), name='v1_api_learningpath_detail'),   
+    url(r'^learningpath/(?P<slug>[^/]+)/participants$',
+        LearningPathParticipantsList.as_view(), name='v1_api_learningpath_participant_list'),    
+    url(r'^all-learningpaths$', AllLearningPathList.as_view(), name='v1_api_issuer_all_learningpaths_list'),
+
+
 ]

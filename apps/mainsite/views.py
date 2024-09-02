@@ -38,7 +38,7 @@ from rest_framework.authentication import (
 )
 
 from issuer.tasks import rebake_all_assertions, update_issuedon_all_assertions
-from issuer.models import BadgeClass, QrCode, RequestedBadge
+from issuer.models import BadgeClass, LearningPath, LearningPathParticipant, QrCode, RequestedBadge
 from issuer.serializers_v1 import RequestedBadgeSerializer
 from mainsite.admin_actions import clear_cache
 from mainsite.models import EmailBlacklist, BadgrApp
@@ -55,6 +55,9 @@ from django.http import JsonResponse
 import requests
 from requests_oauthlib import OAuth1
 from issuer.permissions import is_badgeclass_staff
+import logging
+
+logger2 = logging.getLogger(__name__)
 
 
 logger = badgrlog.BadgrLogger()
@@ -260,6 +263,29 @@ def deleteBadgeRequest(req, requestId):
 
     return JsonResponse({"message": "Badge request deleted"}, status=status.HTTP_200_OK)
 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def participateInLearningPath(req, learningPathId):
+    if req.method != "POST":
+        return JsonResponse(
+            {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        lp = LearningPath.objects.get(entity_id=learningPathId)
+
+    except LearningPath.DoesNotExist:
+        return JsonResponse({'error': 'Invalid learningPathId'}, status=400) 
+    
+    logger2.error(req.user)
+    participant = LearningPathParticipant(
+        user = req.user,
+        learning_path =  lp
+    )
+
+    participant.save()
+
+    return JsonResponse({"message": "Participation successfull"}, status=status.HTTP_200_OK)
 
 
 def extractErrorMessage500(response: Response):
