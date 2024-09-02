@@ -1,4 +1,5 @@
 import base64
+from io import BytesIO
 import json
 import time
 import re
@@ -13,6 +14,7 @@ from django.http import (
     HttpResponseServerError,
     HttpResponseNotFound,
     HttpResponseRedirect,
+    HttpResponse
 )
 from django.shortcuts import redirect
 from django.template import loader
@@ -20,6 +22,7 @@ from django.template.exceptions import TemplateDoesNotExist
 from django.utils.decorators import method_decorator
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.generic import FormView, RedirectView
+from apps.backpack.views import AllPageSetup
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.renderers import JSONRenderer
@@ -55,6 +58,13 @@ from django.http import JsonResponse
 import requests
 from requests_oauthlib import OAuth1
 from issuer.permissions import is_badgeclass_staff
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
+import logging
+
+logger2 = logging.getLogger(__name__)
 
 
 logger = badgrlog.BadgrLogger()
@@ -260,7 +270,64 @@ def deleteBadgeRequest(req, requestId):
 
     return JsonResponse({"message": "Badge request deleted"}, status=status.HTTP_200_OK)
 
+def create_page(response, page_content):
+    doc = SimpleDocTemplate(response,pagesize=A4)
+    
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name='Justify', alignment=TA_JUSTIFY))
+    
+    Story = []
+    Story.extend(page_content)
 
+    doc.build(Story, onFirstPage=AllPageSetup)
+
+@api_view(["POST"])
+# @authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
+@permission_classes([AllowAny])
+def downloadQrCode(request, *args, **kwargs):
+    if request.method != "POST":
+        return JsonResponse(
+            {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
+        )
+    badgeSlug = kwargs.get("badgeSlug")
+
+    try: 
+        badge = BadgeClass.objects.get(entity_id=badgeSlug)
+    except BadgeClass.DoesNotExist:
+        return JsonResponse({'error': 'Invalid badgeSlug'}, status=400)
+
+    image_data = request.data.get("image")
+    logger2.error(image_data)
+
+    image_data = image_data.split(",")[1]  # Remove the data URL prefix
+    image_bytes = base64.b64decode(image_data)
+    
+    image_stream = BytesIO(image_bytes)
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = 'inline; filename="qrcode.pdf"'
+    Story = []
+
+    Story.append(Spacer(1, 50))
+    badgeTitle_style = ParagraphStyle(name='BadgeTitle', fontSize=24, textColor='#492E98', alignment=TA_CENTER)
+    
+    image = Image(image_stream, width=100, height=100)  
+    Story.append(image)
+
+
+    badgeTitle = f"<strong>{badge.name}</strong>"
+    Story.append(Paragraph(badgeTitle, badgeTitle_style))
+    Story.append(Spacer(1, 35))
+
+    badgeImage = badge.image
+
+    Story.append(Image(badgeImage, width=40, height=40))    
+
+    create_page(response, Story)
+
+    return response
+    
+    
 
 def extractErrorMessage500(response: Response):
     expression = re.compile("<pre>Error: ([^<]+)<br>")
