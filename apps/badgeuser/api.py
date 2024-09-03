@@ -30,6 +30,8 @@ from django.http import Http404, JsonResponse
 from django.utils import timezone
 from django.views.generic import RedirectView
 from django.conf import settings
+from issuer.models import LearningPath, LearningPathParticipant
+from issuer.serializers_v1 import LearningPathSerializerV1
 from rest_framework import permissions, serializers, status
 from rest_framework.exceptions import ValidationError as RestframeworkValidationError
 from rest_framework.response import Response
@@ -61,7 +63,6 @@ from mainsite.serializers import ApplicationInfoSerializer
 RATE_LIMIT_DELTA = datetime.timedelta(minutes=5)
 
 logger = badgrlog.BadgrLogger()
-
 
 class BadgeUserDetail(BaseEntityDetailView):
     model = BadgeUser
@@ -774,3 +775,39 @@ class BadgeUserResendEmailConfirmation(BaseUserRecoveryView):
         serializer = EmailSerializerV1(email_address, context={'request': request})
         serialized = serializer.data
         return Response(serialized, status=status.HTTP_200_OK)
+
+class LearningPathList(BaseEntityListView): 
+    """
+    GET a list of learning paths for the authenticated user
+    """
+    model = LearningPath
+    permission_classes = permission_classes = (permissions.IsAuthenticated, BadgrOAuthTokenHasScope)
+    valid_scopes = ["rw:profile"]
+    v1_serializer_class = LearningPathSerializerV1
+
+    def get_objects(self, request, **kwargs):
+        participants = LearningPathParticipant.objects.filter(user=request.user)
+        lps = LearningPath.objects.filter(learningpathparticipant__in=participants)
+        return lps
+
+    @apispec_list_operation('LearningPath',
+        summary="Get a list of LearningPaths for authenticated user",
+        tags=["LearningPaths"],
+    )
+    def get(self, request, **kwargs):
+        return super(LearningPathList, self).get(request, **kwargs)
+
+    @apispec_post_operation('LearningPath',
+        summary="Create a new LearningPath",
+        tags=["LearningPaths"],
+        parameters=[
+            {
+                'in': 'query',
+                'name': "num",
+                'type': "string",
+                'description': 'Request pagination of results'
+            },
+        ]
+    )
+    def post(self, request, **kwargs):
+        return super(LearningPathList, self).post(request, **kwargs)

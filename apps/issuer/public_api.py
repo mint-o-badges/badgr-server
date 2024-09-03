@@ -32,6 +32,8 @@ from mainsite.utils import (OriginSetting, set_url_query_params, first_node_matc
                             convert_svg_to_png)
 from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, LearningPathSerializerV1
 from .models import Issuer, BadgeClass, BadgeInstance, LearningPath
+from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, LearningPathSerializerV1
+from .models import Issuer, BadgeClass, BadgeInstance, LearningPath
 logger = badgrlog.BadgrLogger()
 
 class SlugToEntityIdRedirectMixin(object):
@@ -709,13 +711,20 @@ class VerifyBadgeAPIEndpoint(JSONComponentView):
 class LearningPathJson(JSONComponentView):
     permission_classes = (permissions.AllowAny,)
     model = LearningPath
+    serializer_class = LearningPathSerializerV1
 
     # def log(self, obj):
     #     logger.event(badgrlog.BadgeClassRetrievedEvent(obj, self.request))
 
     def get_json(self, request):
+        
         json = super(LearningPathJson, self).get_json(request)
+
         obi_version = self._get_request_obi_version(request)
+
+        json.update({
+            'participationBadge_id': self.current_object.participationBadge.entity_id,
+        })
 
         return json
 
