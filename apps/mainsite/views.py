@@ -277,15 +277,18 @@ def participateInLearningPath(req, learningPathId):
     except LearningPath.DoesNotExist:
         return JsonResponse({'error': 'Invalid learningPathId'}, status=400) 
     
-    logger2.error(req.user)
-    participant = LearningPathParticipant(
-        user = req.user,
-        learning_path =  lp
+    participant, created = LearningPathParticipant.objects.get_or_create(
+        user=req.user,
+        learning_path=lp
     )
-
-    participant.save()
-
-    return JsonResponse({"message": "Participation successfull"}, status=status.HTTP_200_OK)
+    
+    if not created:
+        # User is already a participant, so they want to quit participating
+        participant.delete()
+        return JsonResponse({'message': 'Successfully removed participation'}, status=200)
+    else:
+        participant.save()
+        return JsonResponse({'message': 'Successfully joined the learning path'}, status=200)
 
 
 def extractErrorMessage500(response: Response):
