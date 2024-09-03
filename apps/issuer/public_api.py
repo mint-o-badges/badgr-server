@@ -709,13 +709,20 @@ class VerifyBadgeAPIEndpoint(JSONComponentView):
 class LearningPathJson(JSONComponentView):
     permission_classes = (permissions.AllowAny,)
     model = LearningPath
+    serializer_class = LearningPathSerializerV1
 
     # def log(self, obj):
     #     logger.event(badgrlog.BadgeClassRetrievedEvent(obj, self.request))
 
     def get_json(self, request):
+        
         json = super(LearningPathJson, self).get_json(request)
+
         obi_version = self._get_request_obi_version(request)
+
+        json.update({
+            'participationBadge_id': self.current_object.participationBadge.entity_id,
+        })
 
         return json
 
