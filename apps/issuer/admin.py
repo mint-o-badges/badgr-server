@@ -8,7 +8,8 @@ from django.utils.safestring import mark_safe
 from mainsite.admin import badgr_admin
 
 from .models import Issuer, BadgeClass, BadgeInstance, BadgeInstanceEvidence, BadgeClassAlignment, BadgeClassTag, \
-    BadgeClassExtension, IssuerExtension, BadgeInstanceExtension, LearningPath, LearningPathBadge, LearningPathParticipant, LearningPathTag, RequestedBadge, QrCode
+    BadgeClassExtension, IssuerExtension, BadgeInstanceExtension, LearningPath, LearningPathBadge, LearningPathParticipant, \
+         LearningPathTag, RequestedBadge, QrCode, RequestedLearningPath
 from .tasks import resend_notifications
 
 
@@ -267,6 +268,12 @@ class QrCodeAdmin(ModelAdmin):
     list_display = ('title', 'createdBy', 'valid_from', 'expires_at')
 
 badgr_admin.register(QrCode, QrCodeAdmin)
+
+class ReqeustedLearningPathAdmin(ModelAdmin):
+    list_display = ('learningpath', 'user', 'requestedOn', 'status')
+    readonly_fields = ('requestedOn', 'status')
+
+badgr_admin.register(RequestedLearningPath, ReqeustedLearningPathAdmin)
 
 class LearningPathTagInline(TabularInline):
     model = LearningPathTag

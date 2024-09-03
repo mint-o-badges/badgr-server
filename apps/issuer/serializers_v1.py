@@ -24,7 +24,7 @@ from mainsite.serializers import DateTimeWithUtcZAtEndField, HumanReadableBoolea
 from mainsite.utils import OriginSetting, validate_altcha, verifyIssuerAutomatically
 from mainsite.validators import ChoicesValidator, BadgeExtensionValidator, PositiveIntegerValidator, TelephoneValidator
 from .models import Issuer, BadgeClass, IssuerStaff, BadgeInstance, BadgeClassExtension, \
-        RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL, LearningPath, LearningPathBadge, LearningPathParticipant, QrCode, RequestedBadge
+        RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL, LearningPath, LearningPathBadge, LearningPathParticipant, QrCode, RequestedBadge, RequestedLearningPath
 
 logger = logging.getLogger(__name__)
 
@@ -631,7 +631,13 @@ class QrCodeSerializerV1(serializers.Serializer):
 class RequestedBadgeSerializer(serializers.ModelSerializer):
     class Meta:
         model = RequestedBadge
-        fields = '__all__'     
+        fields = '__all__' 
+
+
+class RequestedLearningPathSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RequestedLearningPath
+        fields = '__all__' 
 
 class BadgeOrderSerializer(serializers.Serializer):
     slug = StripTagsCharField(max_length=255)

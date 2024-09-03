@@ -1848,3 +1848,13 @@ class LearningPathParticipant(models.Model):
     def cached_user(self):
         from badgeuser.models import BadgeUser
         return BadgeUser.cached.get(pk=self.user_id)    
+    
+class RequestedLearningPath(BaseVersionedEntity):
+
+    learningpath = models.ForeignKey(LearningPath, blank=False, null=False,
+                                   on_delete=models.CASCADE, related_name='requested_learningpath')
+    user = models.ForeignKey('badgeuser.BadgeUser', blank=False, null=False, on_delete=models.CASCADE,)
+
+    requestedOn = models.DateTimeField(blank=False, null=False, default=timezone.now)
+
+    status = models.CharField(max_length=254, blank=False, null=False, default='Pending')    
