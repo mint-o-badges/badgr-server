@@ -706,3 +706,5 @@ class VerifyBadgeAPIEndpoint(JSONComponentView):
         result = self.get_object(entity_id).get_json(expand_badgeclass=True, expand_issuer=True)
 
         return Response(BaseSerializerV2.response_envelope([result], True, 'OK'), status=status.HTTP_200_OK)
+
+

@@ -31,6 +31,7 @@ from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPDF
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
+from mainsite.utils import get_name
 from operator import attrgetter
 import os
 
@@ -355,25 +356,12 @@ def add_issuedBy(first_page_content, issued_by, issuerImage=None):
 
     text = f"<strong>- Vergeben von: </strong>" + f"<strong>{issued_by}</strong>  -"
     first_page_content.append(Paragraph(text, issued_by_style))
-    
+    first_page_content.append(Spacer(1, 15))
 
-def get_name(badgeinstance: BadgeInstance):
-    """Evaluates the name to be displayed for the recipient of the badge.
-    
-    This is either the name that was specified in the award process of the badge
-    (which is by now mandatory) or, if none was specified, the full profile of the
-    recipient. If no name was specified and the profile can't be found, a
-    `BadgeUser.DoesNotExist` exception is thrown.
-    """
-    recipientProfile = badgeinstance.extension_items.get('extensions:recipientProfile', {})
-    name = recipientProfile.get('name', None)
-    if name:
-        return name
-    
-    badgeuser = BadgeUser.objects.get(email=badgeinstance.recipient_identifier)  
-    first_name = badgeuser.first_name.capitalize()
-    last_name = badgeuser.last_name.capitalize()
-    return f"{first_name} {last_name}"
+def add_issuerImage(first_page_content, issuerImage): 
+    image_width = 60
+    image_height = 60
+    first_page_content.append(Image(issuerImage, width=image_width, height=image_height))
 
 @api_view(["GET"])
 @authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
