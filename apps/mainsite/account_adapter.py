@@ -89,15 +89,15 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                 competenciesPerPage = 9
 
                 Story.append(PageBreak())
-                Story.append(Spacer(1, 50))
+                Story.append(Spacer(1, 35))
 
-                title_style = ParagraphStyle(name='Title', fontSize=24, textColor='#492E98', alignment=TA_LEFT)
+                title_style = ParagraphStyle(name='Title', fontSize=20, textColor='#492E98', alignment=TA_LEFT)
                 text_style = ParagraphStyle(name='Text', fontSize=18, leading=20, textColor='#323232', alignment=TA_LEFT)
 
 
 
                 Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
-                Story.append(Spacer(1, 25))
+                Story.append(Spacer(1, 15))
 
 
                 if name:
@@ -114,9 +114,9 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                 for i in range(num_competencies):
                     if i != 0 and i % competenciesPerPage == 0: 
                         Story.append(PageBreak())
-                        Story.append(Spacer(1, 50))
+                        Story.append(Spacer(1, 35))
                         Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
-                        Story.append(Spacer(1, 25))
+                        Story.append(Spacer(1, 15))
 
                         if name:
                             text = f"die <strong>%s</strong> mit dem Badge <strong>{badgeclass.name}</strong> erworben hat:" % (name)

@@ -244,13 +244,13 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
             competenciesPerPage = 9
 
             Story.append(PageBreak())
-            Story.append(Spacer(1, 50))
+            Story.append(Spacer(1, 35))
 
-            title_style = ParagraphStyle(name='Title', fontSize=24, textColor='#492E98', alignment=TA_LEFT)
+            title_style = ParagraphStyle(name='Title', fontSize=20, textColor='#492E98', alignment=TA_LEFT)
             text_style = ParagraphStyle(name='Text', fontSize=18, leading=20, textColor='#323232', alignment=TA_LEFT)
 
             Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
-            Story.append(Spacer(1, 25))
+            Story.append(Spacer(1, 15))
             
             text = f"die <strong>{name}</strong> mit dem Badge <strong>{badge_name}</strong> erworben hat:"
             Story.append(Paragraph(text, text_style))
@@ -259,19 +259,14 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
             for i in range(num_competencies):
               if i != 0 and i % competenciesPerPage == 0: 
                 Story.append(PageBreak())
-                Story.append(Spacer(1, 50))
+                Story.append(Spacer(1, 35))
                 Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
-                Story.append(Spacer(1, 25))
+                Story.append(Spacer(1, 15))
 
                 text = f"die <strong>{name}</strong> mit dem Badge <strong>{badge_name}</strong> erworben hat:"
 
                 Story.append(Paragraph(text, text_style))
                 Story.append(Spacer(1, 20))
-
-
-                # text = " <strong>%s</strong> erworben hat:" % badge_name
-                # Story.append(Paragraph(text, text_style)) 
-                # Story.append(Spacer(1, 10)) 
 
               studyload = "%s Minuten" % competencies[i]['studyLoad']
               if competencies[i]['studyLoad'] > 120:
@@ -305,7 +300,7 @@ def add_recipient_name(first_page_content, name, issuedOn):
     
     recipient_name = f"<strong>{name}</strong>"
     first_page_content.append(Paragraph(recipient_name, recipient_style))
-    first_page_content.append(Spacer(1, 35))
+    first_page_content.append(Spacer(1, 25))
 
     text_style = ParagraphStyle(name='Text_Style', fontSize=18, alignment=TA_CENTER)
     
@@ -315,7 +310,7 @@ def add_recipient_name(first_page_content, name, issuedOn):
 
     text = "den folgenden Badge erworben:"
     first_page_content.append(Paragraph(text, text_style))
-    first_page_content.append(Spacer(1, 35))
+    first_page_content.append(Spacer(1, 25))
 
 def add_title(first_page_content, badge_class_name):
 
@@ -342,13 +337,9 @@ def add_narrative(first_page_content, narrative):
     if narrative is not None:
         narrative_style = ParagraphStyle(name='Narrative', fontSize=11, leading=16.5, alignment=TA_CENTER)
         first_page_content.append(Paragraph(narrative, narrative_style))
-        first_page_content.append(Spacer(1, 10))    
-
-# def add_issuedBy(first_page_content, issued_by, issuerImage):
-#     issued_by_style = ParagraphStyle(name='Issued_By', fontSize=18, textColor='#492E98', alignment=TA_CENTER)
-#     text = "- <strong>Vergeben von:</strong> " + Image(issuerImage, width=40, height=40) + f"<strong>{issued_by}</strong> -"
-#     first_page_content.append(Paragraph(text, issued_by_style))
-#     first_page_content.append(Spacer(1, 15))
+        first_page_content.append(Spacer(1, 10)) 
+    else: 
+        first_page_content.append(Spacer(1, 35))       
 
 def add_issuedBy(first_page_content, issued_by, issuerImage=None):
     issued_by_style = ParagraphStyle(name='Issued_By', fontSize=11, textColor='#492E98', alignment=TA_CENTER, leftIndent=-35, rightIndent=-35)
@@ -361,7 +352,6 @@ def add_issuedBy(first_page_content, issued_by, issuerImage=None):
 
     if image is not None:
         first_page_content.append(image)
-        # first_page_content.append(Spacer(1, 10))
 
     text = f"<strong>- Vergeben von: </strong>" + f"<strong>{issued_by}</strong>  -"
     first_page_content.append(Paragraph(text, issued_by_style))
