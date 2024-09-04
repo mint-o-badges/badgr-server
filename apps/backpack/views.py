@@ -100,7 +100,7 @@ class RoundedRectFlowable(Flowable):
             last_line_width = self.canv.stringWidth(text_lines[-1])
             self.canv.setFillColor('blue')
             self.canv.drawString(self.x + 10 + last_line_width, y_text_position + 15, " [E]")
-            self.canv.linkURL(f"http://data.europa.eu/{self.esco}", (self.x, self.y, self.x + self.width, self.y + self.height), relative=1, thickness=0)
+            self.canv.linkURL(f"http://data.europa.eu/{self.esco}", (self.x, self.y, self.width, self.height), relative=1, thickness=0)
 
         
         self.canv.setFillColor('#492E98')
