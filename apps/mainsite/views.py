@@ -337,8 +337,7 @@ def create_page(response, page_content, badgeImage):
     doc.build(Story, onFirstPage=lambda canvas, doc: PageSetup(canvas, doc, badgeImage))
 
 @api_view(["POST"])
-# @authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def downloadQrCode(request, *args, **kwargs):
     if request.method != "POST":
         return JsonResponse(
@@ -350,6 +349,9 @@ def downloadQrCode(request, *args, **kwargs):
         badge = BadgeClass.objects.get(entity_id=badgeSlug)
     except BadgeClass.DoesNotExist:
         return JsonResponse({'error': 'Invalid badgeSlug'}, status=400)
+    
+    if (not is_badgeclass_staff(request.user, badge)):
+            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
 
     image_data = request.data.get("image")
 
