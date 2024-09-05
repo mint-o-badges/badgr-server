@@ -55,9 +55,6 @@ from django.http import JsonResponse
 import requests
 from requests_oauthlib import OAuth1
 from issuer.permissions import is_badgeclass_staff
-import logging
-
-logger2 = logging.getLogger(__name__)
 
 
 logger = badgrlog.BadgrLogger()
@@ -308,7 +305,7 @@ def participateInLearningPath(req, learningPathId):
     
     participant, created = LearningPathParticipant.objects.get_or_create(
         user=req.user,
-        learning_path=lp
+        learning_path=lp,
     )
     
     if not created:
@@ -316,6 +313,12 @@ def participateInLearningPath(req, learningPathId):
         participant.delete()
         return JsonResponse({'message': 'Successfully removed participation'}, status=200)
     else:
+        user_badgeclasses = {badge.badgeclass for badge in req.user.cached_badgeinstances()}
+        learningPath_badgeclasses = {badge.badge for badge in lp.learningpath_badges.all()}
+    
+        completed_badges = len(user_badgeclasses.intersection(learningPath_badgeclasses))
+
+        participant.completed_badges = completed_badges
         participant.save()
         return JsonResponse({'message': 'Successfully joined the learning path'}, status=200)
 

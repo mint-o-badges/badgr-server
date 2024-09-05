@@ -724,6 +724,8 @@ class LearningPathJson(JSONComponentView):
 
         json.update({
             'participationBadge_id': self.current_object.participationBadge.entity_id,
+            'issuer_name': self.current_object.issuer.name,
+            'badge_image': self.current_object.participationBadge.image.url,
         })
 
         return json
