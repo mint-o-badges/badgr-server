@@ -61,14 +61,9 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table
-import logging
 from reportlab.lib.colors import PCMYKColor
 import math
 from reportlab.lib.utils import ImageReader
-
-
-logger2 = logging.getLogger(__name__)
-
 
 logger = badgrlog.BadgrLogger()
 
@@ -357,7 +352,6 @@ def downloadQrCode(request, *args, **kwargs):
         return JsonResponse({'error': 'Invalid badgeSlug'}, status=400)
 
     image_data = request.data.get("image")
-    logger2.error(image_data)
 
     image_data = image_data.split(",")[1]  # Remove the data URL prefix
     image_bytes = base64.b64decode(image_data)
