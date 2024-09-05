@@ -22,7 +22,6 @@ from django.template.exceptions import TemplateDoesNotExist
 from django.utils.decorators import method_decorator
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.generic import FormView, RedirectView
-from apps.backpack.views import AllPageSetup
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.renderers import JSONRenderer
@@ -61,8 +60,12 @@ from issuer.permissions import is_badgeclass_staff
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table
 import logging
+from reportlab.lib.colors import PCMYKColor
+import math
+from reportlab.lib.utils import ImageReader
+
 
 logger2 = logging.getLogger(__name__)
 
@@ -249,6 +252,63 @@ def requestBadge(req, qrCodeId):
 
         return JsonResponse({"message": "Badge request received"}, status=status.HTTP_200_OK)
 
+def PageSetup(canvas, doc, badgeImage):
+
+    canvas.saveState()
+
+    # Sunburst Background
+    color = PCMYKColor(0, 0, 0, 5)  
+    num_rays = 100
+    ray_angle = 2 * math.pi / num_rays
+    sweep_angle = ray_angle * 2
+
+    page_width, page_height = A4
+    mid_x = page_width / 2
+    mid_y = page_height / 2
+    radius = math.sqrt(mid_x**2 + mid_y**2)
+    offset_y = 20
+    mid_y_offset = mid_y - offset_y
+
+    for i in range(num_rays):
+        start_angle = sweep_angle * i
+        end_angle = start_angle + ray_angle
+        start_x = mid_x + radius * math.cos(start_angle)
+        start_y = mid_y_offset + radius * math.sin(start_angle)
+        end_x = mid_x + radius * math.cos(end_angle)
+        end_y = mid_y_offset + radius * math.sin(end_angle)
+        path = canvas.beginPath()
+        path.moveTo(mid_x, mid_y_offset)
+        path.arcTo(
+            start_x,
+            start_y,
+            end_x,
+            end_y,
+            start_angle * 180 / math.pi,
+        )
+        canvas.setFillColor(color)
+        canvas.setStrokeColor(color)
+        canvas.drawPath(path, fill=1, stroke=1)
+
+    # Header
+    logo = ImageReader("{}images/Logo-Oeb.png".format(settings.STATIC_URL))
+    canvas.drawImage(logo, 20, 675, width=150, height=150, mask="auto", preserveAspectRatio=True)
+    page_width = canvas._pagesize[0]
+    canvas.setStrokeColor("#492E98")
+    canvas.line(page_width / 2 - 75, 750, page_width / 2 + 250, 750)
+    
+    badge = ImageReader(badgeImage)
+    canvas.drawImage(badge, 400, 250, width=100, height=100, mask="auto", preserveAspectRatio=True)
+
+    arrow = ImageReader("{}images/arrow-qrcode-download.png".format(settings.STATIC_URL))
+    canvas.drawImage(arrow, 100, 300, width=80, height=80, mask="auto", preserveAspectRatio=True)
+    # TODO: change Font-family to rubik
+    canvas.setFont("Helvetica-Bold", 16)
+    canvas.setFillColor("#492E98")
+    canvas.drawString(100, 275, "Hol dir jetzt")
+    canvas.drawString(100, 250, "deinen Badge!")
+
+    canvas.restoreState()
+
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def deleteBadgeRequest(req, requestId):
@@ -270,7 +330,7 @@ def deleteBadgeRequest(req, requestId):
 
     return JsonResponse({"message": "Badge request deleted"}, status=status.HTTP_200_OK)
 
-def create_page(response, page_content):
+def create_page(response, page_content, badgeImage):
     doc = SimpleDocTemplate(response,pagesize=A4)
     
     styles = getSampleStyleSheet()
@@ -279,7 +339,7 @@ def create_page(response, page_content):
     Story = []
     Story.extend(page_content)
 
-    doc.build(Story, onFirstPage=AllPageSetup)
+    doc.build(Story, onFirstPage=lambda canvas, doc: PageSetup(canvas, doc, badgeImage))
 
 @api_view(["POST"])
 # @authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
@@ -308,22 +368,42 @@ def downloadQrCode(request, *args, **kwargs):
     response["Content-Disposition"] = 'inline; filename="qrcode.pdf"'
     Story = []
 
-    Story.append(Spacer(1, 50))
-    badgeTitle_style = ParagraphStyle(name='BadgeTitle', fontSize=24, textColor='#492E98', alignment=TA_CENTER)
+    Story.append(Spacer(1, 100))
     
-    image = Image(image_stream, width=100, height=100)  
-    Story.append(image)
+    badgeTitle_style = ParagraphStyle(name='BadgeTitle', fontSize=24, leading=30, textColor='#492E98', alignment=TA_CENTER)
 
 
     badgeTitle = f"<strong>{badge.name}</strong>"
     Story.append(Paragraph(badgeTitle, badgeTitle_style))
     Story.append(Spacer(1, 35))
 
+    image = Image(image_stream, width=250, height=250) 
+    table_data = [[image]]
+    table = Table(table_data, colWidths=250, rowHeights=250, cornerRadii=[15,15,15,15])
+
+    table.setStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),  
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'), 
+        ('GRID', (0, 0), (-1, -1), 3, '#492E98'), 
+        ('TOPPADDING', (0, 0), (-1, -1), 0),  # Remove paddings
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),  
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),  
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0)  
+    ])
+    Story.append(table)
+    Story.append(Spacer(1, 125))
+
     badgeImage = badge.image
 
-    Story.append(Image(badgeImage, width=40, height=40))    
+    issuerImage = badge.issuer.image
+    Story.append(Image(issuerImage, width=60, height=60))
+    Story.append(Spacer(1, 15))
 
-    create_page(response, Story)
+    issued_by_style = ParagraphStyle(name='Issued_By', fontSize=18, textColor='#492E98', alignment=TA_CENTER)
+    text = f"<strong>- Vergeben von: {badge.issuer.name}</strong> -"
+    Story.append(Paragraph(text, issued_by_style))   
+
+    create_page(response, Story, badgeImage)
 
     return response
     
