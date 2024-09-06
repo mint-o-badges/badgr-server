@@ -7,7 +7,7 @@ from django.views.generic import RedirectView
 from django.core.exceptions import PermissionDenied
 
 from backpack.models import BackpackCollection
-from issuer.models import BadgeInstance, BadgeClass
+from issuer.models import BadgeInstance, BadgeClass, Issuer, IssuerStaff
 from badgeuser.models import BadgeUser
 
 from rest_framework.decorators import (
@@ -24,11 +24,22 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import PCMYKColor
 from reportlab.lib.utils import ImageReader
-from reportlab.platypus import SimpleDocTemplate, Flowable, Table, Paragraph, Spacer, Image, PageBreak
+from reportlab.platypus import SimpleDocTemplate, Flowable, Paragraph, Spacer, Image, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPDF
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
+from mainsite.utils import get_name
+from operator import attrgetter
+import os
+
+font_path_rubik_regular = os.path.join(os.path.dirname(__file__), 'Rubik-Regular.ttf')
+font_path_rubik_bold = os.path.join(os.path.dirname(__file__), 'Rubik-Bold.ttf')
+
+pdfmetrics.registerFont(TTFont('Rubik-Regular', font_path_rubik_regular))
+pdfmetrics.registerFont(TTFont('Rubik-Bold', font_path_rubik_bold))
 
 class RoundedRectFlowable(Flowable):
     def __init__(self, x, y, width, height, radius, text, strokecolor, fillcolor, studyload, esco = ''):
@@ -44,6 +55,24 @@ class RoundedRectFlowable(Flowable):
         self.studyload = studyload
         self.esco = esco
 
+    def split_text(self, text, max_width):
+        words = text.split()
+        lines = []
+        current_line = ""
+
+        for word in words:
+            test_line = f"{current_line} {word}".strip()
+            if self.canv.stringWidth(test_line, 'Rubik-Bold', 10) <= max_width:
+                current_line = test_line
+            else:
+                if current_line:
+                    lines.append(current_line)
+                current_line = word
+
+        lines.append(current_line)
+        return lines    
+    
+
     def draw(self):
         self.canv.setFillColor(self.fillcolor)
         self.canv.setStrokeColor(self.strokecolor)
@@ -51,21 +80,31 @@ class RoundedRectFlowable(Flowable):
                              stroke=1, fill=1)
         
         self.canv.setFillColor('#323232')
-        self.canv.setFont('Helvetica-Bold', 14)
-
         text_width = self.canv.stringWidth(self.text)
-        name = self.text
-        self.canv.drawString(self.x + 10, self.y + 15, name)
+        self.canv.setFont('Rubik-Bold', 12)
+        if text_width > self.width - 175:
+            available_text_width = self.width - 150
+            y_text_position = self.y + 25
+        else:
+            available_text_width = self.width - 175
+            y_text_position = self.y + 15
+
+        text_lines = self.split_text(self.text, available_text_width)
+
+        for line in text_lines:
+            self.canv.drawString(self.x + 10, y_text_position, line)
+            y_text_position -= 15 
         
         self.canv.setFillColor('blue')
         if self.esco:
-            self.canv.drawString(self.x + 10 + text_width, self.y + 15, " [E]")
-            # the whole rectangle links to esco, instead of just the "[E]"
+            last_line_width = self.canv.stringWidth(text_lines[-1])
+            self.canv.setFillColor('blue')
+            self.canv.drawString(self.x + 10 + last_line_width, y_text_position + 15, " [E]")
             self.canv.linkURL(f"http://data.europa.eu/{self.esco}", (self.x, self.y, self.width, self.height), relative=1, thickness=0)
 
         
         self.canv.setFillColor('#492E98')
-        self.canv.setFont('Helvetica', 14)
+        self.canv.setFont('Rubik-Regular', 14)
         studyload_width = self.canv.stringWidth(self.studyload)
         self.canv.drawString(self.x + 450 -(studyload_width + 10), self.y + 15, self.studyload)
 
@@ -119,14 +158,18 @@ def AllPageSetup(canvas, doc):
         )
         canvas.setFillColor(color)
         canvas.setStrokeColor(color)
+        canvas.setFillAlpha(0.5) # decrease opacity of rays
+        canvas.setStrokeAlpha(0.5)
         canvas.drawPath(path, fill=1, stroke=1)
 
     # Header
+    canvas.setFillAlpha(1)
+    canvas.setStrokeAlpha(1)
     logo = ImageReader("{}images/Logo-Oeb.png".format(settings.STATIC_URL))
-    canvas.drawImage(logo, 20, 675, width=150, height=150, mask="auto", preserveAspectRatio=True)
+    canvas.drawImage(logo, 20, 700, width=150, height=150, mask="auto", preserveAspectRatio=True)
     page_width = canvas._pagesize[0]
     canvas.setStrokeColor("#492E98")
-    canvas.line(page_width / 2 - 100, 750, page_width / 2 + 250, 750)
+    canvas.line(page_width / 2 - 120, 775, page_width / 2 + 250, 775)
 
     canvas.restoreState()
 
@@ -172,12 +215,15 @@ class PageNumCanvas(canvas.Canvas):
         page = "%s / %s" % (self._pageNumber, page_count)
         self.setStrokeColor("#492E98")
         page_width = self._pagesize[0]
-        self.line(10, 10, page_width / 2 - 20, 10)
-        self.line(page_width  / 2 + 20, 10, page_width - 10, 10)
-        self.setFont("Helvetica", 9)
-        self.drawCentredString(page_width / 2, 10, page)
+        self.line(10, 25, page_width / 2 - 20, 25)
+        self.line(page_width  / 2 + 20, 25, page_width - 10, 25)
+        self.setFont("Rubik-Regular", 14)
+        self.drawCentredString(page_width / 2, 20, page)
+        if self._pageNumber == page_count:
+            self.setLineWidth(3)
+            self.line(10, 10, page_width - 10, 10)
 
-def createMultiPage(response, first_page_content, competencies, first_name, last_name, badge_name):
+def create_multi_page(response, first_page_content, competencies, name, badge_name):
     """
     Create a multi-page pdf document
     """
@@ -196,53 +242,48 @@ def createMultiPage(response, first_page_content, competencies, first_name, last
 
     if num_competencies > 0:
             esco = any(c['escoID'] for c in competencies)
-            competenciesPerPage = 5
+            competenciesPerPage = 9
 
             Story.append(PageBreak())
-            Story.append(Spacer(1, 75))
+            Story.append(Spacer(1, 35))
 
-            title_style = ParagraphStyle(name='Title', fontSize=24, textColor='#492E98', alignment=TA_LEFT)
+            title_style = ParagraphStyle(name='Title', fontSize=20, textColor='#492E98', alignment=TA_LEFT)
             text_style = ParagraphStyle(name='Text', fontSize=18, leading=20, textColor='#323232', alignment=TA_LEFT)
 
             Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
-            Story.append(Spacer(1, 25))
+            Story.append(Spacer(1, 15))
             
-            text = "die <strong>%s %s</strong> mit dem Badge <strong>%s</strong> erworben hat:" % (first_name, last_name, badge_name) 
+            text = f"die <strong>{name}</strong> mit dem Badge <strong>{badge_name}</strong> erworben hat:"
             Story.append(Paragraph(text, text_style))
-            Story.append(Spacer(1, 20))
-
-            text_style = ParagraphStyle(name='Text', fontSize=18, leading=16, textColor='#492E98', alignment=TA_LEFT)      
+            Story.append(Spacer(1, 10))
 
             for i in range(num_competencies):
               if i != 0 and i % competenciesPerPage == 0: 
                 Story.append(PageBreak())
-                Story.append(Spacer(1, 75))
+                Story.append(Spacer(1, 35))
                 Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
-                Story.append(Spacer(1, 25))
+                Story.append(Spacer(1, 15))
 
-                text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
+                text = f"die <strong>{name}</strong> mit dem Badge <strong>{badge_name}</strong> erworben hat:"
+
                 Story.append(Paragraph(text, text_style))
                 Story.append(Spacer(1, 20))
-
-
-                text = " <strong>%s</strong> erworben hat:" % badge_name
-                Story.append(Paragraph(text, text_style)) 
-                Story.append(Spacer(1, 20)) 
 
               studyload = "%s Minuten" % competencies[i]['studyLoad']
               if competencies[i]['studyLoad'] > 120:
                   studyLoadInHours = competencies[i]['studyLoad'] / 60
                   studyload = "%s Stunden" % int(studyLoadInHours)
               competency_name = competencies[i]['name']
-              competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name
+              competency = competency_name
+            #   competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name
               rounded_rect = RoundedRectFlowable(0, -10, 450, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload= studyload, esco=competencies[i]['escoID'])    
               Story.append(rounded_rect)
-              Story.append(Spacer(1, 20))   
+              Story.append(Spacer(1, 10))   
                  
             if esco: 
-                Story.append(Spacer(1, 100))
-                text_style = ParagraphStyle(name='Text_Style', fontSize=12, leading=20, alignment=TA_LEFT)
-                link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations) <br/>' \
+                Story.append(Spacer(1, 10))
+                text_style = ParagraphStyle(name='Text_Style', fontSize=12, leading=15.6, alignment=TA_LEFT, leftIndent=-35, rightIndent=-35)
+                link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations). <br/>' \
                     'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
                 paragraph_with_link = Paragraph(link_text, text_style)
                 Story.append(paragraph_with_link) 
@@ -254,13 +295,13 @@ def addBadgeImage(first_page_content, badgeImage):
     image_height = 250
     first_page_content.append(Image(badgeImage, width=image_width, height=image_height))
 
-def add_recipient_name(first_page_content, first_name, last_name, issuedOn):
-    first_page_content.append(Spacer(1, 50))
+def add_recipient_name(first_page_content, name, issuedOn):
+    first_page_content.append(Spacer(1, 15))
     recipient_style = ParagraphStyle(name='Recipient', fontSize=24, textColor='#492E98', alignment=TA_CENTER)
     
-    recipient_name = f"<strong>{first_name} {last_name}</strong>"
+    recipient_name = f"<strong>{name}</strong>"
     first_page_content.append(Paragraph(recipient_name, recipient_style))
-    first_page_content.append(Spacer(1, 35))
+    first_page_content.append(Spacer(1, 25))
 
     text_style = ParagraphStyle(name='Text_Style', fontSize=18, alignment=TA_CENTER)
     
@@ -270,18 +311,18 @@ def add_recipient_name(first_page_content, first_name, last_name, issuedOn):
 
     text = "den folgenden Badge erworben:"
     first_page_content.append(Paragraph(text, text_style))
-    first_page_content.append(Spacer(1, 35))
+    first_page_content.append(Spacer(1, 25))
 
 def add_title(first_page_content, badge_class_name):
 
     title_style = ParagraphStyle(name='Title', fontSize=24, textColor='#492E98', leading=30, alignment=TA_CENTER)
     first_page_content.append(Paragraph(f"<strong>{badge_class_name}</strong>", title_style))
-    if(len(badge_class_name) > 30):
-        first_page_content.append(Spacer(1, 15))
-    else:
-        first_page_content.append(Spacer(1, 35))
+    # if(len(badge_class_name) > 30):
+    first_page_content.append(Spacer(1, 15))
+    # else:
+    #     first_page_content.append(Spacer(1, 35))
 
-def truncate_text(text, max_words=50):
+def truncate_text(text, max_words=70):
     words = text.split()
     if len(words) > max_words:
         return ' '.join(words[:max_words]) + '...'
@@ -289,13 +330,31 @@ def truncate_text(text, max_words=50):
         return text
 
 def add_description(first_page_content, description):
-    description_style = ParagraphStyle(name='Description', fontSize=14, leading=16, alignment=TA_CENTER)
-    first_page_content.append(Paragraph(truncate_text(description), description_style))
+    description_style = ParagraphStyle(name='Description', fontSize=11, leading=16.5, alignment=TA_CENTER)
+    first_page_content.append(Paragraph(description, description_style))
     first_page_content.append(Spacer(1, 10))
 
-def add_issuedBy(first_page_content, issued_by):
-    issued_by_style = ParagraphStyle(name='Issued_By', fontSize=18, textColor='#492E98', alignment=TA_CENTER)
-    text = "- Vergeben von: " + f"<strong>{issued_by}</strong> -"
+def add_narrative(first_page_content, narrative):
+    if narrative is not None:
+        narrative_style = ParagraphStyle(name='Narrative', fontSize=11, leading=16.5, alignment=TA_CENTER)
+        first_page_content.append(Paragraph(narrative, narrative_style))
+        first_page_content.append(Spacer(1, 10)) 
+    else: 
+        first_page_content.append(Spacer(1, 35))       
+
+def add_issuedBy(first_page_content, issued_by, issuerImage=None):
+    issued_by_style = ParagraphStyle(name='Issued_By', fontSize=11, textColor='#492E98', alignment=TA_CENTER, leftIndent=-35, rightIndent=-35)
+    image = None
+    if issuerImage is not None: 
+            try:
+                image = Image(issuerImage, width=40, height=40)
+            except: 
+                pass
+
+    if image is not None:
+        first_page_content.append(image)
+
+    text = f"<strong>- Vergeben von: </strong>" + f"<strong>{issued_by}</strong>  -"
     first_page_content.append(Paragraph(text, issued_by_style))
     first_page_content.append(Spacer(1, 15))
 
@@ -311,9 +370,17 @@ def pdf(request, *args, **kwargs):
     slug = kwargs["slug"]
     try:
         badgeinstance = BadgeInstance.objects.get(entity_id=slug)
+
+        # Get emails of all issuer owners
+        """ issuer= Issuer.objects.get(entity_id=badgeinstance.issuer.entity_id)
+        issuer_owners = issuer.staff.filter(issuerstaff__role=IssuerStaff.ROLE_OWNER)
+        issuer_owners_emails = list(map(attrgetter('primary_email'), issuer_owners)) """
+
+        # User must be the recipient or an issuer staff with OWNER role
         # TODO: Check other recipient types 
-        if request.user.email != badgeinstance.recipient_identifier:
-            raise PermissionDenied
+        # Temporary commented out
+        """ if request.user.email != badgeinstance.recipient_identifier and request.user.email not in issuer_owners_emails:
+            raise PermissionDenied """
     except BadgeInstance.DoesNotExist:
         raise Http404
     try:
@@ -323,11 +390,6 @@ def pdf(request, *args, **kwargs):
     except BadgeClass.DoesNotExist:
         raise Http404
 
-    try: 
-        badgeuser = BadgeUser.objects.get(email=badgeinstance.recipient_identifier)  
-    except BadgeUser.DoesNotExist:
-        raise Http404
-
     response = HttpResponse(content_type="application/pdf")
     response["Content-Disposition"] = 'inline; filename="badge.pdf"'
 
@@ -335,10 +397,14 @@ def pdf(request, *args, **kwargs):
 
     first_page_content = []
 
-    first_name = badgeuser.first_name.capitalize()
-    last_name = badgeuser.last_name.capitalize()
-
-    add_recipient_name(first_page_content, first_name, last_name, badgeinstance.issued_on) 
+    try:
+        name = get_name(badgeinstance)
+    except BadgeUser.DoesNotExist:
+        # To resolve the issue with old awarded badges that doesn't include recipient-name and only have recipient-email
+        # We use email as this is the only identifier we have 
+        name = badgeinstance.recipient_identifier
+        # raise Http404
+    add_recipient_name(first_page_content, name, badgeinstance.issued_on) 
 
     addBadgeImage(first_page_content, badgeclass.image)
 
@@ -346,14 +412,11 @@ def pdf(request, *args, **kwargs):
 
     add_description(first_page_content, badgeclass.description)
 
-    add_issuedBy(first_page_content, badgeinstance.issuer.name)
+    add_narrative(first_page_content, badgeinstance.narrative)
 
-    try:
-        add_issuerImage(first_page_content, badgeclass.issuer.image)
-    except: 
-        pass    
+    add_issuedBy(first_page_content, badgeinstance.issuer.name, badgeclass.issuer.image)    
 
-    createMultiPage(response, first_page_content, competencies, first_name, last_name, badgeclass.name)
+    create_multi_page(response, first_page_content, competencies, name, badgeclass.name)
 
     return response
 

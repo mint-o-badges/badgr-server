@@ -513,11 +513,8 @@ class TokenView(OAuth2ProviderTokenView):
             if len(filtered_scopes) < len(requested_scopes):
                 return HttpResponse(json.dumps({"error": "invalid scope requested"}), status=HTTP_400_BAD_REQUEST)
 
-        # let parent method do actual authentication
         response = None
-        if grant_type == "password":
-            response = super(TokenView, self).post(request, *args, **kwargs)
-        elif grant_type == "oidc":
+        if grant_type == "oidc":
             if not request.user.is_authenticated:
                 return HttpResponse(json.dumps({"error": "User not authenticated in session!"}), status=HTTP_401_UNAUTHORIZED)
             token = extract_oidc_access_token(request, requested_scopes)
@@ -540,6 +537,9 @@ class TokenView(OAuth2ProviderTokenView):
             # have access to everything
             token["scope"] = requested_scopes
             response = HttpResponse(content=json.dumps(token), status=200)
+        else:
+            # All other grant types our parent can handle
+            response = super(TokenView, self).post(request, *args, **kwargs)
 
         if oauth_app and not oauth_app.applicationinfo.issue_refresh_token:
             data = json.loads(response.content)

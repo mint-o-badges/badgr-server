@@ -8,7 +8,7 @@ from django.utils.safestring import mark_safe
 from mainsite.admin import badgr_admin
 
 from .models import Issuer, BadgeClass, BadgeInstance, BadgeInstanceEvidence, BadgeClassAlignment, BadgeClassTag, \
-    BadgeClassExtension, IssuerExtension, BadgeInstanceExtension
+    BadgeClassExtension, IssuerExtension, BadgeInstanceExtension, RequestedBadge, QrCode
 from .tasks import resend_notifications
 
 
@@ -256,3 +256,15 @@ class ExtensionAdmin(ModelAdmin):
 badgr_admin.register(IssuerExtension, ExtensionAdmin)
 badgr_admin.register(BadgeClassExtension, ExtensionAdmin)
 badgr_admin.register(BadgeInstanceExtension, ExtensionAdmin)
+
+class ReqeustedBadgeAdmin(ModelAdmin):
+    list_display = ('firstName', 'lastName', 'email', 'badgeclass', 'user', 'requestedOn', 'status')
+    readonly_fields = ('requestedOn', 'status')
+
+badgr_admin.register(RequestedBadge, ReqeustedBadgeAdmin)
+
+class QrCodeAdmin(ModelAdmin):
+    list_display = ('title', 'createdBy', 'valid_from', 'expires_at')
+
+badgr_admin.register(QrCode, QrCodeAdmin)
+    
