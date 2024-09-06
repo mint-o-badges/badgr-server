@@ -22,8 +22,8 @@ from badgeuser.models import BadgeUser, CachedEmailAddress
 import badgrlog
 from badgrsocialauth.utils import set_session_badgr_app
 from mainsite.models import BadgrApp, EmailBlacklist, AccessTokenProxy
-from mainsite.utils import OriginSetting, set_url_query_params
-from backpack.views import add_recipient_name, add_title, add_description, addBadgeImage, add_issuerImage, add_issuedBy, RoundedRectFlowable, AllPageSetup, PageNumCanvas
+from mainsite.utils import get_name, OriginSetting, set_url_query_params
+from backpack.views import add_recipient_name, add_title, add_description, add_narrative, addBadgeImage, add_issuedBy, RoundedRectFlowable, AllPageSetup, PageNumCanvas
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -48,22 +48,15 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
         except BadgeClass.DoesNotExist:
             raise ValueError("BadgeClass not found")
 
-        badgeuser = None
-        try: 
-            badgeuser = BadgeUser.objects.get(email=badgeinstance.recipient_identifier)  
+        name = None
+        try:
+            name = get_name(badgeinstance)
         except BadgeUser.DoesNotExist:
             logger = logging.getLogger(__name__)
             logger.warning("Could not find badgeuser")
         
         first_page_content = []
-        if badgeuser is not None: 
-            first_name = badgeuser.first_name.capitalize()
-            last_name = badgeuser.last_name.capitalize()
-            add_recipient_name(first_page_content, first_name, last_name, badgeinstance.issued_on) 
-        else: 
-            first_name = None
-            last_name = None
-            add_recipient_name(first_page_content, badgeinstance.recipient_identifier, '', badgeinstance.issued_on)    
+        add_recipient_name(first_page_content, name, badgeinstance.issued_on) 
 
         competencies = badgeclass.json["extensions:CompetencyExtension"]
 
@@ -74,12 +67,9 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
 
         add_description(first_page_content, badgeclass.description)
 
-        add_issuedBy(first_page_content, badgeinstance.issuer.name)
+        add_narrative(first_page_content, badgeinstance.narrative)
 
-        try:
-            add_issuerImage(first_page_content, badgeclass.issuer.image)
-        except:
-            pass    
+        add_issuedBy(first_page_content, badgeinstance.issuer.name, badgeclass.issuer.image)    
         
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4)
@@ -96,64 +86,58 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
 
         if num_competencies > 0:
                 esco = any(c['escoID'] for c in competencies)
-                competenciesPerPage = 5
+                competenciesPerPage = 9
 
                 Story.append(PageBreak())
-                Story.append(Spacer(1, 75))
+                Story.append(Spacer(1, 35))
 
-                title_style = ParagraphStyle(name='Title', fontSize=24, textColor='#492E98', alignment=TA_LEFT)
-                text_style = ParagraphStyle(name='Text', fontSize=14, textColor='#492E98', alignment=TA_LEFT)
+                title_style = ParagraphStyle(name='Title', fontSize=20, textColor='#492E98', alignment=TA_LEFT)
+                text_style = ParagraphStyle(name='Text', fontSize=18, leading=20, textColor='#323232', alignment=TA_LEFT)
+
+
 
                 Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
-                Story.append(Spacer(1, 25))
+                Story.append(Spacer(1, 15))
 
 
-                if first_name and last_name:
-                    text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
+                if name:
+                     text = f"die <strong>{name}</strong> mit dem Badge <strong>{badgeclass.name}</strong> erworben hat:"
                 else: 
-                    text = "die <strong>%s</strong> mit dem Badge" % badgeinstance.recipient_identifier    
+                    text = f"die <strong>%s</strong> mit dem Badge <strong>{badgeclass.name}</strong> erworben hat:" % badgeinstance.recipient_identifier    
                 Story.append(Paragraph(text, text_style))
                 Story.append(Spacer(1, 20))
 
 
-                text = " <strong>%s</strong> erworben hat:" % badgeclass.name
-                Story.append(Paragraph(text, text_style)) 
-                Story.append(Spacer(1, 20)) 
-
-                text_style = ParagraphStyle(name='Text', fontSize=18, leading=16, textColor='#492E98', alignment=TA_LEFT)      
+                text_style = ParagraphStyle(name='Text', fontSize=18, leading=20, textColor='#323232', alignment=TA_LEFT)
+      
 
                 for i in range(num_competencies):
                     if i != 0 and i % competenciesPerPage == 0: 
                         Story.append(PageBreak())
-                        Story.append(Spacer(1, 75))
+                        Story.append(Spacer(1, 35))
                         Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
-                        Story.append(Spacer(1, 25))
+                        Story.append(Spacer(1, 15))
 
-                        if first_name and last_name:
-                            text = "die <strong>%s %s</strong> mit dem Badge" % (first_name, last_name)
+                        if name:
+                            text = f"die <strong>%s</strong> mit dem Badge <strong>{badgeclass.name}</strong> erworben hat:" % (name)
                         else: 
-                            text = "die <strong>%s</strong> mit dem Badge" % badgeinstance.recipient_identifier    
+                            text = f"die <strong>%s</strong> mit dem Badge <strong>{badgeclass.name}</strong> erworben hat:" % badgeinstance.recipient_identifier    
                         Story.append(Paragraph(text, text_style))
                         Story.append(Spacer(1, 20))
-
-
-                        text = " <strong>%s</strong> erworben hat:" % badgeclass.name
-                        Story.append(Paragraph(text, text_style)) 
-                        Story.append(Spacer(1, 20)) 
 
                     studyload = "%s Minuten" % competencies[i]['studyLoad']
                     if competencies[i]['studyLoad'] > 120:
                         studyload = "%s Stunden" % int(competencies[i]['studyLoad'] / 60 )
                     competency_name = competencies[i]['name']
-                    competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name 
+                    competency = competency_name
                     rounded_rect = RoundedRectFlowable(0, -1, 450, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload = studyload, esco = competencies[i]['escoID'])
 
                     Story.append(rounded_rect)    
-                    Story.append(Spacer(1, 20))   
+                    Story.append(Spacer(1, 10))   
                     
                 if esco: 
-                    Story.append(Spacer(1, 100))
-                    text_style = ParagraphStyle(name='Text_Style', fontSize=12, leading=20, alignment=TA_LEFT)
+                    Story.append(Spacer(1, 10))
+                    text_style = ParagraphStyle(name='Text_Style', fontSize=12, leading=15.6, alignment=TA_LEFT, leftIndent=-35, rightIndent=-35)
                     link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations) <br/>' \
                     'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
                     paragraph_with_link = Paragraph(link_text, text_style)

@@ -24,7 +24,7 @@ json_patterns = [
 
     url(r'^oembed$', OEmbedAPIEndpoint.as_view(), name='oembed_api_endpoint'),
 
-    url(r'^verify$', VerifyBadgeAPIEndpoint.as_view(), name='verify_badge_api_endpoint')
+    url(r'^verify$', VerifyBadgeAPIEndpoint.as_view(), name='verify_badge_api_endpoint'),
 ]
 
 image_patterns = [
