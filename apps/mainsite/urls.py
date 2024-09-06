@@ -1,6 +1,6 @@
 from django.views.generic.base import RedirectView, TemplateView
 from django.conf.urls.static import static
-from mainsite.views import upload, nounproject, aiskills, createCaptchaChallenge
+from mainsite.views import upload, nounproject, aiskills, requestBadge, deleteBadgeRequest, createCaptchaChallenge
 from mainsite.views import (
     info_view,
     email_unsubscribe,
@@ -31,6 +31,7 @@ from mainsite.oauth2_api import (
     RegisterApiView,
     PublicRegisterApiView,
 )
+from oidc.oidc_views import OidcView
 
 badgr_admin.autodiscover()
 # make sure that any view/model/form imports occur AFTER admin.autodiscover
@@ -156,23 +157,26 @@ urlpatterns = [
     url(r"^v2/", include("badgrsocialauth.v2_api_urls"), kwargs={"version": "v2"}),
     url(r"^v2/backpack/", include("backpack.v2_api_urls"), kwargs={"version": "v2"}),
     # External Tools
-    url(
-        r"^v1/externaltools/",
-        include("externaltools.v1_api_urls"),
-        kwargs={"version": "v1"},
-    ),
-    url(
-        r"^v2/externaltools/",
-        include("externaltools.v2_api_urls"),
-        kwargs={"version": "v2"},
-    ),
-    url(r"^upload", upload, name="image_upload"),
-    url(
-        r"^nounproject/(?P<searchterm>[^/]+)/(?P<page>[^/]+)$",
-        nounproject,
-        name="nounproject",
-    ),
-    url(r"^aiskills/(?P<searchterm>[^/]+)$", aiskills, name="aiskills"),
+    url(r'^v1/externaltools/', include('externaltools.v1_api_urls'),
+        kwargs={'version': 'v1'}),
+    url(r'^v2/externaltools/', include('externaltools.v2_api_urls'),
+        kwargs={'version': 'v2'}),
+
+    url(r'^upload', upload, name="image_upload"),
+    url(r'^nounproject/(?P<searchterm>[^/]+)/(?P<page>[^/]+)$', nounproject,
+        name="nounproject"),
+
+    url(r'^aiskills/(?P<searchterm>[^/]+)$', aiskills, name="aiskills"),
+
+    url(r'^request-badge/(?P<qrCodeId>[^/]+)$', requestBadge, name="request-badge"),
+
+    url(r'^deleteBadgeRequest/(?P<requestId>[^/]+)$', deleteBadgeRequest, name="delete-badge-request"),
+
+
+    # meinBildungsraum OIDC connection
+    path('oidc/', include('mozilla_django_oidc.urls')),
+    url(r'^oidcview/logoutRedirect/', OidcView.oidcLogoutRedirect, name="oidcLogoutRedirect"),
+
     url(r"^altcha", createCaptchaChallenge, name="create_captcha_challenge"),
 ]
 # add to serve files

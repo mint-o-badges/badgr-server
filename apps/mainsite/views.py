@@ -38,6 +38,8 @@ from rest_framework.authentication import (
 )
 
 from issuer.tasks import rebake_all_assertions, update_issuedon_all_assertions
+from issuer.models import BadgeClass, QrCode, RequestedBadge
+from issuer.serializers_v1 import RequestedBadgeSerializer
 from mainsite.admin_actions import clear_cache
 from mainsite.models import EmailBlacklist, BadgrApp
 from mainsite.serializers import LegacyVerifiedAuthTokenSerializer
@@ -52,9 +54,10 @@ import uuid
 from django.http import JsonResponse
 import requests
 from requests_oauthlib import OAuth1
+from issuer.permissions import is_badgeclass_staff
+
 
 logger = badgrlog.BadgrLogger()
-
 
 ##
 #
@@ -96,7 +99,7 @@ def error500(request, *args, **kwargs):
 
 
 def info_view(request, *args, **kwargs):
-    return redirect(getattr(settings, "LOGIN_REDIRECT_URL"))
+    return redirect(getattr(settings, "LOGIN_BASE_URL"))
 
 
 # TODO: It is possible to call this method without authentication, thus storing files on the server
@@ -190,6 +193,73 @@ def createCaptchaChallenge(req):
     }
 
     return JsonResponse(ch)
+
+@api_view(["POST", "GET"])
+@permission_classes([AllowAny])
+def requestBadge(req, qrCodeId):
+    if req.method != "POST" and req.method != "GET":
+        return JsonResponse(
+            {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
+        )
+    qrCode = QrCode.objects.get(entity_id=qrCodeId) 
+
+    if req.method == "GET":
+        requestedBadges = RequestedBadge.objects.filter(qrcode=qrCode)
+        serializer = RequestedBadgeSerializer(requestedBadges, many=True)  
+        return JsonResponse({"requested_badges": serializer.data}, status=status.HTTP_200_OK)
+   
+    elif req.method == "POST": 
+        try:
+            data = json.loads(req.data) 
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+        
+        firstName = data.get('firstname')
+        lastName = data.get('lastname')
+        email = data.get('email')
+        qrCodeId = data.get('qrCodeId')
+
+        try: 
+            qrCode = QrCode.objects.get(entity_id=qrCodeId)
+
+        except QrCode.DoesNotExist:
+            return JsonResponse({'error': 'Invalid qrCodeId'}, status=400)            
+
+        badge = RequestedBadge(
+            firstName = firstName,
+            lastName = lastName,
+            email = email,
+        ) 
+
+        badge.badgeclass = qrCode.badgeclass
+        badge.qrcode = qrCode
+
+
+        badge.save()
+
+        return JsonResponse({"message": "Badge request received"}, status=status.HTTP_200_OK)
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def deleteBadgeRequest(req, requestId):
+    if req.method != "DELETE":
+        return JsonResponse(
+            {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        badge = RequestedBadge.objects.get(id=requestId)
+
+        if (not is_badgeclass_staff(req.user, badge.badgeclass)):
+            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+
+    except RequestedBadge.DoesNotExist:
+        return JsonResponse({'error': 'Invalid requestId'}, status=400)            
+
+    badge.delete()
+
+    return JsonResponse({"message": "Badge request deleted"}, status=status.HTTP_200_OK)
+
 
 
 def extractErrorMessage500(response: Response):

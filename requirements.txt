@@ -17,13 +17,13 @@ django-basic-models==4.0.0
 
 django-object-actions==1.1.0
 
-python-memcached
-pymemcache 
+#python-memcached==1.62
+pymemcache==4.0.0
 
 djangorestframework==3.12.2
 
 # Django Allauth
-django-allauth==0.63.3
+django-allauth==0.46.0
 oauthlib==3.1.0
 requests==2.25.0
 requests-oauthlib==0.4.2
@@ -114,4 +114,11 @@ uwsgi
 
 tox
 
-pyopenssl==24.0.0
+pyopenssl==24.2.1
+
+mozilla-django-oidc
+pyjwt
+
+reportlab
+svg2rlg
+svglib

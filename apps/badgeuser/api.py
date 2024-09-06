@@ -72,6 +72,7 @@ class BadgeUserDetail(BaseEntityDetailView):
         "post": ["*"],
         "get": ["r:profile", "rw:profile"],
         "put": ["rw:profile"],
+        "delete": ["rw:profile"],
     }
 
     @apispec_post_operation(
@@ -154,6 +155,15 @@ class BadgeUserDetail(BaseEntityDetailView):
     def put(self, request, **kwargs):
         return super(BadgeUserDetail, self).put(request, allow_partial=True, **kwargs)
 
+    @apispec_delete_operation(
+        "BadgeUser",
+        summary="Delete a BadgeUser",
+        description="Use the entityId 'self' to delete the authenticated user's profile",
+        tags=["BadgeUsers"],
+    )
+    def delete(self, request, **kwargs):
+        return super(BadgeUserDetail, self).delete(request, **kwargs)
+
     def get_object(self, request, **kwargs):
         version = getattr(request, "version", "v1")
         if version == "v2":
@@ -188,7 +198,7 @@ class BadgeUserDetail(BaseEntityDetailView):
                     # you can see some info about users you know about
                     return True
 
-            if method == "put":
+            if method == "put" or method == "delete":
                 # only current user can update their own profile
                 return request.user.id == obj.id
         return False
@@ -410,6 +420,7 @@ class BadgeUserForgotPassword(BaseUserRecoveryView):
 
         cache.delete(backoff_cache_key(user.email))
         
+
         user.set_password(password)
         user.save()
         return self.get_response()
