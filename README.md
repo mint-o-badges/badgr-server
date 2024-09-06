@@ -66,6 +66,20 @@ Set or adjust these values in your `settings_local.dev.py` and/or `settings_loca
   - Set these values to be able to search for icons with in the badge creation process.
 * `AISKILLS_API_KEY` and `AISKILLS_ENDPOINT`:
   - Set these values to be able to get AI skill suggestions within the badge creation process.
+* `OIDC_RP_CLIENT_ID` and `OIDC_RP_CLIENT_SECRET`
+  - The credentials for the meinBildungsraum SSO connection
+* `OIDC_OP_AUTHORIZATION_ENDPOINT`, `OIDC_OP_TOKEN_ENDPOINT`, `OIDC_OP_USER_ENDPOINT`, `OIDC_OP_JWKS_ENDPOINT`, `OIDC_OP_END_SESSION_ENDPOINT`
+  - The endpoints for the meinBildungsraum SSO connection
+  - For the demo as specified [here](https://aai.demo.meinbildungsraum.de/realms/nbp-aai/.well-known/openid-configuration)
+* `LOGIN_BASE_URL`
+  - The base url for the redirect urls
+  - E.g. `http://localhost:4200/auth/login`
+* `LOGIN_REDIRECT_URL` and `LOGOUT_REDIRECT_URL`
+  - The redirect urls to our application after login / logout via meinBildungsraum
+  - After the login with meinBildungsraum, the OIDC session authentication needs to be converted to an access token
+  - This is done with the `auth/login?validateToken` url
+  - E.g. `http://localhost:4200/auth/login?validateToken` and `http://localhost:4200/auth/login`
+  - Typically you don't need to change these if you used the example with `LOGIN_BASE_URL`
 * `ALTCHA_API_KEY` and `ALTCHA_SECRET`:
   - Set these values for captcha protection during the registration and issuer creation process. They can be obtained at [altcha.org](https://altcha.org/).
 
@@ -148,6 +162,11 @@ If your [badgr-ui](https://github.com/concentricsky/badgr-ui) is running on http
     * Name: `Badgr UI`
     * Redirect uris: blank (for Resource owner password-based. You can use this to set up additional OAuth applications that use authorization code token grants as well.)
 
+#### OIDC authentication
+If you set up the *Additional configuration options* (or at least the parts relevant for OIDC authentication), you shouldn't have to configure anything else; the "Anmelden mit Mein Bildungsraum" button should work out of the box.
+Do note that the OIDC authentication mechanism produces access tokens that, in contrast to the ones we generate ourselves, aren't restricted to any scopes.
+They can thus access anything on the page not limited to admin / superuser users. This also is the default behavior for the tokens we generate ourselves.
+
 ### Run the tests
 For the tests to run you first need to run docker (`docker-compose up`).
 Then within docker, run `tox`: `docker-compose exec api tox`.
@@ -173,3 +192,38 @@ This process is heavily inspired by [this tutorial](https://dev.to/ferkarchiloff
 Start in your `badgr` directory and clone badgr-ui source code: `git clone https://github.com/concentricsky/badgr-ui.git badgr-ui`
 
 For more details view the Readme for [Badgr UI](https://github.com/concentricsky/badgr-ui).
+
+### Code Quality
+
+To ensure consistency and quality in code contributions, we use pre-commit hooks to adhere to commit message conventions and code quality guidelines. Follow these steps to set up your development environment:
+
+- Install Pre-commit
+
+Make sure you have `pre-commit` installed on your machine. You can install it using pip:
+
+```bash
+pip install pre-commit
+```
+
+- Initialize Pre-commit Hooks
+
+Navigate to the root directory of the repository and run the following command to initialize pre-commit hooks:
+
+```bash
+pre-commit install
+```
+
+This command sets up the pre-commit hooks defined in the `pre-commit-config.yaml` file.
+
+To run the configured hooks on some / all files of the project run:
+
+```bash
+pre-commit run --files <file-name>
+pre-commit run --all-files
+```
+
+You will also need to have `commitizen` installed, e.g. via
+
+```bash
+pip install commitizen
+```

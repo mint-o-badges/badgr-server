@@ -3,6 +3,7 @@ import datetime
 import urllib.request
 import urllib.parse
 import urllib.error
+import base64
 
 import dateutil
 import re
@@ -15,6 +16,7 @@ from allauth.account.adapter import get_adapter
 from django.apps import apps
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
@@ -35,7 +37,7 @@ from mainsite.managers import SlugOrJsonIdCacheModelManager
 from mainsite.mixins import HashUploadedImage, ResizeUploadedImage, ScrubUploadedSvgImage, PngImagePreview
 from mainsite.models import BadgrApp, EmailBlacklist
 from mainsite import blacklist
-from mainsite.utils import OriginSetting, generate_entity_uri
+from mainsite.utils import OriginSetting, generate_entity_uri, get_name
 
 from .utils import (add_obi_version_ifneeded, CURRENT_OBI_VERSION, generate_rebaked_filename,
                     generate_sha256_hashstring, get_obi_context, parse_original_datetime, UNVERSIONED_BAKED_VERSION)
@@ -219,17 +221,6 @@ class Issuer(ResizeUploadedImage,
     lat = models.FloatField(null=True, blank=True)
     lon = models.FloatField(null=True, blank=True)
 
-    __original_address = {
-        'street': None,
-        'streetnumber': None,
-        'zip': None,
-        'city': None,
-        'country': None
-    }
-
-    # stores the original verified variable to detect changes and notify the issuer
-    __original_verified = False
-
     def publish(self, publish_staff=True, *args, **kwargs):
         fields_cache = self._state.fields_cache  # stash the fields cache to avoid publishing related objects here
         self._state.fields_cache = dict()
@@ -272,24 +263,20 @@ class Issuer(ResizeUploadedImage,
 
         return ret
 
-    # override init method to save original address
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.__original_address = {'street': self.street, 'streetnumber': self.streetnumber,
-            'city': self.city, 'zip': self.zip, 'country': self.country}
-        self.__original_verified = self.verified
-
     def save(self, *args, **kwargs):
+        original_verified = None
         if not self.pk:
             self.notify_admins(self)
-
         # geocoding if address in model changed
-        if self.__original_address:
-            if (self.street != self.__original_address['street']
-                    or self.streetnumber != self.__original_address['streetnumber']
-                    or self.city != self.__original_address['city']
-                    or self.zip != self.__original_address['zip']
-                    or self.country != self.__original_address['country']):
+        else:
+            original_object = Issuer.objects.get(pk=self.pk)
+            original_verified = original_object.verified
+
+            if (self.street != original_object.street
+                    or self.streetnumber != original_object.streetnumber
+                    or self.city != original_object.city
+                    or self.zip != original_object.zip
+                    or self.country != original_object.country):
                 addr_string = ((self.street if self.street is not None else '') + " "
                 + (str(self.streetnumber) if self.streetnumber is not None else '') + " "
                 + (str(self.zip) if self.zip is not None else '') + " "
@@ -300,13 +287,15 @@ class Issuer(ResizeUploadedImage,
                     self.lon = geoloc.longitude
                     self.lat = geoloc.latitude
 
+        ensureOwner = kwargs.pop('ensureOwner', True)
         ret = super(Issuer, self).save(*args, **kwargs)
 
         # notify the owner of the Issuer on verification
-        if self.__original_verified == False and self.verified:
+        if original_verified == False and self.verified:
             self.notify_issuer_owner(self)
         # The user who created the issuer should always be an owner
-        self.ensure_owner()
+        if ensureOwner:
+            self.ensure_owner()
 
         return ret
 
@@ -315,25 +304,84 @@ class Issuer(ResizeUploadedImage,
 
         An issuer staff relation is either created with role owner
         (if none existed), or updated to contain the role
-        ROLE_OWNER. This doesn't work if the created_by_id
-        of the issuer (self) isn't set.
-        Note that this does *not* ensure the owner, if the role
-        of the staff was the very thing that just changed.
+        ROLE_OWNER. 
+        Earlier this also made sure that the creator was the owner;
+        since this doesn't seem to be required anymore though,
+        this now merely makes sure that both a creator and an
+        owner exist (if possible)
         """
 
-        # If the creator is already the owner, nothing is to do
-        if self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_OWNER, issuerstaff__user=self.created_by):
+        # If there exists both a creator and an owner, there's nothing to do
+        # (I think; it's not clearly specified)
+        if self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_OWNER) and \
+            self.created_by:
             return
-        # If I don't have a creator, I can't do anything about it
-        if not self.created_by_id:
-            return
+
         # If there already is an IssuerStaff entry I have to edit it
-        if IssuerStaff.objects.filter(user=self.created_by, issuer=self).exists():
+        if self.created_by and \
+              IssuerStaff.objects.filter(user=self.created_by, issuer=self).exists():
             issuerStaff = IssuerStaff.objects.get(user=self.created_by, issuer=self)
             issuerStaff.role = IssuerStaff.ROLE_OWNER
             issuerStaff.save()
+            return
+
+        # If I don't have a creator, this means they were deleted.
+        # If there are other users associated, I can chose the one with the highest privileges
+        if not self.created_by:
+            owners = self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_OWNER)
+            editors = self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_EDITOR)
+            staff = self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_STAFF)
+            if owners.exists():
+                self.created_by = owners.first()
+                self.save(ensureOwner = False)
+                # Is already owner
+                return
+            elif editors.exists():
+                self.created_by = editors.first()
+                self.save(ensureOwner = False)
+            elif staff.exists():
+                self.created_by = staff.first()
+                self.save(ensureOwner = False)
+            else:
+                # With no other staff, there's nothing we can do. So we unverify the issuer
+                self.verified = False
+                self.save(ensureOwner = False)
+                return
+            # The new "creator" should also be the owner
+            issuerStaff = IssuerStaff.objects.get(user=self.created_by, issuer=self)
+            issuerStaff.role = IssuerStaff.ROLE_OWNER
+            issuerStaff.save()
+            return
+        
+        # The last remaining case is that the created_by user still exists, but got removed as owner
+        # In this case there must be no owner assigned currently, so we chose a new owner
+        editors = self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_EDITOR)
+        staff = self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_STAFF)
+        if editors.exists():
+            new_owner = editors.first()
+        elif staff.exists():
+            new_owner = staff.first()
         else:
-            IssuerStaff.objects.create(issuer=self, user=self.created_by, role=IssuerStaff.ROLE_OWNER)
+            # If there is no other user, we (re-)assign the creator as owner.
+            # This is also the case for the initial creation
+            new_owner = IssuerStaff.objects.create(issuer=self, user=self.created_by, role=IssuerStaff.ROLE_OWNER)
+            return
+        new_owner.role = IssuerStaff.ROLE_OWNER
+        new_owner.save()
+    
+    def new_contact_email(self):
+        # If this method is called, this may mean that the owner got deleted.
+        # This implicates that we have to take measures to ensure a new owner is applied.
+        self.ensure_owner()
+        # We set the contact email to the first email of the first owner we find
+        owners = self.staff.filter(issuerstaff__role=IssuerStaff.ROLE_OWNER)
+        if not owners.exists():
+            # Without an owner, there's nothing we can do
+            return
+        owner = owners.first()
+        self.email = owner.primary_email
+        self.save()
+
 
     def get_absolute_url(self):
         return reverse('issuer_json', kwargs={'entity_id': self.entity_id})
@@ -571,10 +619,26 @@ class IssuerStaff(cachemodel.CacheModel):
 
     def delete(self, *args, **kwargs):
         publish_issuer = kwargs.pop('publish_issuer', True)
+        new_contact = self.is_staff_contact()
         super(IssuerStaff, self).delete()
         if publish_issuer:
             self.issuer.publish(publish_staff=False)
         self.user.publish()
+        # Note that this delete method is not called if the user is deleted,
+        # since the cascade is done on the database level. That means that this logic
+        # *also* has to be contained in the delete method of the user
+        if (new_contact):
+            self.issuer.new_contact_email()
+    
+    def is_staff_contact(self) -> bool:
+        # Get verified emails of associated user
+        user_emails = self.user.verified_emails
+        # Get email of issuer
+        issuer_email = self.issuer.email
+        # Check if overlap exists
+        if (issuer_email == None):
+            return False
+        return any(user_email.email == issuer_email for user_email in user_emails)
 
     @property
     def cached_user(self):
@@ -946,7 +1010,6 @@ class BadgeInstance(BaseAuditedModel,
 
     # slug has been deprecated for now, but preserve existing values
     slug = models.CharField(max_length=255, db_index=True, blank=True, null=True, default=None)
-    # slug = AutoSlugField(max_length=255, populate_from='get_new_slug', unique=True, blank=False, editable=False)
 
     revoked = models.BooleanField(default=False, db_index=True)
     revocation_reason = models.CharField(max_length=255, blank=True, null=True, default=None)
@@ -1154,6 +1217,26 @@ class BadgeInstance(BaseAuditedModel,
         """
         Sends an email notification to the badge recipient.
         """
+
+        competencyExtensions = {}
+
+        if len(self.badgeclass.cached_extensions()) > 0:
+            for extension in self.badgeclass.cached_extensions():
+                if(extension.name == 'extensions:CompetencyExtension'):
+                    competencyExtensions[extension.name] = json_loads(extension.original_json)
+
+        competencies = []
+
+        for competency in competencyExtensions.get('extensions:CompetencyExtension', []):
+            competency_entry = {
+                'name': competency.get('name'),
+                'description': competency.get('description'),
+                'escoID': competency.get('escoID'),
+                'studyLoad': competency.get('studyLoad'),
+                'skill': competency.get('category')
+            }
+            competencies.append(competency_entry)
+
         if self.recipient_type != RECIPIENT_TYPE_EMAIL:
             return
 
@@ -1171,16 +1254,33 @@ class BadgeInstance(BaseAuditedModel,
         if badgr_app is None:
             badgr_app = BadgrApp.objects.get_current(None)
 
+        adapter = get_adapter()
+
+        pdf_document = adapter.generate_pdf_content(slug =  self.entity_id)
+        encoded_pdf_document = base64.b64encode(pdf_document).decode('utf-8')
+        data_url = f"data:application/pdf;base64,{encoded_pdf_document}"    
+
         try:
             if self.issuer.image:
                 issuer_image_url = self.issuer.public_url + '/image'
             else:
                 issuer_image_url = None
 
+            first_name = ''
+            last_name = ''
+
+            try:
+                if self.recipient_type == RECIPIENT_TYPE_EMAIL:
+                    name = get_name(self)
+            except BadgeUser.DoesNotExist:
+                pass
+
             email_context = {
+                'name': name,
                 'badge_name': self.badgeclass.name,
                 'badge_id': self.entity_id,
                 'badge_description': self.badgeclass.description,
+                'badge_competencies': competencies,
                 'help_email': getattr(settings, 'HELP_EMAIL', 'info@opensenselab.org'),
                 'issuer_name': re.sub(r'[^\w\s]+', '', self.issuer.name, 0, re.I),
                 'issuer_url': self.issuer.url,
@@ -1188,6 +1288,8 @@ class BadgeInstance(BaseAuditedModel,
                 'issuer_detail': self.issuer.public_url,
                 'issuer_image_url': issuer_image_url,
                 'badge_instance_url': self.public_url,
+                'pdf_download': data_url,
+                'pdf_document': pdf_document,
                 'image_url': self.public_url + '/image?type=png',
                 'download_url': self.public_url + "?action=download",
                 'site_name': "Open Educational Badges",
@@ -1211,7 +1313,6 @@ class BadgeInstance(BaseAuditedModel,
         except CachedEmailAddress.DoesNotExist:
             pass
 
-        adapter = get_adapter()
         adapter.send_mail(template_name, self.recipient_identifier, context=email_context)
 
     def get_extensions_manager(self):
@@ -1577,3 +1678,37 @@ class BadgeInstanceExtension(BaseOpenBadgeExtension):
     def delete(self, *args, **kwargs):
         super(BadgeInstanceExtension, self).delete(*args, **kwargs)
         self.badgeinstance.publish()
+
+class QrCode(BaseVersionedEntity):
+
+    badgeclass = models.ForeignKey(BadgeClass, blank=False, null=False, on_delete=models.CASCADE, related_name='qrcodes')
+
+    issuer = models.ForeignKey(Issuer,
+                               on_delete=models.CASCADE)
+
+    title = models.CharField(max_length=254, blank=False, null=False)
+    
+    createdBy = models.CharField(max_length=254, blank=False, null=False)
+
+    valid_from = models.DateTimeField(blank=True, null=True, default=None)
+
+    expires_at = models.DateTimeField(blank=True, null=True, default=None)
+
+
+class RequestedBadge(BaseVersionedEntity):
+
+    badgeclass = models.ForeignKey(BadgeClass, blank=False, null=False,
+                                   on_delete=models.CASCADE, related_name='requestedbadges')
+    user = models.ForeignKey('badgeuser.BadgeUser', blank=True, null=True, on_delete=models.SET_NULL,)
+
+    qrcode = models.ForeignKey(QrCode, blank=False, null=False, on_delete=models.CASCADE, related_name='requestedbadges')
+
+    firstName = models.CharField(max_length=254, blank=False, null=False)
+    lastName = models.CharField(max_length=254, blank=False, null=False)
+    email = models.CharField(max_length=254, blank=True, null=True)
+
+    requestedOn = models.DateTimeField(blank=False, null=False, default=timezone.now)
+
+    status = models.CharField(max_length=254, blank=False, null=False, default='Pending')
+ 
+

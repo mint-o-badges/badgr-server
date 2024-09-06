@@ -382,7 +382,6 @@ class AccessTokenScope(models.Model):
     def __str__(self):
         return self.scope
 
-
 class LegacyTokenProxy(Token):
     class Meta:
         proxy = True

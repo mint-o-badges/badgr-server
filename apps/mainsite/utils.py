@@ -33,7 +33,6 @@ from rest_framework.status import HTTP_429_TOO_MANY_REQUESTS
 
 from xml.etree import cElementTree as ET
 
-
 class ObjectView(object):
     """
     A simple utility that allows Rest Framework Serializers to serialize dict-based input
@@ -568,3 +567,24 @@ def extract_domain(url):
     return domain.lower()
   else:
     return None
+
+def get_name(badgeinstance):
+    """Evaluates the name to be displayed for the recipient of the badge.
+    
+    This is either the name that was specified in the award process of the badge
+    (which is by now mandatory) or, if none was specified, the full profile of the
+    recipient. If no name was specified and the profile can't be found, a
+    `BadgeUser.DoesNotExist` exception is thrown.
+    """
+
+    from issuer.models import BadgeInstance
+    from badgeuser.models import BadgeUser
+    recipientProfile = badgeinstance.extension_items.get('extensions:recipientProfile', {})
+    name = recipientProfile.get('name', None)
+    if name:
+        return name
+    
+    badgeuser = BadgeUser.objects.get(email=badgeinstance.recipient_identifier)  
+    first_name = badgeuser.first_name.capitalize()
+    last_name = badgeuser.last_name.capitalize()
+    return f"{first_name} {last_name}"

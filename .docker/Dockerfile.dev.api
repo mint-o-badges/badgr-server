@@ -15,5 +15,5 @@ RUN apt-get install -y default-libmysqlclient-dev \
 RUN pip install uwsgi
 
 COPY requirements.txt              /badgr_server
-RUN pip install -r requirements.txt
-RUN pip install debugpy
+RUN pip --timeout=1000 install -r requirements.txt
+RUN pip --timeout=1000 install debugpy

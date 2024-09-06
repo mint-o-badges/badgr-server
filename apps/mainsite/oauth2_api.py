@@ -1,22 +1,30 @@
 # encoding: utf-8
 
 import base64
+from typing import Any, Dict
+import requests
 import json
 import re
 from urllib.parse import urlparse
+import datetime
+import jwt
+import logging
 
 from django.core.files.storage import default_storage
 from django.conf import settings
 from django.core.validators import URLValidator
 from django.http import HttpResponse
 from django.utils import timezone
+from django.contrib.auth import logout
 from oauth2_provider.exceptions import OAuthToolkitError
-from oauth2_provider.models import get_application_model, get_access_token_model, Application
+from oauth2_provider.models import get_application_model, get_access_token_model, Application, RefreshToken, AccessToken
 from oauth2_provider.scopes import get_scopes_backend
 from oauth2_provider.settings import oauth2_settings
 from oauth2_provider.views import TokenView as OAuth2ProviderTokenView
 from oauth2_provider.views.mixins import OAuthLibMixin
+from oauth2_provider.signals import app_authorized
 from oauthlib.oauth2.rfc6749.utils import scope_to_list
+from oauthlib.oauth2.rfc6749.tokens import random_token_generator
 from rest_framework import serializers, permissions
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
@@ -31,6 +39,7 @@ from mainsite.serializers import ApplicationInfoSerializer, AuthorizationSeriali
 from mainsite.utils import fetch_remote_file_to_storage, throttleable, set_url_query_params
 
 badgrlogger = badgrlog.BadgrLogger()
+LOGGER = logging.getLogger(__name__)
 
 
 class AuthorizationApiView(OAuthLibMixin, APIView):
@@ -393,6 +402,65 @@ class PublicRegisterApiView(APIView):
         serializer.save()
         return Response(serializer.data, status=HTTP_201_CREATED)
 
+def extract_oidc_access_token(request, scope):
+    """
+    Extracts the OIDC access token from the request
+
+    The scope is merely used for compatibility reasons;
+    Actually OIDC access tokens always have acess to all scopes.
+    """
+    joined_scope = ' '.join(scope)
+    access_token = request.session['oidc_access_token']
+    refresh_token = request.session['oidc_refresh_token']
+    return build_token(access_token,
+                       get_expire_seconds(access_token),
+                       joined_scope,
+                       refresh_token)
+
+def build_token(access_token, expires_in, scope, refresh_token):
+    return {
+        'access_token': access_token,
+        'token_type': 'Bearer',
+        'expires_in': expires_in,
+        'scope': scope,
+        'refresh_token': refresh_token
+    }
+
+def extract_oidc_refresh_token(request):
+    """
+    Extracts the OIDC refresh token from the request
+    """
+    return request.POST.get("refresh_token")
+
+def request_renewed_oidc_access_token(self, refresh_token):
+    token_refresh_payload = {
+        "refresh_token": refresh_token,
+        "client_id": getattr(settings, "OIDC_RP_CLIENT_ID"),
+        "client_secret": getattr(settings, "OIDC_RP_CLIENT_SECRET"),
+        "grant_type": "refresh_token",
+    }
+
+    try:
+        response = requests.post(
+            getattr(settings, "OIDC_OP_TOKEN_ENDPOINT"), data=token_refresh_payload
+        )
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        LOGGER.error("Failed to refresh session: %s", e)
+        return None
+    return response.json()
+
+def get_expire_seconds(access_token):
+    """
+    Calculates how many more seconds the access token will be valid
+    
+    It first extracts the datetime (skipping signature verifications)
+    and then calculates the diff to the current datetime
+    """
+    expire_datetime = datetime.datetime.fromtimestamp(jwt.decode(access_token, options={"verify_signature": False})['exp'])
+    now_datetime = datetime.datetime.now()
+    diff = expire_datetime - now_datetime
+    return diff.total_seconds()
 
 class TokenView(OAuth2ProviderTokenView):
     server_class = BadgrOauthServer
@@ -445,8 +513,33 @@ class TokenView(OAuth2ProviderTokenView):
             if len(filtered_scopes) < len(requested_scopes):
                 return HttpResponse(json.dumps({"error": "invalid scope requested"}), status=HTTP_400_BAD_REQUEST)
 
-        # let parent method do actual authentication
-        response = super(TokenView, self).post(request, *args, **kwargs)
+        response = None
+        if grant_type == "oidc":
+            if not request.user.is_authenticated:
+                return HttpResponse(json.dumps({"error": "User not authenticated in session!"}), status=HTTP_401_UNAUTHORIZED)
+            token = extract_oidc_access_token(request, requested_scopes)
+            app_authorized.send(
+                sender=self, request=request, token=token.get('access_token')
+            )
+            response = HttpResponse(content=json.dumps(token), status=200)
+            # Log out of the django session, since from now on we use token authentication; the session authentication was
+            # only used to obtain the access token
+            logout(request)
+        elif grant_type == "refresh_token":
+            # Refreshes OIDC access tokens.
+            # Normal access tokens don't need to be refreshed,
+            # since they are valid for 24h
+            refresh_token = extract_oidc_refresh_token(request)
+            token = request_renewed_oidc_access_token(self, refresh_token)
+            if token == None:
+                return HttpResponse(json.dumps({"error": "Token refresh failed!"}), status=HTTP_401_UNAUTHORIZED)
+            # Adding the scope for compatibility reasons, even though OIDC access tokens
+            # have access to everything
+            token["scope"] = requested_scopes
+            response = HttpResponse(content=json.dumps(token), status=200)
+        else:
+            # All other grant types our parent can handle
+            response = super(TokenView, self).post(request, *args, **kwargs)
 
         if oauth_app and not oauth_app.applicationinfo.issue_refresh_token:
             data = json.loads(response.content)
