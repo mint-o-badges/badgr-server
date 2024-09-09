@@ -674,7 +674,7 @@ class LearningPathSerializerV1(serializers.Serializer):
     def to_representation(self, instance):
         representation = super(LearningPathSerializerV1, self).to_representation(instance)
         representation['issuer_name'] = instance.issuer.name
-        representation['badge_image'] = instance.get_participationBadge_image()
+        representation['badge_image'] = self.get_participationBadge_image(instance)
         representation['tags'] = list(instance.tag_items.values_list('name', flat=True))
         representation['badges'] = [
             {
