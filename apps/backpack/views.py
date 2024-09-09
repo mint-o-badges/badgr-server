@@ -36,9 +36,11 @@ from operator import attrgetter
 import os
 
 font_path_rubik_regular = os.path.join(os.path.dirname(__file__), 'Rubik-Regular.ttf')
+font_path_rubik_medium = os.path.join(os.path.dirname(__file__), 'Rubik-Medium.ttf')
 font_path_rubik_bold = os.path.join(os.path.dirname(__file__), 'Rubik-Bold.ttf')
 
 pdfmetrics.registerFont(TTFont('Rubik-Regular', font_path_rubik_regular))
+pdfmetrics.registerFont(TTFont('Rubik-Medium', font_path_rubik_medium))
 pdfmetrics.registerFont(TTFont('Rubik-Bold', font_path_rubik_bold))
 
 class RoundedRectFlowable(Flowable):
@@ -62,7 +64,7 @@ class RoundedRectFlowable(Flowable):
 
         for word in words:
             test_line = f"{current_line} {word}".strip()
-            if self.canv.stringWidth(test_line, 'Rubik-Bold', 10) <= max_width:
+            if self.canv.stringWidth(test_line, 'Rubik-Medium', 12) <= max_width:
                 current_line = test_line
             else:
                 if current_line:
@@ -81,7 +83,7 @@ class RoundedRectFlowable(Flowable):
         
         self.canv.setFillColor('#323232')
         text_width = self.canv.stringWidth(self.text)
-        self.canv.setFont('Rubik-Bold', 12)
+        self.canv.setFont('Rubik-Medium', 12)
         if text_width > self.width - 175:
             available_text_width = self.width - 150
             y_text_position = self.y + 25
@@ -269,7 +271,7 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
                 Story.append(Paragraph(text, text_style))
                 Story.append(Spacer(1, 20))
 
-              studyload = "%s Minuten" % competencies[i]['studyLoad']
+              studyload = "%s min" % competencies[i]['studyLoad']
               if competencies[i]['studyLoad'] > 120:
                   studyLoadInHours = competencies[i]['studyLoad'] / 60
                   studyload = "%s Stunden" % int(studyLoadInHours)
