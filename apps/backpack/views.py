@@ -88,8 +88,8 @@ class RoundedRectFlowable(Flowable):
             available_text_width = self.width - 150
             y_text_position = self.y + 25
         else:
-            available_text_width = self.width - 175
-            y_text_position = self.y + 15
+            available_text_width = self.width - 150
+            y_text_position = self.y + 17.5
 
         text_lines = self.split_text(self.text, available_text_width)
 
@@ -110,20 +110,8 @@ class RoundedRectFlowable(Flowable):
         studyload_width = self.canv.stringWidth(self.studyload)
         self.canv.drawString(self.x + 450 -(studyload_width + 10), self.y + 15, self.studyload)
 
-        svg_url = "{}images/clock_icon.svg".format(settings.STATIC_URL)
-        response = requests.get(svg_url)
-        svg_content = response.content
-
-        with open('tempfile.svg', 'wb') as file:
-            file.write(svg_content)
-
-        drawing = svg2rlg('tempfile.svg')
-
-        try:
-            if drawing is not None:
-               renderPDF.draw(drawing, self.canv, 450 - (studyload_width + 30), self.y + 12.5 )
-        except Exception as e:
-            print(e)
+        clockIcon = ImageReader("{}images/clock-icon.png".format(settings.STATIC_URL))
+        self.canv.drawImage(clockIcon, self.x + 450 - (studyload_width + 35), self.y +12.5, width=15, height=15, mask="auto", preserveAspectRatio=True)
         
 def AllPageSetup(canvas, doc):
 
@@ -274,7 +262,7 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
               studyload = "%s min" % competencies[i]['studyLoad']
               if competencies[i]['studyLoad'] > 120:
                   studyLoadInHours = competencies[i]['studyLoad'] / 60
-                  studyload = "%s Stunden" % int(studyLoadInHours)
+                  studyload = "%s h" % int(studyLoadInHours)
               competency_name = competencies[i]['name']
               competency = competency_name
             #   competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name

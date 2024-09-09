@@ -125,9 +125,9 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                         Story.append(Paragraph(text, text_style))
                         Story.append(Spacer(1, 20))
 
-                    studyload = "%s Minuten" % competencies[i]['studyLoad']
+                    studyload = "%s min" % competencies[i]['studyLoad']
                     if competencies[i]['studyLoad'] > 120:
-                        studyload = "%s Stunden" % int(competencies[i]['studyLoad'] / 60 )
+                        studyload = "%s h" % int(competencies[i]['studyLoad'] / 60 )
                     competency_name = competencies[i]['name']
                     competency = competency_name
                     rounded_rect = RoundedRectFlowable(0, -1, 450, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload = studyload, esco = competencies[i]['escoID'])
