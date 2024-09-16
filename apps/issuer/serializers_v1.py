@@ -669,20 +669,37 @@ class LearningPathSerializerV1(serializers.Serializer):
         apispec_definition = ('LearningPath', {})
 
     def get_participationBadge_image(self, obj):
-        return obj.participationBadge.image.url if obj.participationBadge.image else None    
+        return obj.participationBadge.image.url if obj.participationBadge.image else None 
+
+    def get_participationBadge_id(self, obj):
+        return obj.participationBadge.id if obj.participationBadge.entity_id else None   
 
     def to_representation(self, instance):
-        representation = super(LearningPathSerializerV1, self).to_representation(instance)
+
+        request = self.context.get('request')
+        representation = super(LearningPathSerializerV1, self).to_representation(instance)  
         representation['issuer_name'] = instance.issuer.name
+        representation['issuer_id']= instance.issuer.entity_id  
         representation['badge_image'] = self.get_participationBadge_image(instance)
+        representation['participationBadge_id'] = self.get_participationBadge_id(instance)
         representation['tags'] = list(instance.tag_items.values_list('name', flat=True))
         representation['badges'] = [
             {
                 'badge': BadgeClassSerializerV1(badge.badge).data,
-                'order': badge.order
+                'order': badge.order,
             }
             for badge in instance.learningpathbadge_set.all().order_by('order')
         ]
+        if(request.user.is_authenticated):
+            participant = LearningPathParticipant.objects.filter(learning_path=instance, user=request.user)
+            if participant.exists():
+                representation['progress']= participant[0].completed_badges
+                representation['completed_at']= participant[0].completed_at
+        else:
+                representation['progress']= None
+                representation['completed_at']= None 
+
+
         return representation          
 
     def create(self, validated_data, **kwargs):

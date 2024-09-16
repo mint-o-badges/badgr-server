@@ -1811,8 +1811,7 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
 
         json['badges'] = [
             {
-                'badge_id': badge.badge.id,
-                'badge_name': badge.badge.name,
+                'badge': badge.badge.get_json(obi_version=obi_version), 
                 'order': badge.order
             }
             for badge in badges

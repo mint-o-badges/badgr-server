@@ -31,11 +31,10 @@ from mainsite.models import BadgrApp
 from mainsite.utils import (OriginSetting, set_url_query_params, first_node_match, fit_image_to_height,
                             convert_svg_to_png)
 from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, LearningPathSerializerV1
-from .models import Issuer, BadgeClass, BadgeInstance, LearningPath
+from .models import Issuer, BadgeClass, BadgeInstance, LearningPath, LearningPathParticipant
 from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, LearningPathSerializerV1
 from .models import Issuer, BadgeClass, BadgeInstance, LearningPath
 logger = badgrlog.BadgrLogger()
-
 class SlugToEntityIdRedirectMixin(object):
     slugToEntityIdRedirect = False
 
@@ -721,6 +720,17 @@ class LearningPathJson(JSONComponentView):
         json = super(LearningPathJson, self).get_json(request)
 
         obi_version = self._get_request_obi_version(request)
+
+
+        if(request.user.is_authenticated):
+            participant = LearningPathParticipant.objects.filter(learning_path=self.current_object, user=request.user)
+            if participant.exists():
+                json.update({
+                    'progress': participant[0].completed_badges,
+                    'completed_at': participant[0].completed_at
+                })
+
+            
 
         json.update({
             'participationBadge_id': self.current_object.participationBadge.entity_id,
