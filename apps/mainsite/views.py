@@ -316,9 +316,9 @@ def participateInLearningPath(req, learningPathId):
         user_badgeclasses = {badge.badgeclass for badge in req.user.cached_badgeinstances()}
         learningPath_badgeclasses = {badge.badge for badge in lp.learningpath_badges.all()}
     
-        completed_badges = len(user_badgeclasses.intersection(learningPath_badgeclasses))
+        completed_badges = user_badgeclasses.intersection(learningPath_badgeclasses)
 
-        participant.completed_badges = completed_badges
+        participant.completed_badges.set(completed_badges)
         participant.save()
         return JsonResponse({'message': 'Successfully joined the learning path'}, status=200)
 

@@ -726,7 +726,7 @@ class LearningPathJson(JSONComponentView):
             participant = LearningPathParticipant.objects.filter(learning_path=self.current_object, user=request.user)
             if participant.exists():
                 json.update({
-                    'progress': participant[0].completed_badges,
+                    # 'progress': participant[0].completed_badges,
                     'completed_at': participant[0].completed_at
                 })
 

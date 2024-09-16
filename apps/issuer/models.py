@@ -1822,6 +1822,25 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
     def get_absolute_url(self):
         return reverse('learningpath_json', kwargs={'entity_id': self.entity_id})               
 
+class LearningPathInstance(BaseVersionedEntity, BaseAuditedModel):
+    issued_on = models.DateTimeField(blank=False, null=False, default=timezone.now)
+
+    learningPath = models.ForeignKey(LearningPath, blank=False, null=False,
+                                   on_delete=models.CASCADE, related_name='learningpath_instances')
+    issuer = models.ForeignKey(Issuer, blank=False, null=False,
+                               on_delete=models.CASCADE)
+    user = models.ForeignKey('badgeuser.BadgeUser', blank=True, null=True, on_delete=models.SET_NULL)
+
+    recipient_identifier = models.CharField(max_length=768, blank=False, null=False, db_index=True)
+
+    # image = models.FileField(upload_to='uploads/learningpaths', blank=True)
+
+    # slug has been deprecated for now, but preserve existing values
+    slug = models.CharField(max_length=255, db_index=True, blank=True, null=True, default=None)
+
+    revoked = models.BooleanField(default=False, db_index=True)
+    revocation_reason = models.CharField(max_length=255, blank=True, null=True, default=None)
+
 class LearningPathBadge(cachemodel.CacheModel):
     learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE)
     badge = models.ForeignKey(BadgeClass, on_delete=models.CASCADE)
@@ -1836,7 +1855,7 @@ class LearningPathBadge(cachemodel.CacheModel):
 class LearningPathParticipant(models.Model):
     user = models.ForeignKey('badgeuser.BadgeUser', on_delete=models.CASCADE)
     learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE)
-    completed_badges = models.IntegerField(default=0)
+    completed_badges = completed_badges = models.ManyToManyField(BadgeClass, blank=True)
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 

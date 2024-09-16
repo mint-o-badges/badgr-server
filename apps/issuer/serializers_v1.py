@@ -639,6 +639,11 @@ class RequestedLearningPathSerializer(serializers.ModelSerializer):
         model = RequestedLearningPath
         fields = '__all__' 
 
+    def to_representation(self, instance):
+        representation = super(RequestedLearningPathSerializer, self).to_representation(instance)
+        representation['email'] = instance.user.email
+        return representation    
+
 class BadgeOrderSerializer(serializers.Serializer):
     slug = StripTagsCharField(max_length=255)
     order = serializers.IntegerField()
@@ -672,7 +677,7 @@ class LearningPathSerializerV1(serializers.Serializer):
         return obj.participationBadge.image.url if obj.participationBadge.image else None 
 
     def get_participationBadge_id(self, obj):
-        return obj.participationBadge.id if obj.participationBadge.entity_id else None   
+        return obj.participationBadge.entity_id if obj.participationBadge.entity_id else None   
 
     def to_representation(self, instance):
 
@@ -693,7 +698,7 @@ class LearningPathSerializerV1(serializers.Serializer):
         if(request.user.is_authenticated):
             participant = LearningPathParticipant.objects.filter(learning_path=instance, user=request.user)
             if participant.exists():
-                representation['progress']= participant[0].completed_badges
+                # representation['progress']= participant[0].completed_badges
                 representation['completed_at']= participant[0].completed_at
         else:
                 representation['progress']= None
@@ -775,7 +780,8 @@ class LearningPathSerializerV1(serializers.Serializer):
 
 class LearningPathParticipantSerializerV1(serializers.ModelSerializer):
     user = BadgeUserProfileSerializerV1(source='cached_user')
+    completed_badges = BadgeClassSerializerV1(many=True, read_only=True)
     
     class Meta:
         model = LearningPathParticipant
-        fields = ['user', 'completed_badges', 'started_at', 'completed_at']
+        fields = ['user', 'started_at', 'completed_at', 'completed_badges']
