@@ -698,7 +698,7 @@ class LearningPathSerializerV1(serializers.Serializer):
         if(request.user.is_authenticated):
             participant = LearningPathParticipant.objects.filter(learning_path=instance, user=request.user)
             if participant.exists():
-                # representation['progress']= participant[0].completed_badges
+                representation['progress']= participant[0].completed_badges.count()
                 representation['completed_at']= participant[0].completed_at
         else:
                 representation['progress']= None
