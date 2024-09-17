@@ -698,11 +698,20 @@ class LearningPathSerializerV1(serializers.Serializer):
         if(request.user.is_authenticated):
             participant = LearningPathParticipant.objects.filter(learning_path=instance, user=request.user)
             if participant.exists():
-                representation['progress']= participant[0].completed_badges.count()
+                completed_badges_count = participant[0].completed_badges.count()
+                lp_badges_count = len(representation['badges'])
+                representation['progress']= (completed_badges_count / lp_badges_count) * 100
                 representation['completed_at']= participant[0].completed_at
+                representation['completed_badges']= BadgeClassSerializerV1(participant[0].completed_badges, many=True).data
+            else: 
+                representation['progress']= None
+                representation['completed_at']= None  
+                representation['completed_badges']= None 
         else:
                 representation['progress']= None
                 representation['completed_at']= None 
+                representation['completed_badges']= None 
+
 
 
         return representation          
