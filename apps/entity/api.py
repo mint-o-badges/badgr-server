@@ -137,7 +137,53 @@ class VersionedObjectMixin(object):
 
     def get_entity_id_field_name(self):
         return self.entity_id_field_name
+    
+class VersionedObjectMixinPublic(object):
+    entity_id_field_name = 'entity_id'
+    allow_any_unauthenticated_access = True
 
+    def get_object(self, request, **kwargs):
+
+        version = getattr(request, 'version', 'v1')
+        if version == 'v1':
+            identifier = kwargs.get('slug')
+        elif version == 'v2':
+            identifier = kwargs.get('entity_id')
+
+        try:
+            self.object = self.model.cached.get(**{self.get_entity_id_field_name(): identifier})
+        except self.model.DoesNotExist:
+            pass
+        else:
+            return self.object
+
+        if version == 'v1':
+            # try a lookup by legacy slug if its v1
+            try:
+                self.object = self.model.cached.get(slug=identifier)
+            except (self.model.DoesNotExist, FieldError):
+                raise Http404
+            else:
+                return self.object
+
+        # nothing found
+        raise Http404
+
+    def get_entity_id_field_name(self):
+        return self.entity_id_field_name    
+
+class BaseEntityDetailViewPublic(BaseEntityView, VersionedObjectMixinPublic):
+
+    def get(self, request, **kwargs):
+        """
+        GET a single entity by its identifier
+        """
+        obj = self.get_object(request, **kwargs)
+
+        context = self.get_context_data(**kwargs)
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(obj, context=context)
+        return Response(serializer.data)
 
 class BaseEntityDetailView(BaseEntityView, VersionedObjectMixin):
 

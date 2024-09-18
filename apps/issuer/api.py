@@ -37,9 +37,6 @@ from mainsite.models import AccessTokenProxy
 import logging
 
 
-logger2 = logging.getLogger(__name__)
-
-
 logger = badgrlog.BadgrLogger()
 
 class IssuerList(BaseEntityListView):
@@ -268,7 +265,6 @@ class LearningPathParticipantsList(BaseEntityListView):
     )
     def get(self, request, **kwargs):
         learning_path_id = kwargs.get('slug')
-        logger2.error(learning_path_id)
         try:
             learning_path = LearningPath.objects.get(entity_id=learning_path_id)
         except LearningPath.DoesNotExist:
