@@ -31,7 +31,7 @@ from mainsite.models import BadgrApp
 from mainsite.utils import (OriginSetting, set_url_query_params, first_node_match, fit_image_to_height,
                             convert_svg_to_png)
 from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, LearningPathSerializerV1
-from .models import Issuer, BadgeClass, BadgeInstance, LearningPath, LearningPathParticipant
+from .models import Issuer, BadgeClass, BadgeInstance, LearningPath, LearningPathBadge, LearningPathParticipant
 from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, LearningPathSerializerV1
 from .models import Issuer, BadgeClass, BadgeInstance, LearningPath
 import logging 
@@ -758,3 +758,22 @@ class LearningPathList(JSONListView):
 
     def get_json(self, request):
         return super(LearningPathList, self).get_json(request)
+    
+class BadgeLearningPathList(JSONListView):
+    permission_classes = (permissions.AllowAny,)
+    model = LearningPath
+    serializer_class = LearningPathSerializerV1
+
+    def get(self, request, entity_id=None, *args, **kwargs):
+        try:
+            badge = BadgeClass.objects.get(entity_id=entity_id)
+        except BadgeClass.DoesNotExist:
+            raise Http404
+
+        learningpath_badges = LearningPathBadge.objects.filter(badge=badge).select_related('learning_path')
+
+        learning_paths = {lpb.learning_path for lpb in learningpath_badges}  # Use set comprehension for uniqueness
+
+        serialized_learning_paths = self.serializer_class(learning_paths, many=True, context={'request': request})
+
+        return Response(serialized_learning_paths.data)
