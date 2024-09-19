@@ -54,8 +54,7 @@ import uuid
 from django.http import JsonResponse
 import requests
 from requests_oauthlib import OAuth1
-from issuer.permissions import is_badgeclass_staff
-
+from issuer.permissions import is_badgeclass_staff, is_staff
 
 logger = badgrlog.BadgrLogger()
 
@@ -239,10 +238,10 @@ def requestBadge(req, qrCodeId):
 
         return JsonResponse({"message": "Badge request received"}, status=status.HTTP_200_OK)
 
-@api_view(["POST", "GET"])
+@api_view(["POST", "GET", "DELETE"])
 @permission_classes([IsAuthenticated])
 def requestLearningPath(req, lpId):
-    if req.method != "POST" and req.method != "GET":
+    if req.method != "POST" and req.method != "GET" and req.method != "DELETE":
         return JsonResponse(
             {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
         )
@@ -267,6 +266,15 @@ def requestLearningPath(req, lpId):
         requestedLP.save()
 
         return JsonResponse({"message": "LearningPath request received"}, status=status.HTTP_200_OK)
+    
+    elif req.method == "DELETE":
+        requestedLP = RequestedLearningPath.objects.get(learningpath=lp, user=req.user)
+        issuer = lp.issuer
+        if (not is_staff(req.user, issuer)):
+            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+        requestedLP.delete()
+
+        return JsonResponse({"message": "LearningPath request deleted"}, status=status.HTTP_200_OK)
 
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
