@@ -9,11 +9,13 @@ import logging
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.urls import reverse
 from django.core.validators import EmailValidator, URLValidator
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.utils.html import strip_tags
 from django.utils import timezone
 from rest_framework import serializers
 from django.db import transaction
+from json import loads as json_loads
+
 
 from . import utils
 from badgeuser.serializers_v1 import BadgeUserProfileSerializerV1, BadgeUserIdentifierFieldV1
@@ -705,7 +707,16 @@ class LearningPathSerializerV1(serializers.Serializer):
                     representation['requested'] = False    
                 completed_badges_count = participant[0].completed_badges.count()
                 lp_badges_count = len(representation['badges'])
-                representation['progress']= (completed_badges_count / lp_badges_count) * 100
+                completed_badges = participant[0].completed_badges.all()
+                progress = 0
+                for badge in completed_badges:
+                    extensions = badge.cached_extensions()
+                    for ext in extensions: 
+                        if ext.name == 'extensions:StudyLoadExtension':
+                            value = json_loads(ext.original_json)
+                            progress += value['StudyLoad']
+                # representation['progress']= (completed_badges_count / lp_badges_count) * 100
+                representation['progress']= progress 
                 representation['completed_at']= participant[0].completed_at
                 representation['completed_badges']= BadgeClassSerializerV1(participant[0].completed_badges, many=True).data
             else: 
