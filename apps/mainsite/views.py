@@ -238,10 +238,10 @@ def requestBadge(req, qrCodeId):
 
         return JsonResponse({"message": "Badge request received"}, status=status.HTTP_200_OK)
 
-@api_view(["POST", "GET", "DELETE"])
+@api_view(["POST", "GET"])
 @permission_classes([IsAuthenticated])
 def requestLearningPath(req, lpId):
-    if req.method != "POST" and req.method != "GET" and req.method != "DELETE":
+    if req.method != "POST" and req.method != "GET":
         return JsonResponse(
             {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
         )
@@ -275,6 +275,30 @@ def requestLearningPath(req, lpId):
         requestedLP.delete()
 
         return JsonResponse({"message": "LearningPath request deleted"}, status=status.HTTP_200_OK)
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def deleteLpRequest(req, requestId):
+    if req.method != "DELETE":
+        return JsonResponse(
+            {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        lpReq = RequestedLearningPath.objects.get(entity_id=requestId)
+        lp = lpReq.learningpath
+        issuer = lp.issuer
+
+        if (not is_staff(req.user, issuer)):
+            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+
+    except RequestedLearningPath.DoesNotExist:
+        return JsonResponse({'error': 'Invalid requestId'}, status=400)            
+
+    lpReq.delete()
+
+    return JsonResponse({"message": "Learningpath request deleted"}, status=status.HTTP_200_OK)
+
 
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
