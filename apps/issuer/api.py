@@ -24,7 +24,7 @@ from entity.serializers import BaseSerializerV2, V2ErrorSerializer
 from issuer.models import Issuer, BadgeClass, BadgeInstance, IssuerStaff, LearningPath, LearningPathParticipant, QrCode
 from issuer.permissions import (MayIssueBadgeClass, MayEditBadgeClass, IsEditor, IsEditorButOwnerForDelete,
                                 IsStaff, ApprovedIssuersOnly, BadgrOAuthTokenHasScope,
-                                BadgrOAuthTokenHasEntityScope, AuthorizationIsBadgrOAuthToken)
+                                BadgrOAuthTokenHasEntityScope, AuthorizationIsBadgrOAuthToken, MayIssueLearningPath)
 from issuer.serializers_v1 import (IssuerSerializerV1, BadgeClassSerializerV1,
                                    BadgeInstanceSerializerV1, LearningPathParticipantSerializerV1, QrCodeSerializerV1, LearningPathSerializerV1)
 from issuer.serializers_v2 import IssuerSerializerV2, BadgeClassSerializerV2, BadgeInstanceSerializerV2, \
@@ -34,8 +34,6 @@ from apispec_drf.decorators import apispec_get_operation, apispec_put_operation,
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAdmin
 from mainsite.serializers import CursorPaginatedListSerializer
 from mainsite.models import AccessTokenProxy
-import logging
-
 
 logger = badgrlog.BadgrLogger()
 
@@ -200,34 +198,38 @@ class IssuerBadgeClassList(UncachedPaginatedViewMixin, VersionedObjectMixin, Bas
     def post(self, request, **kwargs):
         self.get_object(request, **kwargs)  # trigger a has_object_permissions() check
         return super(IssuerBadgeClassList, self).post(request, **kwargs)
-
-class AllLearningPathList(UncachedPaginatedViewMixin, BaseEntityListView):
+    
+class IssuerLearningPathList(UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEntityListView):
     """
-    GET a list of learning paths within one issuer context or
+    GET a list of learningpaths within one issuer context or
     POST to create a new learningpath within the issuer context
     """
-    model = LearningPath
+    model = Issuer  # used by get_object()
     permission_classes = [
         IsServerAdmin
         | (AuthenticatedWithVerifiedIdentifier & IsEditor & BadgrOAuthTokenHasScope)
         | BadgrOAuthTokenHasEntityScope
     ]
     v1_serializer_class = LearningPathSerializerV1
-    valid_scopes = ["rw:issuer"]
+    # create_event = badgrlog.BadgeClassCreatedEvent
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
-    def get_queryset(self, request, **kwargs):
-        return LearningPath.objects.filter(issuer_id=request.user.id)
+    def get_queryset(self, request=None, **kwargs):
+        issuer = self.get_object(request, **kwargs)
+
+        # if self.get_page_size(request) is None:
+        #     return issuer.cached_learningpaths()
+        return LearningPath.objects.filter(issuer=issuer)
+
+    def get_context_data(self, **kwargs):
+        context = super(IssuerLearningPathList, self).get_context_data(**kwargs)
+        context['issuer'] = self.get_object(self.request, **kwargs)
+        return context
 
     @apispec_list_operation('LearningPath',
-        summary="Get a list of LearningPaths for authenticated user",
-        tags=["LearningPaths"],
-    )
-    def get(self, request, **kwargs):
-        return super(AllLearningPathList, self).get(request, **kwargs)
-
-    @apispec_post_operation('LearningPath',
-        summary="Create a new LearningPath",
-        tags=["LearningPaths"],
+        summary="Get a list of LearningPaths for a single Issuer",
+        description="Authenticated user must have owner, editor, or staff status on the Issuer",
+        tags=["Issuers", "LearningPaths"],
         parameters=[
             {
                 'in': 'query',
@@ -237,8 +239,17 @@ class AllLearningPathList(UncachedPaginatedViewMixin, BaseEntityListView):
             },
         ]
     )
+    def get(self, request, **kwargs):
+        return super(IssuerLearningPathList, self).get(request, **kwargs)
+
+    @apispec_post_operation('LearningPath',
+        summary="Create a new LearningPath associated with an Issuer",
+        description="Authenticated user must have owner, editor, or staff status on the Issuer",
+        tags=["Issuers", "LearningPath"],
+    )
     def post(self, request, **kwargs):
-        return super(AllLearningPathList, self).post(request, **kwargs)
+        self.get_object(request, **kwargs)  # trigger a has_object_permissions() check
+        return super(IssuerLearningPathList, self).post(request, **kwargs)    
 
 class LearningPathParticipantsList(BaseEntityListView):
     """
@@ -984,7 +995,7 @@ class QRCodeDetail(BaseEntityView):
 class LearningPathDetail(BaseEntityDetailView):
     model = LearningPath
     v1_serializer_class = LearningPathSerializerV1
-    permission_classes = (BadgrOAuthTokenHasScope,)
+    permission_classes = (BadgrOAuthTokenHasScope, MayIssueLearningPath)
     valid_scopes = ["rw:issuer"]
 
     @apispec_get_operation('LearningPath',

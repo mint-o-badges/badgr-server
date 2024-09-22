@@ -1,4 +1,5 @@
 import base64
+from datetime import datetime
 import json
 import time
 import re
@@ -329,30 +330,43 @@ def participateInLearningPath(req, learningPathId):
             {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
         )
     
-    try:
-        lp = LearningPath.objects.get(entity_id=learningPathId)
+    if req.method == "POST":
+        try:
+            lp = LearningPath.objects.get(entity_id=learningPathId)
 
-    except LearningPath.DoesNotExist:
-        return JsonResponse({'error': 'Invalid learningPathId'}, status=400) 
-    
-    participant, created = LearningPathParticipant.objects.get_or_create(
-        user=req.user,
-        learning_path=lp,
-    )
-    
-    if not created:
-        # User is already a participant, so they want to quit participating
-        participant.delete()
-        return JsonResponse({'message': 'Successfully removed participation'}, status=200)
-    else:
-        user_badgeclasses = {badge.badgeclass for badge in req.user.cached_badgeinstances()}
-        learningPath_badgeclasses = {badge.badge for badge in lp.learningpath_badges.all()}
-    
-        completed_badges = user_badgeclasses.intersection(learningPath_badgeclasses)
+        except LearningPath.DoesNotExist:
+            return JsonResponse({'error': 'Invalid learningPathId'}, status=400) 
+        
+        participant, created = LearningPathParticipant.objects.get_or_create(
+            user=req.user,
+            learning_path=lp,
+        )
+        
+        if not created:
+            # User is already a participant, so they want to quit participating
+            participant.delete()
+            return JsonResponse({'message': 'Successfully removed participation'}, status=200)
+        else:
+            participant.save()
+            return JsonResponse({'message': 'Successfully joined the learning path'}, status=200)
 
-        participant.completed_badges.set(completed_badges)
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def updateLearningPathparticipant(req, participantId):
+    if req.method != "PUT":
+        return JsonResponse(
+            {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
+        )
+    if req.method == "PUT":
+        try:
+            participant = LearningPathParticipant.objects.get(entity_id=participantId)
+
+        except LearningPathParticipant.DoesNotExist:
+            return JsonResponse({'error': 'Invalid participantId'}, status=400) 
+
+        participant.completed_at = datetime.now()
         participant.save()
-        return JsonResponse({'message': 'Successfully joined the learning path'}, status=200)
+        return JsonResponse({'message': 'Successfully updated learning path participant'}, status=200)
 
 
 def extractErrorMessage500(response: Response):

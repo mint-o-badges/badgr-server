@@ -1,6 +1,6 @@
 from django.views.generic.base import RedirectView, TemplateView
 from django.conf.urls.static import static
-from mainsite.views import deleteLpRequest, requestLearningPath, upload, nounproject, aiskills, requestBadge, deleteBadgeRequest, createCaptchaChallenge, participateInLearningPath
+from mainsite.views import deleteLpRequest, requestLearningPath, updateLearningPathparticipant, upload, nounproject, aiskills, requestBadge, deleteBadgeRequest, createCaptchaChallenge, participateInLearningPath
 from mainsite.views import (
     info_view,
     email_unsubscribe,
@@ -178,6 +178,9 @@ urlpatterns = [
     url(r'^deleteBadgeRequest/(?P<requestId>[^/]+)$', deleteBadgeRequest, name="delete-badge-request"),
 
     url(r'^learningpath/(?P<learningPathId>[^/]+)/participate$', participateInLearningPath, name="participate-in-learningpath"),
+
+    url(r'^learningpath/participant/(?P<participantId>[^/]+)$', updateLearningPathparticipant, name="update-learningpath-participant"),
+
 
 
 

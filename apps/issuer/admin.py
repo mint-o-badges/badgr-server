@@ -296,5 +296,5 @@ class LearningPathAdmin(ModelAdmin):
 badgr_admin.register(LearningPath, LearningPathAdmin)
 
 class LearningPathParticipantAdmin(ModelAdmin):
-    list_display = ('user', 'started_at', 'completed_at')
+    list_display = ('user', 'started_at', 'completed_at', 'entity_id')
 badgr_admin.register(LearningPathParticipant, LearningPathParticipantAdmin)    

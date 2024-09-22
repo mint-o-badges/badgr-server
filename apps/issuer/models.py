@@ -38,12 +38,10 @@ from mainsite.mixins import HashUploadedImage, ResizeUploadedImage, ScrubUploade
 from mainsite.models import BadgrApp, EmailBlacklist
 from mainsite import blacklist
 from mainsite.utils import OriginSetting, generate_entity_uri, get_name
-
 from .utils import (add_obi_version_ifneeded, CURRENT_OBI_VERSION, generate_rebaked_filename,
                     generate_sha256_hashstring, get_obi_context, parse_original_datetime, UNVERSIONED_BAKED_VERSION)
 
 from geopy.geocoders import Nominatim
-
 AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
 
 RECIPIENT_TYPE_EMAIL = 'email'
@@ -463,6 +461,10 @@ class Issuer(ResizeUploadedImage,
     @cachemodel.cached_method(auto_publish=True)
     def cached_badgeclasses(self):
         return self.badgeclasses.all().order_by("created_at")
+    
+    @cachemodel.cached_method(auto_publish=True)
+    def cached_learningpaths(self):
+        return self.learningpaths.all().order_by("created_at")
 
     @property
     def image_preview(self):
@@ -946,7 +948,8 @@ class BadgeClass(ResizeUploadedImage,
         # extensions
         if len(self.cached_extensions()) > 0:
             for extension in self.cached_extensions():
-                json[extension.name] = json_loads(extension.original_json)
+                # if extension.name != 'extensions:OrgImageExtension':
+                    json[extension.name] = json_loads(extension.original_json)
 
         # pass through imported json
         if include_extra:
@@ -1748,6 +1751,10 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
     def cached_badgrapp(self):
         id = self.badgrapp_id if self.badgrapp_id else None
         return BadgrApp.objects.get_by_id_or_default(badgrapp_id=id)
+    
+    @property
+    def cached_issuer(self):
+        return Issuer.cached.get(pk=self.issuer_id)
 
     @cachemodel.cached_method(auto_publish=True)
     def cached_learningpathbadges(self):
@@ -1822,25 +1829,6 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
     def get_absolute_url(self):
         return reverse('learningpath_json', kwargs={'entity_id': self.entity_id})               
 
-class LearningPathInstance(BaseVersionedEntity, BaseAuditedModel):
-    issued_on = models.DateTimeField(blank=False, null=False, default=timezone.now)
-
-    learningPath = models.ForeignKey(LearningPath, blank=False, null=False,
-                                   on_delete=models.CASCADE, related_name='learningpath_instances')
-    issuer = models.ForeignKey(Issuer, blank=False, null=False,
-                               on_delete=models.CASCADE)
-    user = models.ForeignKey('badgeuser.BadgeUser', blank=True, null=True, on_delete=models.SET_NULL)
-
-    recipient_identifier = models.CharField(max_length=768, blank=False, null=False, db_index=True)
-
-    # image = models.FileField(upload_to='uploads/learningpaths', blank=True)
-
-    # slug has been deprecated for now, but preserve existing values
-    slug = models.CharField(max_length=255, db_index=True, blank=True, null=True, default=None)
-
-    revoked = models.BooleanField(default=False, db_index=True)
-    revocation_reason = models.CharField(max_length=255, blank=True, null=True, default=None)
-
 class LearningPathBadge(cachemodel.CacheModel):
     learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE)
     badge = models.ForeignKey(BadgeClass, on_delete=models.CASCADE)
@@ -1852,15 +1840,23 @@ class LearningPathBadge(cachemodel.CacheModel):
     def delete(self, *args, **kwargs):
         super(LearningPathBadge, self).delete(*args, **kwargs)
 
-class LearningPathParticipant(models.Model):
+class LearningPathParticipant(BaseVersionedEntity, BaseAuditedModel):
     user = models.ForeignKey('badgeuser.BadgeUser', on_delete=models.CASCADE)
     learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE)
-    completed_badges = completed_badges = models.ManyToManyField(BadgeClass, blank=True)
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         unique_together = ['user', 'learning_path']
+
+    @property
+    def completed_badges(self):
+        lp_badges = LearningPathBadge.objects.filter(learning_path=self.learning_path)
+        lp_badgeclasses = [lp_badge.badge for lp_badge in lp_badges]
+        badgeinstances = self.user.cached_badgeinstances().filter(badgeclass__in=lp_badgeclasses)
+        badgeclasses = [badgeinstance.badgeclass for badgeinstance in badgeinstances]
+        return badgeclasses
+        # return self.user.earned_badges.filter(learningpath=self.learning_path)    
 
     @property
     def cached_user(self):

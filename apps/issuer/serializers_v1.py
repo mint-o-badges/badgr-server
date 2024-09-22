@@ -643,7 +643,7 @@ class RequestedLearningPathSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         representation = super(RequestedLearningPathSerializer, self).to_representation(instance)
-        representation['email'] = instance.user.email
+        representation["user"] = BadgeUserProfileSerializerV1(instance.user).data
         return representation    
 
 class BadgeOrderSerializer(serializers.Serializer):
@@ -662,7 +662,6 @@ class LearningPathSerializerV1(serializers.Serializer):
 
 
     name = StripTagsCharField(max_length=255)
-    # image = ValidImageField(required=False)
     slug = StripTagsCharField(max_length=255, read_only=True, source='entity_id')
     description = StripTagsCharField(max_length=16384, required=True, convert_null=True)
 
@@ -687,7 +686,6 @@ class LearningPathSerializerV1(serializers.Serializer):
         representation = super(LearningPathSerializerV1, self).to_representation(instance)  
         representation['issuer_name'] = instance.issuer.name
         representation['issuer_id']= instance.issuer.entity_id  
-        representation['badge_image'] = self.get_participationBadge_image(instance)
         representation['participationBadge_id'] = self.get_participationBadge_id(instance)
         representation['tags'] = list(instance.tag_items.values_list('name', flat=True))
         representation['badges'] = [
@@ -697,43 +695,71 @@ class LearningPathSerializerV1(serializers.Serializer):
             }
             for badge in instance.learningpathbadge_set.all().order_by('order')
         ]
-        if(request.user.is_authenticated):
-            participant = LearningPathParticipant.objects.filter(learning_path=instance, user=request.user)
-            if participant.exists():
-                requested_lp = RequestedLearningPath.objects.filter(learningpath=instance, user=request.user)
-                if(requested_lp).exists():
-                    representation['requested'] = True
-                else:
-                    representation['requested'] = False    
-                completed_badges_count = participant[0].completed_badges.count()
-                lp_badges_count = len(representation['badges'])
-                completed_badges = participant[0].completed_badges.all()
-                progress = 0
-                for badge in completed_badges:
-                    extensions = badge.cached_extensions()
-                    for ext in extensions: 
-                        if ext.name == 'extensions:StudyLoadExtension':
-                            value = json_loads(ext.original_json)
-                            progress += value['StudyLoad']
-                # representation['progress']= (completed_badges_count / lp_badges_count) * 100
-                representation['progress']= progress 
-                representation['completed_at']= participant[0].completed_at
-                representation['completed_badges']= BadgeClassSerializerV1(participant[0].completed_badges, many=True).data
-            else: 
-                representation['progress']= None
-                representation['completed_at']= None  
-                representation['completed_badges']= None 
-                representation['requested'] = False    
 
-        else:
-                representation['progress']= None
-                representation['completed_at']= None 
-                representation['completed_badges']= None 
-                representation['requested'] = False    
+        default_representation = {
+            'progress': None,
+            'completed_at': None,
+            'completed_badges': None,
+            'requested': False
+        }
+        if not request or not request.user.is_authenticated:
+            representation.update(default_representation)
+            return representation
 
+        try:
+            participant = LearningPathParticipant.objects.get(learning_path=instance, user=request.user)
 
+            requested_lp_exists = RequestedLearningPath.objects.filter(learningpath=instance, user=request.user).exists()
+            representation['requested'] = requested_lp_exists
 
+            completed_badges = participant.completed_badges
+            progress = sum(
+                json_loads(ext.original_json)['StudyLoad'] 
+                for badge in completed_badges 
+                for ext in badge.cached_extensions() 
+                if ext.name == 'extensions:StudyLoadExtension'
+            )
 
+            representation.update({
+                'progress': progress,
+                'completed_at': participant.completed_at,
+                'completed_badges': BadgeClassSerializerV1(participant.completed_badges, many=True).data,
+            })
+
+        except LearningPathParticipant.DoesNotExist:
+            representation.update(default_representation)
+        # if(request.user.is_authenticated):
+        #     participant = LearningPathParticipant.objects.filter(learning_path=instance, user=request.user)
+        #     if participant.exists():
+        #         requested_lp = RequestedLearningPath.objects.filter(learningpath=instance, user=request.user)
+        #         if(requested_lp).exists():
+        #             representation['requested'] = True
+        #         else:
+        #             representation['requested'] = False    
+        #         # completed_badges_count = participant[0].completed_badges.count()
+        #         # lp_badges_count = len(representation['badges'])
+        #         completed_badges = participant[0].completed_badges.all()
+        #         progress = 0
+        #         for badge in completed_badges:
+        #             extensions = badge.cached_extensions()
+        #             for ext in extensions: 
+        #                 if ext.name == 'extensions:StudyLoadExtension':
+        #                     value = json_loads(ext.original_json)
+        #                     progress += value['StudyLoad']
+        #         representation['progress']= progress 
+        #         representation['completed_at']= participant[0].completed_at
+        #         representation['completed_badges']= BadgeClassSerializerV1(participant[0].completed_badges, many=True).data
+        #     else: 
+        #         representation['progress']= None
+        #         representation['completed_at']= None  
+        #         representation['completed_badges']= None 
+        #         representation['requested'] = False    
+
+        # else:
+        #         representation['progress']= None
+        #         representation['completed_at']= None 
+        #         representation['completed_badges']= None 
+        #         representation['requested'] = False    
         return representation          
 
     def create(self, validated_data, **kwargs):
@@ -813,4 +839,9 @@ class LearningPathParticipantSerializerV1(serializers.ModelSerializer):
     
     class Meta:
         model = LearningPathParticipant
-        fields = ['user', 'started_at', 'completed_at', 'completed_badges']
+        fields = ['user', 'started_at', 'completed_at', 'completed_badges', 'entity_id']
+
+    # def to_representation(self, instance):
+    #     representation = super(LearningPathParticipantSerializerV1, self).to_representation(instance)
+    #     representation["entity_id"] = instance.entity_id
+    #     return representation
