@@ -247,62 +247,49 @@ def requestBadge(req, qrCodeId):
 
         return JsonResponse({"message": "Badge request received"}, status=status.HTTP_200_OK)
 
-def PageSetup(canvas, doc, badgeImage):
+def PageSetup(canvas, doc, badgeImage, issuerImage):
 
     canvas.saveState()
 
-    # Sunburst Background
-    color = PCMYKColor(0, 0, 0, 5)  
-    num_rays = 100
-    ray_angle = 2 * math.pi / num_rays
-    sweep_angle = ray_angle * 2
-
-    page_width, page_height = A4
-    mid_x = page_width / 2
-    mid_y = page_height / 2
-    radius = math.sqrt(mid_x**2 + mid_y**2)
-    offset_y = 20
-    mid_y_offset = mid_y - offset_y
-
-    for i in range(num_rays):
-        start_angle = sweep_angle * i
-        end_angle = start_angle + ray_angle
-        start_x = mid_x + radius * math.cos(start_angle)
-        start_y = mid_y_offset + radius * math.sin(start_angle)
-        end_x = mid_x + radius * math.cos(end_angle)
-        end_y = mid_y_offset + radius * math.sin(end_angle)
-        path = canvas.beginPath()
-        path.moveTo(mid_x, mid_y_offset)
-        path.arcTo(
-            start_x,
-            start_y,
-            end_x,
-            end_y,
-            start_angle * 180 / math.pi,
-        )
-        canvas.setFillColor(color)
-        canvas.setStrokeColor(color)
-        canvas.drawPath(path, fill=1, stroke=1)
-
     # Header
-    logo = ImageReader("{}images/Logo-Oeb.png".format(settings.STATIC_URL))
-    canvas.drawImage(logo, 20, 675, width=150, height=150, mask="auto", preserveAspectRatio=True)
+    institutionImage = ImageReader(issuerImage)
+    canvas.drawImage(institutionImage, 20, 705, width=80, height=80, mask="auto", preserveAspectRatio=True)
     page_width = canvas._pagesize[0]
+    page_height = canvas._pagesize[1]
     canvas.setStrokeColor("#492E98")
-    canvas.line(page_width / 2 - 75, 750, page_width / 2 + 250, 750)
+    canvas.line(page_width / 2 - 185, 750, page_width / 2 + 250, 750)
     
     badge = ImageReader(badgeImage)
-    canvas.drawImage(badge, 400, 250, width=100, height=100, mask="auto", preserveAspectRatio=True)
+    canvas.drawImage(badge, 250, 200, width=100, height=100, mask="auto", preserveAspectRatio=True)
 
     arrow = ImageReader("{}images/arrow-qrcode-download.png".format(settings.STATIC_URL))
     canvas.drawImage(arrow, 100, 300, width=80, height=80, mask="auto", preserveAspectRatio=True)
     # TODO: change Font-family to rubik
-    canvas.setFont("Helvetica-Bold", 16)
-    canvas.setFillColor("#492E98")
+    canvas.setFont("Rubik-Bold", 16)
     canvas.drawString(100, 275, "Hol dir jetzt")
     canvas.drawString(100, 250, "deinen Badge!")
 
+    bottom_10_percent_height = page_height * 0.10
+    canvas.setFillColor('#F1F0FF')  
+    canvas.rect(0, 0, page_width, bottom_10_percent_height, stroke=0, fill=1)
+
     canvas.restoreState()
+
+    canvas.saveState()
+    footer_text = "ERSTELLT ÜBER"
+
+    canvas.setFont("Rubik-Bold", 12)
+    canvas.setFillColor("#323232")
+
+    text_x = page_width / 2
+    text_y = bottom_10_percent_height / 2
+    canvas.drawCentredString(text_x, text_y, footer_text)
+
+
+    text = '<a href="https://openbadges.education"><u><strong>OPENBADGES.EDUCATION</strong></u></a>'
+    p = Paragraph(text, ParagraphStyle(name='oeb', fontSize=12, textColor='#1400ff', alignment=TA_CENTER))
+    p.wrap(page_width, bottom_10_percent_height)
+    p.drawOn(canvas, 0, text_y - 15)
 
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
@@ -325,7 +312,7 @@ def deleteBadgeRequest(req, requestId):
 
     return JsonResponse({"message": "Badge request deleted"}, status=status.HTTP_200_OK)
 
-def create_page(response, page_content, badgeImage):
+def create_page(response, page_content, badgeImage, issuerImage):
     doc = SimpleDocTemplate(response,pagesize=A4)
     
     styles = getSampleStyleSheet()
@@ -334,7 +321,7 @@ def create_page(response, page_content, badgeImage):
     Story = []
     Story.extend(page_content)
 
-    doc.build(Story, onFirstPage=lambda canvas, doc: PageSetup(canvas, doc, badgeImage))
+    doc.build(Story, onFirstPage=lambda canvas, doc: PageSetup(canvas, doc, badgeImage, issuerImage))
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -392,14 +379,12 @@ def downloadQrCode(request, *args, **kwargs):
     badgeImage = badge.image
 
     issuerImage = badge.issuer.image
-    Story.append(Image(issuerImage, width=60, height=60))
-    Story.append(Spacer(1, 15))
 
-    issued_by_style = ParagraphStyle(name='Issued_By', fontSize=18, textColor='#492E98', alignment=TA_CENTER)
-    text = f"<strong>- Vergeben von: {badge.issuer.name}</strong> -"
-    Story.append(Paragraph(text, issued_by_style))   
+    # issued_by_style = ParagraphStyle(name='Issued_By', fontSize=18, textColor='#492E98', alignment=TA_CENTER)
+    # text = f"<strong>- Vergeben von: {badge.issuer.name}</strong> -"
+    # Story.append(Paragraph(text, issued_by_style))   
 
-    create_page(response, Story, badgeImage)
+    create_page(response, Story, badgeImage, issuerImage)
 
     return response
     
