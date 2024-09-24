@@ -278,11 +278,17 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
         return super(BadgeClassSerializerV1, self).to_internal_value(data)
 
     def to_representation(self, instance):
+        exclude_orgImg = self.context.get('exclude_orgImg', None)
         representation = super(BadgeClassSerializerV1, self).to_representation(instance)
         representation['issuerName'] = instance.cached_issuer.name
         representation['issuer'] = OriginSetting.HTTP + \
             reverse('issuer_json', kwargs={'entity_id': instance.cached_issuer.entity_id})
         representation['json'] = instance.get_json(obi_version='1_1', use_canonical_id=True)
+        if exclude_orgImg and 'extensions' in representation:
+            representation['extensions'] = {
+                key: value for key, value in representation['extensions'].items()
+                if key != exclude_orgImg
+            }
         return representation
 
     def validate_image(self, image):
@@ -690,7 +696,7 @@ class LearningPathSerializerV1(serializers.Serializer):
         representation['tags'] = list(instance.tag_items.values_list('name', flat=True))
         representation['badges'] = [
             {
-                'badge': BadgeClassSerializerV1(badge.badge).data,
+                'badge': BadgeClassSerializerV1(badge.badge, context={'exclude_orgImg': 'extensions:OrgImageExtension'}).data,
                 'order': badge.order,
             }
             for badge in instance.learningpathbadge_set.all().order_by('order')
@@ -723,7 +729,7 @@ class LearningPathSerializerV1(serializers.Serializer):
             representation.update({
                 'progress': progress,
                 'completed_at': participant.completed_at,
-                'completed_badges': BadgeClassSerializerV1(participant.completed_badges, many=True).data,
+                'completed_badges': BadgeClassSerializerV1(participant.completed_badges, many=True, context={'exclude_orgImg': 'extensions:OrgImageExtension'}).data,
             })
 
         except LearningPathParticipant.DoesNotExist:
@@ -843,5 +849,4 @@ class LearningPathParticipantSerializerV1(serializers.ModelSerializer):
 
     # def to_representation(self, instance):
     #     representation = super(LearningPathParticipantSerializerV1, self).to_representation(instance)
-    #     representation["entity_id"] = instance.entity_id
     #     return representation
