@@ -260,6 +260,25 @@ def deleteBadgeRequest(req, requestId):
 
     return JsonResponse({"message": "Badge request deleted"}, status=status.HTTP_200_OK)
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def badgeRequestsByBadgeClass(req, badgeSlug):
+    if req.method != "GET":
+        return JsonResponse(
+            {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    requestedBadgesCount = 0
+    try:
+        badgeClass = BadgeClass.objects.get(entity_id=badgeSlug)
+    except BadgeClass.DoesNotExist:
+        return JsonResponse({'error': 'Invalid badgeSlug'}, status=400)
+
+    if (not is_badgeclass_staff(req.user, badgeClass)):
+        return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    requestedBadgesCount = RequestedBadge.objects.filter(badgeclass=badgeClass).count()
+    return JsonResponse({"request_count": requestedBadgesCount}, status=status.HTTP_200_OK)
 
 
 def extractErrorMessage500(response: Response):

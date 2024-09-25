@@ -1,6 +1,6 @@
 from django.views.generic.base import RedirectView, TemplateView
 from django.conf.urls.static import static
-from mainsite.views import upload, nounproject, aiskills, requestBadge, deleteBadgeRequest, createCaptchaChallenge
+from mainsite.views import badgeRequestsByBadgeClass, upload, nounproject, aiskills, requestBadge, deleteBadgeRequest, createCaptchaChallenge
 from mainsite.views import (
     info_view,
     email_unsubscribe,
@@ -171,6 +171,8 @@ urlpatterns = [
     url(r'^request-badge/(?P<qrCodeId>[^/]+)$', requestBadge, name="request-badge"),
 
     url(r'^deleteBadgeRequest/(?P<requestId>[^/]+)$', deleteBadgeRequest, name="delete-badge-request"),
+
+    url(r'^badgeRequests/(?P<badgeSlug>[^/]+)$', badgeRequestsByBadgeClass, name="badge-requests-by-badgeclass"),
 
 
     # meinBildungsraum OIDC connection
