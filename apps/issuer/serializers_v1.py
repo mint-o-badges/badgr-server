@@ -266,11 +266,17 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
         return super(BadgeClassSerializerV1, self).to_internal_value(data)
 
     def to_representation(self, instance):
+        exclude_orgImg = self.context.get('exclude_orgImg', None)
         representation = super(BadgeClassSerializerV1, self).to_representation(instance)
         representation['issuerName'] = instance.cached_issuer.name
         representation['issuer'] = OriginSetting.HTTP + \
             reverse('issuer_json', kwargs={'entity_id': instance.cached_issuer.entity_id})
         representation['json'] = instance.get_json(obi_version='1_1', use_canonical_id=True)
+        if exclude_orgImg and 'extensions' in representation:
+            representation['extensions'] = {
+                key: value for key, value in representation['extensions'].items()
+                if key != exclude_orgImg
+            }
         return representation
 
     def validate_image(self, image):

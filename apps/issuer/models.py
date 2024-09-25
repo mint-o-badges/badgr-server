@@ -894,7 +894,7 @@ class BadgeClass(ResizeUploadedImage,
         else:
             return getattr(settings, 'HTTP_ORIGIN') + default_storage.url(self.image.name)
 
-    def get_json(self, obi_version=CURRENT_OBI_VERSION, include_extra=True, use_canonical_id=False):
+    def get_json(self, obi_version=CURRENT_OBI_VERSION, include_extra=True, use_canonical_id=False,  include_orgImg=False):
         obi_version, context_iri = get_obi_context(obi_version)
         json = OrderedDict({'@context': context_iri})
         json.update(OrderedDict(
@@ -945,7 +945,8 @@ class BadgeClass(ResizeUploadedImage,
         # extensions
         if len(self.cached_extensions()) > 0:
             for extension in self.cached_extensions():
-                json[extension.name] = json_loads(extension.original_json)
+                if not include_orgImg and extension.name != 'extensions:OrgImageExtension':
+                    json[extension.name] = json_loads(extension.original_json)
 
         # pass through imported json
         if include_extra:
