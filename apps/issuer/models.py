@@ -235,7 +235,7 @@ class Issuer(ResizeUploadedImage,
     def has_nonrevoked_assertions(self):
         return self.badgeinstance_set.filter(revoked=False).exists()
 
-    def delete(self, *args, **kwargs):
+    def delete(self, *args, **kwargs):        
         if self.has_nonrevoked_assertions():
             raise ProtectedError("Issuer can not be deleted because it has previously issued badges.", self)
 
@@ -244,11 +244,12 @@ class Issuer(ResizeUploadedImage,
             bc.delete()
 
         staff = self.cached_issuerstaff()
-        ret = super(Issuer, self).delete(*args, **kwargs)
-
         # remove membership records
         for membership in staff:
             membership.delete(publish_issuer=False)
+        ret = super(Issuer, self).delete(*args, **kwargs)
+
+
 
         if apps.is_installed('badgebook'):
             # badgebook shim
