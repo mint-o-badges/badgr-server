@@ -275,7 +275,7 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
         if exclude_orgImg and 'extensions' in representation:
             representation['extensions'] = {
                 key: value for key, value in representation['extensions'].items()
-                if key != exclude_orgImg
+                if key != 'extensions:OrgImageExtension'
             }
         return representation
 
