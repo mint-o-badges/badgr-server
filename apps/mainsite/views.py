@@ -252,8 +252,13 @@ def PageSetup(canvas, doc, badgeImage, issuerImage):
     canvas.saveState()
 
     # Header
-    institutionImage = ImageReader(issuerImage)
-    canvas.drawImage(institutionImage, 20, 705, width=80, height=80, mask="auto", preserveAspectRatio=True)
+    try:
+        institutionImage = ImageReader(issuerImage)
+        canvas.drawImage(institutionImage, 20, 705, width=80, height=80, mask="auto", preserveAspectRatio=True)
+    except FileNotFoundError:
+        oebLogo = ImageReader("{}images/Logo-Oeb.png".format(settings.STATIC_URL))  
+        canvas.drawImage(oebLogo, 20, 705, width=80, height=80, mask="auto", preserveAspectRatio=True)
+
     page_width = canvas._pagesize[0]
     page_height = canvas._pagesize[1]
     canvas.setStrokeColor("#492E98")
