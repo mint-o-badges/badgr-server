@@ -583,7 +583,7 @@ class Issuer(ResizeUploadedImage,
                 'issuer_name': re.sub(r'[^\w\s]+', '', self.name, 0, re.I),
                 'issuer_url': self.url,
                 'issuer_email': self.email,
-                'site_name': badgr_app.name,
+                'site_name': re.sub(r'[^\w\s]+', '', badgr_app.name, 0, re.I),
                 'badgr_app': badgr_app
             }
         except KeyError as e:
