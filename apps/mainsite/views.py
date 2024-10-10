@@ -350,24 +350,28 @@ def participateInLearningPath(req, learningPathId):
             participant.save()
             return JsonResponse({'message': 'Successfully joined the learning path'}, status=200)
 
-@api_view(["PUT"])
+@api_view(["PUT", "DELETE"])
 @permission_classes([IsAuthenticated])
 def updateLearningPathparticipant(req, participantId):
-    if req.method != "PUT":
+    if req.method != "PUT" and req.method != "DELETE":
         return JsonResponse(
             {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
         )
-    if req.method == "PUT":
-        try:
-            participant = LearningPathParticipant.objects.get(entity_id=participantId)
+    try:
+        participant = LearningPathParticipant.objects.get(entity_id=participantId)
 
-        except LearningPathParticipant.DoesNotExist:
-            return JsonResponse({'error': 'Invalid participantId'}, status=400) 
+    except LearningPathParticipant.DoesNotExist:
+        return JsonResponse({'error': 'Invalid participantId'}, status=400) 
+    
+    if req.method == "PUT":
 
         participant.completed_at = datetime.now()
         participant.save()
         return JsonResponse({'message': 'Successfully updated learning path participant'}, status=200)
 
+    elif req.method == "DELETE":
+        participant.delete()
+        return JsonResponse({'message': 'Successfully deleted learning path participant'}, status=200)
 
 def extractErrorMessage500(response: Response):
     expression = re.compile("<pre>Error: ([^<]+)<br>")
