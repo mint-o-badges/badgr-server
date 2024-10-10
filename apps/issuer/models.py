@@ -1859,6 +1859,15 @@ class LearningPathParticipant(BaseVersionedEntity, BaseAuditedModel):
         # return self.user.earned_badges.filter(learningpath=self.learning_path)    
 
     @property
+    def participationBadgeAssertion(self):
+        if self.completed_at is not None:
+            badgeinstance = self.user.cached_badgeinstances().filter(badgeclass=self.learning_path.participationBadge).first()
+            if badgeinstance is not None:
+                return badgeinstance
+        else:
+            return None 
+           
+    @property
     def cached_user(self):
         from badgeuser.models import BadgeUser
         return BadgeUser.cached.get(pk=self.user_id)    

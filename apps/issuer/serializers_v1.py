@@ -842,10 +842,11 @@ class LearningPathSerializerV1(serializers.Serializer):
 class LearningPathParticipantSerializerV1(serializers.ModelSerializer):
     user = BadgeUserProfileSerializerV1(source='cached_user')
     completed_badges = BadgeClassSerializerV1(many=True, read_only=True)
+    participationBadgeAssertion = BadgeInstanceSerializerV1(read_only=True)
     
     class Meta:
         model = LearningPathParticipant
-        fields = ['user', 'started_at', 'completed_at', 'completed_badges', 'entity_id']
+        fields = ['user', 'started_at', 'completed_at', 'completed_badges', 'entity_id', 'participationBadgeAssertion']
 
     # def to_representation(self, instance):
     #     representation = super(LearningPathParticipantSerializerV1, self).to_representation(instance)
