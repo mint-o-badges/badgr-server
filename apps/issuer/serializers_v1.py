@@ -131,34 +131,25 @@ class IssuerSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
             raise serializers.ValidationError(
                 "Issuer email must be one of your verified addresses. "
                 "Add this email to your profile and try again.")
-
-        captcha = self.context['request'].data.get("captcha") if 'request' in self.context else None
-        
-        if captcha is not None:
-            if validate_altcha(captcha):
               
-                new_issuer = Issuer(**validated_data)
+        new_issuer = Issuer(**validated_data)
 
-                new_issuer.category = validated_data.get('category')
-                new_issuer.street = validated_data.get('street')
-                new_issuer.streetnumber = validated_data.get('streetnumber')
-                new_issuer.zip = validated_data.get('zip')
-                new_issuer.city = validated_data.get('city')
-                new_issuer.country = validated_data.get('country')
+        new_issuer.category = validated_data.get('category')
+        new_issuer.street = validated_data.get('street')
+        new_issuer.streetnumber = validated_data.get('streetnumber')
+        new_issuer.zip = validated_data.get('zip')
+        new_issuer.city = validated_data.get('city')
+        new_issuer.country = validated_data.get('country')
 
-                # Check whether issuer email domain matches institution website domain to verify it automatically 
-                if verifyIssuerAutomatically(validated_data.get('url'), validated_data.get('email')):
-                    new_issuer.verified = True
-                    
-                # set badgrapp
-                new_issuer.badgrapp = BadgrApp.objects.get_current(self.context.get('request', None))
+        # Check whether issuer email domain matches institution website domain to verify it automatically 
+        if verifyIssuerAutomatically(validated_data.get('url'), validated_data.get('email')):
+            new_issuer.verified = True
+            
+        # set badgrapp
+        new_issuer.badgrapp = BadgrApp.objects.get_current(self.context.get('request', None))
 
-                new_issuer.save()
-                return new_issuer
-            else:
-                raise serializers.ValidationError("Invalid captcha")
-        else:
-            raise serializers.ValidationError("Captcha required")
+        new_issuer.save()
+        return new_issuer
 
 
 
@@ -284,11 +275,6 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
         representation['issuer'] = OriginSetting.HTTP + \
             reverse('issuer_json', kwargs={'entity_id': instance.cached_issuer.entity_id})
         representation['json'] = instance.get_json(obi_version='1_1', use_canonical_id=True)
-        if exclude_orgImg and 'extensions' in representation:
-            representation['extensions'] = {
-                key: value for key, value in representation['extensions'].items()
-                if key != exclude_orgImg
-            }
         return representation
 
     def validate_image(self, image):
@@ -638,7 +624,6 @@ class QrCodeSerializerV1(serializers.Serializer):
 
 class RequestedBadgeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = RequestedBadge
         fields = '__all__' 
 
 

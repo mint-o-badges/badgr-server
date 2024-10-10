@@ -48,7 +48,7 @@ simplejson==3.6.4
 # JSON-LD
 PyLD==0.7.1
 rfc3987==1.3.4
-pypng==0.0.20
+pypng==0.20220715.0
 jsonfield==2.1.0
 
 # markdown support
@@ -114,7 +114,7 @@ uwsgi
 
 tox
 
-pyopenssl==24.0.0
+pyopenssl==24.2.1
 
 mozilla-django-oidc
 pyjwt
@@ -122,3 +122,5 @@ pyjwt
 reportlab
 svg2rlg
 svglib
+
+django-dbbackup
