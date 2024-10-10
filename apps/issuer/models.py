@@ -235,7 +235,7 @@ class Issuer(ResizeUploadedImage,
     def has_nonrevoked_assertions(self):
         return self.badgeinstance_set.filter(revoked=False).exists()
 
-    def delete(self, *args, **kwargs):
+    def delete(self, *args, **kwargs):        
         if self.has_nonrevoked_assertions():
             raise ProtectedError("Issuer can not be deleted because it has previously issued badges.", self)
 
@@ -244,11 +244,12 @@ class Issuer(ResizeUploadedImage,
             bc.delete()
 
         staff = self.cached_issuerstaff()
-        ret = super(Issuer, self).delete(*args, **kwargs)
-
         # remove membership records
         for membership in staff:
             membership.delete(publish_issuer=False)
+        ret = super(Issuer, self).delete(*args, **kwargs)
+
+
 
         if apps.is_installed('badgebook'):
             # badgebook shim
@@ -582,7 +583,7 @@ class Issuer(ResizeUploadedImage,
                 'issuer_name': re.sub(r'[^\w\s]+', '', self.name, 0, re.I),
                 'issuer_url': self.url,
                 'issuer_email': self.email,
-                'site_name': badgr_app.name,
+                'site_name': re.sub(r'@', '', badgr_app.name),
                 'badgr_app': badgr_app
             }
         except KeyError as e:
@@ -894,7 +895,7 @@ class BadgeClass(ResizeUploadedImage,
         else:
             return getattr(settings, 'HTTP_ORIGIN') + default_storage.url(self.image.name)
 
-    def get_json(self, obi_version=CURRENT_OBI_VERSION, include_extra=True, use_canonical_id=False):
+    def get_json(self, obi_version=CURRENT_OBI_VERSION, include_extra=True, use_canonical_id=False,  include_orgImg=False):
         obi_version, context_iri = get_obi_context(obi_version)
         json = OrderedDict({'@context': context_iri})
         json.update(OrderedDict(
@@ -945,7 +946,8 @@ class BadgeClass(ResizeUploadedImage,
         # extensions
         if len(self.cached_extensions()) > 0:
             for extension in self.cached_extensions():
-                json[extension.name] = json_loads(extension.original_json)
+                if not include_orgImg and extension.name != 'extensions:OrgImageExtension':
+                    json[extension.name] = json_loads(extension.original_json)
 
         # pass through imported json
         if include_extra:
