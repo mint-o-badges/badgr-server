@@ -60,7 +60,7 @@ bleach==3.3.0
 badgecheck==1.1.8
 # TODO replace badgecheck with openbadges after openbadges next release resolving dependency conflicts
 # openbadges==1.1.1
-openbadges-bakery==1.2.4
+openbadges-bakery==2.0.0
 
 celery==4.1.1
 django-celery-results==1.0.1
