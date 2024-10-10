@@ -272,8 +272,8 @@ def PageSetup(canvas, doc, badgeImage, issuerImage):
     canvas.drawImage(arrow, 100, 300, width=80, height=80, mask="auto", preserveAspectRatio=True)
     # TODO: change Font-family to rubik
     canvas.setFont("Rubik-Bold", 16)
-    canvas.drawString(100, 275, "Hol dir jetzt")
-    canvas.drawString(100, 250, "deinen Badge!")
+    canvas.drawString(100, 275, "Hol' dir jetzt")
+    canvas.drawString(100, 250, "deinen Badge!") 
 
     bottom_10_percent_height = page_height * 0.10
     canvas.setFillColor('#F1F0FF')  
