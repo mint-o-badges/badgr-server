@@ -48,6 +48,7 @@ class LocalBadgeInstanceUploadSerializerV1(serializers.Serializer):
 
         representation['extensions']["extensions:CompetencyExtension"] = obj.badgeclass.json['extensions:CompetencyExtension']
         representation['extensions']["extensions:CategoryExtension"] = obj.badgeclass.json['extensions:CategoryExtension']
+        representation['extensions']["extensions:StudyLoadExtension"] = obj.badgeclass.json['extensions:StudyLoadExtension']
 
         representation['id'] = obj.entity_id
         representation['json'] = V1BadgeInstanceSerializer(obj, context=self.context).data
