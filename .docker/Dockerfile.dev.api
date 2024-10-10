@@ -10,7 +10,8 @@ RUN apt-get install -y default-libmysqlclient-dev \
                        build-essential \
                        xmlsec1 \
                        libxmlsec1-dev \
-                       pkg-config
+                       pkg-config \ 
+                       default-mysql-client
 
 RUN pip install uwsgi
 
