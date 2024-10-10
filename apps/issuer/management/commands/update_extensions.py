@@ -19,15 +19,14 @@ class Command(BaseCommand):
                 if competency_extension is not None:
                     competency_json = competency_extension.original_json
                     competency_dict = loads(competency_json)
-                    self.stdout.write("Updating competency {}".format(competency_dict.get('name')))
                     for item in competency_dict: 
                         escoID = item.get('escoID')
-                        if escoID is not None: 
+                        if escoID is not None and escoID != '': 
                             item['framework'] = 'esco'
                             item['source'] = 'ai'
                             item['framework-identifier']= escoID if escoID.startswith('http') else self.escoBaseURl + escoID
                             del item['escoID']
-                        else:
+                        elif escoID == '':
                             item['framework'] = ''
                             item['source'] = 'manual'  
                             item['framework-identifier']= ''
