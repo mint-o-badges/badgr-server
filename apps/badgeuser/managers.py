@@ -61,7 +61,10 @@ class BadgeUserManager(UserManager):
                 return self.model(email=email)
             elif existing_email.verified:
                 raise ValidationError(self.duplicate_email_error)
-            else:
+            # Only if at least the email or the user *really* exists, delete it.
+            # Otherwise it was likely deleted via the staff interface.
+            elif (CachedEmailAddress.objects.filter(pk=existing_email.pk).exists() or
+                  self.model.objects.filter(pk=existing_email.user.pk).exists()):
                 # yes, it's an unverified email address owned by a claimed user
                 # remove the email
                 existing_email.delete()
