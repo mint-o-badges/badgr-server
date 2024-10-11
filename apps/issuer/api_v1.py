@@ -222,9 +222,20 @@ class IssuerStaffList(VersionedObjectMixin, APIView):
                 raise ValidationError("Cannot modify staff record. Matching staff record does not exist.")
 
         elif action == 'remove':
-            IssuerStaff.objects.filter(user=user_to_modify, issuer=current_issuer).delete()
+            issuer_staffs = IssuerStaff.objects.filter(user=user_to_modify, issuer=current_issuer)
+            # Do the deletion one by one so that the issuer_staffs custom delete method is called
+            for issuer_staff in issuer_staffs:
+                # Update the current issuer with a reference to the issuer of the issuer_staff,
+                # since it's getting updated in the deletion process
+                current_issuer = issuer_staff.issuer
+                issuer_staff.delete()
             current_issuer.publish(publish_staff=False)
             user_to_modify.publish()
+
+            # update cached issuers and badgeclasses for user
+            current_issuer.save()
+            user_to_modify.save()
+
             return Response(
                 "User %s has been removed from %s staff." % (user_to_modify.username, current_issuer.name),
                 status=status.HTTP_200_OK)

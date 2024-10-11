@@ -1,4 +1,3 @@
-from allauth.socialaccount.providers.azure.provider import AzureProvider
 from urllib.parse import parse_qs, urlparse
 from allauth.socialaccount.providers.linkedin_oauth2.provider import LinkedInOAuth2Provider
 from allauth.tests import MockedResponse, mocked_response
@@ -94,21 +93,3 @@ class LinkedInOAuth2ProviderTests(DoesNotSendVerificationEmailMixin,
 
             email_again = CachedEmailAddress.objects.last()
             self.assertTrue(email_again.verified)
-
-
-class AzureProviderTests(DoesNotSendVerificationEmailMixin, BadgrOAuth2TestsMixin, BadgrSocialAuthTestCase):
-    provider_id = AzureProvider.id
-
-    def get_mocked_response(self):
-        response = MockedResponse(200, """
-        {"displayName": "John Smith", "mobilePhone": null,
-        "preferredLanguage": "en-US", "jobTitle": "Director",
-        "userPrincipalName": "john@smith.com",
-        "@odata.context":
-        "https://graph.microsoft.com/v1.0/$metadata#users/$entity",
-        "officeLocation": "Paris", "businessPhones": [],
-        "mail": "john@smith.com", "surname": "Smith",
-        "givenName": "John", "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"}
-        """)
-        response.ok = True
-        return response

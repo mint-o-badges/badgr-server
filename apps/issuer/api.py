@@ -7,22 +7,26 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
 from django.http import Http404
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
+
 from oauthlib.oauth2.rfc6749.tokens import random_token_generator
 from rest_framework import status, serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from rest_framework.status import HTTP_404_NOT_FOUND, HTTP_200_OK, HTTP_400_BAD_REQUEST
+from rest_framework.status import HTTP_404_NOT_FOUND, HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_201_CREATED, HTTP_204_NO_CONTENT
+from rest_framework.views import APIView
+
 
 import badgrlog
 from entity.api import BaseEntityListView, BaseEntityDetailView, VersionedObjectMixin, BaseEntityView, \
     UncachedPaginatedViewMixin
 from entity.serializers import BaseSerializerV2, V2ErrorSerializer
-from issuer.models import Issuer, BadgeClass, BadgeInstance, IssuerStaff
+from issuer.models import Issuer, BadgeClass, BadgeInstance, IssuerStaff, QrCode
 from issuer.permissions import (MayIssueBadgeClass, MayEditBadgeClass, IsEditor, IsEditorButOwnerForDelete,
                                 IsStaff, ApprovedIssuersOnly, BadgrOAuthTokenHasScope,
                                 BadgrOAuthTokenHasEntityScope, AuthorizationIsBadgrOAuthToken)
 from issuer.serializers_v1 import (IssuerSerializerV1, BadgeClassSerializerV1,
-                                   BadgeInstanceSerializerV1)
+                                   BadgeInstanceSerializerV1, QrCodeSerializerV1)
 from issuer.serializers_v2 import IssuerSerializerV2, BadgeClassSerializerV2, BadgeInstanceSerializerV2, \
     IssuerAccessTokenSerializerV2
 from apispec_drf.decorators import apispec_get_operation, apispec_put_operation, \
@@ -31,8 +35,8 @@ from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAd
 from mainsite.serializers import CursorPaginatedListSerializer
 from mainsite.models import AccessTokenProxy
 
-logger = badgrlog.BadgrLogger()
 
+logger = badgrlog.BadgrLogger()
 
 class IssuerList(BaseEntityListView):
     """
@@ -830,3 +834,76 @@ class IssuersChangedSince(BaseEntityView):
             context=context)
         serializer.is_valid()
         return Response(serializer.data)
+
+class QRCodeDetail(BaseEntityView):
+    """
+    QrCode list resource for the authenticated user
+    """
+    model = QrCode
+    v1_serializer_class = QrCodeSerializerV1
+    # v2_serializer_class = IssuerSerializerV2
+    permission_classes = (BadgrOAuthTokenHasScope,)
+    valid_scopes = ["rw:issuer"]
+
+    def get_objects(self, request, **kwargs):
+        badgeSlug = kwargs.get('badgeSlug')
+        issuerSlug = kwargs.get('issuerSlug')
+        return QrCode.objects.filter(badgeclass__entity_id=badgeSlug, issuer__entity_id=issuerSlug)
+    
+    def get_object(self, request, **kwargs):
+        qr_code_id = kwargs.get('slug')
+        return QrCode.objects.get(entity_id=qr_code_id)
+
+    @apispec_list_operation('QrCode',
+        summary="Get a list of QrCodes for authenticated user",
+        tags=["QrCodes"],
+    )
+    def get(self, request, **kwargs):
+        serializer_class = self.get_serializer_class()
+
+        if 'slug' in kwargs:
+            try:
+                qr_code = self.get_object(request, **kwargs)
+                serializer = serializer_class(qr_code)  
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except QrCode.DoesNotExist:
+                return Response({"detail": "QR code not found"}, status=status.HTTP_404_NOT_FOUND)
+        else:             
+            objects = self.get_objects(request, **kwargs)
+            serializer = serializer_class(objects, many=True)
+
+            return Response(serializer.data)
+
+    @apispec_post_operation('QrCode',
+        summary="Create a new QrCode",
+        tags=["QrCodes"],
+    )
+    def post(self, request, **kwargs):
+
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        new_instance = serializer.save()
+        return Response(serializer.data, status=HTTP_201_CREATED)
+    
+    @apispec_put_operation('QrCode',
+       summary="Update a single QrCode",
+       tags=["QrCodes"],
+    )
+
+    def put(self, request, **kwargs):
+        qr_code = self.get_object(request, **kwargs)
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(qr_code, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        updated_instance = serializer.save(updated_by=request.user)
+        return Response(serializer.data, status=HTTP_200_OK)
+    
+    @apispec_delete_operation('QrCode',
+        summary="Delete an existing QrCode",
+        tags=["QrCodes"],
+    )
+    def delete(self, request, **kwargs):
+        qr_code = self.get_object(request, **kwargs)
+        qr_code.delete()
+        return Response(status=HTTP_204_NO_CONTENT)

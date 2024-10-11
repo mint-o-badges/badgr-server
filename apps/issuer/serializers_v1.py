@@ -23,7 +23,7 @@ from mainsite.serializers import DateTimeWithUtcZAtEndField, HumanReadableBoolea
 from mainsite.utils import OriginSetting, validate_altcha, verifyIssuerAutomatically
 from mainsite.validators import ChoicesValidator, BadgeExtensionValidator, PositiveIntegerValidator, TelephoneValidator
 from .models import Issuer, BadgeClass, IssuerStaff, BadgeInstance, BadgeClassExtension, \
-        RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL
+        RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL, QrCode, RequestedBadge
 
 logger = logging.getLogger(__name__)
 
@@ -128,34 +128,25 @@ class IssuerSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
             raise serializers.ValidationError(
                 "Issuer email must be one of your verified addresses. "
                 "Add this email to your profile and try again.")
-
-        captcha = self.context['request'].data.get("captcha") if 'request' in self.context else None
-        
-        if captcha is not None:
-            if validate_altcha(captcha):
               
-                new_issuer = Issuer(**validated_data)
+        new_issuer = Issuer(**validated_data)
 
-                new_issuer.category = validated_data.get('category')
-                new_issuer.street = validated_data.get('street')
-                new_issuer.streetnumber = validated_data.get('streetnumber')
-                new_issuer.zip = validated_data.get('zip')
-                new_issuer.city = validated_data.get('city')
-                new_issuer.country = validated_data.get('country')
+        new_issuer.category = validated_data.get('category')
+        new_issuer.street = validated_data.get('street')
+        new_issuer.streetnumber = validated_data.get('streetnumber')
+        new_issuer.zip = validated_data.get('zip')
+        new_issuer.city = validated_data.get('city')
+        new_issuer.country = validated_data.get('country')
 
-                # Check whether issuer email domain matches institution website domain to verify it automatically 
-                if verifyIssuerAutomatically(validated_data.get('url'), validated_data.get('email')):
-                    new_issuer.verified = True
-                    
-                # set badgrapp
-                new_issuer.badgrapp = BadgrApp.objects.get_current(self.context.get('request', None))
+        # Check whether issuer email domain matches institution website domain to verify it automatically 
+        if verifyIssuerAutomatically(validated_data.get('url'), validated_data.get('email')):
+            new_issuer.verified = True
+            
+        # set badgrapp
+        new_issuer.badgrapp = BadgrApp.objects.get_current(self.context.get('request', None))
 
-                new_issuer.save()
-                return new_issuer
-            else:
-                raise serializers.ValidationError("Invalid captcha")
-        else:
-            raise serializers.ValidationError("Captcha required")
+        new_issuer.save()
+        return new_issuer
 
 
 
@@ -275,11 +266,17 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
         return super(BadgeClassSerializerV1, self).to_internal_value(data)
 
     def to_representation(self, instance):
+        exclude_orgImg = self.context.get('exclude_orgImg', None)
         representation = super(BadgeClassSerializerV1, self).to_representation(instance)
         representation['issuerName'] = instance.cached_issuer.name
         representation['issuer'] = OriginSetting.HTTP + \
             reverse('issuer_json', kwargs={'entity_id': instance.cached_issuer.entity_id})
         representation['json'] = instance.get_json(obi_version='1_1', use_canonical_id=True)
+        if exclude_orgImg and 'extensions' in representation:
+            representation['extensions'] = {
+                key: value for key, value in representation['extensions'].items()
+                if key != 'extensions:OrgImageExtension'
+            }
         return representation
 
     def validate_image(self, image):
@@ -366,6 +363,8 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
 
         instance.expires_amount = validated_data.get('expires_amount', None)
         instance.expires_duration = validated_data.get('expires_duration', None)
+
+        instance.imageFrame = validated_data.get('imageFrame', True)
 
         logger.debug("SAVING EXTENSION")
         self.save_extensions(validated_data, instance)
@@ -566,3 +565,66 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
         instance.save()
 
         return instance
+
+class QrCodeSerializerV1(serializers.Serializer):
+    title = serializers.CharField(max_length=254)
+    slug = StripTagsCharField(max_length=255, source='entity_id', read_only=True)
+    createdBy = serializers.CharField(max_length=254)
+    badgeclass_id = serializers.CharField(max_length=254)
+    issuer_id = serializers.CharField(max_length=254)
+    request_count = serializers.SerializerMethodField()
+
+    valid_from = DateTimeWithUtcZAtEndField(
+        required=False, allow_null=True, default_timezone=pytz.utc
+    )
+    expires_at = DateTimeWithUtcZAtEndField(
+        required=False, allow_null=True, default_timezone=pytz.utc
+    )
+
+    class Meta:
+        apispec_definition = ('QrCode', {})
+
+    def create(self, validated_data, **kwargs):
+        title = validated_data.get('title')
+        createdBy = validated_data.get('createdBy')
+        badgeclass_id = validated_data.get('badgeclass_id')
+        issuer_id = validated_data.get('issuer_id')
+
+        try:
+            issuer = Issuer.objects.get(entity_id=issuer_id)
+        except Issuer.DoesNotExist:
+            raise serializers.ValidationError(f"Issuer with ID '{issuer_id}' does not exist.")
+
+        try:
+            badgeclass = BadgeClass.objects.get(entity_id=badgeclass_id)
+        except BadgeClass.DoesNotExist:
+            raise serializers.ValidationError(f"BadgeClass with ID '{badgeclass_id}' does not exist.")
+
+        new_qrcode = QrCode.objects.create(
+            title=title,
+            createdBy=createdBy,
+            issuer=issuer,
+            badgeclass=badgeclass,
+            valid_from=validated_data.get('valid_from'),
+            expires_at=validated_data.get('expires_at')
+        )
+
+        return new_qrcode
+
+    def update(self, instance, validated_data):
+        instance.title = validated_data.get('title', instance.title)
+        instance.createdBy = validated_data.get('createdBy', instance.createdBy)
+        instance.valid_from = validated_data.get('valid_from', instance.valid_from)
+        instance.expires_at = validated_data.get('expires_at', instance.expires_at)
+        instance.save()
+        return instance
+    
+    def get_request_count(self, obj):
+        return obj.requestedbadges.count()
+
+   
+
+class RequestedBadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RequestedBadge
+        fields = '__all__'     

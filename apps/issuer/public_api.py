@@ -76,6 +76,15 @@ class JSONListView(BaseEntityListView, UncachedPaginatedViewMixin):
     def log(self, obj):
         pass
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        exclude_orgImg = self.request.query_params.get('exclude_orgImg', None)
+        if exclude_orgImg:
+            context['exclude_orgImg'] = exclude_orgImg.lower() == 'true'
+
+        return context
+
     def get(self, request, **kwargs):
         objects = self.model.objects
         context = self.get_context_data(**kwargs)
@@ -706,3 +715,5 @@ class VerifyBadgeAPIEndpoint(JSONComponentView):
         result = self.get_object(entity_id).get_json(expand_badgeclass=True, expand_issuer=True)
 
         return Response(BaseSerializerV2.response_envelope([result], True, 'OK'), status=status.HTTP_200_OK)
+
+
