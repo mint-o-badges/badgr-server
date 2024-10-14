@@ -31,7 +31,7 @@ RUN groupadd -g 999 python && \
     useradd -r -u 999 -g python python
 
 RUN mkdir /badgr_server && chown python:python /badgr_server
-RUN mkdir /backups && chown python:python /badgr_server
+RUN mkdir /backups && chown python:python /backups
 
 WORKDIR /badgr_server
 
