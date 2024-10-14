@@ -1854,7 +1854,7 @@ class LearningPathParticipant(BaseVersionedEntity, BaseAuditedModel):
     def completed_badges(self):
         lp_badges = LearningPathBadge.objects.filter(learning_path=self.learning_path)
         lp_badgeclasses = [lp_badge.badge for lp_badge in lp_badges]
-        badgeinstances = self.user.cached_badgeinstances().filter(badgeclass__in=lp_badgeclasses)
+        badgeinstances = self.user.cached_badgeinstances().filter(badgeclass__in=lp_badgeclasses, revoked=False)
         badgeclasses = list({badgeinstance.badgeclass for badgeinstance in badgeinstances})
         return badgeclasses
         # return self.user.earned_badges.filter(learningpath=self.learning_path)    
