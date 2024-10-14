@@ -6,6 +6,8 @@ from django.db import transaction
 
 class Command(BaseCommand):
 
+    help = 'Update the competency extensions of a badgeclass to our new format'
+
     escoBaseURl: str = 'http://data.europa.eu'
 
     def add_arguments(self, parser):
