@@ -24,12 +24,15 @@ FROM python:3.8.14-slim-buster
 RUN apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-cairo \
-                       libxml2
+                       libxml2 \ 
+                       default-mysql-client
 
 RUN groupadd -g 999 python && \
     useradd -r -u 999 -g python python
 
 RUN mkdir /badgr_server && chown python:python /badgr_server
+RUN mkdir /backups && chown python:python /backups
+
 WORKDIR /badgr_server
 
 # Copy installed dependencies
