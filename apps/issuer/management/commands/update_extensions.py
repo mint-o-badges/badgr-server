@@ -7,7 +7,12 @@ from django.db import transaction
 class Command(BaseCommand):
 
     escoBaseURl: str = 'http://data.europa.eu'
+
+    def add_arguments(self, parser):
+        parser.add_argument('--dry-run', action='store_true', help='Simulate the changes')
+
     def handle(self, *args, **options):
+        dry_run = options['dry_run']
         with transaction.atomic():
 
             badgeclasses = BadgeClass.objects.all()
@@ -31,6 +36,9 @@ class Command(BaseCommand):
                             item['source'] = 'manual'  
                             item['framework-identifier']= ''
 
-                    updated_competency_json = json.dumps(competency_dict)  
+                    updated_competency_json = json.dumps(competency_dict, indent=4)  
                     competency_extension.original_json = updated_competency_json
-                    competency_extension.save()               
+                    if dry_run:
+                        self.stdout.write(f'DRY-RUN: Would update competencies in badgeclass {badgeclass.name}:\n {updated_competency_json}')
+                    else:
+                        competency_extension.save()               
