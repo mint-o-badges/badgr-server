@@ -718,39 +718,19 @@ class LearningPathSerializerV1(serializers.Serializer):
             })
 
         except LearningPathParticipant.DoesNotExist:
-            representation.update(default_representation)
-        # if(request.user.is_authenticated):
-        #     participant = LearningPathParticipant.objects.filter(learning_path=instance, user=request.user)
-        #     if participant.exists():
-        #         requested_lp = RequestedLearningPath.objects.filter(learningpath=instance, user=request.user)
-        #         if(requested_lp).exists():
-        #             representation['requested'] = True
-        #         else:
-        #             representation['requested'] = False    
-        #         # completed_badges_count = participant[0].completed_badges.count()
-        #         # lp_badges_count = len(representation['badges'])
-        #         completed_badges = participant[0].completed_badges.all()
-        #         progress = 0
-        #         for badge in completed_badges:
-        #             extensions = badge.cached_extensions()
-        #             for ext in extensions: 
-        #                 if ext.name == 'extensions:StudyLoadExtension':
-        #                     value = json_loads(ext.original_json)
-        #                     progress += value['StudyLoad']
-        #         representation['progress']= progress 
-        #         representation['completed_at']= participant[0].completed_at
-        #         representation['completed_badges']= BadgeClassSerializerV1(participant[0].completed_badges, many=True).data
-        #     else: 
-        #         representation['progress']= None
-        #         representation['completed_at']= None  
-        #         representation['completed_badges']= None 
-        #         representation['requested'] = False    
-
-        # else:
-        #         representation['progress']= None
-        #         representation['completed_at']= None 
-        #         representation['completed_badges']= None 
-        #         representation['requested'] = False    
+            if request.user.is_authenticated: 
+                user_badgeinstances = BadgeInstance.objects.filter(recipient_identifier=request.user.email, revoked=False)
+                user_badgeclasses = [badge.badgeclass for badge in user_badgeinstances]
+                completed_badgeclasses = [badge for badge in user_badgeclasses if badge in [badge.badge for badge in instance.learningpathbadge_set.all()]]
+                completed_badges = BadgeClassSerializerV1(completed_badgeclasses, many=True, context={'exclude_orgImg': 'extensions:OrgImageExtension'}).data
+                representation.update({
+                    'progress': None,
+                    'completed_at': None,
+                    'completed_badges': completed_badges,
+                    'requested': False
+                })
+            else: 
+                representation.update(default_representation)   
         return representation          
 
     def create(self, validated_data, **kwargs):
