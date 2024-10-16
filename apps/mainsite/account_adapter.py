@@ -85,7 +85,7 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
         num_competencies = len(competencies)
 
         if num_competencies > 0:
-                esco = any(c['escoID'] for c in competencies)
+                esco = any(c['framework'] == "esco" for c in competencies)
                 competenciesPerPage = 9
 
                 Story.append(PageBreak())
@@ -130,7 +130,7 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                         studyload = "%s h" % int(competencies[i]['studyLoad'] / 60 )
                     competency_name = competencies[i]['name']
                     competency = competency_name
-                    rounded_rect = RoundedRectFlowable(0, -1, 450, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload = studyload, esco = competencies[i]['escoID'])
+                    rounded_rect = RoundedRectFlowable(0, -1, 450, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload = studyload, frameworkId = competencies[i]['framework_identifier'])
 
                     Story.append(rounded_rect)    
                     Story.append(Spacer(1, 10))   
