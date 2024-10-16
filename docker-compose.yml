@@ -10,7 +10,7 @@ services:
     depends_on:
       - "db"
       - "memcached"
-    command: /badgr_server/manage.py runserver 0.0.0.0:8000
+    # command: /badgr_server/manage.py runserver 0.0.0.0:8000
     volumes:
       - ./apps:/badgr_server/apps
       - ./manage.py:/badgr_server/manage.py

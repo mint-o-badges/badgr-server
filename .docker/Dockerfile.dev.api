@@ -15,5 +15,12 @@ RUN apt-get install -y default-libmysqlclient-dev \
 RUN pip install uwsgi
 
 COPY requirements.txt              /badgr_server
+
+COPY entrypoint.dev.sh             /badgr_server
+
+RUN chmod +x entrypoint.dev.sh
+
 RUN pip --timeout=1000 install -r requirements.txt
 RUN pip --timeout=1000 install debugpy
+
+ENTRYPOINT ["/badgr_server/entrypoint.dev.sh"]
