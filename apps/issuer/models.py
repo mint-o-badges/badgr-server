@@ -1233,7 +1233,9 @@ class BadgeInstance(BaseAuditedModel,
             competency_entry = {
                 'name': competency.get('name'),
                 'description': competency.get('description'),
-                'escoID': competency.get('escoID'),
+                'framework': competency.get('framework'),
+                'framework_identifier': competency.get('framework_identifier'),
+                'source': competency.get('source'),
                 'studyLoad': competency.get('studyLoad'),
                 'skill': competency.get('category')
             }

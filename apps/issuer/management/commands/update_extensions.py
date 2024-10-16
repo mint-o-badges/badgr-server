@@ -31,12 +31,12 @@ class Command(BaseCommand):
                         if escoID is not None and escoID != '': 
                             item['framework'] = 'esco'
                             item['source'] = 'ai'
-                            item['framework-identifier']= escoID if escoID.startswith('http') else self.escoBaseURl + escoID
+                            item['framework_identifier']= escoID if escoID.startswith('http') else self.escoBaseURl + escoID
                             del item['escoID']
                         elif escoID == '':
                             item['framework'] = ''
                             item['source'] = 'manual'  
-                            item['framework-identifier']= ''
+                            item['framework_identifier']= ''
 
                     updated_competency_json = json.dumps(competency_dict, indent=4)  
                     competency_extension.original_json = updated_competency_json

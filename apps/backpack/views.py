@@ -44,7 +44,7 @@ pdfmetrics.registerFont(TTFont('Rubik-Medium', font_path_rubik_medium))
 pdfmetrics.registerFont(TTFont('Rubik-Bold', font_path_rubik_bold))
 
 class RoundedRectFlowable(Flowable):
-    def __init__(self, x, y, width, height, radius, text, strokecolor, fillcolor, studyload, esco = ''):
+    def __init__(self, x, y, width, height, radius, text, strokecolor, fillcolor, studyload, frameworkId = ''):
         super().__init__()
         self.x = x
         self.y = y
@@ -55,7 +55,7 @@ class RoundedRectFlowable(Flowable):
         self.fillcolor = fillcolor 
         self.text = text
         self.studyload = studyload
-        self.esco = esco
+        self.frameworkId = frameworkId
 
     def split_text(self, text, max_width):
         words = text.split()
@@ -98,11 +98,11 @@ class RoundedRectFlowable(Flowable):
             y_text_position -= 15 
         
         self.canv.setFillColor('blue')
-        if self.esco:
+        if self.frameworkId != '':
             last_line_width = self.canv.stringWidth(text_lines[-1])
             self.canv.setFillColor('blue')
             self.canv.drawString(self.x + 10 + last_line_width, y_text_position + 15, " [E]")
-            self.canv.linkURL(f"http://data.europa.eu/{self.esco}", (self.x, self.y, self.width, self.height), relative=1, thickness=0)
+            self.canv.linkURL(f"{self.frameworkId}", (self.x, self.y, self.width, self.height), relative=1, thickness=0)
 
         
         self.canv.setFillColor('#492E98')
@@ -231,7 +231,7 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
     num_competencies = len(competencies)
 
     if num_competencies > 0:
-            esco = any(c['escoID'] for c in competencies)
+            esco = any(c['framework'] == "esco" for c in competencies)
             competenciesPerPage = 9
 
             Story.append(PageBreak())
@@ -266,7 +266,7 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
               competency_name = competencies[i]['name']
               competency = competency_name
             #   competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name
-              rounded_rect = RoundedRectFlowable(0, -10, 450, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload= studyload, esco=competencies[i]['escoID'])    
+              rounded_rect = RoundedRectFlowable(0, -10, 450, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload= studyload, esco=competencies[i]['framework_identifier'])    
               Story.append(rounded_rect)
               Story.append(Spacer(1, 10))   
                  
