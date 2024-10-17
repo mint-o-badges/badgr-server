@@ -9,7 +9,8 @@ RUN apt-get install -y default-libmysqlclient-dev \
                        build-essential \
                        xmlsec1 \
                        libxmlsec1-dev \
-                       pkg-config
+                       pkg-config \
+                       curl
 
 RUN mkdir /badgr_server
 WORKDIR /badgr_server
@@ -24,12 +25,16 @@ FROM python:3.8.14-slim-buster
 RUN apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-cairo \
-                       libxml2
+                       libxml2 \ 
+                       default-mysql-client \
+                       curl
 
 RUN groupadd -g 999 python && \
     useradd -r -u 999 -g python python
 
 RUN mkdir /badgr_server && chown python:python /badgr_server
+RUN mkdir /backups && chown python:python /backups
+
 WORKDIR /badgr_server
 
 # Copy installed dependencies
@@ -41,8 +46,23 @@ COPY --chown=python:python  .docker/etc/uwsgi.ini              .
 COPY --chown=python:python  .docker/etc/wsgi.py                .
 COPY --chown=python:python  apps                               ./apps
 COPY --chown=python:python  .docker/etc/settings_local.py      ./apps/mainsite/settings_local.py
+COPY --chown=python:python  entrypoint.sh                      .
+
+RUN chmod +x entrypoint.sh
+
+# Latest releases available at https://github.com/aptible/supercronic/releases
+ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.2.30/supercronic-linux-amd64 \
+    SUPERCRONIC=supercronic-linux-amd64 \
+    SUPERCRONIC_SHA1SUM=9f27ad28c5c57cd133325b2a66bba69ba2235799
+
+RUN curl -fsSLO "$SUPERCRONIC_URL" \
+ && echo "${SUPERCRONIC_SHA1SUM}  ${SUPERCRONIC}" | sha1sum -c - \
+ && chmod +x "$SUPERCRONIC" \
+ && mv "$SUPERCRONIC" "/usr/local/bin/${SUPERCRONIC}" \
+ && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
 
 USER 999
 
 ENV PATH="/badgr_server/venv/bin:$PATH"
-CMD ["uwsgi","--socket", "sock/app.sock", "--ini", "uwsgi.ini"]
+# CMD ["uwsgi","--socket", "sock/app.sock", "--ini", "uwsgi.ini"]
+ENTRYPOINT ["./entrypoint.sh"]

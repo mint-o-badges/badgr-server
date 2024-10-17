@@ -24,6 +24,8 @@ INSTALLED_APPS = [
     'django_object_actions',
     'markdownify',
 
+    'django_crontab',
+
     'badgeuser',
 
     'allauth',
@@ -40,6 +42,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'django_celery_results',
+
+    'dbbackup',  # django-dbbackup
 
     # OAuth 2 provider
     'oauth2_provider',
@@ -72,6 +76,9 @@ MIDDLEWARE = [
     'badgeuser.middleware.InactiveUserMiddleware',
     # 'mainsite.middleware.TrailingSlashMiddleware',
 ]
+
+DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
+DBBACKUP_STORAGE_OPTIONS = {'location': '/backups/'}
 
 ROOT_URLCONF = 'mainsite.urls'
 
@@ -440,7 +447,8 @@ OAUTH2_PROVIDER = {
     'DEFAULT_SCOPES': ['r:profile'],
 
     'OAUTH2_VALIDATOR_CLASS': 'mainsite.oauth_validator.BadgrRequestValidator',
-    'ACCESS_TOKEN_EXPIRE_SECONDS': 86400
+    'ACCESS_TOKEN_EXPIRE_SECONDS': 86400, # 1 day
+    'REFRESH_TOKEN_EXPIRE_SECONDS': 604800 # 1 week
 
 }
 OAUTH2_PROVIDER_APPLICATION_MODEL = 'oauth2_provider.Application'
