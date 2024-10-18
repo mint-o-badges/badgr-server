@@ -122,5 +122,3 @@ pyjwt
 reportlab
 svg2rlg
 svglib
-
-django-dbbackup

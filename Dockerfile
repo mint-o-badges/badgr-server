@@ -26,7 +26,6 @@ RUN apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-cairo \
                        libxml2 \ 
-                       default-mysql-client \
                        curl
 
 RUN groupadd -g 999 python && \
