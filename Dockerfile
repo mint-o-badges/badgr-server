@@ -47,6 +47,7 @@ COPY --chown=python:python  .docker/etc/wsgi.py                .
 COPY --chown=python:python  apps                               ./apps
 COPY --chown=python:python  .docker/etc/settings_local.py      ./apps/mainsite/settings_local.py
 COPY --chown=python:python  entrypoint.sh                      .
+COPY --chown=python:python  crontab                             /etc/cron.d/crontab
 
 RUN chmod +x entrypoint.sh
 

@@ -24,7 +24,6 @@ INSTALLED_APPS = [
     'django_object_actions',
     'markdownify',
 
-    'django_crontab',
 
     'badgeuser',
 
