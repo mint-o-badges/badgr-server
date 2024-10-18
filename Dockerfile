@@ -51,6 +51,9 @@ COPY --chown=python:python  crontab                             /etc/cron.d/cron
 
 RUN chmod +x entrypoint.sh
 
+RUN touch /var/log/cron_cleartokens.log && chmod 644 /var/log/cron_cleartokens.log
+
+
 # Latest releases available at https://github.com/aptible/supercronic/releases
 ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.2.30/supercronic-linux-amd64 \
     SUPERCRONIC=supercronic-linux-amd64 \
