@@ -1,6 +1,8 @@
 from cryptography.fernet import Fernet
 import sys
 import os
+import subprocess
+import mainsite
 
 from mainsite import TOP_DIR
 
@@ -391,6 +393,24 @@ SITE_ID = 2
 USE_I18N = False
 USE_L10N = False
 USE_TZ = True
+
+
+
+##
+#
+#  Version
+#
+##
+try:
+    subprocess.run(["git", "config", "--global", "--add", "safe.directory", "/badgr_server"], cwd=TOP_DIR)
+    mainsite.__build__ = subprocess.check_output(["git", "describe", "--tags", "--always"], cwd=TOP_DIR).decode('utf-8').strip()
+    print("Build:")
+    print(mainsite.__build__)
+except Exception as e:
+    print(e)
+    mainsite.__build__ = mainsite.get_version() + " ?"
+    print("ERROR in determinig build number")
+
 
 
 ##
