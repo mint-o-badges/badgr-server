@@ -1,1 +1,1 @@
-* * * * * python /bin/sh -c 'echo "[$(date)] Clearing access tokens" >> /var/log/cron_cleartokens.log 2>&1 && /usr/local/bin/python /badgr_server/manage.py cleartokens | sed "s/^/[$(date)] /" >> /var/log/cron_cleartokens.log 2>&1'
+* * * * * /bin/sh -c 'echo "[$(date)] Clearing access tokens" >> /var/log/cron_cleartokens.log 2>&1 && /usr/local/bin/python /badgr_server/manage.py cleartokens | sed "s/^/[$(date)] /" >> /var/log/cron_cleartokens.log 2>&1'
