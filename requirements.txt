@@ -124,4 +124,3 @@ svg2rlg
 svglib
 
 django-dbbackup
-django-crontab
