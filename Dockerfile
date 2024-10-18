@@ -67,5 +67,4 @@ RUN curl -fsSLO "$SUPERCRONIC_URL" \
 USER 999
 
 ENV PATH="/badgr_server/venv/bin:$PATH"
-# CMD ["uwsgi","--socket", "sock/app.sock", "--ini", "uwsgi.ini"]
 ENTRYPOINT ["./entrypoint.sh"]

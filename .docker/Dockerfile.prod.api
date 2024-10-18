@@ -62,4 +62,3 @@ USER 999
 
 ENV PATH="/badgr_server/venv/bin:$PATH"
 ENTRYPOINT ["./entrypoint.sh"]
-# CMD ["uwsgi","--socket", "sock/app.sock", "--ini", "uwsgi.ini"]
