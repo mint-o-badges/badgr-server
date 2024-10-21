@@ -721,7 +721,7 @@ class LearningPathSerializerV1(serializers.Serializer):
             if request.user.is_authenticated: 
                 user_badgeinstances = BadgeInstance.objects.filter(recipient_identifier=request.user.email, revoked=False)
                 user_badgeclasses = [badge.badgeclass for badge in user_badgeinstances]
-                completed_badgeclasses = [badge for badge in user_badgeclasses if badge in [badge.badge for badge in instance.learningpathbadge_set.all()]]
+                completed_badgeclasses = list[{badge for badge in user_badgeclasses if badge in [badge.badge for badge in instance.learningpathbadge_set.all()]}]
                 completed_badges = BadgeClassSerializerV1(completed_badgeclasses, many=True, context={'exclude_orgImg': 'extensions:OrgImageExtension'}).data
                 representation.update({
                     'progress': None,
