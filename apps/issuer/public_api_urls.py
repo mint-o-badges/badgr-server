@@ -2,7 +2,7 @@ from django.conf.urls import url
 from django.views.decorators.clickjacking import xframe_options_exempt
 from rest_framework.urlpatterns import format_suffix_patterns
 
-from .public_api import (IssuerJson, IssuerList, IssuerBadgesJson, IssuerImage, BadgeClassJson, BadgeClassList,
+from .public_api import (IssuerJson, IssuerList, IssuerBadgesJson, IssuerLearningPathsJson, IssuerImage, BadgeClassJson, BadgeClassList,
                          BadgeClassImage, BadgeClassCriteria, BadgeInstanceJson, LearningPathJson,
                          BadgeInstanceImage, BackpackCollectionJson, BakedBadgeInstanceImage, LearningPathList,
                          OEmbedAPIEndpoint, VerifyBadgeAPIEndpoint, BadgeLearningPathList)
@@ -12,6 +12,8 @@ json_patterns = [
         xframe_options_exempt(IssuerJson.as_view(slugToEntityIdRedirect=True)), name='issuer_json'),
     url(r'^issuers/(?P<entity_id>[^/.]+)/badges$', xframe_options_exempt(
         IssuerBadgesJson.as_view(slugToEntityIdRedirect=True)), name='issuer_badges_json'),
+    url(r'^issuers/(?P<entity_id>[^/.]+)/learningpaths$', xframe_options_exempt(
+        IssuerLearningPathsJson.as_view(slugToEntityIdRedirect=True)), name='issuer_learningpaths_json'),    
     url(r'^all-issuers$', xframe_options_exempt(IssuerList.as_view()), name='issuer_list_json'),
     url(r'^badges/(?P<entity_id>[^/.]+)$',
         xframe_options_exempt(BadgeClassJson.as_view(slugToEntityIdRedirect=True)), name='badgeclass_json'),

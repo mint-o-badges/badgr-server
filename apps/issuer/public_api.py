@@ -328,6 +328,15 @@ class IssuerBadgesJson(JSONComponentView):
         obi_version = self._get_request_obi_version(request)
 
         return [b.get_json(obi_version=obi_version) for b in self.current_object.cached_badgeclasses()]
+    
+class IssuerLearningPathsJson(JSONComponentView):
+    permission_classes = (permissions.AllowAny,)
+    model = Issuer
+
+    def get_json(self, request):
+        obi_version = self._get_request_obi_version(request)
+
+        return [b.get_json(obi_version=obi_version) for b in self.current_object.cached_learningpaths()]    
 
 
 class IssuerImage(ImagePropertyDetailView):
