@@ -135,8 +135,8 @@ class BaseOpenBadgeObjectModel(OriginalJsonMixin, cachemodel.CacheModel):
         return self.get_extensions_manager().all()
 
     @property
-    def extension_items(self, include_orgImg=False):
-        return {e.name: json_loads(e.original_json) for e in self.cached_extensions()}
+    def extension_items(self):
+        return {e.name: json_loads(e.original_json) for e in self.cached_extensions() if e.name != "extensions:OrgImageExtension"}
 
     @extension_items.setter
     def extension_items(self, value):
