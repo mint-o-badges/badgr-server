@@ -624,6 +624,7 @@ class QrCodeSerializerV1(serializers.Serializer):
 
 class RequestedBadgeSerializer(serializers.ModelSerializer):
     class Meta:
+        model = RequestedBadge
         fields = '__all__' 
 
 
@@ -764,7 +765,7 @@ class LearningPathSerializerV1(serializers.Serializer):
                 raise serializers.ValidationError(f"Badge with slug '{slug}' does not exist.")
 
             badges_with_order.append((badge, order))
-            
+
         new_learningpath = LearningPath.objects.create(
             name=name,
             description=description,
