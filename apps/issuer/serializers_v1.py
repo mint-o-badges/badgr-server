@@ -753,14 +753,6 @@ class LearningPathSerializerV1(serializers.Serializer):
             raise serializers.ValidationError(f" with ID '{participationBadge_id}' does not exist.")
         
 
-        new_learningpath = LearningPath.objects.create(
-            name=name,
-            description=description,
-            issuer=issuer,
-            participationBadge=participationBadge
-        )
-        new_learningpath.tag_items = tags
-
         badges_with_order = []
         for badge_data in badges_data:
             slug = badge_data.get('slug')
@@ -772,6 +764,15 @@ class LearningPathSerializerV1(serializers.Serializer):
                 raise serializers.ValidationError(f"Badge with slug '{slug}' does not exist.")
 
             badges_with_order.append((badge, order))
+            
+        new_learningpath = LearningPath.objects.create(
+            name=name,
+            description=description,
+            issuer=issuer,
+            participationBadge=participationBadge
+        )
+        new_learningpath.tag_items = tags
+
 
         new_learningpath.learningpath_badges = badges_with_order
         return new_learningpath
