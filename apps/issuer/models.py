@@ -135,7 +135,7 @@ class BaseOpenBadgeObjectModel(OriginalJsonMixin, cachemodel.CacheModel):
         return self.get_extensions_manager().all()
 
     @property
-    def extension_items(self):
+    def extension_items(self, include_orgImg=False):
         return {e.name: json_loads(e.original_json) for e in self.cached_extensions()}
 
     @extension_items.setter
@@ -1811,9 +1811,9 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
             issuer_id= self.issuer.entity_id
             ))
         
-        #TODO: fix caching
         tags = self.learningpathtag_set.all()  
         badges = self.learningpathbadge_set.all() 
+        image = self.participationBadge.image.url
         
         json['tags'] = list(t.name for t in tags)
 
@@ -1824,6 +1824,8 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
             }
             for badge in badges
         ]
+
+        json["image"] = image
 
         return json 
 
