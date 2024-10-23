@@ -9,7 +9,7 @@ import logging
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.urls import reverse
 from django.core.validators import EmailValidator, URLValidator
-from django.db.models import Q, Sum
+from django.db.models import Q
 from django.utils.html import strip_tags
 from django.utils import timezone
 from rest_framework import serializers
@@ -814,7 +814,3 @@ class LearningPathParticipantSerializerV1(serializers.ModelSerializer):
     class Meta:
         model = LearningPathParticipant
         fields = ['user', 'started_at', 'completed_at', 'completed_badges', 'entity_id', 'participationBadgeAssertion']
-
-    # def to_representation(self, instance):
-    #     representation = super(LearningPathParticipantSerializerV1, self).to_representation(instance)
-    #     return representation

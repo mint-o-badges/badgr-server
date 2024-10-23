@@ -10,9 +10,6 @@ from rest_framework.views import APIView
 
 import badgrlog
 from mainsite.pagination import BadgrCursorPagination
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 class BaseEntityView(APIView):

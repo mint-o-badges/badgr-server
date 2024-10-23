@@ -265,8 +265,7 @@ class Issuer(ResizeUploadedImage,
     def save(self, *args, **kwargs):
         original_verified = None
         if not self.pk:
-            # self.notify_admins(self)
-            print('Issuer created')
+            self.notify_admins(self)
         # geocoding if address in model changed
         else:
             original_object = Issuer.objects.get(pk=self.pk)

@@ -34,9 +34,7 @@ from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, Learning
 from .models import Issuer, BadgeClass, BadgeInstance, LearningPath, LearningPathBadge, LearningPathParticipant
 from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, LearningPathSerializerV1
 from .models import Issuer, BadgeClass, BadgeInstance, LearningPath
-import logging 
 
-logger2 = logging.getLogger(__name__)
 logger = badgrlog.BadgrLogger()
 class SlugToEntityIdRedirectMixin(object):
     slugToEntityIdRedirect = False
@@ -732,38 +730,6 @@ class LearningPathJson(BaseEntityDetailViewPublic, SlugToEntityIdRedirectMixin):
     permission_classes = (permissions.AllowAny,)
     model = LearningPath
     serializer_class = LearningPathSerializerV1
-
-    # def log(self, obj):
-    #     logger.event(badgrlog.BadgeClassRetrievedEvent(obj, self.request))
-
-    # def get_json(self, request):
-        
-    #     json = super(LearningPathJson, self).get_json(request)
-
-    #     obi_version = self._get_request_obi_version(request)
-
-    #     logger2.error(request.user)
-
-
-    #     if(request.user.is_authenticated):
-    #         participant = LearningPathParticipant.objects.filter(learning_path=self.current_object, user=request.user)
-    #         if participant.exists():
-    #             json.update({
-    #                 'progress': participant[0].completed_badges.count(),
-    #                 'completed_at': participant[0].completed_at
-    #             })
-
-            
-
-    #     json.update({
-    #         'participationBadge_id': self.current_object.participationBadge.entity_id,
-    #         'issuer_name': self.current_object.issuer.name,
-    #         'badge_image': self.current_object.participationBadge.image.url,
-    #         'progress': None,
-    #         'completed_at': None
-    #     })
-
-    #     return json
 
 
 class LearningPathList(JSONListView):

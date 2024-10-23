@@ -211,14 +211,10 @@ class IssuerLearningPathList(UncachedPaginatedViewMixin, VersionedObjectMixin, B
         | BadgrOAuthTokenHasEntityScope
     ]
     v1_serializer_class = LearningPathSerializerV1
-    # create_event = badgrlog.BadgeClassCreatedEvent
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
     def get_queryset(self, request=None, **kwargs):
         issuer = self.get_object(request, **kwargs)
-
-        # if self.get_page_size(request) is None:
-        #     return issuer.cached_learningpaths()
         return LearningPath.objects.filter(issuer=issuer)
 
     def get_context_data(self, **kwargs):
