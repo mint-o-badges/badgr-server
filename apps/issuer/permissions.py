@@ -64,12 +64,26 @@ def is_badgeclass_editor(user, badgeclass):
 def is_badgeclass_staff(user, badgeclass):
     return any(staff.user_id == user.id for staff in badgeclass.cached_issuer.cached_issuerstaff())
 
+def is_learningpath_staff(user, learningpath): 
+    return any(staff.user_id == user.id for staff in learningpath.cached_issuer.cached_issuerstaff())
 
 can_issue_badgeclass = is_badgeclass_owner | is_badgeclass_staff
 can_edit_badgeclass = is_badgeclass_owner | is_badgeclass_editor
 
+can_issue_learningpath = is_learningpath_staff  
+
 rules.add_perm('issuer.can_issue_badge', can_issue_badgeclass)
 rules.add_perm('issuer.can_edit_badgeclass', can_edit_badgeclass)
+rules.add_perm('issuer.can_issue_learningpath', can_issue_learningpath)
+
+class MayIssueLearningPath(permissions.BasePermission):
+    """
+    ---
+    model: LearningPath
+    """
+
+    def has_object_permission(self, request, view, learningpath):
+        return _is_server_admin(request) or request.user.has_perm('issuer.can_issue_learningpath', learningpath)
 
 
 class MayIssueBadgeClass(permissions.BasePermission):
