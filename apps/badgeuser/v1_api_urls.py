@@ -1,6 +1,7 @@
 from django.conf.urls import url
 
-from badgeuser.api import BadgeUserToken, BadgeUserForgotPassword, BadgeUserEmailConfirm, BadgeUserDetail, BadgeUserResendEmailConfirmation
+from badgeuser.api import (BadgeUserToken, BadgeUserForgotPassword, BadgeUserEmailConfirm, BadgeUserDetail, 
+    BadgeUserResendEmailConfirmation, BadgeUserNewsletterOptIn, BadgeUserNewsletterConfirmation)
 from badgeuser.api_v1 import BadgeUserEmailList, BadgeUserEmailDetail
 
 urlpatterns = [
@@ -13,5 +14,7 @@ urlpatterns = [
         BadgeUserEmailConfirm.as_view(), name='legacy_user_email_confirm'),
     url(r'^confirmemail/(?P<confirm_id>[^/]+)$', BadgeUserEmailConfirm.as_view(),
         name='v1_api_user_email_confirm'),
-    url(r'^resendemail$', BadgeUserResendEmailConfirmation.as_view(), name='v1_api_resend_user_verification_email')
+    url(r'^resendemail$', BadgeUserResendEmailConfirmation.as_view(), name='v1_api_resend_user_verification_email'),
+    url(r'^confirm-newsletter$', BadgeUserNewsletterOptIn.as_view(), name='v1_api_user_newsletter_confirm'),
+    
 ]

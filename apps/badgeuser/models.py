@@ -21,6 +21,10 @@ from badgeuser.managers import CachedEmailAddressManager, BadgeUserManager
 from badgeuser.utils import generate_badgr_username
 from mainsite.models import ApplicationInfo
 
+import logging 
+
+logger = logging.getLogger(__name__)
+
 
 AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
 
@@ -506,11 +510,11 @@ class BadgeUser(BaseVersionedEntity, AbstractUser, cachemodel.CacheModel):
         except ValueError:
             return
 
-        if value > self.agreed_terms_version:
-            if TermsVersion.active_objects.filter(version=value).exists():
-                if not self.pk:
-                    self.save()
-                self.termsagreement_set.get_or_create(terms_version=value, defaults=dict(agreed=True))
+        # if value > self.agreed_terms_version:
+        #     if TermsVersion.active_objects.filter(version=value).exists():
+        #         if not self.pk:
+        #             self.save()
+        #         self.termsagreement_set.get_or_create(terms_version=value, defaults=dict(agreed=True))
 
     def replace_token(self):
         Token.objects.filter(user=self).delete()

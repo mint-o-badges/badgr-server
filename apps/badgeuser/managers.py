@@ -58,6 +58,7 @@ class BadgeUserManager(UserManager):
                     plaintext_password=plaintext_password,
                     source=source
                 )
+                # self.send_newsletter_confirmation(email=email)
                 return self.model(email=email)
             elif existing_email.verified:
                 raise ValidationError(self.duplicate_email_error)
@@ -84,6 +85,8 @@ class BadgeUserManager(UserManager):
             user.set_password(plaintext_password)
         user.save()
 
+        if user.marketing_opt_in:
+            self.send_newsletter_confirmation(email=email)
         # create email address record as needed
         if create_email_address:
             CachedEmailAddress.objects.add_email(user, email, request=request, signup=True, confirm=send_confirmation)
@@ -116,6 +119,21 @@ class BadgeUserManager(UserManager):
             'activate_url': confirmation_url,
             'email': email,
         })
+
+    @staticmethod
+    def send_newsletter_confirmation(**kwargs):
+        if not kwargs.get('email'):
+            return
+
+        email = kwargs['email']
+        get_adapter().send_mail('account/email/newsletter_confirmation_signup', email, {
+            'HTTP_ORIGIN': settings.HTTP_ORIGIN,
+            'STATIC_URL': settings.STATIC_URL,
+            'MEDIA_URL': settings.MEDIA_URL,
+            'email': email,
+        })
+
+
 
 
 class CachedEmailAddressManager(EmailAddressManager):

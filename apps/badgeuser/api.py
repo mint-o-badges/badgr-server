@@ -61,6 +61,9 @@ from mainsite.serializers import ApplicationInfoSerializer
 RATE_LIMIT_DELTA = datetime.timedelta(minutes=5)
 
 logger = badgrlog.BadgrLogger()
+import logging 
+
+logger = logging.getLogger(__name__)
 
 
 class BadgeUserDetail(BaseEntityDetailView):
@@ -774,3 +777,79 @@ class BadgeUserResendEmailConfirmation(BaseUserRecoveryView):
         serializer = EmailSerializerV1(email_address, context={'request': request})
         serialized = serializer.data
         return Response(serialized, status=status.HTTP_200_OK)
+    
+class BadgeUserNewsletterOptIn(BaseUserRecoveryView):
+    authentication_classes = ()
+    permission_classes = (permissions.AllowAny,)
+    v1_serializer_class = serializers.Serializer
+
+    def post(self, request, **kwargs):
+        email = request.data.get("email")
+        try:
+            email_address = CachedEmailAddress.cached.get(email=email)
+        except CachedEmailAddress.DoesNotExist:
+            # return 200 here because we don't want to expose information about which emails we know about
+            return self.get_response()
+        
+        email_context = {
+            "site": get_current_site(request),
+            # "user": user,
+            # "password_reset_url": reset_url,
+            # "badgr_app": badgrapp,
+        }
+        get_adapter().send_mail(
+            "account/email/newsletter_confirmation_signup", email, email_context
+        )
+
+        return self.get_response()
+        
+
+
+class BadgeUserNewsletterConfirmation(RedirectView):
+    badgrapp = None
+
+    def error_redirect_url(self):
+        if self.badgrapp is None:
+            self.badgrapp = BadgrApp.objects.get_by_id_or_default()
+
+        return set_url_query_params(
+            self.badgrapp.ui_login_redirect.rstrip("/"),
+            authError="Error validating request.",
+        )
+
+    def get_redirect_url(self, *args, **kwargs):
+        authcode = kwargs.get("authcode", None)
+        if not authcode:
+            return self.error_redirect_url()
+
+        user_info = decrypt_authcode(authcode)
+        try:
+            user_info = json.loads(user_info)
+        except (
+            TypeError,
+            ValueError,
+        ):
+            user_info = None
+        if not user_info:
+            return self.error_redirect_url()
+
+        badgrapp_id = user_info.get("badgrapp_id", None)
+        self.badgrapp = BadgrApp.objects.get_by_id_or_default(badgrapp_id)
+
+        try:
+            email_address = CachedEmailAddress.cached.get(email=user_info.get("email"))
+        except CachedEmailAddress.DoesNotExist:
+            return self.error_redirect_url()
+
+        user = email_address.user
+        user.marketing_opt_in = True
+        user.save()
+
+        redirect_url = urllib.parse.urljoin(
+            self.badgrapp.email_confirmation_redirect.rstrip("/") + "/",
+            urllib.parse.quote(user.first_name.encode("utf8")),
+        )
+        redirect_url = set_url_query_params(
+            redirect_url, email=email_address.email.encode("utf8")
+        )
+        return redirect_url

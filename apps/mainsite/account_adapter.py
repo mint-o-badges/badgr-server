@@ -303,6 +303,38 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
         get_adapter().send_mail(email_template,
                                 emailconfirmation.email_address.email,
                                 ctx)
+        
+    def send_terms_confirmation_mail(self, request, emailconfirmation):
+        current_site = get_current_site(request)
+        badgr_app = BadgrApp.objects.get_current(request, raise_exception=False)
+        ctx = {
+            "user": emailconfirmation.email_address.user,
+            "email": emailconfirmation.email_address,
+            "current_site": current_site,
+            "key": emailconfirmation.key,
+            "badgr_app": badgr_app,
+        }
+        email_template = 'account/email/terms_confirmation_signup'
+        get_adapter().send_mail(email_template,
+                                emailconfirmation.email_address.email,
+                                ctx)
+        
+    def send_newsletter_confirmation_mail(self, request, emailconfirmation):
+        current_site = get_current_site(request)
+        # badgr_app = BadgrApp.objects.get_current(request, raise_exception=False)
+        # ctx = {
+        #     "user": emailconfirmation.email_address.user,
+        #     "email": emailconfirmation.email_address,
+        #     "current_site": current_site,
+        #     "key": emailconfirmation.key,
+        #     "badgr_app": badgr_app,
+        # }
+        # email_template = 'account/email/newsletter_confirmation_signup'
+        # get_adapter().send_mail(email_template,
+        #                         emailconfirmation.email_address.email,
+        #                         ctx)
+
+
 
     def get_login_redirect_url(self, request):
         """
