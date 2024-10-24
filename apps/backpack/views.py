@@ -117,40 +117,6 @@ def AllPageSetup(canvas, doc):
 
     canvas.saveState()
 
-    # Sunburst Background
-    color = PCMYKColor(0, 0, 0, 5)  
-    num_rays = 100
-    ray_angle = 2 * math.pi / num_rays
-    sweep_angle = ray_angle * 2
-
-    page_width, page_height = A4
-    mid_x = page_width / 2
-    mid_y = page_height / 2
-    radius = math.sqrt(mid_x**2 + mid_y**2)
-    offset_y = 20
-    mid_y_offset = mid_y - offset_y
-
-    for i in range(num_rays):
-        start_angle = sweep_angle * i
-        end_angle = start_angle + ray_angle
-        start_x = mid_x + radius * math.cos(start_angle)
-        start_y = mid_y_offset + radius * math.sin(start_angle)
-        end_x = mid_x + radius * math.cos(end_angle)
-        end_y = mid_y_offset + radius * math.sin(end_angle)
-        path = canvas.beginPath()
-        path.moveTo(mid_x, mid_y_offset)
-        path.arcTo(
-            start_x,
-            start_y,
-            end_x,
-            end_y,
-            start_angle * 180 / math.pi,
-        )
-        canvas.setFillColor(color)
-        canvas.setStrokeColor(color)
-        canvas.setFillAlpha(0.5) # decrease opacity of rays
-        canvas.setStrokeAlpha(0.5)
-        canvas.drawPath(path, fill=1, stroke=1)
 
     # Header
     canvas.setFillAlpha(1)
