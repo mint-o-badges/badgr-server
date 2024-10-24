@@ -63,7 +63,7 @@ RATE_LIMIT_DELTA = datetime.timedelta(minutes=5)
 logger = badgrlog.BadgrLogger()
 import logging 
 
-logger = logging.getLogger(__name__)
+logger2 = logging.getLogger(__name__)
 
 
 class BadgeUserDetail(BaseEntityDetailView):
@@ -210,6 +210,40 @@ class BadgeUserDetail(BaseEntityDetailView):
         context = super(BadgeUserDetail, self).get_context_data(**kwargs)
         context["isSelf"] = self.object.id == self.request.user.id
         return context
+
+
+class BadgeUserNewsletterSubscription(BaseEntityDetailView):
+    authentication_classes = ()
+    permission_classes = (permissions.AllowAny,)
+    v1_serializer_class = serializers.Serializer
+    v2_serializer_class = BaseSerializerV2
+
+    def post(self, request, **kwargs):
+        email = request.data.get("email")
+        try:
+            email_address = CachedEmailAddress.cached.get(email=email)
+        except CachedEmailAddress.DoesNotExist:
+            # return 200 here because we don't want to expose information about which emails we know about
+            return self.get_response()
+
+        badgrapp = BadgrApp.objects.get_current(request=request)
+
+        confirmation_url = "{origin}{path}?email={email}".format(
+            origin=OriginSetting.HTTP, 
+            path=reverse('v1_api_user_newsletter_confirm'),
+            email=email
+        )
+
+        email_context = {
+            "site": get_current_site(request),
+            "badgr_app": badgrapp,
+            "activate_url": confirmation_url
+        }
+        get_adapter().send_mail(
+            "account/email/newsletter_confirmation_signup", email, email_context
+        )
+
+        return Response(status=HTTP_200_OK)
 
 
 class BadgeUserToken(BaseEntityDetailView):
@@ -803,18 +837,16 @@ class BadgeUserNewsletterOptIn(BaseUserRecoveryView):
 
         return self.get_response()
         
-
-
-class BadgeUserNewsletterConfirmation(RedirectView):
+class MarketingOptInConfirm(RedirectView):
     badgrapp = None
 
     def error_redirect_url(self):
         if self.badgrapp is None:
             self.badgrapp = BadgrApp.objects.get_by_id_or_default()
-
+        
         return set_url_query_params(
             self.badgrapp.ui_login_redirect.rstrip("/"),
-            authError="Error validating request.",
+            authError="Error validating marketing opt-in request.",
         )
 
     def get_redirect_url(self, *args, **kwargs):
@@ -825,11 +857,9 @@ class BadgeUserNewsletterConfirmation(RedirectView):
         user_info = decrypt_authcode(authcode)
         try:
             user_info = json.loads(user_info)
-        except (
-            TypeError,
-            ValueError,
-        ):
+        except (TypeError, ValueError):
             user_info = None
+
         if not user_info:
             return self.error_redirect_url()
 
@@ -837,19 +867,95 @@ class BadgeUserNewsletterConfirmation(RedirectView):
         self.badgrapp = BadgrApp.objects.get_by_id_or_default(badgrapp_id)
 
         try:
-            email_address = CachedEmailAddress.cached.get(email=user_info.get("email"))
-        except CachedEmailAddress.DoesNotExist:
+            user = BadgeUser.objects.get(email=user_info.get("email"))
+            user.marketing_opt_in = True
+            user.save()
+
+        except BadgeUser.DoesNotExist:
             return self.error_redirect_url()
 
-        user = email_address.user
-        user.marketing_opt_in = True
+        redirect_url = urllib.parse.urljoin(
+            self.badgrapp.marketing_optin_redirect.rstrip("/") + "/",
+            urllib.parse.quote(user.email.encode("utf8")),
+        )
+
+        redirect_url = set_url_query_params(
+            redirect_url,
+            email=user.email.encode("utf8")
+        )
+
+        return redirect_url
+
+class BadgeUserNewsletterConfirm(BaseUserRecoveryView):
+    permission_classes = (permissions.AllowAny,)
+    v1_serializer_class = BaseSerializer
+    v2_serializer_class = BaseSerializerV2
+
+    def get(self, request, **kwargs):
+        """
+        Confirm a newsletter subscription
+        """
+
+        email = request.query_params.get("email", "")
+
+        user = BadgeUser.objects.get(email=email)
+
+        badgrapp = BadgrApp.objects.get_current(request=request)
+
+        user.marketing_opt_in = True 
         user.save()
 
-        redirect_url = urllib.parse.urljoin(
-            self.badgrapp.email_confirmation_redirect.rstrip("/") + "/",
-            urllib.parse.quote(user.first_name.encode("utf8")),
+
+        # Create an OAuth AccessTokenProxy instance for this user
+        accesstoken = AccessTokenProxy.objects.generate_new_token_for_user(
+            user,
+            application=(
+                badgrapp.oauth_application if badgrapp.oauth_application_id else None
+            ),
+            scope="rw:backpack rw:profile rw:issuer",
         )
+
+        redirect_url = get_adapter().get_newsletter_confirmation_redirect_url(
+            request, badgr_app=badgrapp
+        )
+
         redirect_url = set_url_query_params(
-            redirect_url, email=email_address.email.encode("utf8")
+                redirect_url, authToken=accesstoken.token
         )
-        return redirect_url
+
+        return Response(status=HTTP_302_FOUND, headers={"Location": redirect_url})
+
+class BadgeUserTosConfirm(BaseUserRecoveryView):
+    permission_classes = (permissions.AllowAny,)
+    v1_serializer_class = BaseSerializer
+    v2_serializer_class = BaseSerializerV2
+
+    def get(self, request, **kwargs):
+        """
+        Confirm acceptance of the Terms of Service (ToS)
+        """
+        email = request.query_params.get("email", "")
+        tos_version = request.query_params.get("tos_version", "")
+
+        if not email or not tos_version:
+            return Response({"error": "Invalid email or ToS version"}, status=HTTP_400_BAD_REQUEST)
+
+        user = BadgeUser.objects.get(email=email)
+
+        if not user:
+            return Response({"error": "User not found"}, status=HTTP_404_NOT_FOUND)
+
+        user.agreed_terms_version = int(tos_version) 
+        user.save()
+
+        badgrapp = BadgrApp.objects.get_current(request=request)
+        accesstoken = AccessTokenProxy.objects.generate_new_token_for_user(
+            user,
+            application=(badgrapp.oauth_application if badgrapp.oauth_application_id else None),
+            scope="rw:backpack rw:profile rw:issuer",
+        )
+
+        redirect_url = get_adapter().get_tos_confirmation_redirect_url(request, badgr_app=badgrapp)
+        redirect_url = set_url_query_params(redirect_url, authToken=accesstoken.token)
+
+        return Response(status=HTTP_302_FOUND, headers={"Location": redirect_url})

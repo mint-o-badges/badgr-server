@@ -3,7 +3,7 @@
 
 from django.conf.urls import url
 
-from badgeuser.api import (BadgeUserAccountConfirm, BadgeUserToken, BadgeUserForgotPassword, BadgeUserEmailConfirm,
+from badgeuser.api import (BadgeUserAccountConfirm, BadgeUserToken, BadgeUserForgotPassword, BadgeUserEmailConfirm, BadgeUserNewsletterConfirm,
                            BadgeUserDetail, AccessTokenList, AccessTokenDetail, LatestTermsVersionDetail, ApplicationList,ApplicationDetails)
 
 urlpatterns = [
@@ -15,6 +15,8 @@ urlpatterns = [
         name='v2_api_auth_confirm_email'),
     url(r'^auth/confirm-account/(?P<authcode>[^/]+)$', BadgeUserAccountConfirm.as_view(),
         name='v2_api_account_confirm'),
+     url(r'^auth/confirm-newsletter/(?P<authcode>[^/]+)$', BadgeUserNewsletterConfirm.as_view(),
+        name='v2_api_newsletter_confirm'),    
 
     url(r'^auth/tokens$', AccessTokenList.as_view(), name='v2_api_access_token_list'),
     url(r'^auth/tokens/(?P<entity_id>[^/]+)$', AccessTokenDetail.as_view(),

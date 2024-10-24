@@ -86,8 +86,9 @@ class BadgeUserManager(UserManager):
         user.save()
 
         if user.marketing_opt_in:
-            self.send_newsletter_confirmation(email=email)
-        # create email address record as needed
+            self.send_newsletter_confirmation(
+                email=email,
+                )
         if create_email_address:
             CachedEmailAddress.objects.add_email(user, email, request=request, signup=True, confirm=send_confirmation)
         return user
@@ -126,15 +127,18 @@ class BadgeUserManager(UserManager):
             return
 
         email = kwargs['email']
+        confirmation_url = "{origin}{path}?email={email}".format(
+            origin=OriginSetting.HTTP, 
+            path=reverse('v1_api_user_newsletter_confirm'),
+            email=email
+        )
         get_adapter().send_mail('account/email/newsletter_confirmation_signup', email, {
             'HTTP_ORIGIN': settings.HTTP_ORIGIN,
             'STATIC_URL': settings.STATIC_URL,
             'MEDIA_URL': settings.MEDIA_URL,
+            'activate_url': confirmation_url,
             'email': email,
         })
-
-
-
 
 class CachedEmailAddressManager(EmailAddressManager):
     def add_email(self, user, email, request=None, confirm=False, signup=False):
