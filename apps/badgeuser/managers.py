@@ -85,10 +85,6 @@ class BadgeUserManager(UserManager):
             user.set_password(plaintext_password)
         user.save()
 
-        if user.marketing_opt_in:
-            self.send_newsletter_confirmation(
-                email=email,
-                )
         if create_email_address:
             CachedEmailAddress.objects.add_email(user, email, request=request, signup=True, confirm=send_confirmation)
         return user
