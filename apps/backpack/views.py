@@ -24,17 +24,18 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import PCMYKColor
 from reportlab.lib.utils import ImageReader
-from reportlab.platypus import SimpleDocTemplate, Flowable, Paragraph, Spacer, Image, PageBreak
+from reportlab.platypus import SimpleDocTemplate, Flowable, Paragraph, Spacer, Image, PageBreak,PageTemplate
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPDF
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
+from reportlab.platypus.frames import Frame
 from mainsite.utils import get_name
 from operator import attrgetter
 import os
-
+from functools import partial
 font_path_rubik_regular = os.path.join(os.path.dirname(__file__), 'Rubik-Regular.ttf')
 font_path_rubik_medium = os.path.join(os.path.dirname(__file__), 'Rubik-Medium.ttf')
 font_path_rubik_bold = os.path.join(os.path.dirname(__file__), 'Rubik-Bold.ttf')
@@ -112,23 +113,12 @@ class RoundedRectFlowable(Flowable):
 
         clockIcon = ImageReader("{}images/clock-icon.png".format(settings.STATIC_URL))
         self.canv.drawImage(clockIcon, self.x + 450 - (studyload_width + 35), self.y +12.5, width=15, height=15, mask="auto", preserveAspectRatio=True)
-        
-def AllPageSetup(canvas, doc):
-
-    canvas.saveState()
 
 
-    # Header
-    canvas.setFillAlpha(1)
-    canvas.setStrokeAlpha(1)
-    logo = ImageReader("{}images/Logo-Oeb.png".format(settings.STATIC_URL))
-    canvas.drawImage(logo, 20, 700, width=150, height=150, mask="auto", preserveAspectRatio=True)
-    page_width = canvas._pagesize[0]
-    canvas.setStrokeColor("#492E98")
-    canvas.line(page_width / 2 - 120, 775, page_width / 2 + 250, 775)
+def AllPageSetup(canvas, doc, badgeImage=None):
 
+    # Stelle den ursprünglichen Zustand des Canvas wieder her
     canvas.restoreState()
-
 # Inspired by https://www.blog.pythonlibrary.org/2013/08/12/reportlab-how-to-add-page-numbers/
 class PageNumCanvas(canvas.Canvas):
     """
@@ -179,12 +169,39 @@ class PageNumCanvas(canvas.Canvas):
             self.setLineWidth(3)
             self.line(10, 10, page_width - 10, 10)
 
-def create_multi_page(response, first_page_content, competencies, name, badge_name):
+def header(canvas, doc, content, instituteName):
+    canvas.saveState()
+
+    # Institutsbild
+    content.drawOn(canvas, doc.leftMargin, 750)
+
+    # Zeichne die horizontale Linie unter dem Bild
+    canvas.setStrokeColor("#492E98")  # Setze die Farbe der Linie
+    canvas.setLineWidth(1)  # Setze die Linienbreite
+    canvas.line(doc.leftMargin + 100, 775, doc.leftMargin + doc.width, 775)
+
+    ## Institusname
+    canvas.setFont('Rubik-Medium', 12)  # Setze die Schriftart auf Rubik-Bold und Größe auf 12
+    canvas.drawString(doc.leftMargin + 100, 780, instituteName)
+
+    canvas.restoreState()
+    
+
+
+def create_multi_page(response, first_page_content, competencies, name, badge_name,instituteName, badgeImage=None):
     """
     Create a multi-page pdf document
     """
     
-    doc = SimpleDocTemplate(response,pagesize=A4)
+    # Erstellen des SimpleDocTemplate mit einem Seitenrand von 40 Punkten
+    doc = SimpleDocTemplate(
+        response,
+        pagesize=A4,
+        leftMargin=40,
+        rightMargin=40,
+        topMargin=40,
+        bottomMargin=40
+)
     
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name='Justify', alignment=TA_JUSTIFY))
@@ -243,17 +260,23 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
                     'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
                 paragraph_with_link = Paragraph(link_text, text_style)
                 Story.append(paragraph_with_link) 
-           
-    doc.build(Story, onFirstPage=AllPageSetup, onLaterPages=AllPageSetup, canvasmaker=PageNumCanvas)   
 
+
+    frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='normal')
+    ## template for header
+    template = PageTemplate(id='header', frames=frame, onPage=partial(header, content= Image(badgeImage, width=100, height=50), instituteName=instituteName))
+    ## adding template to all pages 
+    doc.addPageTemplates([template])
+    doc.build(Story, canvasmaker=PageNumCanvas)   
+ 
 def addBadgeImage(first_page_content, badgeImage): 
     image_width = 250
     image_height = 250
     first_page_content.append(Image(badgeImage, width=image_width, height=image_height))
 
 def add_recipient_name(first_page_content, name, issuedOn):
-    first_page_content.append(Spacer(1, 15))
-    recipient_style = ParagraphStyle(name='Recipient', fontSize=24, textColor='#492E98', alignment=TA_CENTER)
+    first_page_content.append(Spacer(1, 30))
+    recipient_style = ParagraphStyle(name='Recipient', fontSize=16, textColor='#492E98',fontName='Rubik-bold',  alignment=TA_CENTER)
     
     recipient_name = f"<strong>{name}</strong>"
     first_page_content.append(Paragraph(recipient_name, recipient_style))
@@ -319,6 +342,8 @@ def add_issuerImage(first_page_content, issuerImage):
     image_height = 60
     first_page_content.append(Image(issuerImage, width=image_width, height=image_height))
 
+
+
 @api_view(["GET"])
 @authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
 @permission_classes([IsAuthenticated])
@@ -360,8 +385,10 @@ def pdf(request, *args, **kwargs):
         # We use email as this is the only identifier we have 
         name = badgeinstance.recipient_identifier
         # raise Http404
-    add_recipient_name(first_page_content, name, badgeinstance.issued_on) 
 
+
+    add_recipient_name(first_page_content, name, badgeinstance.issued_on) 
+    
     addBadgeImage(first_page_content, badgeclass.image)
 
     add_title(first_page_content, badgeclass.name)  
@@ -372,7 +399,7 @@ def pdf(request, *args, **kwargs):
 
     add_issuedBy(first_page_content, badgeinstance.issuer.name, badgeclass.issuer.image)    
 
-    create_multi_page(response, first_page_content, competencies, name, badgeclass.name)
+    create_multi_page(response, first_page_content, competencies, name, badgeclass.name, badgeImage=badgeclass.issuer.image , instituteName=badgeinstance.issuer.name)
 
     return response
 
