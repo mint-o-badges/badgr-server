@@ -270,8 +270,8 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
     doc.build(Story, canvasmaker=PageNumCanvas)   
  
 def addBadgeImage(first_page_content, badgeImage): 
-    image_width = 250
-    image_height = 250
+    image_width = 180
+    image_height = 180
     first_page_content.append(Image(badgeImage, width=image_width, height=image_height))
 
 def add_recipient_name(first_page_content, name, issuedOn):
@@ -294,7 +294,7 @@ def add_recipient_name(first_page_content, name, issuedOn):
 
 def add_title(first_page_content, badge_class_name):
 
-    title_style = ParagraphStyle(name='Title', fontSize=24, textColor='#492E98', leading=30, alignment=TA_CENTER)
+    title_style = ParagraphStyle(name='Title', fontSize=20, textColor='#492E98', fontName="Rubik-Bold" , leading=30, alignment=TA_CENTER)
     first_page_content.append(Paragraph(f"<strong>{badge_class_name}</strong>", title_style))
     # if(len(badge_class_name) > 30):
     first_page_content.append(Spacer(1, 15))
@@ -309,7 +309,7 @@ def truncate_text(text, max_words=70):
         return text
 
 def add_description(first_page_content, description):
-    description_style = ParagraphStyle(name='Description', fontSize=11, leading=16.5, alignment=TA_CENTER)
+    description_style = ParagraphStyle(name='Description', fontSize=12,fontName='Rubik-Regular',  leading=16.5, alignment=TA_CENTER)
     first_page_content.append(Paragraph(description, description_style))
     first_page_content.append(Spacer(1, 10))
 
