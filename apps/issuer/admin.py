@@ -38,7 +38,7 @@ class IssuerAdmin(DjangoObjectActions, ModelAdmin):
         }),
         (None, {
             'fields': (
-                'image', 'name', 'url', 'email', 'verified', 'description', 'category',
+                'image', 'name', 'url', 'email', 'verified', 'intendedUseVerified', 'description', 'category',
                 'street', 'streetnumber', 'zip', 'city', 'badgrapp', 'lat', 'lon')
         }),
         ('JSON', {
