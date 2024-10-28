@@ -172,17 +172,17 @@ class PageNumCanvas(canvas.Canvas):
 def header(canvas, doc, content, instituteName):
     canvas.saveState()
 
-    # Institutsbild
+    # image of institution
     content.drawOn(canvas, doc.leftMargin, 750)
 
-    # Zeichne die horizontale Linie unter dem Bild
-    canvas.setStrokeColor("#492E98")  # Setze die Farbe der Linie
-    canvas.setLineWidth(1)  # Setze die Linienbreite
+    # draw hr
+    canvas.setStrokeColor("#492E98") 
+    canvas.setLineWidth(1)  
     canvas.line(doc.leftMargin + 100, 775, doc.leftMargin + doc.width, 775)
 
-    ## Institusname
-    canvas.setFont('Rubik-Medium', 12)  # Setze die Schriftart auf Rubik-Bold und Größe auf 12
-    canvas.drawString(doc.leftMargin + 100, 780, instituteName)
+    ## name of institute barely above the hr that was just set
+    canvas.setFont('Rubik-Medium', 12)
+    canvas.drawString(doc.leftMargin + 100, 778, instituteName)
 
     canvas.restoreState()
     
@@ -193,7 +193,7 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
     Create a multi-page pdf document
     """
     
-    # Erstellen des SimpleDocTemplate mit einem Seitenrand von 40 Punkten
+    # doc template with margins according to design doc
     doc = BaseDocTemplate(
         response,
         pagesize=A4,
@@ -349,6 +349,8 @@ def add_issuedBy(first_page_content, issued_by, issuerImage=None):
             <span fontName="Rubik-Regular"> Der digitale Badge kann über den QR-Code abgerufen werden </span>
              <br/><br/>
     """
+
+
     first_page_content.append(Paragraph(content_html, issued_by_style))
 
     
@@ -400,7 +402,6 @@ def pdf(request, *args, **kwargs):
         # We use email as this is the only identifier we have 
         name = badgeinstance.recipient_identifier
         # raise Http404
-
     add_recipient_name(first_page_content, name, badgeinstance.issued_on) 
     
     addBadgeImage(first_page_content, badgeclass.image)
