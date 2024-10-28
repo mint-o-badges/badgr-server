@@ -107,6 +107,8 @@ class IssuerSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
     city = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
     country = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
 
+    intendedUseVerified = serializers.BooleanField(default=False)
+
     lat = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
     lon = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
 
@@ -137,6 +139,7 @@ class IssuerSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
         new_issuer.zip = validated_data.get('zip')
         new_issuer.city = validated_data.get('city')
         new_issuer.country = validated_data.get('country')
+        new_issuer.intendedUseVerified = validated_data.get('intendedUseVerified')
 
         # Check whether issuer email domain matches institution website domain to verify it automatically 
         if verifyIssuerAutomatically(validated_data.get('url'), validated_data.get('email')):
@@ -255,6 +258,8 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
 
     source_url = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
 
+    issuerVerified = serializers.BooleanField(read_only=True, source='cached_issuer.verified')
+
     class Meta:
         apispec_definition = ('BadgeClass', {})
 
@@ -310,6 +315,7 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
                 or ext_name.endswith('CategoryExtension')
                 or ext_name.endswith('LevelExtension')
                 or ext_name.endswith('CompetencyExtension')
+                or ext_name.endswith('LicenseExtension')
                 or ext_name.endswith('BasedOnExtension')):
                     is_formal = True
         self.formal = is_formal
