@@ -259,10 +259,7 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
                 Story.append(Paragraph(text, text_style))
                 Story.append(Spacer(1, 20))
 
-              studyload = "%s min" % competencies[i]['studyLoad']
-              if competencies[i]['studyLoad'] > 120:
-                  studyLoadInHours = competencies[i]['studyLoad'] / 60
-                  studyload = "%s h" % int(studyLoadInHours)
+              studyload = "%s:%s h" %  (math.floor(competencies[i]['studyLoad'] / 60), competencies[i]['studyLoad'] % 60)
               competency_name = competencies[i]['name']
               competency = competency_name
             #   competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name
