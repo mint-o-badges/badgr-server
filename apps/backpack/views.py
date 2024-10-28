@@ -24,7 +24,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import PCMYKColor
 from reportlab.lib.utils import ImageReader
-from reportlab.platypus import SimpleDocTemplate, Flowable, Paragraph, Spacer, Image, PageBreak,PageTemplate
+from reportlab.platypus import SimpleDocTemplate, Flowable, Paragraph, Spacer, Image, PageBreak,PageTemplate, BaseDocTemplate
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT
 from svglib.svglib import svg2rlg
@@ -109,10 +109,10 @@ class RoundedRectFlowable(Flowable):
         self.canv.setFillColor('#492E98')
         self.canv.setFont('Rubik-Regular', 14)
         studyload_width = self.canv.stringWidth(self.studyload)
-        self.canv.drawString(self.x + 450 -(studyload_width + 10), self.y + 15, self.studyload)
+        self.canv.drawString(self.x + 515 -(studyload_width + 10), self.y + 15, self.studyload)
 
         clockIcon = ImageReader("{}images/clock-icon.png".format(settings.STATIC_URL))
-        self.canv.drawImage(clockIcon, self.x + 450 - (studyload_width + 35), self.y +12.5, width=15, height=15, mask="auto", preserveAspectRatio=True)
+        self.canv.drawImage(clockIcon, self.x + 515 - (studyload_width + 35), self.y +12.5, width=15, height=15, mask="auto", preserveAspectRatio=True)
 
 
 def AllPageSetup(canvas, doc, badgeImage=None):
@@ -194,7 +194,7 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
     """
     
     # Erstellen des SimpleDocTemplate mit einem Seitenrand von 40 Punkten
-    doc = SimpleDocTemplate(
+    doc = BaseDocTemplate(
         response,
         pagesize=A4,
         leftMargin=40,
@@ -218,12 +218,12 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
             competenciesPerPage = 9
 
             Story.append(PageBreak())
-            Story.append(Spacer(1, 35))
+            Story.append(Spacer(1, 70))
 
-            title_style = ParagraphStyle(name='Title', fontSize=20, textColor='#492E98', alignment=TA_LEFT)
+            title_style = ParagraphStyle(name='Title', fontSize=20,fontName="Rubik-Medium", textColor='#492E98', alignment=TA_LEFT)
             text_style = ParagraphStyle(name='Text', fontSize=18, leading=20, textColor='#323232', alignment=TA_LEFT)
 
-            Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
+            Story.append(Paragraph("Kompetenzen", title_style))
             Story.append(Spacer(1, 15))
             
             text = f"die <strong>{name}</strong> mit dem Badge <strong>{badge_name}</strong> erworben hat:"
@@ -249,7 +249,7 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
               competency_name = competencies[i]['name']
               competency = competency_name
             #   competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name
-              rounded_rect = RoundedRectFlowable(0, -10, 450, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload= studyload, esco=competencies[i]['escoID'])    
+              rounded_rect = RoundedRectFlowable(0, -10, 515, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload= studyload, esco=competencies[i]['escoID'])    
               Story.append(rounded_rect)
               Story.append(Spacer(1, 10))   
                  
@@ -264,7 +264,7 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
 
     frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='normal')
     ## template for header
-    template = PageTemplate(id='header', frames=frame, onPage=partial(header, content= Image(badgeImage, width=100, height=50), instituteName=instituteName))
+    template = PageTemplate(id='header', frames=frame ,onPage=partial(header, content= Image(badgeImage, width=80, height=80), instituteName=instituteName))
     ## adding template to all pages 
     doc.addPageTemplates([template])
     doc.build(Story, canvasmaker=PageNumCanvas)   
@@ -275,7 +275,7 @@ def addBadgeImage(first_page_content, badgeImage):
     first_page_content.append(Image(badgeImage, width=image_width, height=image_height))
 
 def add_recipient_name(first_page_content, name, issuedOn):
-    first_page_content.append(Spacer(1, 30))
+    first_page_content.append(Spacer(1, 58))
     recipient_style = ParagraphStyle(name='Recipient', fontSize=16, textColor='#492E98',fontName='Rubik-bold',  alignment=TA_CENTER)
     
     recipient_name = f"<strong>{name}</strong>"
@@ -309,7 +309,7 @@ def truncate_text(text, max_words=70):
         return text
 
 def add_description(first_page_content, description):
-    description_style = ParagraphStyle(name='Description', fontSize=12,fontName='Rubik-Regular',  leading=16.5, alignment=TA_CENTER)
+    description_style = ParagraphStyle(name='Description', fontSize=12,fontName='Rubik-Regular',  leading=16.5, alignment=TA_CENTER, leftIndent=20, rightIndent=20)
     first_page_content.append(Paragraph(description, description_style))
     first_page_content.append(Spacer(1, 10))
 
@@ -322,21 +322,36 @@ def add_narrative(first_page_content, narrative):
         first_page_content.append(Spacer(1, 35))       
 
 def add_issuedBy(first_page_content, issued_by, issuerImage=None):
-    issued_by_style = ParagraphStyle(name='Issued_By', fontSize=11, textColor='#492E98', alignment=TA_CENTER, leftIndent=-35, rightIndent=-35)
-    image = None
-    if issuerImage is not None: 
-            try:
-                image = Image(issuerImage, width=40, height=40)
-            except: 
-                pass
 
-    if image is not None:
-        first_page_content.append(image)
+    # style of the issued by parapragh
+    issued_by_style = ParagraphStyle(
+        name='IssuedBy', 
+        fontSize=10, 
+        textColor='#323232', 
+        fontName='Rubik-Medium', 
+        alignment=TA_CENTER,
+        backColor='#F5F5F5',
+        spaceBefore=10,
+        spaceAfter=10,
+        leftIndent=-45,
+        rightIndent=-45
 
-    text = f"<strong>- Vergeben von: </strong>" + f"<strong>{issued_by}</strong>  -"
-    first_page_content.append(Paragraph(text, issued_by_style))
-    first_page_content.append(Spacer(1, 15))
+    )
 
+    # post raw html content
+    content_html = f"""
+        <div>
+            <br/><span fontName="Rubik-Bold">ERSTELLT ÜBER <a href="https://openbadges.education" 
+            color="#1400FF" 
+            underline="true"
+            >OPENBADGES.EDUCATION</a></span>
+            <br/>
+            <span fontName="Rubik-Regular"> Der digitale Badge kann über den QR-Code abgerufen werden </span>
+             <br/><br/>
+    """
+    first_page_content.append(Paragraph(content_html, issued_by_style))
+
+    
 def add_issuerImage(first_page_content, issuerImage): 
     image_width = 60
     image_height = 60
@@ -386,7 +401,6 @@ def pdf(request, *args, **kwargs):
         name = badgeinstance.recipient_identifier
         # raise Http404
 
-
     add_recipient_name(first_page_content, name, badgeinstance.issued_on) 
     
     addBadgeImage(first_page_content, badgeclass.image)
@@ -397,7 +411,7 @@ def pdf(request, *args, **kwargs):
 
     add_narrative(first_page_content, badgeinstance.narrative)
 
-    add_issuedBy(first_page_content, badgeinstance.issuer.name, badgeclass.issuer.image)    
+    add_issuedBy(first_page_content, badgeinstance.issuer.name, issuerImage=badgeclass.issuer.image)    
 
     create_multi_page(response, first_page_content, competencies, name, badgeclass.name, badgeImage=badgeclass.issuer.image , instituteName=badgeinstance.issuer.name)
 
