@@ -21,10 +21,6 @@ from badgeuser.managers import CachedEmailAddressManager, BadgeUserManager
 from badgeuser.utils import generate_badgr_username
 from mainsite.models import ApplicationInfo
 
-import logging 
-
-logger = logging.getLogger(__name__)
-
 
 AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
 
@@ -500,7 +496,7 @@ class BadgeUser(BaseVersionedEntity, AbstractUser, cachemodel.CacheModel):
     def agreed_terms_version(self):
         v = self.cached_agreed_terms_version()
         if v is None:
-            return 1 
+            return 0 
         return v.terms_version
 
     @agreed_terms_version.setter

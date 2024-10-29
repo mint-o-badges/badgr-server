@@ -1,4 +1,0 @@
-{% load i18n %}
-{% autoescape off %}
-{% blocktrans %}Bestätigung deiner Newsletter-Anmeldung{% endblocktrans %}
-{% endautoescape %}

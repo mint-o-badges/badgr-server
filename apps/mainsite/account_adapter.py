@@ -29,9 +29,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_JUSTIFY, TA_LEFT
-import logging 
 
-logger2 = logging.getLogger(__name__)
 logger = badgrlog.BadgrLogger()
 
 class BadgrAccountAdapter(DefaultAccountAdapter):
@@ -254,50 +252,6 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
         except Resolver404 as xxx_todo_changeme:
             EmailConfirmation.DoesNotExist = xxx_todo_changeme
             return badgr_app.email_confirmation_redirect
-        
-    def get_newsletter_confirmation_redirect_url(self, request, badgr_app=None):
-        """
-        Generate the URL to redirect to after successful newsletter confirmation.
-        """
-        if badgr_app is None:
-            badgr_app = BadgrApp.objects.get_current(request)
-            if not badgr_app:
-                logger = logging.getLogger(self.__class__.__name__)
-                logger.warning("Could not determine authorized badgr app")
-                # return super(BadgrAccountAdapter, self).get_email_confirmation_redirect_url(request)
-
-        email = request.GET.get('email', None)
-
-        if not email:
-            pass
-
-        query_params = {'email': email, 'newsletter_confirmed': 'true'}
-
-        return set_url_query_params(badgr_app.get_path('/issuer'), **query_params)
-    
-    def get_tos_confirmation_redirect_url(self, request, badgr_app=None):
-        """
-        Generate the URL to redirect to after successful tos confirmation.
-        """
-        if badgr_app is None:
-            badgr_app = BadgrApp.objects.get_current(request)
-            if not badgr_app:
-                return
-                # logger = logging.getLogger(self.__class__.__name__)
-                # logger.warning("Could not determine authorized badgr app")
-                # return super(BadgrAccountAdapter, self).get_email_confirmation_redirect_url(request)
-
-        email = request.GET.get('email', None)
-
-        if not email:
-            pass
-
-        query_params = {'email': email}
-
-        return set_url_query_params(badgr_app.get_path('/issuer'), **query_params)
-
-
-    
 
     def get_email_confirmation_url(self, request, emailconfirmation, signup=False):
         url_name = "v1_api_user_email_confirm"
@@ -326,70 +280,7 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
             if signup:
                 tokenized_activate_url = set_url_query_params(tokenized_activate_url, signup="true")
 
-        return tokenized_activate_url
-    
-
-    def get_newsletter_confirmation_url(email):
-        """
-        Generate a simple confirmation URL for newsletter subscription.
-        
-        """
-        confirmation_url = "{origin}/confirm-newsletter?email={email}".format(
-            origin=settings.HTTP_ORIGIN, 
-            email=email
-        )
-
-        
-        return confirmation_url
-    
-    @staticmethod
-    def send_newsletter_confirmation(self, email):
-        if not email:
-            return
-
-        confirmation_url = self.get_newsletter_confirmation_url(email)
-
-        get_adapter().send_mail('newsletter/email/newsletter_confirmation_signup', email, {
-            'HTTP_ORIGIN': settings.HTTP_ORIGIN,
-            'STATIC_URL': settings.STATIC_URL,
-            'MEDIA_URL': settings.MEDIA_URL,
-            'activate_url': confirmation_url,
-            'email': email,
-        })
-
-    def get_tos_confirmation_url(self, email, tos_version):
-        """
-        Generate a confirmation URL for accepting the Terms of Service.
-        
-        """
-        confirmation_url = "{origin}{path}?email={email}&tos_version={tos_version}".format(
-            origin=settings.HTTP_ORIGIN, 
-            path=reverse('v1_api_user_tos_confirm'),
-            email=email,
-            tos_version=tos_version
-        )
-
-        return confirmation_url
-    
-    @staticmethod
-    def send_tos_confirmation(email, tos_version):
-        if not email:
-            return
-        
-        adapter = get_adapter()
-
-        confirmation_url = adapter.get_tos_confirmation_url(email, tos_version)
-
-        adapter.send_mail('account/email/terms_confirmation_signup', email, {
-            'HTTP_ORIGIN': settings.HTTP_ORIGIN,
-            'STATIC_URL': settings.STATIC_URL,
-            'MEDIA_URL': settings.MEDIA_URL,
-            'activate_url': confirmation_url,
-            'email': email,
-            'tos_version': tos_version, 
-        })
-
-   
+        return tokenized_activate_url  
 
 
     def send_confirmation_mail(self, request, emailconfirmation, signup):
@@ -416,24 +307,6 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                                 emailconfirmation.email_address.email,
                                 ctx)
         
-    def send_terms_confirmation_mail(self, request, emailconfirmation):
-        current_site = get_current_site(request)
-        badgr_app = BadgrApp.objects.get_current(request, raise_exception=False)
-        ctx = {
-            "user": emailconfirmation.email_address.user,
-            "email": emailconfirmation.email_address,
-            "current_site": current_site,
-            "key": emailconfirmation.key,
-            "badgr_app": badgr_app,
-        }
-        email_template = 'account/email/terms_confirmation_signup'
-        get_adapter().send_mail(email_template,
-                                emailconfirmation.email_address.email,
-                                ctx)
-        
-        
-
-
     def get_login_redirect_url(self, request):
         """
         If successfully logged in, redirect to the front-end, including an authToken query parameter.

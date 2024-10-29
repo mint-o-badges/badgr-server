@@ -33,50 +33,6 @@ def notify_on_password_change(user, request=None):
     Context(base_context)
     get_adapter().send_mail('account/email/password_reset_confirmation', user.primary_email, base_context)
 
-def notify_on_newsletter_subscription(user, request=None):
-    """
-    Sends an email notification to a user's primary email address to request subscription confirmation.
-    """
-    if not user.badgrapp_id:
-        badgr_app = BadgrApp.objects.get_current(request=request)
-    else:
-        badgr_app = user.badgrapp
-
-    base_context = {
-        'user': user,
-        'site': get_current_site(request),
-        'help_email': getattr(settings, 'HELP_EMAIL', 'info@opensenselab.org'),
-        'STATIC_URL': getattr(settings, 'STATIC_URL'),
-        'HTTP_ORIGIN': getattr(settings, 'HTTP_ORIGIN'),
-        'badgr_app': badgr_app,
-    }
-
-    Context(base_context)
-    get_adapter().send_mail('account/email/newsletter_confirmation_signup', user.primary_email, base_context)
-
-
-# def notify_tos_confirmation(user, request=None):
-#     """
-#     Sends an email notification to a user for confirming the terms of service.
-#     """
-#     if not user.badgrapp_id:
-#         badgr_app = BadgrApp.objects.get_current(request=request)
-#     else:
-#         badgr_app = user.badgrapp
-
-#     base_context = {
-#         'user': user,
-#         'site': get_current_site(request),
-#         'help_email': getattr(settings, 'HELP_EMAIL', 'info@opensenselab.org'),
-#         'STATIC_URL': getattr(settings, 'STATIC_URL'),
-#         'HTTP_ORIGIN': getattr(settings, 'HTTP_ORIGIN'),
-#         'badgr_app': badgr_app,
-#     }
-
-#     Context(base_context)
-#     get_adapter().send_mail('account/email/terms_confirmation_signup', user.primary_email, base_context)
-
-
 def generate_badgr_username(email):
     if not email:
         return 'unknown'
