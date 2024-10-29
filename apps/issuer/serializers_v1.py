@@ -25,6 +25,8 @@ from mainsite.validators import ChoicesValidator, BadgeExtensionValidator, Posit
 from .models import Issuer, BadgeClass, IssuerStaff, BadgeInstance, BadgeClassExtension, \
         RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL, QrCode, RequestedBadge
 
+from badgeuser.models import TermsVersion
+
 logger = logging.getLogger(__name__)
 
 
@@ -274,6 +276,10 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
         exclude_orgImg = self.context.get('exclude_orgImg', None)
         representation = super(BadgeClassSerializerV1, self).to_representation(instance)
         representation['issuerName'] = instance.cached_issuer.name
+        representation['issuerOwnerAcceptedTos'] = any(
+            user.agreed_terms_version == TermsVersion.cached.latest_version() 
+            for user in instance.cached_issuer.owners
+        )
         representation['issuer'] = OriginSetting.HTTP + \
             reverse('issuer_json', kwargs={'entity_id': instance.cached_issuer.entity_id})
         representation['json'] = instance.get_json(obi_version='1_1', use_canonical_id=True)
