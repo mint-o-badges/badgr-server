@@ -270,12 +270,11 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
                  
             if esco: 
                 Story.append(Spacer(1, 10))
-                text_style = ParagraphStyle(name='Text_Style', fontSize=12, leading=15.6, alignment=TA_LEFT, leftIndent=-35, rightIndent=-35)
+                text_style = ParagraphStyle(name='Text_Style',fontStyle="italic", fontSize=10, leading=15.6, alignment=TA_CENTER, leftIndent=-35, rightIndent=-35)
                 link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations). <br/>' \
                     'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
                 paragraph_with_link = Paragraph(link_text, text_style)
                 Story.append(paragraph_with_link) 
-
 
     frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='normal')
     ## template for header
@@ -417,6 +416,7 @@ def pdf(request, *args, **kwargs):
         # We use email as this is the only identifier we have 
         name = badgeinstance.recipient_identifier
         # raise Http404
+    
     add_recipient_name(first_page_content, name, badgeinstance.issued_on) 
     
     addBadgeImage(first_page_content, badgeclass.image)
