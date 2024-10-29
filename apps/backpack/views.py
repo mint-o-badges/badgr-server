@@ -39,10 +39,12 @@ from functools import partial
 font_path_rubik_regular = os.path.join(os.path.dirname(__file__), 'Rubik-Regular.ttf')
 font_path_rubik_medium = os.path.join(os.path.dirname(__file__), 'Rubik-Medium.ttf')
 font_path_rubik_bold = os.path.join(os.path.dirname(__file__), 'Rubik-Bold.ttf')
+font_path_rubik_italic = os.path.join(os.path.dirname(__file__), 'Rubik-Italic.ttf')
 
 pdfmetrics.registerFont(TTFont('Rubik-Regular', font_path_rubik_regular))
 pdfmetrics.registerFont(TTFont('Rubik-Medium', font_path_rubik_medium))
 pdfmetrics.registerFont(TTFont('Rubik-Bold', font_path_rubik_bold))
+pdfmetrics.registerFont(TTFont('Rubik-Italic', font_path_rubik_italic))
 
 class RoundedRectFlowable(Flowable):
     def __init__(self, x, y, width, height, radius, text, strokecolor, fillcolor, studyload, esco = ''):
@@ -115,10 +117,6 @@ class RoundedRectFlowable(Flowable):
         self.canv.drawImage(clockIcon, self.x + 515 - (studyload_width + 35), self.y +12.5, width=15, height=15, mask="auto", preserveAspectRatio=True)
 
 
-def AllPageSetup(canvas, doc, badgeImage=None):
-
-    # Stelle den ursprünglichen Zustand des Canvas wieder her
-    canvas.restoreState()
 # Inspired by https://www.blog.pythonlibrary.org/2013/08/12/reportlab-how-to-add-page-numbers/
 class PageNumCanvas(canvas.Canvas):
     """
@@ -270,7 +268,7 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
                  
             if esco: 
                 Story.append(Spacer(1, 10))
-                text_style = ParagraphStyle(name='Text_Style',fontStyle="italic", fontSize=10, leading=15.6, alignment=TA_CENTER, leftIndent=-35, rightIndent=-35)
+                text_style = ParagraphStyle(name='Text_Style',fontName="Rubik-Italic", fontSize=10, leading=15.6, alignment=TA_CENTER, leftIndent=-35, rightIndent=-35)
                 link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations). <br/>' \
                     'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
                 paragraph_with_link = Paragraph(link_text, text_style)
@@ -329,7 +327,7 @@ def add_description(first_page_content, description):
 
 def add_narrative(first_page_content, narrative):
     if narrative is not None:
-        narrative_style = ParagraphStyle(name='Narrative', fontSize=11, leading=16.5, alignment=TA_CENTER)
+        narrative_style = ParagraphStyle(name='Narrative',fontName="Rubik-Italic",fontSize=12,textColor='#6B6B6B', leading=16.5, alignment=TA_CENTER, leftIndent=20, rightIndent=20)
         first_page_content.append(Paragraph(narrative, narrative_style))
         first_page_content.append(Spacer(1, 10)) 
     else: 

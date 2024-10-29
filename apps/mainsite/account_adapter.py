@@ -143,7 +143,7 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                     paragraph_with_link = Paragraph(link_text, text_style)
                     Story.append(paragraph_with_link) 
             
-        doc.build(Story, onFirstPage=AllPageSetup, onLaterPages=AllPageSetup, canvasmaker=PageNumCanvas) 
+        doc.build(Story, canvasmaker=PageNumCanvas) 
         
         pdf_content = buffer.getvalue()
         
