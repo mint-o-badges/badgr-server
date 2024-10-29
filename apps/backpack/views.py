@@ -182,7 +182,22 @@ def header(canvas, doc, content, instituteName):
 
     ## name of institute barely above the hr that was just set
     canvas.setFont('Rubik-Medium', 12)
-    canvas.drawString(doc.leftMargin + 100, 778, instituteName)
+    max_length = 50  
+    line_height = 12
+    # logic if a linebreak is needed
+    if len(instituteName) > max_length:
+        split_index = instituteName.rfind(' ', 0, max_length)
+        if split_index == -1: 
+            split_index = max_length
+
+        line1 = instituteName[:split_index]
+        line2 = instituteName[split_index:].strip()  
+
+        # have line height of 12 points
+        canvas.drawString(doc.leftMargin + 100, 778 + line_height, line1)
+        canvas.drawString(doc.leftMargin + 100, 778, line2)
+    else:
+        canvas.drawString(doc.leftMargin + 100, 778, instituteName)
 
     canvas.restoreState()
     
