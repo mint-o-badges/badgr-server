@@ -9,7 +9,8 @@ RUN apt-get install -y default-libmysqlclient-dev \
                        build-essential \
                        xmlsec1 \
                        libxmlsec1-dev \
-                       pkg-config
+                       pkg-config \
+                       curl
 
 RUN mkdir /badgr_server
 WORKDIR /badgr_server
@@ -25,6 +26,7 @@ RUN apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-cairo \
                        libxml2 \ 
+                       curl \ 
                        default-mysql-client
 
 RUN groupadd -g 999 python && \
@@ -32,6 +34,8 @@ RUN groupadd -g 999 python && \
 
 RUN mkdir /badgr_server && chown python:python /badgr_server
 RUN mkdir /backups && chown python:python /backups
+
+RUN touch /badgr_server/user_emails.csv && chown python:python /badgr_server/user_emails.csv
 
 WORKDIR /badgr_server
 
@@ -44,8 +48,28 @@ COPY --chown=python:python  .docker/etc/uwsgi.ini              .
 COPY --chown=python:python  .docker/etc/wsgi.py                .
 COPY --chown=python:python  apps                               ./apps
 COPY --chown=python:python  .docker/etc/settings_local.py      ./apps/mainsite/settings_local.py
+COPY --chown=python:python  entrypoint.sh                      .
+COPY --chown=python:python  crontab                             /etc/cron.d/crontab
+
+RUN chmod +x entrypoint.sh
+
+RUN touch /var/log/cron_cleartokens.log && \
+    chown python:python /var/log/cron_cleartokens.log && \
+    chmod 644 /var/log/cron_cleartokens.log
+
+
+# Latest releases available at https://github.com/aptible/supercronic/releases
+ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.2.30/supercronic-linux-amd64 \
+    SUPERCRONIC=supercronic-linux-amd64 \
+    SUPERCRONIC_SHA1SUM=9f27ad28c5c57cd133325b2a66bba69ba2235799
+
+RUN curl -fsSLO "$SUPERCRONIC_URL" \
+ && echo "${SUPERCRONIC_SHA1SUM}  ${SUPERCRONIC}" | sha1sum -c - \
+ && chmod +x "$SUPERCRONIC" \
+ && mv "$SUPERCRONIC" "/usr/local/bin/${SUPERCRONIC}" \
+ && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
 
 USER 999
 
 ENV PATH="/badgr_server/venv/bin:$PATH"
-CMD ["uwsgi","--socket", "sock/app.sock", "--ini", "uwsgi.ini"]
+ENTRYPOINT ["./entrypoint.sh"]
