@@ -24,7 +24,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import PCMYKColor
 from reportlab.lib.utils import ImageReader
-from reportlab.platypus import SimpleDocTemplate, Flowable, Paragraph, Spacer, Image, PageBreak,PageTemplate, BaseDocTemplate
+from reportlab.platypus import SimpleDocTemplate, Flowable, Paragraph, Spacer, Image, PageBreak,PageTemplate, BaseDocTemplate,Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT
 from svglib.svglib import svg2rlg
@@ -32,10 +32,15 @@ from reportlab.graphics import renderPDF
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
 from reportlab.platypus.frames import Frame
+from reportlab.lib import colors
 from mainsite.utils import get_name
+from reportlab.lib.units import mm
 from operator import attrgetter
 import os
 from functools import partial
+import base64
+from io import BytesIO
+
 font_path_rubik_regular = os.path.join(os.path.dirname(__file__), 'Rubik-Regular.ttf')
 font_path_rubik_medium = os.path.join(os.path.dirname(__file__), 'Rubik-Medium.ttf')
 font_path_rubik_bold = os.path.join(os.path.dirname(__file__), 'Rubik-Bold.ttf')
@@ -45,6 +50,47 @@ pdfmetrics.registerFont(TTFont('Rubik-Regular', font_path_rubik_regular))
 pdfmetrics.registerFont(TTFont('Rubik-Medium', font_path_rubik_medium))
 pdfmetrics.registerFont(TTFont('Rubik-Bold', font_path_rubik_bold))
 pdfmetrics.registerFont(TTFont('Rubik-Italic', font_path_rubik_italic))
+
+
+## Class for rounded image as reportlabs table cell don't support rounded corners
+## taken from AI 
+class RoundedImage(Flowable):
+    def __init__(self, img_path, width, height, border_color, border_width, padding, radius):
+        super().__init__()
+        self.img_path = img_path
+        self.width = width
+        self.height = height
+        self.border_color = border_color
+        self.border_width = border_width
+        self.padding = padding
+        self.radius = radius
+
+    def draw(self):
+        # Calculate total padding to prevent image overlap
+        total_padding = self.padding + self.border_width + 1.8
+
+        # Draw the rounded rectangle for the border
+        canvas = self.canv
+        canvas.setStrokeColor(self.border_color)
+        canvas.setLineWidth(self.border_width)
+        canvas.roundRect(
+            0,  # Start at the lower-left corner of the Flowable
+            0, 
+            self.width + 2 * total_padding,  # Width includes padding on both sides
+            self.height + 2 * total_padding,  # Height includes padding on both sides
+            self.radius  # Radius for rounded corners
+        )
+        
+        # Draw the image inside the rounded rectangle
+        canvas.drawImage(
+            self.img_path, 
+            total_padding,  # Offset by total padding to stay within rounded border
+            total_padding, 
+            width=self.width, 
+            height=self.height,
+            mask='auto'
+        )
+
 
 class RoundedRectFlowable(Flowable):
     def __init__(self, x, y, width, height, radius, text, strokecolor, fillcolor, studyload, esco = ''):
@@ -167,6 +213,8 @@ class PageNumCanvas(canvas.Canvas):
             self.setLineWidth(3)
             self.line(10, 10, page_width - 10, 10)
 
+
+## draw header with image of institution and a hr
 def header(canvas, doc, content, instituteName):
     canvas.saveState()
 
@@ -333,9 +381,9 @@ def add_narrative(first_page_content, narrative):
     else: 
         first_page_content.append(Spacer(1, 35))       
 
-def add_issuedBy(first_page_content, issued_by, issuerImage=None):
 
-    # style of the issued by parapragh
+def add_issuedBy(first_page_content, issued_by, qrCodeImage=None):
+    # Style for the issued by paragraph
     issued_by_style = ParagraphStyle(
         name='IssuedBy', 
         fontSize=10, 
@@ -343,26 +391,49 @@ def add_issuedBy(first_page_content, issued_by, issuerImage=None):
         fontName='Rubik-Medium', 
         alignment=TA_CENTER,
         backColor='#F5F5F5',
-        spaceBefore=10,
-        spaceAfter=10,
         leftIndent=-45,
         rightIndent=-45
-
     )
 
-    # post raw html content
-    content_html = f"""
-        <div>
-            <br/><span fontName="Rubik-Bold">ERSTELLT ÜBER <a href="https://openbadges.education" 
-            color="#1400FF" 
-            underline="true"
-            >OPENBADGES.EDUCATION</a></span>
-            <br/>
-            <span fontName="Rubik-Regular"> Der digitale Badge kann über den QR-Code abgerufen werden </span>
-             <br/><br/>
+    document_width, _ = A4
+    
+    # Adding styled QR code image with border, padding, and rounded corners
+            # Adding styled QR code image with rounded border
+    if qrCodeImage:
+        # Create a RoundedImage instance
+        rounded_img = RoundedImage(
+            img_path=qrCodeImage,
+            width=50,                # Image width
+            height=50,               # Image height
+            border_color="#492E98", 
+            border_width=1,           # Border width (3px)
+            padding=1,                # Padding (2px)
+            radius=4 * mm             # Border radius of 1rem (4mm)
+        )
+        # Add rounded image to a centered table
+        img_table = Table([[rounded_img]], colWidths=[document_width])
+        img_table.hAlign = 'CENTER'  
+        img_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+            ('VALIGN', (0, 0), (0, 0), 'MIDDLE'),
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F5F5F5')),  
+            ('LEFTPADDING', (0, 0), (-1, -1), -45),  # Negative padding to extend beyond the document margin
+            ('RIGHTPADDING', (0, 0), (-1, -1), -45),
+            ('TOPPADDING', (0, 0), (-1, -1), 20),  
+        ]))
+        first_page_content.append(img_table)
+
+    # Adding the main content
+    content_html = """
+        <br/><span fontName="Rubik-Bold">ERSTELLT ÜBER <a href="https://openbadges.education" 
+        color="#1400FF" 
+        underline="true">OPENBADGES.EDUCATION</a></span>
+        <br/>
+        <span fontName="Rubik-Regular">Der digitale Badge kann über den QR-Code abgerufen werden</span>
+        <br/><br/>
     """
-
-
+    
+    # Add content as a Paragraph to first_page_content
     first_page_content.append(Paragraph(content_html, issued_by_style))
 
     
@@ -373,8 +444,8 @@ def add_issuerImage(first_page_content, issuerImage):
 
 
 
-@api_view(["GET"])
-@authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
+@api_view(["POST"])
+# @authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
 @permission_classes([IsAuthenticated])
 def pdf(request, *args, **kwargs):
     slug = kwargs["slug"]
@@ -399,6 +470,9 @@ def pdf(request, *args, **kwargs):
         )
     except BadgeClass.DoesNotExist:
         raise Http404
+
+    image_data = request.data.get("image")
+    
 
     response = HttpResponse(content_type="application/pdf")
     response["Content-Disposition"] = 'inline; filename="badge.pdf"'
@@ -425,7 +499,7 @@ def pdf(request, *args, **kwargs):
 
     add_narrative(first_page_content, badgeinstance.narrative)
 
-    add_issuedBy(first_page_content, badgeinstance.issuer.name, issuerImage=badgeclass.issuer.image)    
+    add_issuedBy(first_page_content, badgeinstance.issuer.name, qrCodeImage = image_data)    
 
     create_multi_page(response, first_page_content, competencies, name, badgeclass.name, badgeImage=badgeclass.issuer.image , instituteName=badgeinstance.issuer.name)
 
