@@ -19,7 +19,7 @@ class Command(BaseCommand):
                         competency_json = competency_extension.original_json
                         competency_dict = loads(competency_json)
                         for item in competency_dict: 
-                            escoID = item.get('framework_identifier')
+                            escoID = item.get('escoID')
                             if escoID is not None and escoID != '': 
                                 issuer = badgeclass.issuer
                                 issuerArray.append(issuer)
