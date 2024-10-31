@@ -405,11 +405,12 @@ def add_issuedBy(first_page_content, issued_by, qrCodeImage=None):
             img_path=qrCodeImage,
             width=50,                # Image width
             height=50,               # Image height
-            border_color="#492E98", 
+            border_color="#492E98",  
             border_width=1,           # Border width (3px)
             padding=1,                # Padding (2px)
             radius=4 * mm             # Border radius of 1rem (4mm)
         )
+
         # Add rounded image to a centered table
         img_table = Table([[rounded_img]], colWidths=[document_width])
         img_table.hAlign = 'CENTER'  
