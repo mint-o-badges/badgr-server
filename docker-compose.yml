@@ -1,7 +1,6 @@
 # A dockerized badgr-server stack for development
-version: '3.3'
+version: "3.3"
 services:
-
   # this container mirrors in the app code and runs the django dev server
   api:
     build:
@@ -10,7 +9,7 @@ services:
     depends_on:
       - "db"
       - "memcached"
-    # command: /badgr_server/manage.py runserver 0.0.0.0:8000
+    command: /badgr_server/manage.py runserver 0.0.0.0:8000
     volumes:
       - ./apps:/badgr_server/apps
       - ./manage.py:/badgr_server/manage.py
@@ -27,7 +26,7 @@ services:
 
   # this container runs memcached
   memcached:
-    image: 'bitnami/memcached:latest'
+    image: "bitnami/memcached:latest"
     expose:
       - "11211"
     networks:
@@ -53,7 +52,7 @@ services:
     container_name: mailhog
     restart: always
     ports:
-      - "1025:1025" #127.0.0.1:1025:1025  
+      - "1025:1025" #127.0.0.1:1025:1025
       - "8025:8025"
     networks:
       - badgr

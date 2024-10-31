@@ -303,10 +303,8 @@ def create_multi_page(response, first_page_content, competencies, name, badge_na
                 Story.append(Paragraph(text, text_style))
                 Story.append(Spacer(1, 20))
 
-              studyload = "%s min" % competencies[i]['studyLoad']
-              if competencies[i]['studyLoad'] > 120:
-                  studyLoadInHours = competencies[i]['studyLoad'] / 60
-                  studyload = "%s h" % int(studyLoadInHours)
+            
+              studyload = "%s:%s h" %  (math.floor(competencies[i]['studyLoad'] / 60), str(competencies[i]['studyLoad'] % 60).zfill(2))
               competency_name = competencies[i]['name']
               competency = competency_name
             #   competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name
@@ -394,11 +392,10 @@ def add_issuedBy(first_page_content, issued_by, qrCodeImage=None):
         leftIndent=-45,
         rightIndent=-45
     )
-
+    # use document width to calculate the table and its size
     document_width, _ = A4
     
     # Adding styled QR code image with border, padding, and rounded corners
-            # Adding styled QR code image with rounded border
     if qrCodeImage:
         # Create a RoundedImage instance
         rounded_img = RoundedImage(
@@ -424,7 +421,7 @@ def add_issuedBy(first_page_content, issued_by, qrCodeImage=None):
         ]))
         first_page_content.append(img_table)
 
-    # Adding the main content
+    # Add the simple html
     content_html = """
         <br/><span fontName="Rubik-Bold">ERSTELLT ÜBER <a href="https://openbadges.education" 
         color="#1400FF" 
@@ -472,9 +469,8 @@ def pdf(request, *args, **kwargs):
     except BadgeClass.DoesNotExist:
         raise Http404
 
+    # base64 string that is passed along from the ui
     image_data = request.data.get("image")
-    
-
     response = HttpResponse(content_type="application/pdf")
     response["Content-Disposition"] = 'inline; filename="badge.pdf"'
 
