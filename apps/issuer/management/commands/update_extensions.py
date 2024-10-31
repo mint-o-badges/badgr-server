@@ -3,6 +3,8 @@ from django.core.management import BaseCommand
 from issuer.models import BadgeClass, BadgeClassExtension
 from json import loads
 from django.db import transaction
+from urllib.parse import urlparse, parse_qs
+
 
 class Command(BaseCommand):
 
@@ -13,11 +15,24 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--dry-run', action='store_true', help='Simulate the changes')
 
+    def calculate_FrameworkIdentifier(self, escoId: str) -> str:
+                if escoId.startswith(self.escoBaseURl):
+                    return escoId
+                elif escoId.startswith('https://esco.ec.europa.eu'):
+                    parsed_url = urlparse(escoId)
+                    query_params = parse_qs(parsed_url.query)
+                    uri = query_params.get('uri', [None])[0]
+                    return uri
+                elif escoId.startswith('/skill/'):
+                    return self.escoBaseURl + '/esco' + escoId
+                else:
+                    return self.escoBaseURl + escoId    
+
     def handle(self, *args, **options):
         dry_run = options['dry_run']
         with transaction.atomic():
 
-            badgeclasses = BadgeClass.objects.all()
+            badgeclasses = BadgeClass.objects.all()                
 
             for badgeclass in badgeclasses:
                 extensions = badgeclass.get_extensions_manager()
@@ -31,7 +46,7 @@ class Command(BaseCommand):
                         if escoID is not None and escoID != '': 
                             item['framework'] = 'esco'
                             item['source'] = 'ai'
-                            item['framework_identifier']= escoID if escoID.startswith('http') else self.escoBaseURl + escoID
+                            item['framework_identifier']= self.calculate_FrameworkIdentifier(escoID)
                             del item['escoID']
                         elif escoID == '':
                             item['framework'] = ''
