@@ -404,7 +404,9 @@ USE_TZ = True
 ##
 try:
     subprocess.run(["git", "config", "--global", "--add", "safe.directory", "/badgr_server"], cwd=TOP_DIR)
-    mainsite.__build__ = subprocess.check_output(["git", "describe", "--tags", "--always"], cwd=TOP_DIR).decode('utf-8').strip()
+    build_tag = subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"], cwd=TOP_DIR).decode('utf-8').strip()
+    build_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=TOP_DIR).decode('utf-8').strip()
+    mainsite.__build__ = f"{build_tag}-{build_hash}";
     print("Build:")
     print(mainsite.__build__)
 except Exception as e:
