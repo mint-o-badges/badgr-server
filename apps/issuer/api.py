@@ -24,7 +24,8 @@ from entity.serializers import BaseSerializerV2, V2ErrorSerializer
 from issuer.models import Issuer, BadgeClass, BadgeInstance, IssuerStaff, LearningPath, LearningPathParticipant, QrCode
 from issuer.permissions import (MayIssueBadgeClass, MayEditBadgeClass, IsEditor, IsEditorButOwnerForDelete,
                                 IsStaff, ApprovedIssuersOnly, BadgrOAuthTokenHasScope,
-                                BadgrOAuthTokenHasEntityScope, AuthorizationIsBadgrOAuthToken, MayIssueLearningPath)
+                                BadgrOAuthTokenHasEntityScope, AuthorizationIsBadgrOAuthToken, MayIssueLearningPath,
+                                is_learningpath_editor, is_learningpath_owner, is_learningpath_staff)
 from issuer.serializers_v1 import (IssuerSerializerV1, BadgeClassSerializerV1,
                                    BadgeInstanceSerializerV1, LearningPathParticipantSerializerV1, QrCodeSerializerV1, LearningPathSerializerV1)
 from issuer.serializers_v2 import IssuerSerializerV2, BadgeClassSerializerV2, BadgeInstanceSerializerV2, \
@@ -34,7 +35,9 @@ from apispec_drf.decorators import apispec_get_operation, apispec_put_operation,
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAdmin
 from mainsite.serializers import CursorPaginatedListSerializer
 from mainsite.models import AccessTokenProxy
+import logging 
 
+logger2 = logging.getLogger(__name__)
 logger = badgrlog.BadgrLogger()
 
 class IssuerList(BaseEntityListView):
@@ -1006,6 +1009,8 @@ class LearningPathDetail(BaseEntityDetailView):
        tags=["LearningPaths"],
         )
     def put(self, request, **kwargs):
+        if(not is_learningpath_editor(request.user, self.get_object(request, **kwargs))):
+            return Response({"error": "You are not authorized to delete this learning path."}, status=status.HTTP_403_FORBIDDEN)
         return super(LearningPathDetail, self).put(request, **kwargs)
     
     @apispec_delete_operation('LearningPath',
@@ -1013,6 +1018,8 @@ class LearningPathDetail(BaseEntityDetailView):
         tags=["LearningPaths"],
     )
     def delete(self, request, **kwargs):
+        if(not is_learningpath_editor(request.user, self.get_object(request, **kwargs))):
+            return Response({"error": "You are not authorized to delete this learning path."}, status=status.HTTP_403_FORBIDDEN)
         return super(LearningPathDetail, self).delete(request, **kwargs)
 
     

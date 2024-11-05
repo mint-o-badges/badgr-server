@@ -64,17 +64,33 @@ def is_badgeclass_editor(user, badgeclass):
 def is_badgeclass_staff(user, badgeclass):
     return any(staff.user_id == user.id for staff in badgeclass.cached_issuer.cached_issuerstaff())
 
+@rules.predicate
 def is_learningpath_staff(user, learningpath): 
     return any(staff.user_id == user.id for staff in learningpath.cached_issuer.cached_issuerstaff())
+
+@rules.predicate
+def is_learningpath_editor(user, learningpath):
+    return any(staff.role in [IssuerStaff.ROLE_EDITOR, IssuerStaff.ROLE_OWNER]
+            for staff in learningpath.cached_issuer.cached_issuerstaff()
+            if staff.user_id == user.id)
+
+
+@rules.predicate
+def is_learningpath_owner(user, learningpath):
+    return any(staff.role == IssuerStaff.ROLE_OWNER
+            for staff in learningpath.cached_issuer.cached_issuerstaff()
+            if staff.user_id == user.id)
 
 can_issue_badgeclass = is_badgeclass_owner | is_badgeclass_staff
 can_edit_badgeclass = is_badgeclass_owner | is_badgeclass_editor
 
 can_issue_learningpath = is_learningpath_staff  
+can_edit_learningpath = is_learningpath_owner |  is_learningpath_editor
 
 rules.add_perm('issuer.can_issue_badge', can_issue_badgeclass)
 rules.add_perm('issuer.can_edit_badgeclass', can_edit_badgeclass)
 rules.add_perm('issuer.can_issue_learningpath', can_issue_learningpath)
+rules.add_perm('issuer.can_edit_learningpath', can_edit_learningpath)
 
 class MayIssueLearningPath(permissions.BasePermission):
     """
