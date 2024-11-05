@@ -23,7 +23,7 @@ import badgrlog
 from badgrsocialauth.utils import set_session_badgr_app
 from mainsite.models import BadgrApp, EmailBlacklist, AccessTokenProxy
 from mainsite.utils import get_name, OriginSetting, set_url_query_params
-from backpack.views import add_recipient_name, add_title, add_description, add_narrative, addBadgeImage, add_issuedBy, RoundedRectFlowable, AllPageSetup, PageNumCanvas
+from backpack.views import add_recipient_name, add_title, add_description, add_narrative, addBadgeImage, add_issuedBy, RoundedRectFlowable, PageNumCanvas
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -69,7 +69,7 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
 
         add_narrative(first_page_content, badgeinstance.narrative)
 
-        add_issuedBy(first_page_content, badgeinstance.issuer.name, badgeclass.issuer.image)    
+        add_issuedBy(first_page_content, badgeinstance.issuer.name, qrCodeImage=None)    
         
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4)

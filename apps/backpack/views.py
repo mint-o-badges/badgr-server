@@ -397,6 +397,13 @@ def add_issuedBy(first_page_content, issued_by, qrCodeImage=None):
     
     # Adding styled QR code image with border, padding, and rounded corners
     if qrCodeImage:
+        if qrCodeImage.startswith("data:image"):
+            qrCodeImage = qrCodeImage.split(",")[1]  # Entfernt das Präfix
+
+        image = base64.b64decode(qrCodeImage)
+        qrCodeImage = BytesIO(image)
+        qrCodeImage = ImageReader(qrCodeImage)
+        
         # Create a RoundedImage instance
         rounded_img = RoundedImage(
             img_path=qrCodeImage,
@@ -442,7 +449,7 @@ def add_issuerImage(first_page_content, issuerImage):
 
 
 
-@api_view(["POST"])
+@api_view(["POST", "GET"])
 # @authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
 @permission_classes([IsAuthenticated])
 def pdf(request, *args, **kwargs):
