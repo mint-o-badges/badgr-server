@@ -1022,32 +1022,3 @@ class LearningPathDetail(BaseEntityDetailView):
             return Response({"error": "You are not authorized to delete this learning path."}, status=status.HTTP_403_FORBIDDEN)
         return super(LearningPathDetail, self).delete(request, **kwargs)
 
-    
-class LearningPathList(BaseEntityListView):
-    """
-    LearningPath list resource for the authenticated user
-    """
-    model = LearningPath
-    v1_serializer_class = LearningPathSerializerV1
-    permission_classes = [
-        IsServerAdmin
-        | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope & ApprovedIssuersOnly)
-    ]
-    valid_scopes = ["rw:issuer"]
-
-
-    def get_objects(self, request, **kwargs):
-        return LearningPath.objects.all()
-    @apispec_list_operation('LearningPath',
-        summary="Get a list of LearningPaths for authenticated user",
-        tags=["LearningPaths"],
-    )
-    def get(self, request, **kwargs):
-        return super(LearningPathList, self).get(request, **kwargs)
-
-    @apispec_post_operation('LearningPath',
-        summary="Create a new LearningPath",
-        tags=["LearningPaths"],
-    )
-    def post(self, request, **kwargs):
-        return super(LearningPathList, self).post(request, **kwargs)
