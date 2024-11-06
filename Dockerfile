@@ -2,7 +2,7 @@
 
 # ------------------------------> Build image
 FROM python:3.8.14-slim-buster as build
-RUN apt-get update
+RUN apt-get clean all && apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-dev \
                        python3-cairo \
@@ -25,7 +25,8 @@ FROM python:3.8.14-slim-buster
 RUN apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-cairo \
-                       libxml2 \ 
+                       libxml2 \
+                       git \
                        curl
 
 RUN groupadd -g 999 python && \
