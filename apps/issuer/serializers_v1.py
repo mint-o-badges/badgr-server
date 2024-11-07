@@ -815,6 +815,3 @@ class LearningPathParticipantSerializerV1(serializers.ModelSerializer):
         model = LearningPathParticipant
         fields = ['user', 'started_at', 'completed_at', 'completed_badges', 'entity_id', 'participationBadgeAssertion']
 
-    # def to_representation(self, instance):
-    #     representation = super(LearningPathParticipantSerializerV1, self).to_representation(instance)
-    #     return representation

@@ -2,7 +2,7 @@
 
 # ------------------------------> Build image
 FROM python:3.8.14-slim-buster as build
-RUN apt-get update
+RUN apt-get clean all && apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-dev \
                        python3-cairo \
@@ -25,15 +25,15 @@ FROM python:3.8.14-slim-buster
 RUN apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-cairo \
-                       libxml2 \ 
-                       default-mysql-client \
+                       libxml2 \
+                       git \
                        curl
 
 RUN groupadd -g 999 python && \
     useradd -r -u 999 -g python python
 
 RUN mkdir /badgr_server && chown python:python /badgr_server
-RUN mkdir /backups && chown python:python /backups
+RUN touch /badgr_server/user_emails.csv && chown python:python /badgr_server/user_emails.csv
 
 WORKDIR /badgr_server
 
@@ -45,6 +45,7 @@ COPY --chown=python:python  manage.py                          .
 COPY --chown=python:python  .docker/etc/uwsgi.ini              .
 COPY --chown=python:python  .docker/etc/wsgi.py                .
 COPY --chown=python:python  apps                               ./apps
+COPY --chown=python:python  .git                               ./.git
 COPY --chown=python:python  .docker/etc/settings_local.py      ./apps/mainsite/settings_local.py
 COPY --chown=python:python  entrypoint.sh                      .
 COPY --chown=python:python  crontab                             /etc/cron.d/crontab
@@ -70,5 +71,4 @@ RUN curl -fsSLO "$SUPERCRONIC_URL" \
 USER 999
 
 ENV PATH="/badgr_server/venv/bin:$PATH"
-# CMD ["uwsgi","--socket", "sock/app.sock", "--ini", "uwsgi.ini"]
 ENTRYPOINT ["./entrypoint.sh"]

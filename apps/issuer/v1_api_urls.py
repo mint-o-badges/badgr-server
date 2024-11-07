@@ -1,7 +1,8 @@
 from django.conf.urls import url
 
 from issuer.api import (IssuerLearningPathList, IssuerList, IssuerDetail, IssuerBadgeClassList, BadgeClassDetail, BadgeInstanceList,
-                        BadgeInstanceDetail, IssuerBadgeInstanceList, AllBadgeClassesList, BatchAssertionsIssue, LearningPathDetail, LearningPathList, LearningPathParticipantsList,
+
+                        BadgeInstanceDetail, IssuerBadgeInstanceList, AllBadgeClassesList, BatchAssertionsIssue, LearningPathDetail, LearningPathParticipantsList,
                         QRCodeDetail)
 from issuer.api_v1 import FindBadgeClassDetail, IssuerStaffList
 
