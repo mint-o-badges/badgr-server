@@ -186,8 +186,8 @@ class IssuerSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
         if self.context.get('embed_badgeclasses', False):
             representation['badgeclasses'] = BadgeClassSerializerV1(
                 obj.badgeclasses.all(), many=True, context=self.context).data
-
         representation['badgeClassCount'] = len(obj.cached_badgeclasses())
+        representation['learningPathCount'] = len(obj.cached_learningpaths())
         representation['recipientGroupCount'] = 0
         representation['recipientCount'] = 0
         representation['pathwayCount'] = 0
