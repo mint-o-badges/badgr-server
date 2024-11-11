@@ -21,6 +21,7 @@ from oauth2_provider.models import get_application_model, get_access_token_model
 from oauth2_provider.scopes import get_scopes_backend
 from oauth2_provider.settings import oauth2_settings
 from oauth2_provider.views import TokenView as OAuth2ProviderTokenView
+from oauth2_provider.views import RevokeTokenView as OAuth2ProviderRevokeTokenView
 from oauth2_provider.views.mixins import OAuthLibMixin
 from oauth2_provider.signals import app_authorized
 from oauthlib.oauth2.rfc6749.utils import scope_to_list
@@ -490,6 +491,33 @@ def setTokenHttpOnly(response):
     del data['refresh_token']
     response.content = json.dumps(data)
     return
+
+class RevokeTokenView(OAuth2ProviderRevokeTokenView):
+    def post(self, request, *args, **kwargs):
+        if 'access_token' not in request.COOKIES:
+            return HttpResponse(
+                json.dumps({"error": "Access token must be contained in COOKIE"}),
+                status=HTTP_400_BAD_REQUEST
+            )
+        access_token = request.COOKIES['access_token']
+        body = request.body.decode('utf-8')
+        body = f"token={access_token}&{body}"
+        request._body = str.encode(body)
+
+        post = dict(request.POST)
+        post['token'] = access_token
+        request._set_post(post)
+
+        # TODO: Implement that the access token does indeed get revoked.
+        # This currently fails because the client secret is not passed in the request.
+        # response = super().post(request, *args, **kwargs)
+        response = HttpResponse(
+            json.dumps({"success": "The tokens don't get revoked (yet). Instead this only requests the browser to delete the cookie."}),
+            status=HTTP_200_OK
+        )
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
+        return response
 
 class TokenView(OAuth2ProviderTokenView):
     server_class = BadgrOauthServer
