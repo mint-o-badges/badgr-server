@@ -14,6 +14,7 @@ services:
       - ./apps:/badgr_server/apps
       - ./manage.py:/badgr_server/manage.py
       - ./.docker/etc/settings_local.dev.py:/badgr_server/apps/mainsite/settings_local.py
+      - ./.git:/badgr_server/.git
         # The following is needed for tox to run
       - ./tox.ini:/badgr_server/tox.ini
       - ./setup.py:/badgr_server/setup.py

@@ -38,12 +38,10 @@ from mainsite.mixins import HashUploadedImage, ResizeUploadedImage, ScrubUploade
 from mainsite.models import BadgrApp, EmailBlacklist
 from mainsite import blacklist
 from mainsite.utils import OriginSetting, generate_entity_uri, get_name
-
 from .utils import (add_obi_version_ifneeded, CURRENT_OBI_VERSION, generate_rebaked_filename,
                     generate_sha256_hashstring, get_obi_context, parse_original_datetime, UNVERSIONED_BAKED_VERSION)
 
 from geopy.geocoders import Nominatim
-
 AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
 
 RECIPIENT_TYPE_EMAIL = 'email'
@@ -138,7 +136,7 @@ class BaseOpenBadgeObjectModel(OriginalJsonMixin, cachemodel.CacheModel):
 
     @property
     def extension_items(self):
-        return {e.name: json_loads(e.original_json) for e in self.cached_extensions()}
+        return {e.name: json_loads(e.original_json) for e in self.cached_extensions() if e.name != "extensions:OrgImageExtension"}
 
     @extension_items.setter
     def extension_items(self, value):
@@ -463,6 +461,10 @@ class Issuer(ResizeUploadedImage,
     @cachemodel.cached_method(auto_publish=True)
     def cached_badgeclasses(self):
         return self.badgeclasses.all().order_by("created_at")
+    
+    @cachemodel.cached_method(auto_publish=True)
+    def cached_learningpaths(self):
+        return self.learningpaths.all().order_by("created_at")
 
     @property
     def image_preview(self):
@@ -1642,6 +1644,20 @@ class BadgeClassTag(cachemodel.CacheModel):
         super(BadgeClassTag, self).delete(*args, **kwargs)
         self.badgeclass.publish()
 
+class LearningPathTag(cachemodel.CacheModel):
+    learningPath = models.ForeignKey('issuer.LearningPath',
+                                   on_delete=models.CASCADE)
+    name = models.CharField(max_length=254, db_index=True)
+
+    def __str__(self):
+        return self.name
+
+    def publish(self):
+        super(LearningPathTag, self).publish()
+
+    def delete(self, *args, **kwargs):
+        super(LearningPathTag, self).delete(*args, **kwargs)
+
 
 class IssuerExtension(BaseOpenBadgeExtension):
     issuer = models.ForeignKey('issuer.Issuer',
@@ -1712,5 +1728,158 @@ class RequestedBadge(BaseVersionedEntity):
     requestedOn = models.DateTimeField(blank=False, null=False, default=timezone.now)
 
     status = models.CharField(max_length=254, blank=False, null=False, default='Pending')
- 
 
+class LearningPath(BaseVersionedEntity, BaseAuditedModel):
+    name = models.CharField(max_length=254, blank=False, null=False)
+    description = models.TextField(blank=True, null=True, default=None)
+    issuer = models.ForeignKey(Issuer, blank=False, null=False, on_delete=models.CASCADE, related_name='learningpaths')
+    participationBadge = models.ForeignKey(BadgeClass, blank=False, null=False, on_delete=models.CASCADE)
+    badgrapp = models.ForeignKey('mainsite.BadgrApp', blank=True, null=True, default=None, on_delete=models.SET_NULL)
+    slug = models.CharField(max_length=255, db_index=True, blank=True, null=True, default=None)
+
+
+
+    @property
+    def public_url(self):
+        return OriginSetting.HTTP + self.get_absolute_url()
+    
+    @property
+    def v1_api_participant_count(self):
+        return LearningPathParticipant.objects.filter(learning_path=self).count()
+
+    @property
+    def cached_badgrapp(self):
+        id = self.badgrapp_id if self.badgrapp_id else None
+        return BadgrApp.objects.get_by_id_or_default(badgrapp_id=id)
+    
+    @property
+    def cached_issuer(self):
+        return Issuer.cached.get(pk=self.issuer_id)
+
+    @cachemodel.cached_method(auto_publish=True)
+    def cached_learningpathbadges(self):
+        return self.learningpathbadge_set.all()
+
+    @property
+    def learningpath_badges(self):
+        return self.cached_learningpathbadges()
+    
+    @learningpath_badges.setter
+    def learningpath_badges(self, badges_with_order):
+        self.learningpathbadge_set.all().delete()
+
+        for badge, order in badges_with_order:
+            LearningPathBadge.objects.create(learning_path=self, badge=badge, order=order)
+
+    @cachemodel.cached_method(auto_publish=True)
+    def cached_tags(self):
+        return self.learningpathtag_set.all()
+
+    @property
+    def tag_items(self):
+        return self.cached_tags()
+
+    @tag_items.setter
+    def tag_items(self, value):
+        if value is None:
+            value = []
+        existing_idx = [t.name for t in self.tag_items]
+        new_idx = value
+
+        with transaction.atomic():
+            if not self.pk:
+                self.save()
+
+            # add missing
+            for t in value:
+                if t not in existing_idx:
+                    tag = self.learningpathtag_set.create(name=t)
+
+            # remove old
+            for tag in self.tag_items:
+                if tag.name not in new_idx:
+                    tag.delete()
+
+    def get_json(self, obi_version=CURRENT_OBI_VERSION,):
+
+        json = OrderedDict({})
+        json.update(OrderedDict(
+            name=self.name,
+            description=self.description,
+            slug=self.entity_id,
+            issuer_id= self.issuer.entity_id
+            ))
+        
+        tags = self.learningpathtag_set.all()  
+        badges = self.learningpathbadge_set.all() 
+        image = self.participationBadge.image.url
+        
+        json['tags'] = list(t.name for t in tags)
+
+        json['badges'] = [
+            {
+                'badge': badge.badge.get_json(obi_version=obi_version), 
+                'order': badge.order
+            }
+            for badge in badges
+        ]
+
+        json["image"] = image
+
+        return json 
+
+    def get_absolute_url(self):
+        return reverse('learningpath_json', kwargs={'entity_id': self.entity_id})               
+
+class LearningPathBadge(cachemodel.CacheModel):
+    learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE)
+    badge = models.ForeignKey(BadgeClass, on_delete=models.CASCADE)
+    order = models.PositiveIntegerField()
+
+    def publish(self):
+        super(LearningPathBadge, self).publish()
+
+    def delete(self, *args, **kwargs):
+        super(LearningPathBadge, self).delete(*args, **kwargs)
+
+class LearningPathParticipant(BaseVersionedEntity, BaseAuditedModel):
+    user = models.ForeignKey('badgeuser.BadgeUser', on_delete=models.CASCADE)
+    learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE)
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ['user', 'learning_path']
+
+    @property
+    def completed_badges(self):
+        lp_badges = LearningPathBadge.objects.filter(learning_path=self.learning_path)
+        lp_badgeclasses = [lp_badge.badge for lp_badge in lp_badges]
+        badgeinstances = self.user.cached_badgeinstances().filter(badgeclass__in=lp_badgeclasses, revoked=False)
+        badgeclasses = list({badgeinstance.badgeclass for badgeinstance in badgeinstances})
+        return badgeclasses
+        # return self.user.earned_badges.filter(learningpath=self.learning_path)    
+
+    @property
+    def participationBadgeAssertion(self):
+        if self.completed_at is not None:
+            badgeinstance = self.user.cached_badgeinstances().filter(revoked=False, badgeclass=self.learning_path.participationBadge).first()
+            if badgeinstance is not None:
+                return badgeinstance
+        else:
+            return None 
+           
+    @property
+    def cached_user(self):
+        from badgeuser.models import BadgeUser
+        return BadgeUser.cached.get(pk=self.user_id)    
+    
+class RequestedLearningPath(BaseVersionedEntity):
+
+    learningpath = models.ForeignKey(LearningPath, blank=False, null=False,
+                                   on_delete=models.CASCADE, related_name='requested_learningpath')
+    user = models.ForeignKey('badgeuser.BadgeUser', blank=False, null=False, on_delete=models.CASCADE,)
+
+    requestedOn = models.DateTimeField(blank=False, null=False, default=timezone.now)
+
+    status = models.CharField(max_length=254, blank=False, null=False, default='Pending')    
