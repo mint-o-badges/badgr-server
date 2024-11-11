@@ -136,7 +136,7 @@ class BaseOpenBadgeObjectModel(OriginalJsonMixin, cachemodel.CacheModel):
 
     @property
     def extension_items(self):
-        return {e.name: json_loads(e.original_json) for e in self.cached_extensions() if e.name != "extensions:OrgImageExtension"}
+        return {e.name: json_loads(e.original_json) for e in self.cached_extensions()}
 
     @extension_items.setter
     def extension_items(self, value):
@@ -203,6 +203,7 @@ class Issuer(ResizeUploadedImage,
     old_json = JSONField()
 
     verified = models.BooleanField(null=False, default=False)
+
 
     objects = IssuerManager()
     cached = SlugOrJsonIdCacheModelManager(slug_kwarg_name='entity_id', slug_field_name='entity_id')
