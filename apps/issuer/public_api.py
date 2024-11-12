@@ -398,6 +398,9 @@ class BadgeClassList(JSONListView):
         logger.event(badgrlog.BadgeClassRetrievedEvent(obj, self.request))
 
     def get_json(self, request):
+        self.serializer_context = {
+            'exlude_orgImg': True
+        }
         return super(BadgeClassList, self).get_json(request)
 
 
