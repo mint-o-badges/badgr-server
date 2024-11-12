@@ -1259,8 +1259,12 @@ class BadgeInstance(BaseAuditedModel,
             badgr_app = BadgrApp.objects.get_current(None)
 
         adapter = get_adapter()
+        
+        # get the base url for the badge instance
+        httpPrefix = 'https://' if settings.SECURE_SSL_REDIRECT else 'http://'
+        base_url = httpPrefix + badgr_app.cors
 
-        pdf_document = adapter.generate_pdf_content(slug =  self.entity_id)
+        pdf_document = adapter.generate_pdf_content(slug =  self.entity_id, base_url = base_url)
         encoded_pdf_document = base64.b64encode(pdf_document).decode('utf-8')
         data_url = f"data:application/pdf;base64,{encoded_pdf_document}"    
 
