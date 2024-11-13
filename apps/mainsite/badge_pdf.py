@@ -238,13 +238,13 @@ class BadgePDFCreator:
                     Story.append(rounded_rect)
                     Story.append(Spacer(1, 10))   
                         
-                    if esco: 
-                        Story.append(Spacer(1, 10))
-                        text_style = ParagraphStyle(name='Text_Style',fontName="Rubik-Italic", fontSize=10, leading=15.6, alignment=TA_CENTER, leftIndent=-35, rightIndent=-35)
-                        link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations). <br/>' \
-                            'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
-                        paragraph_with_link = Paragraph(link_text, text_style)
-                        Story.append(paragraph_with_link) 
+                if esco: 
+                    Story.append(Spacer(1, 10))
+                    text_style = ParagraphStyle(name='Text_Style',fontName="Rubik-Italic", fontSize=10, leading=15.6, alignment=TA_CENTER, leftIndent=-35, rightIndent=-35)
+                    link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations). <br/>' \
+                        'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
+                    paragraph_with_link = Paragraph(link_text, text_style)
+                    Story.append(paragraph_with_link) 
 
     def generate_qr_code(self, badge_instance, origin):
         ## build the qr code in the backend
