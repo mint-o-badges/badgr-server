@@ -76,26 +76,27 @@ class BadgePDFCreator:
             return ' '.join(words[:max_words]) + '...'
         else:
             return text
+        
+    def add_dynamic_spacer(self, first_page_content, text):
+        print(text)
+        line_char_count = 79
+        line_height = 16.5
+        num_lines = math.ceil(len(text) / line_char_count)
+        spacer_height = 175 - (num_lines - 1) * line_height
+        first_page_content.append(Spacer(1, max(spacer_height, 0)))
+                                
 
     def add_description(self, first_page_content, description):
         description_style = ParagraphStyle(name='Description', fontSize=12,fontName='Rubik-Regular',  leading=16.5, alignment=TA_CENTER, leftIndent=20, rightIndent=20)
         first_page_content.append(Paragraph(description, description_style))
-        line_char_count = 79
-        line_height = 16.5
-        num_lines = math.ceil(len(description) / line_char_count)
-        spacer_height = 175 - (num_lines - 1) * line_height
-        first_page_content.append(Spacer(1, max(spacer_height, 0)))
-        
-
 
 
     def add_narrative(self, first_page_content, narrative):
         if narrative is not None:
-            narrative_style = ParagraphStyle(name='Narrative',fontName="Rubik-Italic",fontSize=12,textColor='#6B6B6B', leading=16.5, alignment=TA_CENTER, leftIndent=20, rightIndent=20)
-            first_page_content.append(Paragraph(narrative, narrative_style))
             first_page_content.append(Spacer(1, 10)) 
-        else: 
-            first_page_content.append(Spacer(1, 35))       
+            narrative_style = ParagraphStyle(name='Narrative',fontName="Rubik-Italic",fontSize=12,textColor='#6B6B6B', leading=16.5, alignment=TA_CENTER, leftIndent=20, rightIndent=20)
+            narrative = narrative[:280] + '...' if len(narrative) > 280 else narrative
+            first_page_content.append(Paragraph(narrative, narrative_style))
 
     def add_issued_by(self, first_page_content, issued_by, qrCodeImage=None):
         # Style for the issued by paragraph
@@ -284,6 +285,10 @@ class BadgePDFCreator:
         self.add_title(first_page_content, badge_class.name)
         self.add_description(first_page_content, badge_class.description)
         self.add_narrative(first_page_content, badge_instance.narrative)
+        narrative = badge_instance.narrative
+        if narrative:
+            narrative = narrative[:280] + '...' if len(narrative) > 280 else narrative
+        self.add_dynamic_spacer(first_page_content, (badge_class.description or "") +  (narrative or ""))
         self.add_issued_by(first_page_content, badge_class.issuer.name, self.generate_qr_code(badge_instance, origin))
 
 
