@@ -14,8 +14,10 @@ from django.core.files.storage import default_storage
 from django.conf import settings
 from django.core.validators import URLValidator
 from django.http import HttpResponse
+from django.http.request import HttpHeaders
 from django.utils import timezone
 from django.contrib.auth import logout
+from django.core.handlers.wsgi import WSGIRequest
 from oauth2_provider.exceptions import OAuthToolkitError
 from oauth2_provider.models import get_application_model, get_access_token_model, Application, RefreshToken, AccessToken
 from oauth2_provider.scopes import get_scopes_backend
@@ -499,22 +501,30 @@ class RevokeTokenView(OAuth2ProviderRevokeTokenView):
                 json.dumps({"error": "Access token must be contained in COOKIE"}),
                 status=HTTP_400_BAD_REQUEST
             )
-        access_token = request.COOKIES['access_token']
-        body = request.body.decode('utf-8')
-        body = f"token={access_token}&{body}"
-        request._body = str.encode(body)
+        else:
+            # Add the access token to the request, as if it had always been there,
+            # since the oauth toolkit can't handle the access token in the cookie
+            access_token = request.COOKIES['access_token']
+            body = request.body.decode('utf-8')
+            body = f"token={access_token}&{body}"
+            request._body = str.encode(body)
 
-        post = dict(request.POST)
-        post['token'] = access_token
-        request._set_post(post)
+            request.POST._mutable = True
+            request.POST['token'] = [access_token]
+            request.POST._mutable = False
 
-        # TODO: Implement that the access token does indeed get revoked.
-        # This currently fails because the client secret is not passed in the request.
-        # response = super().post(request, *args, **kwargs)
-        response = HttpResponse(
-            json.dumps({"success": "The tokens don't get revoked (yet). Instead this only requests the browser to delete the cookie."}),
-            status=HTTP_200_OK
-        )
+            headers = dict(request.headers)
+            headers['Content-Length'] = str(len(request.body))
+            request.headers = HttpHeaders(headers)
+
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            # For some reason, (this version) does not actually delete / revoke the tokens.
+            # So I delete them manually, as long as the parent said everything's fine.
+            token_objects = AccessToken.objects.filter(token=request.POST['token'][0]
+                                                       if type(request.POST['token']) is list
+                                                       else request.POST['token'])
+            token_objects.delete()
         response.delete_cookie('access_token')
         response.delete_cookie('refresh_token')
         return response
