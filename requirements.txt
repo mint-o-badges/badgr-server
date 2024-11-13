@@ -122,3 +122,4 @@ pyjwt
 reportlab
 svg2rlg
 svglib
+qrcode

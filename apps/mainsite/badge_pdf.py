@@ -25,11 +25,12 @@ from django.conf import settings
 font_path_rubik_regular = os.path.join(os.path.dirname(__file__), 'Rubik-Regular.ttf')
 font_path_rubik_medium = os.path.join(os.path.dirname(__file__), 'Rubik-Medium.ttf')
 font_path_rubik_bold = os.path.join(os.path.dirname(__file__), 'Rubik-Bold.ttf')
+font_path_rubik_italic = os.path.join(os.path.dirname(__file__), 'Rubik-Italic.ttf')
 
 pdfmetrics.registerFont(TTFont('Rubik-Regular', font_path_rubik_regular))
 pdfmetrics.registerFont(TTFont('Rubik-Medium', font_path_rubik_medium))
 pdfmetrics.registerFont(TTFont('Rubik-Bold', font_path_rubik_bold))
-
+pdfmetrics.registerFont(TTFont('Rubik-Italic', font_path_rubik_italic))
 
 class BadgePDFCreator:
     def __init__(self):
@@ -62,6 +63,7 @@ class BadgePDFCreator:
     def add_title(self, first_page_content, badge_class_name):
 
         title_style = ParagraphStyle(name='Title', fontSize=20, textColor='#492E98', fontName="Rubik-Bold" , leading=30, alignment=TA_CENTER)
+        first_page_content.append(Spacer(1, 10))
         first_page_content.append(Paragraph(f"<strong>{badge_class_name}</strong>", title_style))
         # if(len(badge_class_name) > 30):
         first_page_content.append(Spacer(1, 15))
@@ -78,7 +80,13 @@ class BadgePDFCreator:
     def add_description(self, first_page_content, description):
         description_style = ParagraphStyle(name='Description', fontSize=12,fontName='Rubik-Regular',  leading=16.5, alignment=TA_CENTER, leftIndent=20, rightIndent=20)
         first_page_content.append(Paragraph(description, description_style))
-        first_page_content.append(Spacer(1, 10))
+        line_char_count = 79
+        line_height = 16.5
+        num_lines = math.ceil(len(description) / line_char_count)
+        spacer_height = 175 - (num_lines - 1) * line_height
+        first_page_content.append(Spacer(1, max(spacer_height, 0)))
+        
+
 
 
     def add_narrative(self, first_page_content, narrative):
@@ -221,21 +229,21 @@ class BadgePDFCreator:
                         Story.append(Spacer(1, 20))
 
                 
-                studyload = "%s:%s h" %  (math.floor(competencies[i]['studyLoad'] / 60), str(competencies[i]['studyLoad'] % 60).zfill(2))
-                competency_name = competencies[i]['name']
-                competency = competency_name
-                #   competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name
-                rounded_rect = RoundedRectFlowable(0, -10, 515, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload= studyload, esco=competencies[i]['escoID'])    
-                Story.append(rounded_rect)
-                Story.append(Spacer(1, 10))   
-                    
-                if esco: 
-                    Story.append(Spacer(1, 10))
-                    text_style = ParagraphStyle(name='Text_Style',fontName="Rubik-Italic", fontSize=10, leading=15.6, alignment=TA_CENTER, leftIndent=-35, rightIndent=-35)
-                    link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations). <br/>' \
-                        'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
-                    paragraph_with_link = Paragraph(link_text, text_style)
-                    Story.append(paragraph_with_link) 
+                    studyload = "%s:%s h" %  (math.floor(competencies[i]['studyLoad'] / 60), str(competencies[i]['studyLoad'] % 60).zfill(2))
+                    competency_name = competencies[i]['name']
+                    competency = competency_name
+                    #   competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name
+                    rounded_rect = RoundedRectFlowable(0, -10, 515, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload= studyload, esco=competencies[i]['escoID'])    
+                    Story.append(rounded_rect)
+                    Story.append(Spacer(1, 10))   
+                        
+                    if esco: 
+                        Story.append(Spacer(1, 10))
+                        text_style = ParagraphStyle(name='Text_Style',fontName="Rubik-Italic", fontSize=10, leading=15.6, alignment=TA_CENTER, leftIndent=-35, rightIndent=-35)
+                        link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations). <br/>' \
+                            'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
+                        paragraph_with_link = Paragraph(link_text, text_style)
+                        Story.append(paragraph_with_link) 
 
     def generate_qr_code(self, badge_instance, origin):
         ## build the qr code in the backend
