@@ -470,11 +470,12 @@ def get_expire_seconds(access_token):
 def setTokenHttpOnly(response):
     data = json.loads(response.content.decode('utf-8'))
     # Add tokens as cookies
-    response.set_cookie('access_token',
-                        value=data['access_token'],
-                        httponly=True,
-                        secure=True,
-                        max_age=data['expires_in'])
+    if 'access_token' in data:
+        response.set_cookie('access_token',
+                            value=data['access_token'],
+                            httponly=True,
+                            secure=True,
+                            max_age=data['expires_in'])
     if 'refresh_token' in 'access_token':
         response.set_cookie('refresh_token',
                             value=data['refresh_token'],
@@ -619,7 +620,8 @@ class TokenView(OAuth2ProviderTokenView):
         if grant_type == "password" and response.status_code == 401:
             badgrlogger.event(badgrlog.FailedLoginAttempt(request, username, endpoint='/o/token'))
         
-        setTokenHttpOnly(response)
+        if (response.status_code == 200):
+            setTokenHttpOnly(response)
 
         return response
 
