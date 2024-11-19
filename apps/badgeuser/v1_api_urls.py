@@ -2,7 +2,7 @@ from django.conf.urls import url
 
 from badgeuser.api import (BadgeUserToken, BadgeUserForgotPassword, BadgeUserEmailConfirm, BadgeUserDetail, 
     BadgeUserResendEmailConfirmation)
-from badgeuser.api_v1 import BadgeUserEmailList, BadgeUserEmailDetail
+from badgeuser.api_v1 import BadgeUserEmailList, BadgeUserEmailDetail, BadgeUserInstitutionList
 
 urlpatterns = [
     url(r'^auth-token$', BadgeUserToken.as_view(), name='v1_api_user_auth_token'),
@@ -15,4 +15,6 @@ urlpatterns = [
     url(r'^confirmemail/(?P<confirm_id>[^/]+)$', BadgeUserEmailConfirm.as_view(),
         name='v1_api_user_email_confirm'),
     url(r'^resendemail$', BadgeUserResendEmailConfirmation.as_view(), name='v1_api_resend_user_verification_email'),
+    url(r'^institutions$', BadgeUserInstitutionList.as_view(), name='v1_api_user_instutions'),
+
 ]
