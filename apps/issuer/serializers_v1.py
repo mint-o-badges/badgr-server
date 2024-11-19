@@ -280,6 +280,7 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
             user.agreed_terms_version == TermsVersion.cached.latest_version() 
             for user in instance.cached_issuer.owners
         )
+        representation['issuerVerifiedIntendedUse'] = instance.cached_issuer.intendedUseVerified
         representation['issuer'] = OriginSetting.HTTP + \
             reverse('issuer_json', kwargs={'entity_id': instance.cached_issuer.entity_id})
         representation['json'] = instance.get_json(obi_version='1_1', use_canonical_id=True)
