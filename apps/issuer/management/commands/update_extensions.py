@@ -52,6 +52,7 @@ class Command(BaseCommand):
                             item['framework'] = ''
                             item['source'] = 'manual'  
                             item['framework_identifier']= ''
+                            del item['escoID']
 
                     updated_competency_json = json.dumps(competency_dict, indent=4)  
                     competency_extension.original_json = updated_competency_json
