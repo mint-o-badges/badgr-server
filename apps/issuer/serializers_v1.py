@@ -174,6 +174,8 @@ class IssuerSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
         instance.city = validated_data.get('city')
         instance.country = validated_data.get('country')
 
+        instance.intendedUseVerified = validated_data.get('intendedUseVerified')
+
         # set badgrapp
         if not instance.badgrapp_id:
             instance.badgrapp = BadgrApp.objects.get_current(self.context.get('request', None))
