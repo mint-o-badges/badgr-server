@@ -65,10 +65,7 @@ class BadgePDFCreator:
         title_style = ParagraphStyle(name='Title', fontSize=20, textColor='#492E98', fontName="Rubik-Bold" , leading=30, alignment=TA_CENTER)
         first_page_content.append(Spacer(1, 10))
         first_page_content.append(Paragraph(f"<strong>{badge_class_name}</strong>", title_style))
-        # if(len(badge_class_name) > 30):
         first_page_content.append(Spacer(1, 15))
-        # else:
-        #     first_page_content.append(Spacer(1, 35))
 
     def truncate_text(text, max_words=70):
         words = text.split()
@@ -113,7 +110,6 @@ class BadgePDFCreator:
         # use document width to calculate the table and its size
         document_width, _ = A4
         
-        # Adding styled QR code image with border, padding, and rounded corners
         if qrCodeImage:
             if qrCodeImage.startswith("data:image"):
                 qrCodeImage = qrCodeImage.split(",")[1]  # Entfernt das Präfix
@@ -125,12 +121,12 @@ class BadgePDFCreator:
             # Create a RoundedImage instance
             rounded_img = RoundedImage(
                 img_path=qrCodeImage,
-                width=50,                # Image width
-                height=50,               # Image height
+                width=50,                
+                height=50,               
                 border_color="#492E98",  
-                border_width=1,           # Border width (3px)
-                padding=1,                # Padding (2px)
-                radius=4 * mm             # Border radius of 1rem (4mm)
+                border_width=1,           
+                padding=1,                
+                radius=4 * mm            
             )
 
             # Add rounded image to a centered table
@@ -169,10 +165,8 @@ class BadgePDFCreator:
     def header(self, canvas, doc, content, instituteName):
         canvas.saveState()
 
-        # image of institution
         content.drawOn(canvas, doc.leftMargin, 750)
 
-        # draw hr
         canvas.setStrokeColor("#492E98") 
         canvas.setLineWidth(1)  
         canvas.line(doc.leftMargin + 100, 775, doc.leftMargin + doc.width, 775)
