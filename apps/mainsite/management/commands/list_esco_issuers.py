@@ -10,7 +10,8 @@ class Command(BaseCommand):
         
         badgeclasses = BadgeClass.objects.all()
         
-        file_path = os.path.join(os.getcwd(), 'esco_issuers.txt')
+
+        file_path = os.path.join(os.getcwd(), 'issuers.txt')
         try:
             for badgeclass in badgeclasses:
                 extensions = badgeclass.get_extensions_manager()

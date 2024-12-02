@@ -28,6 +28,8 @@ from mainsite.validators import ChoicesValidator, BadgeExtensionValidator, Posit
 from .models import Issuer, BadgeClass, IssuerStaff, BadgeInstance, BadgeClassExtension, \
         RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL, LearningPath, LearningPathBadge, LearningPathParticipant, QrCode, RequestedBadge, RequestedLearningPath
 
+from badgeuser.models import TermsVersion
+
 logger = logging.getLogger(__name__)
 
 
@@ -110,6 +112,8 @@ class IssuerSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
     city = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
     country = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
 
+    intendedUseVerified = serializers.BooleanField(default=False)
+
     lat = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
     lon = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
 
@@ -140,6 +144,7 @@ class IssuerSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
         new_issuer.zip = validated_data.get('zip')
         new_issuer.city = validated_data.get('city')
         new_issuer.country = validated_data.get('country')
+        new_issuer.intendedUseVerified = validated_data.get('intendedUseVerified')
 
         # Check whether issuer email domain matches institution website domain to verify it automatically 
         if verifyIssuerAutomatically(validated_data.get('url'), validated_data.get('email')):
@@ -171,6 +176,8 @@ class IssuerSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
         instance.zip = validated_data.get('zip')
         instance.city = validated_data.get('city')
         instance.country = validated_data.get('country')
+
+        instance.intendedUseVerified = validated_data.get('intendedUseVerified')
 
         # set badgrapp
         if not instance.badgrapp_id:
@@ -258,6 +265,8 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
 
     source_url = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
 
+    issuerVerified = serializers.BooleanField(read_only=True, source='cached_issuer.verified')
+
     class Meta:
         apispec_definition = ('BadgeClass', {})
 
@@ -272,6 +281,11 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
         exclude_orgImg = self.context.get('exclude_orgImg', None)
         representation = super(BadgeClassSerializerV1, self).to_representation(instance)
         representation['issuerName'] = instance.cached_issuer.name
+        representation['issuerOwnerAcceptedTos'] = any(
+            user.agreed_terms_version == TermsVersion.cached.latest_version() 
+            for user in instance.cached_issuer.owners
+        )
+        representation['issuerVerifiedIntendedUse'] = instance.cached_issuer.intendedUseVerified
         representation['issuer'] = OriginSetting.HTTP + \
             reverse('issuer_json', kwargs={'entity_id': instance.cached_issuer.entity_id})
         representation['json'] = instance.get_json(obi_version='1_1', use_canonical_id=True)
@@ -314,6 +328,7 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
                 or ext_name.endswith('CategoryExtension')
                 or ext_name.endswith('LevelExtension')
                 or ext_name.endswith('CompetencyExtension')
+                or ext_name.endswith('LicenseExtension')
                 or ext_name.endswith('BasedOnExtension')):
                     is_formal = True
         self.formal = is_formal

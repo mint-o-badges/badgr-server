@@ -5,6 +5,8 @@ import datetime
 
 from apispec_drf.decorators import apispec_list_operation, apispec_operation, \
     apispec_get_operation, apispec_delete_operation, apispec_put_operation
+from issuer.models import IssuerStaff
+from issuer.serializers_v1 import IssuerSerializerV1
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -143,3 +145,18 @@ class BadgeUserEmailDetail(BadgeUserEmailView):
         serializer = EmailSerializerV1(email_address, context={'request': request})
         serialized = serializer.data
         return Response(serialized, status=status.HTTP_200_OK)
+
+class BadgeUserInstitutionList(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @apispec_list_operation('BadgeUserInstitutions',
+        summary="Get a list of user's owned institutions",
+        tags=['BadgeUsers']
+    )
+    def get(self, request, **kwargs):
+        institutions = request.user.cached_issuers().filter(
+            issuerstaff__user=request.user,
+            issuerstaff__role=IssuerStaff.ROLE_OWNER
+        )                
+        serializer = IssuerSerializerV1(institutions, many=True, context={'request': request})
+        return Response(serializer.data)
