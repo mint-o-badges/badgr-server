@@ -32,7 +32,7 @@ services:
       - "11211"
     networks:
       - badgr
-    command: ["memcached", "-m", "64", "-I", "3m"]
+    command: ["memcached", "-m", "64", "-I", "10m"]
   # this container runs mysql (database)
   db:
     image: mysql:5.7.31
