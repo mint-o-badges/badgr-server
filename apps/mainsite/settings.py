@@ -1,6 +1,8 @@
 from cryptography.fernet import Fernet
 import sys
 import os
+import subprocess
+import mainsite
 
 from mainsite import TOP_DIR
 
@@ -22,7 +24,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.admin',
     'django_object_actions',
+    'django_prometheus',
     'markdownify',
+
 
     'badgeuser',
 
@@ -59,6 +63,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -71,6 +76,7 @@ MIDDLEWARE = [
     'mainsite.middleware.MaintenanceMiddleware',
     'badgeuser.middleware.InactiveUserMiddleware',
     # 'mainsite.middleware.TrailingSlashMiddleware',
+    'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
 ROOT_URLCONF = 'mainsite.urls'
@@ -393,6 +399,26 @@ USE_L10N = False
 USE_TZ = True
 
 
+
+##
+#
+#  Version
+#
+##
+try:
+    subprocess.run(["git", "config", "--global", "--add", "safe.directory", "/badgr_server"], cwd=TOP_DIR)
+    build_tag = subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"], cwd=TOP_DIR).decode('utf-8').strip()
+    build_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=TOP_DIR).decode('utf-8').strip()
+    mainsite.__build__ = f"{build_tag}-{build_hash}";
+    print("Build:")
+    print(mainsite.__build__)
+except Exception as e:
+    print(e)
+    mainsite.__build__ = mainsite.get_version() + " ?"
+    print("ERROR in determinig build number")
+
+
+
 ##
 #
 # Markdownify
@@ -440,7 +466,8 @@ OAUTH2_PROVIDER = {
     'DEFAULT_SCOPES': ['r:profile'],
 
     'OAUTH2_VALIDATOR_CLASS': 'mainsite.oauth_validator.BadgrRequestValidator',
-    'ACCESS_TOKEN_EXPIRE_SECONDS': 86400
+    'ACCESS_TOKEN_EXPIRE_SECONDS': 86400, # 1 day
+    'REFRESH_TOKEN_EXPIRE_SECONDS': 604800 # 1 week
 
 }
 OAUTH2_PROVIDER_APPLICATION_MODEL = 'oauth2_provider.Application'

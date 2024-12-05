@@ -2,20 +2,27 @@ from django.conf.urls import url
 from django.views.decorators.clickjacking import xframe_options_exempt
 from rest_framework.urlpatterns import format_suffix_patterns
 
-from .public_api import (IssuerJson, IssuerList, IssuerBadgesJson, IssuerImage, BadgeClassJson, BadgeClassList,
-                         BadgeClassImage, BadgeClassCriteria, BadgeInstanceJson,
-                         BadgeInstanceImage, BackpackCollectionJson, BakedBadgeInstanceImage,
-                         OEmbedAPIEndpoint, VerifyBadgeAPIEndpoint)
+from .public_api import (IssuerJson, IssuerList, IssuerBadgesJson, IssuerLearningPathsJson, IssuerImage, BadgeClassJson, BadgeClassList,
+                         BadgeClassImage, BadgeClassCriteria, BadgeInstanceJson, LearningPathJson,
+                         BadgeInstanceImage, BackpackCollectionJson, BakedBadgeInstanceImage, LearningPathList,
+                         OEmbedAPIEndpoint, VerifyBadgeAPIEndpoint, BadgeLearningPathList)
 
 json_patterns = [
     url(r'^issuers/(?P<entity_id>[^/.]+)$',
         xframe_options_exempt(IssuerJson.as_view(slugToEntityIdRedirect=True)), name='issuer_json'),
     url(r'^issuers/(?P<entity_id>[^/.]+)/badges$', xframe_options_exempt(
         IssuerBadgesJson.as_view(slugToEntityIdRedirect=True)), name='issuer_badges_json'),
+    url(r'^issuers/(?P<entity_id>[^/.]+)/learningpaths$', xframe_options_exempt(
+        IssuerLearningPathsJson.as_view(slugToEntityIdRedirect=True)), name='issuer_learningpaths_json'),    
     url(r'^all-issuers$', xframe_options_exempt(IssuerList.as_view()), name='issuer_list_json'),
     url(r'^badges/(?P<entity_id>[^/.]+)$',
         xframe_options_exempt(BadgeClassJson.as_view(slugToEntityIdRedirect=True)), name='badgeclass_json'),
+    url(r'^badges/(?P<entity_id>[^/.]+)/learningpaths$',
+        xframe_options_exempt(BadgeLearningPathList.as_view()), name='badge_learningpath_list_json'),    
+    url(r'^learningpaths/(?P<entity_id>[^/.]+)$',
+        xframe_options_exempt(LearningPathJson.as_view(slugToEntityIdRedirect=True)), name='learningpath_json'),    
     url(r'^all-badges$', xframe_options_exempt(BadgeClassList.as_view()), name='badgeclass_list_json'),
+    url(r'^all-learningpaths$', xframe_options_exempt(LearningPathList.as_view()), name='learningpath_list_json'),
     url(r'^assertions/(?P<entity_id>[^/.]+)$', xframe_options_exempt(
         BadgeInstanceJson.as_view(slugToEntityIdRedirect=True)), name='badgeinstance_json'),
 
