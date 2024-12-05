@@ -136,7 +136,7 @@ class BaseOpenBadgeObjectModel(OriginalJsonMixin, cachemodel.CacheModel):
 
     @property
     def extension_items(self):
-        return {e.name: json_loads(e.original_json) for e in self.cached_extensions() if e.name != "extensions:OrgImageExtension"}
+        return {e.name: json_loads(e.original_json) for e in self.cached_extensions()}
 
     @extension_items.setter
     def extension_items(self, value):
@@ -203,6 +203,7 @@ class Issuer(ResizeUploadedImage,
     old_json = JSONField()
 
     verified = models.BooleanField(null=False, default=False)
+
 
     objects = IssuerManager()
     cached = SlugOrJsonIdCacheModelManager(slug_kwarg_name='entity_id', slug_field_name='entity_id')
@@ -1259,8 +1260,12 @@ class BadgeInstance(BaseAuditedModel,
             badgr_app = BadgrApp.objects.get_current(None)
 
         adapter = get_adapter()
+        
+        # get the base url for the badge instance
+        httpPrefix = 'https://' if settings.SECURE_SSL_REDIRECT else 'http://'
+        base_url = httpPrefix + badgr_app.cors
 
-        pdf_document = adapter.generate_pdf_content(slug =  self.entity_id)
+        pdf_document = adapter.generate_pdf_content(slug =  self.entity_id, base_url = base_url)
         encoded_pdf_document = base64.b64encode(pdf_document).decode('utf-8')
         data_url = f"data:application/pdf;base64,{encoded_pdf_document}"    
 

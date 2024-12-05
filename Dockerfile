@@ -34,6 +34,7 @@ RUN groupadd -g 999 python && \
 
 RUN mkdir /badgr_server && chown python:python /badgr_server
 RUN touch /badgr_server/user_emails.csv && chown python:python /badgr_server/user_emails.csv
+RUN touch /badgr_server/esco_issuers.txt && chown python:python /badgr_server/esco_issuers.txt  
 
 WORKDIR /badgr_server
 
