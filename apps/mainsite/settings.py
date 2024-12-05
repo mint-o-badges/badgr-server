@@ -1,6 +1,8 @@
 from cryptography.fernet import Fernet
 import sys
 import os
+import subprocess
+import mainsite
 
 from mainsite import TOP_DIR
 
@@ -22,6 +24,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.admin',
     'django_object_actions',
+    'django_prometheus',
     'markdownify',
 
 
@@ -62,6 +65,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -74,6 +78,7 @@ MIDDLEWARE = [
     'mainsite.middleware.MaintenanceMiddleware',
     'badgeuser.middleware.InactiveUserMiddleware',
     # 'mainsite.middleware.TrailingSlashMiddleware',
+    'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
 DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
@@ -397,6 +402,26 @@ SITE_ID = 2
 USE_I18N = False
 USE_L10N = False
 USE_TZ = True
+
+
+
+##
+#
+#  Version
+#
+##
+try:
+    subprocess.run(["git", "config", "--global", "--add", "safe.directory", "/badgr_server"], cwd=TOP_DIR)
+    build_tag = subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"], cwd=TOP_DIR).decode('utf-8').strip()
+    build_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=TOP_DIR).decode('utf-8').strip()
+    mainsite.__build__ = f"{build_tag}-{build_hash}";
+    print("Build:")
+    print(mainsite.__build__)
+except Exception as e:
+    print(e)
+    mainsite.__build__ = mainsite.get_version() + " ?"
+    print("ERROR in determinig build number")
+
 
 
 ##

@@ -2,7 +2,7 @@
 
 # ------------------------------> Build image
 FROM python:3.8.14-slim-buster as build
-RUN apt-get update
+RUN apt-get clean all && apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-dev \
                        python3-cairo \
@@ -25,7 +25,8 @@ FROM python:3.8.14-slim-buster
 RUN apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-cairo \
-                       libxml2 \ 
+                       libxml2 \
+                       git \
                        curl \ 
                        default-mysql-client
 
@@ -36,6 +37,7 @@ RUN mkdir /badgr_server && chown python:python /badgr_server
 RUN mkdir /backups && chown python:python /backups
 
 RUN touch /badgr_server/user_emails.csv && chown python:python /badgr_server/user_emails.csv
+RUN touch /badgr_server/esco_issuers.txt && chown python:python /badgr_server/esco_issuers.txt  
 
 WORKDIR /badgr_server
 
@@ -47,6 +49,7 @@ COPY --chown=python:python  manage.py                          .
 COPY --chown=python:python  .docker/etc/uwsgi.ini              .
 COPY --chown=python:python  .docker/etc/wsgi.py                .
 COPY --chown=python:python  apps                               ./apps
+COPY --chown=python:python  .git                               ./.git
 COPY --chown=python:python  .docker/etc/settings_local.py      ./apps/mainsite/settings_local.py
 COPY --chown=python:python  entrypoint.sh                      .
 COPY --chown=python:python  crontab                             /etc/cron.d/crontab

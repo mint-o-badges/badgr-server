@@ -52,6 +52,9 @@ jobs:
     steps:
       - name: ⬇️ Checkout repository
         uses: actions/checkout@v4.2.0
+        with:
+          fetch-tags: true
+          fetch-depth: 0
 
       - name: 🏄 Copy default env vars
         run: cp .docker/etc/settings_local.prod.py.example .docker/etc/settings_local.py
