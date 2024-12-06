@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0066_qrcode_requestedbadge'),
+        ('issuer', '0067_learningpath_learningpathbadge_learningpathparticipant_learningpathtag_requestedlearningpath'),
     ]
 
     operations = [
