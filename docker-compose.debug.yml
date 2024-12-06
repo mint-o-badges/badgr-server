@@ -1,8 +1,67 @@
-version: "3.7"
-
+# A dockerized badgr-server stack for debugging
+version: '3.3'
 services:
+
+  # this container mirrors in the app code and runs the django dev server
   api:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile.debug.api
+    depends_on:
+      - "db"
+      - "memcached"
+    command: ["sh", "-c", "python3 -m debugpy --listen 0.0.0.0:5678 /badgr_server/manage.py runserver 0.0.0.0:8000"]
+    volumes:
+      - ./apps:/badgr_server/apps
+      - ./manage.py:/badgr_server/manage.py
+      - ./.docker/etc/settings_local.dev.py:/badgr_server/apps/mainsite/settings_local.py
+        # The following is needed for tox to run
+      - ./tox.ini:/badgr_server/tox.ini
+      - ./setup.py:/badgr_server/setup.py
+      - ./README.md:/badgr_server/README.md
+      - ./user_emails.csv:/badgr_server/user_emails.csv
+    networks:
+      - badgr
     ports:
       - "8000:8000"
       - "5678:5678"
-    command: ["sh", "-c", "python3 -m debugpy --listen 0.0.0.0:5678 /badgr_server/manage.py runserver 0.0.0.0:8000"]
+
+  # this container runs memcached
+  memcached:
+    image: 'bitnami/memcached:latest'
+    expose:
+      - "11211"
+    networks:
+      - badgr
+
+  # this container runs mysql (database)
+  db:
+    image: mysql:5.7.31
+    # platform: linux/amd64 comment in if you are on Apple Silicon
+    volumes:
+      - badgr_server_dev_db:/var/lib/mysql:rw
+      - ./.docker/etc/init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      - "MYSQL_PASSWORD=password"
+      - "MYSQL_HOST=db"
+      - "MYSQL_ROOT_PASSWORD=password"
+    expose:
+      - "3306"
+    networks:
+      - badgr
+  mailhog:
+    image: mailhog/mailhog
+    container_name: mailhog
+    restart: always
+    ports:
+      - "1025:1025" #127.0.0.1:1025:1025  
+      - "8025:8025"
+    networks:
+      - badgr
+
+networks:
+  badgr:
+    driver: bridge
+
+volumes:
+  badgr_server_dev_db:
