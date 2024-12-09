@@ -41,8 +41,8 @@ COPY --chown=python:python  .docker/etc/uwsgi.ini              .
 COPY --chown=python:python  .docker/etc/wsgi.py                .
 COPY --chown=python:python  apps                               ./apps
 COPY --chown=python:python  .docker/etc/settings_local.py      ./apps/mainsite/settings_local.py
-
-COPY --chown=python:python  .docker/etc/nginx.conf              ./nginx
+RUN mkdir /nginx
+COPY --chown=python:python  .docker/etc/nginx.conf              ./nginx/nginx.conf
 
 
 USER 999
