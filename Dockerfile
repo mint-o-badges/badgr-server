@@ -42,6 +42,9 @@ COPY --chown=python:python  .docker/etc/wsgi.py                .
 COPY --chown=python:python  apps                               ./apps
 COPY --chown=python:python  .docker/etc/settings_local.py      ./apps/mainsite/settings_local.py
 
+COPY --chown=python:python  .docker/etc/nginx.conf              .
+
+
 USER 999
 
 ENV PATH="/badgr_server/venv/bin:$PATH"
