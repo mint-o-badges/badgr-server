@@ -1,0 +1,51 @@
+name: 🔄 Snyc nginx configuration
+
+on:
+  push:
+    branches:
+      - feat/nginx
+    paths:
+      - '.docker/config/nginx/**'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🚀 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Configure SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy.key
+          ssh-keyscan -t rsa ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/deploy.key ~/.ssh/known_hosts
+          cat >>~/.ssh/config <<END
+          Host oeb-development
+            Hostname ${{ secrets.REMOTE_HOST }}
+            User ${{ secrets.REMOTE_USER }}
+            IdentityFile ~/.ssh/deploy.key
+            StrictHostKeyChecking yes
+            UpdateHostKeys no
+            PasswordAuthentication no
+            IdentitiesOnly yes
+            BatchMode yes
+            RequestTTY no
+            ControlMaster auto
+            ControlPath ~/.ssh/oeb-control-%h-%p-%r
+            ControlPersist 60
+          END
+
+          ssh oeb-development 'echo "SSH connection successful"'
+
+      # - name: 🔄 Sync nginx configuration
+      #   run: |
+      #     rsync -av --delete ./.docker/config/nginx/ ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }}:${{ secrets.REMOTE_TARGET }}
+
+      # - name: 🚀 Restart nginx
+      #   run: |
+      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} '
+      #       cd ${{ secrets.REMOTE_TARGET }} && \
+      #       docker compose pull nginx && \
+      #       docker compose up --force-recreate --detach nginx
+      #     '
