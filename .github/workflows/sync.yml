@@ -20,7 +20,7 @@ jobs:
         run: |
           mkdir -p ~/.ssh/
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy.key
-          ssh-keyscan -t rsa ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -t ed25519 ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
           chmod 600 ~/.ssh/deploy.key ~/.ssh/known_hosts
           chmod 700 ~/.ssh/
           cat >>~/.ssh/config <<END
