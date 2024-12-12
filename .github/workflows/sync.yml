@@ -24,7 +24,7 @@ jobs:
           chmod 600 ~/.ssh/deploy.key ~/.ssh/known_hosts
           chmod 700 ~/.ssh/
           cat >>~/.ssh/config <<END
-          Host oeb-development
+          Host oeb-ssh
             Hostname ${{ secrets.REMOTE_HOST }}
             User ${{ secrets.REMOTE_USER }}
             IdentityFile ~/.ssh/deploy.key
@@ -39,11 +39,11 @@ jobs:
             ControlPersist 60
           END
 
-          ssh oeb-development 'echo "SSH connection successful"'
+          ssh oeb-ssh 'echo "SSH connection successful"'
 
       - name: 🔄 Sync nginx configuration
         run: |
-          rsync -atzv ./.docker/config/nginx/ ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }}:${{ secrets.REMOTE_TARGET }}
+          rsync -atzv ./.docker/config/nginx/ -e ssh "oeb-ssh:${{ secrets.REMOTE_TARGET }}"
 
       # - name: 🚀 Restart nginx
       #   run: |
