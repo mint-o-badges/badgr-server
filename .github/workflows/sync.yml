@@ -45,10 +45,10 @@ jobs:
         run: |
           rsync -atzv ./.docker/config/nginx/ -e ssh "oeb-ssh:${{ secrets.REMOTE_TARGET }}"
 
-      # - name: 🚀 Restart nginx
-      #   run: |
-      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} '
-      #       cd ${{ secrets.REMOTE_TARGET }} && \
-      #       docker compose pull nginx && \
-      #       docker compose up --force-recreate --detach nginx
-      #     '
+      - name: 🚀 Restart nginx
+        run: |
+          ssh oeb-ssh '
+            cd ${{ secrets.REMOTE_HOME }} && \
+            docker compose pull nginx && \
+            docker compose up --force-recreate --detach nginx
+          '
