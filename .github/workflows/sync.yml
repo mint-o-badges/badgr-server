@@ -10,6 +10,8 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    environment: 'development' # check branch and decide which environment should be used
+
     steps:
       - name: 🚀 Checkout repository
         uses: actions/checkout@v4
@@ -18,8 +20,9 @@ jobs:
         run: |
           mkdir -p ~/.ssh/
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy.key
-          ssh-keyscan -t rsa ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -t rsa ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
           chmod 600 ~/.ssh/deploy.key ~/.ssh/known_hosts
+          chmod 700 ~/.ssh/
           cat >>~/.ssh/config <<END
           Host oeb-development
             Hostname ${{ secrets.REMOTE_HOST }}
