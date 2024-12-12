@@ -1,0 +1,55 @@
+name: 🔄 Snyc nginx configuration
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - '.docker/config/nginx/**'
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'staging' || 'development' }} # check branch and decide which environment to use
+
+    steps:
+      - name: 🚀 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Configure SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy.key
+          ssh-keyscan -t ed25519 ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/deploy.key ~/.ssh/known_hosts
+          chmod 700 ~/.ssh/
+          cat >>~/.ssh/config <<END
+          Host oeb-ssh
+            Hostname ${{ secrets.REMOTE_HOST }}
+            User ${{ secrets.REMOTE_USER }}
+            IdentityFile ~/.ssh/deploy.key
+            StrictHostKeyChecking yes
+            UpdateHostKeys no
+            PasswordAuthentication no
+            IdentitiesOnly yes
+            BatchMode yes
+            RequestTTY no
+            ControlMaster auto
+            ControlPath ~/.ssh/oeb-control-%h-%p-%r
+            ControlPersist 60
+          END
+
+          ssh oeb-ssh 'echo "SSH connection successful"'
+
+      - name: 🔄 Sync nginx configuration
+        run: |
+          rsync -atzv ./.docker/config/nginx/ -e ssh "oeb-ssh:${{ secrets.REMOTE_TARGET }}"
+
+      - name: 🚀 Restart nginx
+        run: |
+          ssh oeb-ssh '
+            cd ${{ secrets.REMOTE_HOME }} && \
+            docker compose pull nginx && \
+            docker compose up --force-recreate --detach nginx
+          '
