@@ -3,14 +3,15 @@ name: 🔄 Snyc nginx configuration
 on:
   push:
     branches:
-      - feat/nginx
+      - main
+      - develop
     paths:
       - '.docker/config/nginx/**'
 
 jobs:
   sync:
     runs-on: ubuntu-24.04
-    environment: 'development' # check branch and decide which environment should be used
+    environment: ${{ github.ref == 'refs/heads/main' && 'staging' || 'development' }} # check branch and decide which environment to use
 
     steps:
       - name: 🚀 Checkout repository
