@@ -41,9 +41,9 @@ jobs:
 
           ssh oeb-development 'echo "SSH connection successful"'
 
-      # - name: 🔄 Sync nginx configuration
-      #   run: |
-      #     rsync -av --delete ./.docker/config/nginx/ ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }}:${{ secrets.REMOTE_TARGET }}
+      - name: 🔄 Sync nginx configuration
+        run: |
+          rsync -atzv ./.docker/config/nginx/ ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }}:${{ secrets.REMOTE_TARGET }}
 
       # - name: 🚀 Restart nginx
       #   run: |
