@@ -9,7 +9,7 @@ on:
 
 jobs:
   sync:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: 'development' # check branch and decide which environment should be used
 
     steps:
