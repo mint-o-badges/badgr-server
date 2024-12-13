@@ -243,7 +243,7 @@ class BadgePDFCreator:
     def generate_qr_code(self, badge_instance, origin):
         ## build the qr code in the backend
 
-        qrCodeImageUrl = f"{origin}/public/assertions/{badge_instance.id}"
+        qrCodeImageUrl = f"{origin}/public/assertions/{badge_instance.slug}"
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
