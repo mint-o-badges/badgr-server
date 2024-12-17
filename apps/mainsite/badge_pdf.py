@@ -121,12 +121,12 @@ class BadgePDFCreator:
             # Create a RoundedImage instance
             rounded_img = RoundedImage(
                 img_path=qrCodeImage,
-                width=50,                
-                height=50,               
+                width=57,                
+                height=57,               
                 border_color="#492E98",  
                 border_width=1,           
                 padding=1,                
-                radius=4 * mm            
+                radius=2 * mm            
             )
 
             # Add rounded image to a centered table
@@ -335,6 +335,7 @@ class RoundedImage(Flowable):
 
         # Draw the rounded rectangle for the border
         canvas = self.canv
+        canvas.setFillColor('white')
         canvas.setStrokeColor(self.border_color)
         canvas.setLineWidth(self.border_width)
         canvas.roundRect(
@@ -342,7 +343,9 @@ class RoundedImage(Flowable):
             0, 
             self.width + 2 * total_padding,  # Width includes padding on both sides
             self.height + 2 * total_padding,  # Height includes padding on both sides
-            self.radius  # Radius for rounded corners
+            self.radius,  # Radius for rounded corners,
+            stroke=1,
+            fill=1
         )
         
         # Draw the image inside the rounded rectangle
