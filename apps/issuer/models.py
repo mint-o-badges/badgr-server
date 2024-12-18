@@ -217,6 +217,8 @@ class Issuer(ResizeUploadedImage,
     city = models.CharField(max_length=255, null=True, blank=True)
     country = models.CharField(max_length=255, null=True, blank=True)
 
+    intendedUseVerified = models.BooleanField(null=False, default=False)
+
     lat = models.FloatField(null=True, blank=True)
     lon = models.FloatField(null=True, blank=True)
 
@@ -1236,7 +1238,9 @@ class BadgeInstance(BaseAuditedModel,
             competency_entry = {
                 'name': competency.get('name'),
                 'description': competency.get('description'),
-                'escoID': competency.get('escoID'),
+                'framework': competency.get('framework'),
+                'framework_identifier': competency.get('framework_identifier'),
+                'source': competency.get('source'),
                 'studyLoad': competency.get('studyLoad'),
                 'skill': competency.get('category')
             }

@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'django_celery_results',
 
+    'dbbackup',  # django-dbbackup
+
     # OAuth 2 provider
     'oauth2_provider',
 
@@ -81,6 +83,9 @@ MIDDLEWARE = [
     # 'mainsite.middleware.TrailingSlashMiddleware',
     'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
+
+DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
+DBBACKUP_STORAGE_OPTIONS = {'location': '/backups/'}
 
 ROOT_URLCONF = 'mainsite.urls'
 

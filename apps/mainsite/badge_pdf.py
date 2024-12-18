@@ -195,7 +195,7 @@ class BadgePDFCreator:
     def add_competencies (self, Story, competencies, name, badge_name):
         num_competencies = len(competencies)
         if num_competencies > 0:
-                esco = any(c['escoID'] for c in competencies)
+                esco = any(c['framework']  for c in competencies)
                 competenciesPerPage = 9
 
                 Story.append(PageBreak())
@@ -228,7 +228,7 @@ class BadgePDFCreator:
                     competency_name = competencies[i]['name']
                     competency = competency_name
                     #   competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name
-                    rounded_rect = RoundedRectFlowable(0, -10, 515, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload= studyload, esco=competencies[i]['escoID'])    
+                    rounded_rect = RoundedRectFlowable(0, -10, 515, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload= studyload, esco=competencies[i]['framework_identifier'])    
                     Story.append(rounded_rect)
                     Story.append(Spacer(1, 10))   
                         
@@ -243,7 +243,7 @@ class BadgePDFCreator:
     def generate_qr_code(self, badge_instance, origin):
         ## build the qr code in the backend
 
-        qrCodeImageUrl = f"{origin}/public/assertions/{badge_instance.id}"
+        qrCodeImageUrl = f"{origin}/public/assertions/{badge_instance.entity_id}"
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -418,7 +418,7 @@ class RoundedRectFlowable(Flowable):
             last_line_width = self.canv.stringWidth(text_lines[-1])
             self.canv.setFillColor('blue')
             self.canv.drawString(self.x + 10 + last_line_width, y_text_position + 15, " [E]")
-            self.canv.linkURL(f"http://data.europa.eu/{self.esco}", (self.x, self.y, self.width, self.height), relative=1, thickness=0)
+            self.canv.linkURL(self.esco, (self.x, self.y, self.width, self.height), relative=1, thickness=0)
 
         
         self.canv.setFillColor('#492E98')
