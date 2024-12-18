@@ -27,7 +27,6 @@ from backpack.badge_connect_api import (
 from mainsite.oauth2_api import (
     AuthorizationApiView,
     TokenView,
-    RevokeTokenView,
     AuthCodeExchange,
     RegisterApiView,
     PublicRegisterApiView,
@@ -79,7 +78,6 @@ urlpatterns = [
         r"^o/authorize/?$", AuthorizationApiView.as_view(), name="oauth2_api_authorize"
     ),
     url(r"^o/token/?$", TokenView.as_view(), name="oauth2_provider_token"),
-    url(r"^o/revoke_token/?$", RevokeTokenView.as_view(), name="oauth2_provider_revoke_token"),
     url(r"^o/code/?$", AuthCodeExchange.as_view(), name="oauth2_code_exchange"),
     url(
         r"^o/register/?$",
