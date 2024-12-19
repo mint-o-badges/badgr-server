@@ -2,8 +2,6 @@ from django import http
 from django.utils import deprecation
 from django.utils.deprecation import MiddlewareMixin
 from mainsite import settings
-from django.contrib.auth import authenticate
-from django.utils.cache import patch_vary_headers
 
 
 class MaintenanceMiddleware(deprecation.MiddlewareMixin):
@@ -34,14 +32,3 @@ class XframeExempt500Middleware(MiddlewareMixin):
         if response.status_code == 500:
             response.xframe_options_exempt = True
         return response
-
-class CookieToBearerMiddleware(MiddlewareMixin):
-    """
-    Makes sure that tokens passed as cookie are added as
-    bearer HTTP_AUTHORIZATION, so that oauth2_provider can
-    handle them
-    """
-    def process_request(self, request):
-        # do something only if request contains access token cookie
-        if 'access_token' in request.COOKIES:
-            request.META['HTTP_AUTHORIZATION'] = f"Bearer {request.COOKIES['access_token']}"
