@@ -1,4 +1,5 @@
 from io import BytesIO
+import json
 import logging
 import urllib.request
 import urllib.parse
@@ -17,7 +18,7 @@ from django.urls import resolve, Resolver404, reverse
 from django.utils.safestring import mark_safe
 
 from issuer.models import BadgeClass, BadgeInstance
-from badgeuser.authcode import authcode_for_accesstoken
+from badgeuser.authcode import authcode_for_accesstoken, encrypt_authcode
 from badgeuser.models import BadgeUser, CachedEmailAddress
 import badgrlog
 from badgrsocialauth.utils import set_session_badgr_app
@@ -186,9 +187,11 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
             if signup:
                 tokenized_activate_url = set_url_query_params(tokenized_activate_url, signup="true")
 
-        return tokenized_activate_url
+        return tokenized_activate_url  
+
 
     def send_confirmation_mail(self, request, emailconfirmation, signup):
+
         current_site = get_current_site(request)
         activate_url = self.get_email_confirmation_url(
             request,
@@ -210,7 +213,7 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
         get_adapter().send_mail(email_template,
                                 emailconfirmation.email_address.email,
                                 ctx)
-
+        
     def get_login_redirect_url(self, request):
         """
         If successfully logged in, redirect to the front-end, including an authToken query parameter.

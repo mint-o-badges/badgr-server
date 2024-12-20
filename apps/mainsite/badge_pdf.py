@@ -43,7 +43,7 @@ class BadgePDFCreator:
 
     def add_recipient_name(self, first_page_content, name, issuedOn):
         first_page_content.append(Spacer(1, 58))
-        recipient_style = ParagraphStyle(name='Recipient', fontSize=16, textColor='#492E98',fontName='Rubik-bold',  alignment=TA_CENTER)
+        recipient_style = ParagraphStyle(name='Recipient', fontSize=18, leading=21.6, textColor='#492E98',fontName='Rubik-bold',  alignment=TA_CENTER)
         
         recipient_name = f"<strong>{name}</strong>"
         first_page_content.append(Paragraph(recipient_name, recipient_style))
@@ -121,12 +121,12 @@ class BadgePDFCreator:
             # Create a RoundedImage instance
             rounded_img = RoundedImage(
                 img_path=qrCodeImage,
-                width=50,                
-                height=50,               
+                width=57,                
+                height=57,               
                 border_color="#492E98",  
                 border_width=1,           
                 padding=1,                
-                radius=4 * mm            
+                radius=2 * mm            
             )
 
             # Add rounded image to a centered table
@@ -165,7 +165,7 @@ class BadgePDFCreator:
     def header(self, canvas, doc, content, instituteName):
         canvas.saveState()
 
-        content.drawOn(canvas, doc.leftMargin, 750)
+        content.drawOn(canvas, doc.leftMargin, 740)
 
         canvas.setStrokeColor("#492E98") 
         canvas.setLineWidth(1)  
@@ -190,12 +190,13 @@ class BadgePDFCreator:
         else:
             canvas.drawString(doc.leftMargin + 100, 778, instituteName)
 
-        canvas.restoreState()
+        canvas.restoreState()      
     
     def add_competencies (self, Story, competencies, name, badge_name):
         num_competencies = len(competencies)
         if num_competencies > 0:
-                esco = any(c['escoID'] for c in competencies)
+                esco = any(c['framework']  for c in competencies)
+                max_studyload = str(max(c['studyLoad'] for c in competencies))
                 competenciesPerPage = 9
 
                 Story.append(PageBreak())
@@ -214,7 +215,7 @@ class BadgePDFCreator:
                 for i in range(num_competencies):
                     if i != 0 and i % competenciesPerPage == 0: 
                         Story.append(PageBreak())
-                        Story.append(Spacer(1, 35))
+                        Story.append(Spacer(1, 70))
                         Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
                         Story.append(Spacer(1, 15))
 
@@ -228,13 +229,13 @@ class BadgePDFCreator:
                     competency_name = competencies[i]['name']
                     competency = competency_name
                     #   competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name
-                    rounded_rect = RoundedRectFlowable(0, -10, 515, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload= studyload, esco=competencies[i]['escoID'])    
+                    rounded_rect = RoundedRectFlowable(0, -10, 515, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload= studyload, max_studyload=max_studyload, esco=competencies[i]['framework_identifier'])    
                     Story.append(rounded_rect)
                     Story.append(Spacer(1, 10))   
                         
                 if esco: 
                     Story.append(Spacer(1, 10))
-                    text_style = ParagraphStyle(name='Text_Style',fontName="Rubik-Italic", fontSize=10, leading=15.6, alignment=TA_CENTER, leftIndent=-35, rightIndent=-35)
+                    text_style = ParagraphStyle(name='Text_Style',fontName="Rubik-Italic", fontSize=10, leading=13, alignment=TA_CENTER, leftIndent=-35, rightIndent=-35)
                     link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations). <br/>' \
                         'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
                     paragraph_with_link = Paragraph(link_text, text_style)
@@ -243,7 +244,7 @@ class BadgePDFCreator:
     def generate_qr_code(self, badge_instance, origin):
         ## build the qr code in the backend
 
-        qrCodeImageUrl = f"{origin}/public/assertions/{badge_instance.id}"
+        qrCodeImageUrl = f"{origin}/public/assertions/{badge_instance.entity_id}"
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -295,8 +296,6 @@ class BadgePDFCreator:
             topMargin=40,
             bottomMargin=40
         )
-
-
         
         styles = getSampleStyleSheet()
         styles.add(ParagraphStyle(name='Justify', alignment=TA_JUSTIFY))
@@ -317,8 +316,6 @@ class BadgePDFCreator:
         buffer.close()
         return pdfContent
     
-
-
 ## Class for rounded image as reportlabs table cell don't support rounded corners
 ## taken from AI 
 class RoundedImage(Flowable):
@@ -338,6 +335,7 @@ class RoundedImage(Flowable):
 
         # Draw the rounded rectangle for the border
         canvas = self.canv
+        canvas.setFillColor('white')
         canvas.setStrokeColor(self.border_color)
         canvas.setLineWidth(self.border_width)
         canvas.roundRect(
@@ -345,7 +343,9 @@ class RoundedImage(Flowable):
             0, 
             self.width + 2 * total_padding,  # Width includes padding on both sides
             self.height + 2 * total_padding,  # Height includes padding on both sides
-            self.radius  # Radius for rounded corners
+            self.radius,  # Radius for rounded corners,
+            stroke=1,
+            fill=1
         )
         
         # Draw the image inside the rounded rectangle
@@ -360,7 +360,7 @@ class RoundedImage(Flowable):
 
 
 class RoundedRectFlowable(Flowable):
-    def __init__(self, x, y, width, height, radius, text, strokecolor, fillcolor, studyload, esco = ''):
+    def __init__(self, x, y, width, height, radius, text, strokecolor, fillcolor, studyload, max_studyload, esco = ''):
         super().__init__()
         self.x = x
         self.y = y
@@ -371,6 +371,7 @@ class RoundedRectFlowable(Flowable):
         self.fillcolor = fillcolor 
         self.text = text
         self.studyload = studyload
+        self.max_studyload = max_studyload
         self.esco = esco
 
     def split_text(self, text, max_width):
@@ -418,16 +419,17 @@ class RoundedRectFlowable(Flowable):
             last_line_width = self.canv.stringWidth(text_lines[-1])
             self.canv.setFillColor('blue')
             self.canv.drawString(self.x + 10 + last_line_width, y_text_position + 15, " [E]")
-            self.canv.linkURL(f"http://data.europa.eu/{self.esco}", (self.x, self.y, self.width, self.height), relative=1, thickness=0)
+            self.canv.linkURL(self.esco, (self.x, self.y, self.width, self.height), relative=1, thickness=0)
 
         
         self.canv.setFillColor('#492E98')
         self.canv.setFont('Rubik-Regular', 14)
         studyload_width = self.canv.stringWidth(self.studyload)
-        self.canv.drawString(self.x + 450 -(studyload_width + 10), self.y + 15, self.studyload)
+        self.canv.drawString(self.x + 500 -(studyload_width + 10), self.y + 15, self.studyload)
 
+        max_studyload_width = self.canv.stringWidth(self.max_studyload)
         clockIcon = ImageReader("{}images/clock-icon.png".format(settings.STATIC_URL))
-        self.canv.drawImage(clockIcon, self.x + 450 - (studyload_width + 35), self.y +12.5, width=15, height=15, mask="auto", preserveAspectRatio=True)
+        self.canv.drawImage(clockIcon, self.x + 475 - (max_studyload_width + 35), self.y +12.5, width=15, height=15, mask="auto", preserveAspectRatio=True)
         
 # Inspired by https://www.blog.pythonlibrary.org/2013/08/12/reportlab-how-to-add-page-numbers/
 class PageNumCanvas(canvas.Canvas):
@@ -471,10 +473,10 @@ class PageNumCanvas(canvas.Canvas):
         page = "%s / %s" % (self._pageNumber, page_count)
         self.setStrokeColor("#492E98")
         page_width = self._pagesize[0]
-        self.line(10, 25, page_width / 2 - 20, 25)
-        self.line(page_width  / 2 + 20, 25, page_width - 10, 25)
-        self.setFont("Rubik-Regular", 14)
-        self.drawCentredString(page_width / 2, 20, page)
+        self.line(10, 17.5, page_width / 2 - 20, 17.5)
+        self.line(page_width  / 2 + 20, 17.5, page_width - 10, 17.5)
+        self.setFont("Rubik-Regular", 10)
+        self.drawCentredString(page_width / 2, 15, page)
         if self._pageNumber == page_count:
             self.setLineWidth(3)
             self.line(10, 10, page_width - 10, 10)
