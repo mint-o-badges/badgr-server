@@ -27,6 +27,7 @@ services:
       - badgr_server_api_sock:/badgr_server/sock
       - badgr_server_mediafiles:/badgr_server/mediafiles
       - badgr_server_staticfiles:/badgr_server/staticfiles
+      - ./esco_issuers.txt:/badgr_server/esco_issuers.txt
     networks:
       - badgr
 
