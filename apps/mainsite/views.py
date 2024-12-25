@@ -382,7 +382,7 @@ def deleteBadgeRequest(req, requestId):
         )
     
     try:
-        badge = RequestedBadge.objects.get(id=requestId)
+        badge = RequestedBadge.objects.get(entity_id=requestId)
 
         if (not is_badgeclass_staff(req.user, badge.badgeclass)):
             return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)

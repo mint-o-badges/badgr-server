@@ -1,6 +1,6 @@
 from django.conf.urls import url
 
-from issuer.api import (IssuerLearningPathList, IssuerList, IssuerDetail, IssuerBadgeClassList, BadgeClassDetail, BadgeInstanceList,
+from issuer.api import (BadgeRequestList, IssuerLearningPathList, IssuerList, IssuerDetail, IssuerBadgeClassList, BadgeClassDetail, BadgeInstanceList,
                         BadgeInstanceDetail, IssuerBadgeInstanceList, AllBadgeClassesList, BatchAssertionsIssue, LearningPathDetail, LearningPathParticipantsList,
                         QRCodeDetail)
 from issuer.api_v1 import FindBadgeClassDetail, IssuerStaffList
@@ -20,6 +20,8 @@ urlpatterns = [
     url(r'^qrcode/(?P<slug>[^/]+)$', QRCodeDetail.as_view(), name='v1_api_qrcode_detail'),
     url(r'^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/qrcodes$', QRCodeDetail.as_view(), name='v1_api_qrcode_detail'),
     url(r'^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/qrcodes/(?P<slug>[^/]+)$', QRCodeDetail.as_view(), name='v1_api_qrcode_detail'),
+    url(r'^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/requests$', BadgeRequestList.as_view(), name='v1_api_badgerequest_list'),
+
 
     url(r'^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<slug>[^/]+)$',
         BadgeClassDetail.as_view(), name='v1_api_badgeclass_detail'),
