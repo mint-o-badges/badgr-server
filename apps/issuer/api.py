@@ -5,6 +5,7 @@ import datetime
 import dateutil.parser
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
+from django.db import transaction
 from django.http import Http404
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
@@ -37,7 +38,6 @@ from mainsite.serializers import CursorPaginatedListSerializer
 from mainsite.models import AccessTokenProxy
 import logging 
 
-logger2 = logging.getLogger(__name__)
 logger = badgrlog.BadgrLogger()
 
 class IssuerList(BaseEntityListView):
@@ -1004,13 +1004,45 @@ class BadgeRequestList(BaseEntityListView):
         summary="Delete multiple badge requests",
         tags=["Requested Badges"],
     )
-    def delete(self, request, **kwargs):
-        try:
-            ids = request.data.get('ids', [])
-        except AttributeError:
-            return Response(status=HTTP_400_BAD_REQUEST)
-        
-        logger2.error("ids %s", ids)
+
+    def post(self, request, **kwargs):
+        try: 
+            ids = request.data.get('ids', [])  
+
+            with transaction.atomic():
+                    deletion_queryset = RequestedBadge.objects.filter(
+                        entity_id__in=ids,
+                    )
+
+                    found_ids = set(deletion_queryset.values_list('entity_id', flat=True))
+                    missing_ids = set(map(str, ids)) - set(map(str, found_ids))
+                    
+                    if missing_ids:
+                        return Response(
+                            {
+                                "error": "Some requests not found",
+                                "missing_ids": list(missing_ids)
+                            },
+                            status=HTTP_404_NOT_FOUND
+                        )
+
+                    deleted_count = deletion_queryset.delete()[0]
+
+                    return Response({
+                        "message": f"Successfully deleted {deleted_count} badge requests",
+                        "deleted_count": deleted_count
+                    }, status=HTTP_200_OK)
+
+        except DjangoValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {"error": "An unexpected error occurred"},
+                status=HTTP_400_BAD_REQUEST
+            )
         
 
 class LearningPathDetail(BaseEntityDetailView):
