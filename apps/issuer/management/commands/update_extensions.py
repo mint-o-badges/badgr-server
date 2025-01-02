@@ -23,6 +23,8 @@ class Command(BaseCommand):
             query_params = parse_qs(parsed_url.query)
             uri = query_params.get('uri', [None])[0]
             return uri
+        elif escoId.startswith('esco/'):
+         return self.escoBaseURl + '/' + escoId
         elif escoId.startswith('/skill/'):
             return self.escoBaseURl + '/esco' + escoId
         else:
