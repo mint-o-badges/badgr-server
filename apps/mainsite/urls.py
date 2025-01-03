@@ -196,6 +196,9 @@ urlpatterns = [
     url(r'^oidcview/logoutRedirect/', OidcView.oidcLogoutRedirect, name="oidcLogoutRedirect"),
 
     url(r"^altcha", createCaptchaChallenge, name="create_captcha_challenge"),
+
+    # Prometheus endpoint
+    path('', include('django_prometheus.urls')),
 ]
 # add to serve files
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

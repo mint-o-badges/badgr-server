@@ -33,7 +33,6 @@ def notify_on_password_change(user, request=None):
     Context(base_context)
     get_adapter().send_mail('account/email/password_reset_confirmation', user.primary_email, base_context)
 
-
 def generate_badgr_username(email):
     if not email:
         return 'unknown'

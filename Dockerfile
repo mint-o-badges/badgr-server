@@ -27,12 +27,15 @@ RUN apt-get install -y default-libmysqlclient-dev \
                        python3-cairo \
                        libxml2 \
                        git \
-                       curl
+                       curl \ 
+                       default-mysql-client
 
 RUN groupadd -g 999 python && \
     useradd -r -u 999 -g python python
 
 RUN mkdir /badgr_server && chown python:python /badgr_server
+RUN mkdir /backups && chown python:python /backups
+
 RUN touch /badgr_server/user_emails.csv && chown python:python /badgr_server/user_emails.csv
 RUN touch /badgr_server/esco_issuers.txt && chown python:python /badgr_server/esco_issuers.txt  
 

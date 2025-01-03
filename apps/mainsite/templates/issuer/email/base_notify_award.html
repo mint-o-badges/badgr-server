@@ -163,7 +163,7 @@
                                           {% for item in badge_competencies %}
                                               <div style="background-color: #F5F5F5; border-width: 1px; border-style: solid; border-color:#492e98; border-radius: 10px; padding-top: 16px; padding-bottom: 16px; padding-left: 5px; align-items: center; margin-bottom: 0.25rem;">
                                                 <span style="font-family: Rubik, sans-serif;font-size:13px;font-weight: 700; line-height:15.6px; color: #323232">
-                                        {{ item.name }} {% if item.escoID %} <a href= "http://data.europa.eu/{{item.escoID}}"> [E] </a> {% endif %} 
+                                        {{ item.name }} {% if item.framework == "esco" %} <a href= "{{item.framework_identifier}}"> [E] </a> {% endif %} 
                                                 </span>
                                                   <!-- <div style="padding-left: 5px; padding-right: 5px; border-width: 1px; border-radius: 15px; border-style:solid; border-color:#492e98; background-color: white;">
                                                       <img src="{% static '/images/clock_icon.svg' %}" style="width: 14px; height: auto; right: 0">

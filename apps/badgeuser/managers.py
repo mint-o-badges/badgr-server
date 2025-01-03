@@ -84,7 +84,6 @@ class BadgeUserManager(UserManager):
             user.set_password(plaintext_password)
         user.save()
 
-        # create email address record as needed
         if create_email_address:
             CachedEmailAddress.objects.add_email(user, email, request=request, signup=True, confirm=send_confirmation)
         return user
@@ -116,7 +115,6 @@ class BadgeUserManager(UserManager):
             'activate_url': confirmation_url,
             'email': email,
         })
-
 
 class CachedEmailAddressManager(EmailAddressManager):
     def add_email(self, user, email, request=None, confirm=False, signup=False):

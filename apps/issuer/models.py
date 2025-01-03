@@ -217,6 +217,8 @@ class Issuer(ResizeUploadedImage,
     city = models.CharField(max_length=255, null=True, blank=True)
     country = models.CharField(max_length=255, null=True, blank=True)
 
+    intendedUseVerified = models.BooleanField(null=False, default=False)
+
     lat = models.FloatField(null=True, blank=True)
     lon = models.FloatField(null=True, blank=True)
 
@@ -1236,7 +1238,9 @@ class BadgeInstance(BaseAuditedModel,
             competency_entry = {
                 'name': competency.get('name'),
                 'description': competency.get('description'),
-                'escoID': competency.get('escoID'),
+                'framework': competency.get('framework'),
+                'framework_identifier': competency.get('framework_identifier'),
+                'source': competency.get('source'),
                 'studyLoad': competency.get('studyLoad'),
                 'skill': competency.get('category')
             }
@@ -1260,8 +1264,12 @@ class BadgeInstance(BaseAuditedModel,
             badgr_app = BadgrApp.objects.get_current(None)
 
         adapter = get_adapter()
+        
+        # get the base url for the badge instance
+        httpPrefix = 'https://' if settings.SECURE_SSL_REDIRECT else 'http://'
+        base_url = httpPrefix + badgr_app.cors
 
-        pdf_document = adapter.generate_pdf_content(slug =  self.entity_id)
+        pdf_document = adapter.generate_pdf_content(slug =  self.entity_id, base_url = base_url)
         encoded_pdf_document = base64.b64encode(pdf_document).decode('utf-8')
         data_url = f"data:application/pdf;base64,{encoded_pdf_document}"    
 
