@@ -496,7 +496,7 @@ class BadgeUser(BaseVersionedEntity, AbstractUser, cachemodel.CacheModel):
     def agreed_terms_version(self):
         v = self.cached_agreed_terms_version()
         if v is None:
-            return 0
+            return 0 
         return v.terms_version
 
     @agreed_terms_version.setter
@@ -506,7 +506,11 @@ class BadgeUser(BaseVersionedEntity, AbstractUser, cachemodel.CacheModel):
         except ValueError:
             return
 
-        if value > self.agreed_terms_version:
+        # if value > self.agreed_terms_version:
+            # Only automatically agree to the latest terms version during signup
+        try:
+            email_address = CachedEmailAddress.cached.get(email=self.primary_email)
+        except CachedEmailAddress.DoesNotExist:
             if TermsVersion.active_objects.filter(version=value).exists():
                 if not self.pk:
                     self.save()

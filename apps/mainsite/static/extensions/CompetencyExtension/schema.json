@@ -17,7 +17,13 @@
     "description": {
       "type": "string"
     },
-    "escoID": {
+    "source": {
+      "type": "string"
+    },
+    "framework": {
+      "type": "string"
+    },
+    "framework_identifier": {
       "type": "string"
     },
     "studyLoad": {

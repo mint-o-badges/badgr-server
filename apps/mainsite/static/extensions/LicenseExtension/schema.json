@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "title": "Open Badges License Extension",
+  "description": "An extension that allows issuers to describe the license of an Open Badges object.",
+  "type": "object",
+  "properties": {
+    "id": {
+      "description": "The canonical URI of the selected Creative Commons license. For convenience, aliases  like 'CC-BY' are provided in the context.",
+      "type": "string",
+      "pattern": "^CC\\-"
+    },
+    "name": {
+      "type": "string"
+    },
+    "legalCode": {
+      "type": "string",
+      "format": "url"
+    }
+  },
+  "required": ["id", "name"]
+}
