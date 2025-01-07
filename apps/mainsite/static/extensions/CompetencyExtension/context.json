@@ -3,7 +3,9 @@
     "obi": "https://w3id.org/openbadges#",
     "extensions": "https://w3id.org/openbadges/extensions#",
     "category": "extensions:category",
-    "escoID": "extensions:escoID",
+    "source": "extensions:source",
+    "framework": "extensions:framework",
+    "framework_identifier": "extensions:framework_identifier",
     "studyLoad": "extensions:studyLoad",
     "name": "extensions:name",
     "description": "extensions:description"

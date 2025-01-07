@@ -14,7 +14,7 @@ urlpatterns = [
     url(r'^auth/confirm-email/(?P<confirm_id>[^/]+)$', BadgeUserEmailConfirm.as_view(),
         name='v2_api_auth_confirm_email'),
     url(r'^auth/confirm-account/(?P<authcode>[^/]+)$', BadgeUserAccountConfirm.as_view(),
-        name='v2_api_account_confirm'),
+        name='v2_api_account_confirm'),    
 
     url(r'^auth/tokens$', AccessTokenList.as_view(), name='v2_api_access_token_list'),
     url(r'^auth/tokens/(?P<entity_id>[^/]+)$', AccessTokenDetail.as_view(),

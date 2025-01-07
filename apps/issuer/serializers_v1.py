@@ -28,6 +28,8 @@ from mainsite.validators import ChoicesValidator, BadgeExtensionValidator, Posit
 from .models import Issuer, BadgeClass, IssuerStaff, BadgeInstance, BadgeClassExtension, \
         RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL, LearningPath, LearningPathBadge, LearningPathParticipant, QrCode, RequestedBadge, RequestedLearningPath
 
+from badgeuser.models import TermsVersion
+
 logger = logging.getLogger(__name__)
 
 
@@ -110,6 +112,8 @@ class IssuerSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
     city = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
     country = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
 
+    intendedUseVerified = serializers.BooleanField(default=False)
+
     lat = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
     lon = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
 
@@ -140,6 +144,7 @@ class IssuerSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
         new_issuer.zip = validated_data.get('zip')
         new_issuer.city = validated_data.get('city')
         new_issuer.country = validated_data.get('country')
+        new_issuer.intendedUseVerified = validated_data.get('intendedUseVerified')
 
         # Check whether issuer email domain matches institution website domain to verify it automatically 
         if verifyIssuerAutomatically(validated_data.get('url'), validated_data.get('email')):
@@ -186,8 +191,8 @@ class IssuerSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
         if self.context.get('embed_badgeclasses', False):
             representation['badgeclasses'] = BadgeClassSerializerV1(
                 obj.badgeclasses.all(), many=True, context=self.context).data
-
         representation['badgeClassCount'] = len(obj.cached_badgeclasses())
+        representation['learningPathCount'] = len(obj.cached_learningpaths())
         representation['recipientGroupCount'] = 0
         representation['recipientCount'] = 0
         representation['pathwayCount'] = 0
@@ -258,6 +263,8 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
 
     source_url = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
 
+    issuerVerified = serializers.BooleanField(read_only=True, source='cached_issuer.verified')
+
     class Meta:
         apispec_definition = ('BadgeClass', {})
 
@@ -272,9 +279,19 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
         exclude_orgImg = self.context.get('exclude_orgImg', None)
         representation = super(BadgeClassSerializerV1, self).to_representation(instance)
         representation['issuerName'] = instance.cached_issuer.name
+        representation['issuerOwnerAcceptedTos'] = any(
+            user.agreed_terms_version == TermsVersion.cached.latest_version() 
+            for user in instance.cached_issuer.owners
+        )
         representation['issuer'] = OriginSetting.HTTP + \
             reverse('issuer_json', kwargs={'entity_id': instance.cached_issuer.entity_id})
         representation['json'] = instance.get_json(obi_version='1_1', use_canonical_id=True)
+        if 'extensions' in representation and exclude_orgImg:
+            representation['extensions'] = {
+                name: value 
+                for name, value in representation['extensions'].items()
+                if name != 'extensions:OrgImageExtension'
+            }
         return representation
 
     def validate_image(self, image):
@@ -308,6 +325,7 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
                 or ext_name.endswith('CategoryExtension')
                 or ext_name.endswith('LevelExtension')
                 or ext_name.endswith('CompetencyExtension')
+                or ext_name.endswith('LicenseExtension')
                 or ext_name.endswith('BasedOnExtension')):
                     is_formal = True
         self.formal = is_formal
@@ -680,6 +698,10 @@ class LearningPathSerializerV1(serializers.Serializer):
         representation['issuer_id']= instance.issuer.entity_id  
         representation['participationBadge_id'] = self.get_participationBadge_id(instance)
         representation['tags'] = list(instance.tag_items.values_list('name', flat=True))
+        representation['issuerOwnerAcceptedTos'] = any(
+            user.agreed_terms_version == TermsVersion.cached.latest_version() 
+            for user in instance.cached_issuer.owners
+        )
         representation['badges'] = [
             {
                 'badge': BadgeClassSerializerV1(badge.badge, context={'exclude_orgImg': 'extensions:OrgImageExtension'}).data,
