@@ -56,7 +56,10 @@ class IssuerList(BaseEntityListView):
     create_event = badgrlog.IssuerCreatedEvent
 
     def get_objects(self, request, **kwargs):
-        return self.request.user.cached_issuers()
+        # return self.request.user.cached_issuers()
+        # Note: The issue with the commented line above is that When deleting an entity using the delete method, it is removed from the database, but the cache is not invalidated. So this is a temporary workaround till figuring out how to invalidate/refresh cache.
+        # Force fresh data from the database
+        return Issuer.objects.filter(staff__id=request.user.id).distinct()
 
     @apispec_list_operation('Issuer',
         summary="Get a list of Issuers for authenticated user",
