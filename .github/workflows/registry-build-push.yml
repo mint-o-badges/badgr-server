@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: ⬇️ Checkout repository
-        uses: actions/checkout@v4.2.0
+        uses: actions/checkout@v4.2.2
 
       - name: 📋 Create release
         id: create-release
@@ -51,7 +51,7 @@ jobs:
 
     steps:
       - name: ⬇️ Checkout repository
-        uses: actions/checkout@v4.2.0
+        uses: actions/checkout@v4.2.2
         with:
           fetch-tags: true
           fetch-depth: 0
@@ -68,7 +68,7 @@ jobs:
 
       - name: 📋 Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@v5.5.1
+        uses: docker/metadata-action@v5.6.1
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           flavor: |
@@ -77,7 +77,7 @@ jobs:
             suffix=
 
       - name: 🏗️ Build and push Docker image
-        uses: docker/build-push-action@v6.9.0
+        uses: docker/build-push-action@v6.10.0
         with:
           context: .
           push: true

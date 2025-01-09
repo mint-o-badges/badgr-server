@@ -123,3 +123,6 @@ pyjwt
 reportlab
 svg2rlg
 svglib
+qrcode
+
+django-dbbackup

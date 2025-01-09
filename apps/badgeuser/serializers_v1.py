@@ -127,7 +127,7 @@ class BadgeUserProfileSerializerV1(serializers.Serializer):
                 )
 
         if "agreed_terms_version" in validated_data:
-            user.agreed_terms_version = validated_data.get("agreed_terms_version")
+            user.termsagreement_set.get_or_create(terms_version=validated_data.get("agreed_terms_version"))
 
         if "marketing_opt_in" in validated_data:
             user.marketing_opt_in = validated_data.get("marketing_opt_in")
