@@ -34,7 +34,6 @@ services:
       - "11211"
     networks:
       - badgr
-    command: ["memcached", "-m", "64", "-I", "10m"]
   # this container runs mysql (database)
   db:
     image: mysql:5.7.31
@@ -55,7 +54,7 @@ services:
     container_name: mailhog
     restart: always
     ports:
-      - "1025:1025" #127.0.0.1:1025:1025  
+      - "1025:1025" #127.0.0.1:1025:1025
       - "8025:8025"
     networks:
       - badgr
