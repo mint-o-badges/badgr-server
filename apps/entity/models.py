@@ -5,7 +5,9 @@ import cachemodel
 from django.db import models
 
 from mainsite.utils import generate_entity_uri
-
+from django.contrib.auth import get_user_model
+from allauth.account.adapter import get_adapter
+from mainsite.models import BadgrApp
 
 class _AbstractVersionedEntity(cachemodel.CacheModel):
     entity_version = models.PositiveIntegerField(blank=False, null=False, default=1)
@@ -23,6 +25,11 @@ class _AbstractVersionedEntity(cachemodel.CacheModel):
             self.entity_id = generate_entity_uri()
 
         self.entity_version += 1
+
+        # Notify staff when a badge was requested via qrcode
+        if hasattr(self, 'qrcode') and self.qrcode:
+            self.notify_staff_badge_request_qrcode()
+
         return super(_AbstractVersionedEntity, self).save(*args, **kwargs)
 
     def publish(self):
@@ -32,6 +39,36 @@ class _AbstractVersionedEntity(cachemodel.CacheModel):
     def delete(self, *args, **kwargs):
         self.publish_delete('entity_id')
         return super(_AbstractVersionedEntity, self).delete(*args, **kwargs)
+    
+    def notify_staff_badge_request_qrcode(self):
+        """
+        Sends an email notification to the badge recipient.
+        """
+        # get all issuer members 
+        UserModel = get_user_model()
+        users = UserModel.objects.all()
+        print(users)
+
+        # Assuming that cors in `Badgr App Configuration` starts with http or https
+        badgrApp_cors = BadgrApp.objects.get_current(None).cors
+        
+        # Prepare url of the requested badge
+        issuer_badge_url = "{app_cors}/issuer/issuers/{issuer_id}/badges/{badge_id}".format(
+                            app_cors=badgrApp_cors,
+                            issuer_id=self.badgeclass.issuer.entity_id,
+                            badge_id=self.badgeclass.entity_id)
+
+        email_context = {
+            'badge_name': self.badgeclass.name,
+            'email': self.email,
+            'issuer_badge_url': issuer_badge_url,
+        }
+      
+        template_name = 'qrcode/email/notify_staff_badge_request_via_qrcode'
+
+        adapter = get_adapter()
+        for user in users:
+            adapter.send_mail(template_name, user.email, context=email_context)
 
 
 class _MigratingToBaseVersionedEntity(_AbstractVersionedEntity):
