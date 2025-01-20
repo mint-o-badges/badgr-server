@@ -698,6 +698,10 @@ class LearningPathSerializerV1(serializers.Serializer):
         representation['issuer_id']= instance.issuer.entity_id  
         representation['participationBadge_id'] = self.get_participationBadge_id(instance)
         representation['tags'] = list(instance.tag_items.values_list('name', flat=True))
+        representation['issuerOwnerAcceptedTos'] = any(
+            user.agreed_terms_version == TermsVersion.cached.latest_version() 
+            for user in instance.cached_issuer.owners
+        )
         representation['badges'] = [
             {
                 'badge': BadgeClassSerializerV1(badge.badge, context={'exclude_orgImg': 'extensions:OrgImageExtension'}).data,
