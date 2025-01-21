@@ -8,7 +8,7 @@ from django.utils.safestring import mark_safe
 from mainsite.admin import badgr_admin
 
 from .models import Issuer, BadgeClass, BadgeInstance, BadgeInstanceEvidence, BadgeClassAlignment, BadgeClassTag, \
-    BadgeClassExtension, IssuerExtension, BadgeInstanceExtension, LearningPath, LearningPathBadge, LearningPathParticipant, \
+    BadgeClassExtension, IssuerExtension, BadgeInstanceExtension, LearningPath, LearningPathBadge, \
          LearningPathTag, RequestedBadge, QrCode, RequestedLearningPath
 from .tasks import resend_notifications
 
@@ -294,7 +294,3 @@ class LearningPathAdmin(ModelAdmin):
     ]
 
 badgr_admin.register(LearningPath, LearningPathAdmin)
-
-class LearningPathParticipantAdmin(ModelAdmin):
-    list_display = ('user', 'started_at', 'completed_at', 'entity_id')
-badgr_admin.register(LearningPathParticipant, LearningPathParticipantAdmin)    

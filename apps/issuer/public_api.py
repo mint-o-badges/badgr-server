@@ -31,7 +31,7 @@ from mainsite.models import BadgrApp
 from mainsite.utils import (OriginSetting, set_url_query_params, first_node_match, fit_image_to_height,
                             convert_svg_to_png)
 from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, LearningPathSerializerV1
-from .models import Issuer, BadgeClass, BadgeInstance, LearningPath, LearningPathBadge, LearningPathParticipant
+from .models import Issuer, BadgeClass, BadgeInstance, LearningPath, LearningPathBadge
 from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, LearningPathSerializerV1
 from .models import Issuer, BadgeClass, BadgeInstance, LearningPath
 
