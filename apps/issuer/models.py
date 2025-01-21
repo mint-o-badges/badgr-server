@@ -1359,8 +1359,6 @@ class BadgeInstance(BaseAuditedModel,
             ('badge', add_obi_version_ifneeded(self.cached_badgeclass.jsonld_id, obi_version)),
         ])
 
-        json["slug"] = self.cached_badgeclass.entity_id    
-
         image_url = self.image_url(public=True)
         json['image'] = image_url
         if self.original_json:
@@ -1371,6 +1369,7 @@ class BadgeInstance(BaseAuditedModel,
 
         if expand_badgeclass:
             json['badge'] = self.cached_badgeclass.get_json(obi_version=obi_version, include_extra=include_extra)
+            json['badge']['slug'] = self.cached_badgeclass.entity_id
 
             if expand_issuer:
                 json['badge']['issuer'] = self.cached_issuer.get_json(
