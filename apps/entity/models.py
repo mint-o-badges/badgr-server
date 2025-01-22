@@ -5,9 +5,6 @@ import cachemodel
 from django.db import models
 
 from mainsite.utils import generate_entity_uri
-from django.contrib.auth import get_user_model
-from allauth.account.adapter import get_adapter
-from mainsite.models import BadgrApp
 
 class _AbstractVersionedEntity(cachemodel.CacheModel):
     entity_version = models.PositiveIntegerField(blank=False, null=False, default=1)

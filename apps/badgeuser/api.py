@@ -331,10 +331,8 @@ class BadgeUserForgotPassword(BaseUserRecoveryView):
             badgr_app = BadgrApp.objects.get_current(request)
 
         redirect_url = badgr_app.forgot_password_redirect
-        logger2.error(redirect_url)
         token = request.GET.get("token", "")
         tokenized_url = "{}{}".format(redirect_url, token)
-        logger2.error("tokenized_url %s", tokenized_url)
         return Response(status=HTTP_302_FOUND, headers={"Location": tokenized_url})
 
     @apispec_operation(
