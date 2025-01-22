@@ -9,7 +9,7 @@ import os
 from django import forms
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.db import IntegrityError
 from django.http import (
     HttpResponseServerError,
@@ -46,13 +46,15 @@ from issuer.serializers_v1 import RequestedBadgeSerializer, RequestedLearningPat
 from mainsite.admin_actions import clear_cache
 from mainsite.models import EmailBlacklist, BadgrApp
 from mainsite.serializers import LegacyVerifiedAuthTokenSerializer
-from mainsite.utils import createHash, createHmac
+from mainsite.utils import OriginSetting, createHash, createHmac
 from random import randrange
 import badgrlog
 import mainsite
 
 from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import DefaultStorage
+from django.core.signing import TimestampSigner
+
 
 import uuid
 from django.http import JsonResponse
@@ -66,6 +68,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Tabl
 from reportlab.lib.colors import PCMYKColor
 import math
 from reportlab.lib.utils import ImageReader
+from allauth.account.adapter import get_adapter
 
 logger = badgrlog.BadgrLogger()
 
@@ -246,6 +249,43 @@ def requestBadge(req, qrCodeId):
 
 
         badge.save()
+
+        signer = TimestampSigner()
+        token = signer.sign(str(badge.id))
+
+        staff_emails = [member.cached_user.email for member in qrCode.issuer.cached_issuerstaff()]        
+        
+
+        try:
+            adapter = get_adapter()
+
+            badgrapp = BadgrApp.objects.get_current()
+
+            url_name = "v1_api_badge_request_verification"
+
+            activate_url = OriginSetting.HTTP + reverse(url_name)
+
+            tokenized_activate_url = "{url}?token={token}&request_id={request_id}&a={badgrapp}".format(
+                url=activate_url,
+                token=token,
+                request_id=badge.pk,
+                badgrapp=badgrapp.id
+            )
+
+            email_context = {
+                'email': email,
+                'badgeclass': badge.badgeclass.name,
+                'activate_url': tokenized_activate_url
+            }
+
+            for email in staff_emails: 
+                adapter.send_mail(
+                    template_prefix='issuer/email/notify_staff_badge_request_via_qrcode',  
+                    email=email, 
+                    context=email_context
+                )
+        except Exception as e:
+            return JsonResponse({"error": "Failed to send email", "details": str(e)}, status=500)
 
         return JsonResponse({"message": "Badge request received"}, status=status.HTTP_200_OK)
 
