@@ -69,6 +69,9 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    # It's important that CookieToBearerMiddleware comes before
+    # the Oauth2TokenMiddleware
+    'mainsite.middleware.CookieToBearerMiddleware',
     'oauth2_provider.middleware.OAuth2TokenMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -225,7 +228,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # CORS_ORIGIN_ALLOW_ALL = True
 CORS_URLS_REGEX = r'^.*$'
 BADGR_CORS_MODEL = 'mainsite.BadgrApp'
-# Needed for OIDC authentication
+# Needed for authentication
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_EXPOSE_HEADERS = (

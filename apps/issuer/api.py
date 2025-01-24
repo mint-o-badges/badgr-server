@@ -5,6 +5,7 @@ import datetime
 import dateutil.parser
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
+from django.db import transaction
 from django.http import Http404
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
@@ -21,13 +22,13 @@ import badgrlog
 from entity.api import BaseEntityListView, BaseEntityDetailView, VersionedObjectMixin, BaseEntityView, \
     UncachedPaginatedViewMixin
 from entity.serializers import BaseSerializerV2, V2ErrorSerializer
-from issuer.models import Issuer, BadgeClass, BadgeInstance, IssuerStaff, LearningPath, LearningPathParticipant, QrCode
+from issuer.models import Issuer, BadgeClass, BadgeInstance, IssuerStaff, LearningPath, LearningPathParticipant, QrCode, RequestedBadge
 from issuer.permissions import (MayIssueBadgeClass, MayEditBadgeClass, IsEditor, IsEditorButOwnerForDelete,
                                 IsStaff, ApprovedIssuersOnly, BadgrOAuthTokenHasScope,
                                 BadgrOAuthTokenHasEntityScope, AuthorizationIsBadgrOAuthToken, MayIssueLearningPath,
                                 is_learningpath_editor, is_learningpath_owner, is_learningpath_staff)
 from issuer.serializers_v1 import (IssuerSerializerV1, BadgeClassSerializerV1,
-                                   BadgeInstanceSerializerV1, LearningPathParticipantSerializerV1, QrCodeSerializerV1, LearningPathSerializerV1)
+                                   BadgeInstanceSerializerV1, LearningPathParticipantSerializerV1, QrCodeSerializerV1, LearningPathSerializerV1, RequestedBadgeSerializer)
 from issuer.serializers_v2 import IssuerSerializerV2, BadgeClassSerializerV2, BadgeInstanceSerializerV2, \
     IssuerAccessTokenSerializerV2
 from apispec_drf.decorators import apispec_get_operation, apispec_put_operation, \
@@ -37,7 +38,6 @@ from mainsite.serializers import CursorPaginatedListSerializer
 from mainsite.models import AccessTokenProxy
 import logging 
 
-logger2 = logging.getLogger(__name__)
 logger = badgrlog.BadgrLogger()
 
 class IssuerList(BaseEntityListView):
@@ -993,6 +993,60 @@ class QRCodeDetail(BaseEntityView):
         qr_code = self.get_object(request, **kwargs)
         qr_code.delete()
         return Response(status=HTTP_204_NO_CONTENT)
+    
+class BadgeRequestList(BaseEntityListView):
+    model = RequestedBadge    
+    v1_serializer_class = RequestedBadgeSerializer
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope & ApprovedIssuersOnly)
+    ]
+    valid_scopes = ["rw:issuer"]
+
+    @apispec_delete_operation('RequestedBadge',
+        summary="Delete multiple badge requests",
+        tags=["Requested Badges"],
+    )
+
+    def post(self, request, **kwargs):
+        try: 
+            ids = request.data.get('ids', [])  
+
+            with transaction.atomic():
+                    deletion_queryset = RequestedBadge.objects.filter(
+                        entity_id__in=ids,
+                    )
+
+                    found_ids = set(deletion_queryset.values_list('entity_id', flat=True))
+                    missing_ids = set(map(str, ids)) - set(map(str, found_ids))
+                    
+                    if missing_ids:
+                        return Response(
+                            {
+                                "error": "Some requests not found",
+                                "missing_ids": list(missing_ids)
+                            },
+                            status=HTTP_404_NOT_FOUND
+                        )
+
+                    deleted_count = deletion_queryset.delete()[0]
+
+                    return Response({
+                        "message": f"Successfully deleted {deleted_count} badge requests",
+                        "deleted_count": deleted_count
+                    }, status=HTTP_200_OK)
+
+        except DjangoValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {"error": "An unexpected error occurred"},
+                status=HTTP_400_BAD_REQUEST
+            )
+        
 
 class LearningPathDetail(BaseEntityDetailView):
     model = LearningPath

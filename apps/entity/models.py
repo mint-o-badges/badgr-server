@@ -6,7 +6,6 @@ from django.db import models
 
 from mainsite.utils import generate_entity_uri
 
-
 class _AbstractVersionedEntity(cachemodel.CacheModel):
     entity_version = models.PositiveIntegerField(blank=False, null=False, default=1)
 
@@ -23,6 +22,7 @@ class _AbstractVersionedEntity(cachemodel.CacheModel):
             self.entity_id = generate_entity_uri()
 
         self.entity_version += 1
+
         return super(_AbstractVersionedEntity, self).save(*args, **kwargs)
 
     def publish(self):

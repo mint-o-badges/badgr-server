@@ -14,13 +14,16 @@ from django.core.files.storage import default_storage
 from django.conf import settings
 from django.core.validators import URLValidator
 from django.http import HttpResponse
+from django.http.request import HttpHeaders
 from django.utils import timezone
 from django.contrib.auth import logout
+from django.core.handlers.wsgi import WSGIRequest
 from oauth2_provider.exceptions import OAuthToolkitError
 from oauth2_provider.models import get_application_model, get_access_token_model, Application, RefreshToken, AccessToken
 from oauth2_provider.scopes import get_scopes_backend
 from oauth2_provider.settings import oauth2_settings
 from oauth2_provider.views import TokenView as OAuth2ProviderTokenView
+from oauth2_provider.views import RevokeTokenView as OAuth2ProviderRevokeTokenView
 from oauth2_provider.views.mixins import OAuthLibMixin
 from oauth2_provider.signals import app_authorized
 from oauthlib.oauth2.rfc6749.utils import scope_to_list
@@ -430,7 +433,9 @@ def extract_oidc_refresh_token(request):
     """
     Extracts the OIDC refresh token from the request
     """
-    return request.POST.get("refresh_token")
+    if 'refresh_token' in request.POST:
+        return request.POST.get('refresh_token')
+    return request.COOKIES['refresh_token']
 
 def request_renewed_oidc_access_token(self, refresh_token):
     token_refresh_payload = {
@@ -461,6 +466,69 @@ def get_expire_seconds(access_token):
     now_datetime = datetime.datetime.now()
     diff = expire_datetime - now_datetime
     return diff.total_seconds()
+
+def setTokenHttpOnly(response):
+    data = json.loads(response.content.decode('utf-8'))
+    # Add tokens as cookies
+    if 'access_token' in data:
+        response.set_cookie('access_token',
+                            value=data['access_token'],
+                            httponly=True,
+                            secure=True,
+                            max_age=data['expires_in'])
+    if 'refresh_token' in 'access_token':
+        response.set_cookie('refresh_token',
+                            value=data['refresh_token'],
+                            httponly=True,
+                            secure=True,
+                            # Refresh tokens have the same max
+                            # age as access tokens, since they
+                            # should get renewed together with
+                            # the access token. This is only
+                            # relevant for OIDC which I can't
+                            # test right now, so change it if
+                            # needed.
+                            max_age=data['expires_in'])
+    # Remove tokens from body
+    del data['access_token']
+    del data['refresh_token']
+    response.content = json.dumps(data)
+    return
+
+class RevokeTokenView(OAuth2ProviderRevokeTokenView):
+    def post(self, request, *args, **kwargs):
+        if 'access_token' not in request.COOKIES:
+            return HttpResponse(
+                json.dumps({"error": "Access token must be contained in COOKIE"}),
+                status=HTTP_400_BAD_REQUEST
+            )
+        else:
+            # Add the access token to the request, as if it had always been there,
+            # since the oauth toolkit can't handle the access token in the cookie
+            access_token = request.COOKIES['access_token']
+            body = request.body.decode('utf-8')
+            body = f"token={access_token}&{body}"
+            request._body = str.encode(body)
+
+            request.POST._mutable = True
+            request.POST['token'] = [access_token]
+            request.POST._mutable = False
+
+            headers = dict(request.headers)
+            headers['Content-Length'] = str(len(request.body))
+            request.headers = HttpHeaders(headers)
+
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            # For some reason, (this version) does not actually delete / revoke the tokens.
+            # So I delete them manually, as long as the parent said everything's fine.
+            token_objects = AccessToken.objects.filter(token=request.POST['token'][0]
+                                                       if type(request.POST['token']) is list
+                                                       else request.POST['token'])
+            token_objects.delete()
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
+        return response
 
 class TokenView(OAuth2ProviderTokenView):
     server_class = BadgrOauthServer
@@ -551,6 +619,9 @@ class TokenView(OAuth2ProviderTokenView):
 
         if grant_type == "password" and response.status_code == 401:
             badgrlogger.event(badgrlog.FailedLoginAttempt(request, username, endpoint='/o/token'))
+        
+        if (response.status_code == 200):
+            setTokenHttpOnly(response)
 
         return response
 
@@ -576,4 +647,6 @@ class AuthCodeExchange(APIView):
             scope=accesstoken.scope
         )
 
-        return Response(data, status=HTTP_200_OK)
+        response = Response(data, status=HTTP_200_OK)
+        setTokenHttpOnly(response)
+        return response

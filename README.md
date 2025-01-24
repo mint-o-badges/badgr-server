@@ -117,9 +117,7 @@ you will need to stop and then rebuild the production containers:
 
 #### Deployment
 
-To get the image on the prod server, simply update the `release` branch and push it to github.
-The rest should happen automatically (thanks to github actions and watchtower keeping the deployed image up to date).
-
+Checkout `deployment.md`
 
 ### Accessing the Django Server Running in Docker
 
@@ -183,7 +181,7 @@ For debugging, in the `Docerfile.dev.api` `debugpy` is also installed and there 
 In VSCode you can create a `launch.json` by choosing `Python` as debugger and `Remote Attach` as debug configuration (and defaults for the rest).
 You can then start the application with
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.debug.yml up
+docker compose -f docker-compose.debug.yml up
 ```
 and attach the debugger in VSCode by selecting *Python: Remote Attach*.
 This process is heavily inspired by [this tutorial](https://dev.to/ferkarchiloff/how-to-debug-django-inside-a-docker-container-with-vscode-4ef9).
