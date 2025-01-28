@@ -134,6 +134,10 @@ class BadgrAppManager(cachemodel.CacheModelManager):
 
 class BadgrApp(CreatedUpdatedBy, CreatedUpdatedAt, IsActive, cachemodel.CacheModel):
     name = models.CharField(max_length=254)
+    # Note that this is NOT used for CORS anymore! It is rather
+    # used as the base url and only exists for legacy reasons.
+    # TODO: Do we even need this anymore? Do we *need* anything
+    # from this BadgrApp anymore?
     cors = models.CharField(max_length=254, unique=True)
     is_default = models.BooleanField(default=False)
     email_confirmation_redirect = models.URLField()
