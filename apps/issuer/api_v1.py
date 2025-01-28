@@ -183,7 +183,7 @@ class IssuerStaffList(VersionedObjectMixin, APIView):
                 user_to_modify = CachedEmailAddress.objects.get(
                     email=user_id, verified=True).user
         except (get_user_model().DoesNotExist, CachedEmailAddress.DoesNotExist, UserRecipientIdentifier.DoesNotExist):
-            error_text = "User not found. Email must correspond to an existing user."
+            error_text = "Wir haben die E-Mail-Adresse nicht im System gefunden. Es können nur Personen als Mitglied hinzugefügt werden, die sich bereits einen Account auf OEB angelegt haben."
             if user_id is None:
                 error_text = ('User not found. please provide a valid email address, '
                         'username, url or telephone identifier.')
