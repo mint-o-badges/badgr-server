@@ -1282,8 +1282,11 @@ class BadgeInstance(BaseAuditedModel,
             first_name = ''
             last_name = ''
 
-            if self.recipient_type == RECIPIENT_TYPE_EMAIL:
-                name = get_name(self)
+            try:
+                if self.recipient_type == RECIPIENT_TYPE_EMAIL:
+                    name = get_name(self)
+            except BadgeUser.DoesNotExist:
+                pass
 
             email_context = {
                 'name': name,
