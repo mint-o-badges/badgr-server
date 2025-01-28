@@ -8,7 +8,7 @@ from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT
 from svglib.svglib import svg2rlg
 from reportlab.lib.units import mm
 from reportlab.lib import colors
-from reportlab.graphics import renderPDF, renderPM
+from reportlab.graphics import renderPDF
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
 from functools import partial
@@ -31,7 +31,6 @@ pdfmetrics.registerFont(TTFont('Rubik-Regular', font_path_rubik_regular))
 pdfmetrics.registerFont(TTFont('Rubik-Medium', font_path_rubik_medium))
 pdfmetrics.registerFont(TTFont('Rubik-Bold', font_path_rubik_bold))
 pdfmetrics.registerFont(TTFont('Rubik-Italic', font_path_rubik_italic))
-
 
 class BadgePDFCreator:
     def __init__(self):
@@ -309,21 +308,7 @@ class BadgePDFCreator:
         frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='normal')
 
         ## template for header
-        file_ext = badge_class.issuer.image.path.split('.')[-1].lower()
-        if file_ext == 'svg':
-            drawing = svg2rlg(badge_class.issuer.image)
-            if drawing is None:
-                raise ValueError(f"Failed to parse SVG file: {badge_class.issuer.image}")
-            
-            bio = BytesIO()
-            renderPM.drawToFile(drawing, bio, fmt="PNG")
-            bio.seek(0)
-            imageContent = Image(bio, width=80, height=80)
-        elif file_ext in ['png', 'jpg', 'jpeg', 'gif']:
-            imageContent = Image(badge_class.issuer.image , width=80, height=80)
-        else:
-            raise ValueError(f"Unsupported file type: {file_ext}")    
-        template = PageTemplate(id='header', frames=frame ,onPage=partial(self.header, content= imageContent, instituteName=badge_instance.issuer.name))
+        template = PageTemplate(id='header', frames=frame ,onPage=partial(self.header, content= Image(badge_class.issuer.image, width=80, height=80), instituteName=badge_instance.issuer.name))
         ## adding template to all pages 
         doc.addPageTemplates([template])
         doc.build(Story, canvasmaker=PageNumCanvas)   
