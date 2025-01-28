@@ -65,8 +65,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     # It's important that CookieToBearerMiddleware comes before
@@ -225,8 +225,6 @@ AUTH_PASSWORD_VALIDATORS = [
 #
 ##
 
-# CORS_ORIGIN_ALLOW_ALL = True
-CORS_URLS_REGEX = r'^.*$'
 # Needed for authentication
 CORS_ALLOW_CREDENTIALS = True
 
