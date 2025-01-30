@@ -309,8 +309,8 @@ class BadgePDFCreator:
         frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='normal')
 
         ## template for header
-        file_ext = badge_class.issuer.image.path.split('.')[-1].lower()
         try: 
+            file_ext = badge_class.issuer.image.path.split('.')[-1].lower()
             if file_ext == 'svg':
                 drawing = svg2rlg(badge_class.issuer.image)
                 if drawing is None:
