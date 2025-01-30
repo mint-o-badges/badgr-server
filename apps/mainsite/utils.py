@@ -573,8 +573,7 @@ def get_name(badgeinstance):
     
     This is either the name that was specified in the award process of the badge
     (which is by now mandatory) or, if none was specified, the full profile of the
-    recipient. If no name was specified and the profile can't be found, a
-    `BadgeUser.DoesNotExist` exception is thrown.
+    recipient. If no name was specified and the profile can't be found, we return `None`.
     """
 
     from issuer.models import BadgeInstance
@@ -584,7 +583,10 @@ def get_name(badgeinstance):
     if name:
         return name
     
-    badgeuser = BadgeUser.objects.get(email=badgeinstance.recipient_identifier)  
-    first_name = badgeuser.first_name.capitalize()
-    last_name = badgeuser.last_name.capitalize()
-    return f"{first_name} {last_name}"
+    try: 
+        badgeuser = BadgeUser.objects.get(email=badgeinstance.recipient_identifier)  
+        first_name = badgeuser.first_name.capitalize()
+        last_name = badgeuser.last_name.capitalize()
+        return f"{first_name} {last_name}"
+    except BadgeUser.DoesNotExist: 
+        return None        
