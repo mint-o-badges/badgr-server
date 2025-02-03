@@ -30,7 +30,7 @@ from django.http import Http404, JsonResponse
 from django.utils import timezone
 from django.views.generic import RedirectView
 from django.conf import settings
-from issuer.models import LearningPath, LearningPathParticipant
+from issuer.models import LearningPath, LearningPathParticipant, RequestedBadge
 from issuer.serializers_v1 import LearningPathSerializerV1
 from rest_framework import permissions, serializers, status
 from rest_framework.exceptions import ValidationError as RestframeworkValidationError
@@ -61,6 +61,7 @@ from mainsite.utils import (
 )
 from mainsite.serializers import ApplicationInfoSerializer
 RATE_LIMIT_DELTA = datetime.timedelta(minutes=5)
+from django.core.signing import TimestampSigner
 
 logger = badgrlog.BadgrLogger()
 
@@ -259,6 +260,58 @@ class BaseUserRecoveryView(BaseEntityDetailView):
         serializer = serializer_class(obj, context=context)
         return Response(serializer.data, status=status)
 
+class BadgeRequestVerification(BaseUserRecoveryView):
+    authentication_classes = ()
+    permission_classes = (permissions.AllowAny,)
+    
+    def get(self, request, *args, **kwargs):
+        badgr_app = None
+        badgrapp_id = self.request.GET.get("a")
+        
+        if badgrapp_id:
+            try:
+                badgr_app = BadgrApp.objects.get(id=badgrapp_id)
+            except BadgrApp.DoesNotExist:
+                pass
+                
+        if badgr_app is None:
+            badgr_app = BadgrApp.objects.get_current(request)
+        
+        token = request.GET.get("token", "")
+        badge_request_id = request.GET.get("request_id", "")
+        
+        try:
+            # Verify the token but don't invalidate it
+            signer = TimestampSigner()
+            verified_badge_request_id = signer.unsign(token, max_age=None) 
+            
+            if verified_badge_request_id != badge_request_id:
+                return Response(
+                    {"error": "Invalid token for this badge request"},
+                    status=HTTP_400_BAD_REQUEST
+                )
+            
+            badge_request = RequestedBadge.objects.get(id=badge_request_id)
+
+            base_url = badgr_app.cors.rstrip('/') + '/'
+
+            if not base_url.startswith(('http://', 'https://')):
+                base_url = f'https://{base_url}'
+
+            path = f"issuer/issuers/{badge_request.qrcode.issuer.entity_id}/badges/{badge_request.qrcode.badgeclass.entity_id}"
+            
+            redirect_url = urllib.parse.urljoin(base_url, path) + f"?token={token}"
+            
+            return Response(
+                status=HTTP_302_FOUND, 
+                headers={"Location": redirect_url}
+            )
+            
+        except RequestedBadge.DoesNotExist:
+            return Response(
+                {"error": "Badge request not found"},
+                status=HTTP_404_NOT_FOUND
+            )
 
 class BadgeUserForgotPassword(BaseUserRecoveryView):
     authentication_classes = ()

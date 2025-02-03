@@ -117,9 +117,7 @@ you will need to stop and then rebuild the production containers:
 
 #### Deployment
 
-To get the image on the prod server, simply update the `release` branch and push it to github.
-The rest should happen automatically (thanks to github actions and watchtower keeping the deployed image up to date).
-
+Checkout `deployment.md`
 
 ### Accessing the Django Server Running in Docker
 

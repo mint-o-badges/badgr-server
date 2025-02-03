@@ -56,12 +56,12 @@ services:
 
   # this container runs nginx (webserver) and uses the uwsgi app.sock file from prod_api via a volume
   nginx:
-    build:
-      context: .
-      dockerfile: .docker/Dockerfile.nginx
+    image: nginx:1.26.2
     group_add:
       - "999"
     volumes:
+      - ./.docker/config/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./.docker/config/nginx/sites-available:/etc/nginx/sites-available
       - badgr_server_api_sock:/sock
       - badgr_server_mediafiles:/mediafiles
       - badgr_server_staticfiles:/staticfiles
