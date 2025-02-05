@@ -430,6 +430,7 @@ class V1BadgeClassSerializer(serializers.Serializer):
     criteria_url = BadgeURLField(required=False)
     issuer = V1IssuerSerializer()
     tags = serializers.ListField(child=BadgeStringField(), required=False)
+    slug = BadgeStringField()
 
     def to_representation(self, instance):
         representation = super(V1BadgeClassSerializer, self).to_representation(instance)
@@ -462,6 +463,7 @@ class V1BadgeInstanceSerializer(V1InstanceSerializer):
             localbadgeinstance_json['evidence'] = instance.evidence_url
         localbadgeinstance_json['uid'] = instance.entity_id
         localbadgeinstance_json['badge'] = instance.cached_badgeclass.json
+        localbadgeinstance_json['badge']['slug'] = instance.cached_badgeclass.entity_id
         localbadgeinstance_json['badge']['criteria'] = instance.cached_badgeclass.get_criteria_url()
         if instance.cached_badgeclass.criteria_text:
             localbadgeinstance_json['badge']['criteria_text'] = instance.cached_badgeclass.criteria_text

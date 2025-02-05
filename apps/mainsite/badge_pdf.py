@@ -165,8 +165,8 @@ class BadgePDFCreator:
     ## draw header with image of institution and a hr
     def header(self, canvas, doc, content, instituteName):
         canvas.saveState()
-
-        content.drawOn(canvas, doc.leftMargin, 740)
+        if content is not None: 
+            content.drawOn(canvas, doc.leftMargin, 740)
 
         canvas.setStrokeColor("#492E98") 
         canvas.setLineWidth(1)  
@@ -309,20 +309,23 @@ class BadgePDFCreator:
         frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='normal')
 
         ## template for header
-        file_ext = badge_class.issuer.image.path.split('.')[-1].lower()
-        if file_ext == 'svg':
-            drawing = svg2rlg(badge_class.issuer.image)
-            if drawing is None:
-                raise ValueError(f"Failed to parse SVG file: {badge_class.issuer.image}")
-            
-            bio = BytesIO()
-            renderPM.drawToFile(drawing, bio, fmt="PNG")
-            bio.seek(0)
-            imageContent = Image(bio, width=80, height=80)
-        elif file_ext in ['png', 'jpg', 'jpeg', 'gif']:
-            imageContent = Image(badge_class.issuer.image , width=80, height=80)
-        else:
-            raise ValueError(f"Unsupported file type: {file_ext}")    
+        try: 
+            file_ext = badge_class.issuer.image.path.split('.')[-1].lower()
+            if file_ext == 'svg':
+                drawing = svg2rlg(badge_class.issuer.image)
+                if drawing is None:
+                    raise ValueError(f"Failed to parse SVG file: {badge_class.issuer.image}")
+                
+                bio = BytesIO()
+                renderPM.drawToFile(drawing, bio, fmt="PNG")
+                bio.seek(0)
+                imageContent = Image(bio, width=80, height=80)
+            elif file_ext in ['png', 'jpg', 'jpeg', 'gif']:
+                imageContent = Image(badge_class.issuer.image , width=80, height=80)
+            else:
+                raise ValueError(f"Unsupported file type: {file_ext}")  
+        except: 
+            imageContent = None      
         template = PageTemplate(id='header', frames=frame ,onPage=partial(self.header, content= imageContent, instituteName=badge_instance.issuer.name))
         ## adding template to all pages 
         doc.addPageTemplates([template])
