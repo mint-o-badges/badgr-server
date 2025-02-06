@@ -1,3 +1,4 @@
+from functools import reduce
 import os
 import pytz
 import uuid
@@ -26,7 +27,7 @@ from mainsite.serializers import DateTimeWithUtcZAtEndField, HumanReadableBoolea
 from mainsite.utils import OriginSetting, validate_altcha, verifyIssuerAutomatically
 from mainsite.validators import ChoicesValidator, BadgeExtensionValidator, PositiveIntegerValidator, TelephoneValidator
 from .models import Issuer, BadgeClass, IssuerStaff, BadgeInstance, BadgeClassExtension, \
-        RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL, LearningPath, LearningPathBadge, LearningPathParticipant, QrCode, RequestedBadge, RequestedLearningPath
+        RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL, LearningPath, LearningPathBadge, QrCode, RequestedBadge, RequestedLearningPath
 
 from badgeuser.models import TermsVersion
 
@@ -720,41 +721,31 @@ class LearningPathSerializerV1(serializers.Serializer):
             representation.update(default_representation)
             return representation
 
-        try:
-            participant = LearningPathParticipant.objects.get(learning_path=instance, user=request.user)
+        # get all badgeclasses for this lp
+        lp_badges = LearningPathBadge.objects.filter(learning_path=instance)
+        lp_badgeclasses = [lp_badge.badge for lp_badge in lp_badges]
 
-            requested_lp_exists = RequestedLearningPath.objects.filter(learningpath=instance, user=request.user).exists()
-            representation['requested'] = requested_lp_exists
+        # get user completed badges filtered by lp badgeclasses
+        user_badgeinstances = request.user.cached_badgeinstances().filter(badgeclass__in=lp_badgeclasses, revoked=False)
+        user_completed_badges = list({badgeinstance.badgeclass for badgeinstance in user_badgeinstances})
 
-            completed_badges = participant.completed_badges
-            progress = sum(
-                json_loads(ext.original_json)['StudyLoad'] 
-                for badge in completed_badges 
-                for ext in badge.cached_extensions() 
-                if ext.name == 'extensions:StudyLoadExtension'
-            )
+        # calculate lp progress
+        max_progress = instance.calculate_progress(lp_badgeclasses)
+        user_progress = instance.calculate_progress(user_completed_badges)
 
-            representation.update({
-                'progress': progress,
-                'completed_at': participant.completed_at,
-                'completed_badges': BadgeClassSerializerV1(participant.completed_badges, many=True, context={'exclude_orgImg': 'extensions:OrgImageExtension'}).data,
-            })
+        # set lp completed at from newest badge issue date
+        # FIXME: maybe set from issued participation badge instead, would need to get user participation badgeclass aswell
+        completed_at = None
+        if user_progress >= max_progress:
+            completed_at = reduce(lambda x, y: y.issued_on if x is None else max(x, y.issued_on), user_badgeinstances, None)
 
-        except LearningPathParticipant.DoesNotExist:
-            if request.user.is_authenticated: 
-                user_badgeinstances = BadgeInstance.objects.filter(recipient_identifier=request.user.email, revoked=False)
-                user_badgeclasses = [badge.badgeclass for badge in user_badgeinstances]
-                completed_badgeclasses = {badge for badge in user_badgeclasses if badge in [badge.badge for badge in instance.learningpathbadge_set.all()]}
-                completed_badges = BadgeClassSerializerV1(completed_badgeclasses, many=True, context={'exclude_orgImg': 'extensions:OrgImageExtension'}).data
-                representation.update({
-                    'progress': None,
-                    'completed_at': None,
-                    'completed_badges': completed_badges,
-                    'requested': False
-                })
-            else: 
-                representation.update(default_representation)   
-        return representation          
+        representation.update({
+            'progress': user_progress,
+            'completed_at': completed_at,
+            'completed_badges': BadgeClassSerializerV1(user_completed_badges, many=True, context={'exclude_orgImg': 'extensions:OrgImageExtension'}).data,
+        })
+
+        return representation
 
     def create(self, validated_data, **kwargs):
         
@@ -828,11 +819,11 @@ class LearningPathSerializerV1(serializers.Serializer):
 
         return instance
 
-class LearningPathParticipantSerializerV1(serializers.ModelSerializer):
-    user = BadgeUserProfileSerializerV1(source='cached_user')
-    completed_badges = BadgeClassSerializerV1(many=True, read_only=True)
-    participationBadgeAssertion = BadgeInstanceSerializerV1(read_only=True)
-    
-    class Meta:
-        model = LearningPathParticipant
-        fields = ['user', 'started_at', 'completed_at', 'completed_badges', 'entity_id', 'participationBadgeAssertion']
+class LearningPathParticipantSerializerV1(serializers.Serializer):
+    user = BadgeUserProfileSerializerV1(read_only=True)
+    completed_at = serializers.DateTimeField(source='issued_on')
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['participationBadgeAssertion'] = BadgeInstanceSerializerV1(instance).data
+        return data

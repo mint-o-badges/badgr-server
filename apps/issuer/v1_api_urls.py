@@ -38,7 +38,7 @@ urlpatterns = [
     url(r'^issuers/(?P<slug>[^/]+)/learningpath$',
         IssuerLearningPathList.as_view(), name='v1_api_learningpath_list'),
     url(r'^issuers/(?P<issuerSlug>[^/]+)/learningpath/(?P<slug>[^/]+)$',
-        LearningPathDetail.as_view(), name='v1_api_learningpath_detail'),  
+        LearningPathDetail.as_view(), name='v1_api_learningpath_detail'),
     url(r'^learningpath/(?P<slug>[^/]+)/participants$',
-        LearningPathParticipantsList.as_view(), name='v1_api_learningpath_participant_list'),    
+        LearningPathParticipantsList.as_view(), name='v1_api_learningpath_participant_list'), 
 ]

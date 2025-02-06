@@ -1,6 +1,6 @@
 from django.views.generic.base import RedirectView, TemplateView
 from django.conf.urls.static import static
-from mainsite.views import badgeRequestsByBadgeClass, downloadQrCode, deleteLpRequest, requestLearningPath, updateLearningPathparticipant, upload, nounproject, aiskills, requestBadge, deleteBadgeRequest, createCaptchaChallenge, participateInLearningPath, getVersion
+from mainsite.views import badgeRequestsByBadgeClass, downloadQrCode, upload, nounproject, aiskills, requestBadge, deleteBadgeRequest, createCaptchaChallenge, getVersion
 from mainsite.views import (
     info_view,
     email_unsubscribe,
@@ -172,11 +172,6 @@ urlpatterns = [
 
     url(r'^request-badge/(?P<qrCodeId>[^/]+)$', requestBadge, name="request-badge"),
 
-    url(r'^request-learningpath/(?P<lpId>[^/]+)$', requestLearningPath, name="request-learningpath"),
-
-    url(r'^deleteLpRequest/(?P<requestId>[^/]+)$', deleteLpRequest, name="delete-lp-request"),
-
-
     url(r'^get-server-version', getVersion, name="get-server-version"),
 
     url(r'^deleteBadgeRequest/(?P<requestId>[^/]+)$', deleteBadgeRequest, name="delete-badge-request"),
@@ -184,13 +179,6 @@ urlpatterns = [
     url(r'^download-qrcode/(?P<qrCodeId>[^/]+)/(?P<badgeSlug>[^/]+)$', downloadQrCode, name="download-qrcode"),
   
     url(r'^badgeRequests/(?P<badgeSlug>[^/]+)$', badgeRequestsByBadgeClass, name="badge-requests-by-badgeclass"),
-
-
-    url(r'^learningpath/(?P<learningPathId>[^/]+)/participate$', participateInLearningPath, name="participate-in-learningpath"),
-
-    url(r'^learningpath/participant/(?P<participantId>[^/]+)$', updateLearningPathparticipant, name="update-learningpath-participant"),
-
-
 
 
     # meinBildungsraum OIDC connection

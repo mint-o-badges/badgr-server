@@ -1752,7 +1752,12 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
     
     @property
     def v1_api_participant_count(self):
-        return LearningPathParticipant.objects.filter(learning_path=self).count()
+        # count users with issued lp badges
+        lp_badges = LearningPathBadge.objects.filter(learning_path=self)
+        lp_badgeclasses = [lp_badge.badge for lp_badge in lp_badges]
+        instances = BadgeInstance.objects.filter(badgeclass__in=lp_badgeclasses, revoked=False)
+        users = set([i.user for i in instances])
+        return len(users)
 
     @property
     def cached_badgrapp(self):
@@ -1838,6 +1843,33 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
     def get_absolute_url(self):
         return reverse('learningpath_json', kwargs={'entity_id': self.entity_id})               
 
+    def user_has_completed(self, recipient_identifier):
+        badgeclasses = [lp_badge.badge for lp_badge in self.learningpath_badges]
+        badgeinstances = BadgeInstance.objects.filter(recipient_identifier=recipient_identifier, badgeclass__in=badgeclasses, revoked=False)
+        completed_badges = list({badgeinstance.badgeclass for badgeinstance in badgeinstances})
+
+        max_progress = self.calculate_progress(badgeclasses)
+        user_progress = self.calculate_progress(completed_badges)
+
+        return user_progress >= max_progress
+
+    def user_should_have_badge(self, recipient_identifier):
+
+        if self.user_has_completed(recipient_identifier):
+            # check to only award the participationBadge once
+            badgeinstances = BadgeInstance.objects.filter(badgeclass=self.participationBadge, recipient_identifier=recipient_identifier, revoked=False)
+            return len(badgeinstances) == 0
+
+        return False
+
+    def calculate_progress(self, badgeclasses):
+        return sum(
+            json_loads(ext.original_json)['StudyLoad']
+            for badge in badgeclasses
+            for ext in badge.cached_extensions()
+            if ext.name == 'extensions:StudyLoadExtension'
+        )
+
 class LearningPathBadge(cachemodel.CacheModel):
     learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE)
     badge = models.ForeignKey(BadgeClass, on_delete=models.CASCADE)
@@ -1849,38 +1881,6 @@ class LearningPathBadge(cachemodel.CacheModel):
     def delete(self, *args, **kwargs):
         super(LearningPathBadge, self).delete(*args, **kwargs)
 
-class LearningPathParticipant(BaseVersionedEntity, BaseAuditedModel):
-    user = models.ForeignKey('badgeuser.BadgeUser', on_delete=models.CASCADE)
-    learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE)
-    started_at = models.DateTimeField(auto_now_add=True)
-    completed_at = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        unique_together = ['user', 'learning_path']
-
-    @property
-    def completed_badges(self):
-        lp_badges = LearningPathBadge.objects.filter(learning_path=self.learning_path)
-        lp_badgeclasses = [lp_badge.badge for lp_badge in lp_badges]
-        badgeinstances = self.user.cached_badgeinstances().filter(badgeclass__in=lp_badgeclasses, revoked=False)
-        badgeclasses = list({badgeinstance.badgeclass for badgeinstance in badgeinstances})
-        return badgeclasses
-        # return self.user.earned_badges.filter(learningpath=self.learning_path)    
-
-    @property
-    def participationBadgeAssertion(self):
-        if self.completed_at is not None:
-            badgeinstance = self.user.cached_badgeinstances().filter(revoked=False, badgeclass=self.learning_path.participationBadge).first()
-            if badgeinstance is not None:
-                return badgeinstance
-        else:
-            return None 
-           
-    @property
-    def cached_user(self):
-        from badgeuser.models import BadgeUser
-        return BadgeUser.cached.get(pk=self.user_id)    
-    
 class RequestedLearningPath(BaseVersionedEntity):
 
     learningpath = models.ForeignKey(LearningPath, blank=False, null=False,

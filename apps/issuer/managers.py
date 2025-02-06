@@ -348,4 +348,20 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
         if notify:
             new_instance.notify_earner(badgr_app=badgr_app)
 
+        # dynamic to prevent circular import
+        from issuer.models import LearningPath
+
+        # check if badgeclass is used in learning paths
+        learningpathes = LearningPath.objects.filter(learningpathbadge__badge=badgeclass)
+        for learningpath in learningpathes:
+
+            # all learningpath badges collected but participationBadge not yet issued
+            if learningpath.user_should_have_badge(recipient_identifier):
+
+                # issue learningpath badge
+                learningpath.participationBadge.issue(
+                    recipient_id=recipient_identifier,
+                    notify=notify,
+                )
+
         return new_instance

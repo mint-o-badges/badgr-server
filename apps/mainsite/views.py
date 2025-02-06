@@ -41,7 +41,7 @@ from rest_framework.authentication import (
 )
 
 from issuer.tasks import rebake_all_assertions, update_issuedon_all_assertions
-from issuer.models import BadgeClass, LearningPath, LearningPathParticipant, QrCode, RequestedBadge, RequestedLearningPath
+from issuer.models import BadgeClass, LearningPath, QrCode, RequestedBadge, RequestedLearningPath
 from issuer.serializers_v1 import RequestedBadgeSerializer, RequestedLearningPathSerializer
 from mainsite.admin_actions import clear_cache
 from mainsite.models import EmailBlacklist, BadgrApp
@@ -351,67 +351,6 @@ def PageSetup(canvas, doc, badgeImage, issuerImage):
     p.wrap(page_width, bottom_10_percent_height)
     p.drawOn(canvas, 0, text_y - 15)
 
-@api_view(["POST", "GET"])
-@permission_classes([IsAuthenticated])
-def requestLearningPath(req, lpId):
-    if req.method != "POST" and req.method != "GET":
-        return JsonResponse(
-            {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
-        )
-    try: 
-        lp = LearningPath.objects.get(entity_id=lpId)
-    except LearningPath.DoesNotExist:
-        return JsonResponse({'error': 'Invalid learningPathId'}, status=400) 
-
-    if req.method == "GET":
-        requestedLearningPaths = RequestedLearningPath.objects.filter(learningpath=lp)
-        serializer = RequestedLearningPathSerializer(requestedLearningPaths, many=True)  
-        return JsonResponse({"requested_learningpaths": serializer.data}, status=status.HTTP_200_OK)
-   
-    elif req.method == "POST":           
-
-        requestedLP = RequestedLearningPath() 
-
-        requestedLP.learningpath = lp
-        requestedLP.user = req.user
-
-
-        requestedLP.save()
-
-        return JsonResponse({"message": "LearningPath request received"}, status=status.HTTP_200_OK)
-    
-    elif req.method == "DELETE":
-        requestedLP = RequestedLearningPath.objects.get(learningpath=lp, user=req.user)
-        issuer = lp.issuer
-        if (not is_staff(req.user, issuer)):
-            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
-        requestedLP.delete()
-
-        return JsonResponse({"message": "LearningPath request deleted"}, status=status.HTTP_200_OK)
-
-@api_view(["DELETE"])
-@permission_classes([IsAuthenticated])
-def deleteLpRequest(req, requestId):
-    if req.method != "DELETE":
-        return JsonResponse(
-            {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    try:
-        lpReq = RequestedLearningPath.objects.get(entity_id=requestId)
-        lp = lpReq.learningpath
-        issuer = lp.issuer
-
-        if (not is_staff(req.user, issuer)):
-            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
-
-    except RequestedLearningPath.DoesNotExist:
-        return JsonResponse({'error': 'Invalid requestId'}, status=400)            
-
-    lpReq.delete()
-
-    return JsonResponse({"message": "Learningpath request deleted"}, status=status.HTTP_200_OK)
-
 
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
@@ -529,57 +468,7 @@ def downloadQrCode(request, *args, **kwargs):
     create_page(response, Story, badgeImage, issuerImage)
 
     return response
-    
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def participateInLearningPath(req, learningPathId):
-    if req.method != "POST":
-        return JsonResponse(
-            {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    if req.method == "POST":
-        try:
-            lp = LearningPath.objects.get(entity_id=learningPathId)
 
-        except LearningPath.DoesNotExist:
-            return JsonResponse({'error': 'Invalid learningPathId'}, status=400) 
-        
-        participant, created = LearningPathParticipant.objects.get_or_create(
-            user=req.user,
-            learning_path=lp,
-        )
-        
-        if not created:
-            # User is already a participant, so they want to quit participating
-            participant.delete()
-            return JsonResponse({'message': 'Successfully removed participation'}, status=200)
-        else:
-            participant.save()
-            return JsonResponse({'message': 'Successfully joined the learning path'}, status=200)
-
-@api_view(["PUT", "DELETE"])
-@permission_classes([IsAuthenticated])
-def updateLearningPathparticipant(req, participantId):
-    if req.method != "PUT" and req.method != "DELETE":
-        return JsonResponse(
-            {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
-        )
-    try:
-        participant = LearningPathParticipant.objects.get(entity_id=participantId)
-
-    except LearningPathParticipant.DoesNotExist:
-        return JsonResponse({'error': 'Invalid participantId'}, status=400) 
-    
-    if req.method == "PUT":
-
-        participant.completed_at = datetime.now()
-        participant.save()
-        return JsonResponse({'message': 'Successfully updated learning path participant'}, status=200)
-
-    elif req.method == "DELETE":
-        participant.delete()
-        return JsonResponse({'message': 'Successfully deleted learning path participant'}, status=200)
 
 def extractErrorMessage500(response: Response):
     expression = re.compile("<pre>Error: ([^<]+)<br>")

@@ -30,7 +30,7 @@ from django.http import Http404, JsonResponse
 from django.utils import timezone
 from django.views.generic import RedirectView
 from django.conf import settings
-from issuer.models import LearningPath, LearningPathParticipant, RequestedBadge
+from issuer.models import LearningPath, LearningPathBadge, RequestedBadge
 from issuer.serializers_v1 import LearningPathSerializerV1
 from rest_framework import permissions, serializers, status
 from rest_framework.exceptions import ValidationError as RestframeworkValidationError
@@ -839,8 +839,12 @@ class LearningPathList(BaseEntityListView):
     v1_serializer_class = LearningPathSerializerV1
 
     def get_objects(self, request, **kwargs):
-        participants = LearningPathParticipant.objects.filter(user=request.user)
-        lps = LearningPath.objects.filter(learningpathparticipant__in=participants)
+
+        badgeinstances = request.user.cached_badgeinstances().all()
+        badges = list({badgeinstance.badgeclass for badgeinstance in badgeinstances})
+        lp_badges = LearningPathBadge.objects.filter(badge__in=badges)
+        lps = LearningPath.objects.filter(learningpathbadge__in=lp_badges).distinct()
+
         return lps
 
     @apispec_list_operation('LearningPath',

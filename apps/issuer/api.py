@@ -22,13 +22,14 @@ import badgrlog
 from entity.api import BaseEntityListView, BaseEntityDetailView, VersionedObjectMixin, BaseEntityView, \
     UncachedPaginatedViewMixin
 from entity.serializers import BaseSerializerV2, V2ErrorSerializer
-from issuer.models import Issuer, BadgeClass, BadgeInstance, IssuerStaff, LearningPath, LearningPathParticipant, QrCode, RequestedBadge
+from issuer.models import Issuer, BadgeClass, BadgeInstance, IssuerStaff, LearningPath, QrCode, RequestedBadge
 from issuer.permissions import (MayIssueBadgeClass, MayEditBadgeClass, IsEditor, IsEditorButOwnerForDelete,
                                 IsStaff, ApprovedIssuersOnly, BadgrOAuthTokenHasScope,
                                 BadgrOAuthTokenHasEntityScope, AuthorizationIsBadgrOAuthToken, MayIssueLearningPath,
                                 is_learningpath_editor, is_learningpath_owner, is_learningpath_staff)
 from issuer.serializers_v1 import (IssuerSerializerV1, BadgeClassSerializerV1,
-                                   BadgeInstanceSerializerV1, LearningPathParticipantSerializerV1, QrCodeSerializerV1, LearningPathSerializerV1, RequestedBadgeSerializer)
+                                   BadgeInstanceSerializerV1, QrCodeSerializerV1, LearningPathSerializerV1, RequestedBadgeSerializer,
+                                   LearningPathParticipantSerializerV1)
 from issuer.serializers_v2 import IssuerSerializerV2, BadgeClassSerializerV2, BadgeInstanceSerializerV2, \
     IssuerAccessTokenSerializerV2
 from apispec_drf.decorators import apispec_get_operation, apispec_put_operation, \
@@ -253,39 +254,27 @@ class IssuerLearningPathList(UncachedPaginatedViewMixin, VersionedObjectMixin, B
         self.get_object(request, **kwargs)  # trigger a has_object_permissions() check
         return super(IssuerLearningPathList, self).post(request, **kwargs)    
 
-class LearningPathParticipantsList(BaseEntityListView):
+class LearningPathParticipantsList(BaseEntityView):
     """
-    GET a list of learning paths within one issuer context or
-    POST to create a new learningpath within the issuer context
+    GET a list of learningpath participants
     """
-    model = LearningPathParticipant
-    # permission_classes = [
-    #     IsServerAdmin
-    #     | (AuthenticatedWithVerifiedIdentifier & IsEditor & BadgrOAuthTokenHasScope)
-    #     | BadgrOAuthTokenHasEntityScope
-    # ]
-    v1_serializer_class = LearningPathParticipantSerializerV1
+    
     valid_scopes = ["rw:issuer"]
 
     def get_queryset(self):
-        learningPathSlug = self.kwargs.get('slug')
-        learningPath = LearningPath.objects.get(entity_id=learningPathSlug)
-        return LearningPathParticipant.objects.filter(learning_path=learningPath)
+        learning_path_slug = self.kwargs.get('slug')
+        learning_path = LearningPath.objects.get(entity_id=learning_path_slug)
+        badge_instances = BadgeInstance.objects.filter(badgeclass=learning_path.participationBadge, user__isnull=False, revoked=False)
+        return badge_instances
     
     @apispec_list_operation('LearningPath',
-        summary="Get a list of LearningPaths for authenticated user",
+        summary="Get a list of participants for this LearningPath",
         tags=["LearningPaths"],
     )
     def get(self, request, **kwargs):
-        learning_path_id = kwargs.get('slug')
-        try:
-            learning_path = LearningPath.objects.get(entity_id=learning_path_id)
-        except LearningPath.DoesNotExist:
-            return Response({"error": "Learning Path not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        participants = LearningPathParticipant.objects.filter(learning_path=learning_path)
-        serializer = LearningPathParticipantSerializerV1(participants, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        data = self.get_queryset()
+        results = LearningPathParticipantSerializerV1(data, many=True).data
+        return Response(results)
 
 class BadgeClassDetail(BaseEntityDetailView):
     """
