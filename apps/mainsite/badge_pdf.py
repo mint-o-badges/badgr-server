@@ -233,15 +233,7 @@ class BadgePDFCreator:
                     rounded_rect = RoundedRectFlowable(0, -10, 515, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload= studyload, max_studyload=max_studyload, esco=competencies[i]['framework_identifier'])    
                     Story.append(rounded_rect)
                     Story.append(Spacer(1, 10))   
-                        
-                if esco: 
-                    Story.append(Spacer(1, 10))
-                    text_style = ParagraphStyle(name='Text_Style',fontName="Rubik-Italic", fontSize=10, leading=13, alignment=TA_CENTER, leftIndent=-35, rightIndent=-35)
-                    link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations). <br/>' \
-                        'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
-                    paragraph_with_link = Paragraph(link_text, text_style)
-                    Story.append(paragraph_with_link) 
-
+               
     def generate_qr_code(self, badge_instance, origin):
         ## build the qr code in the backend
 
@@ -329,7 +321,7 @@ class BadgePDFCreator:
         template = PageTemplate(id='header', frames=frame ,onPage=partial(self.header, content= imageContent, instituteName=badge_instance.issuer.name))
         ## adding template to all pages 
         doc.addPageTemplates([template])
-        doc.build(Story, canvasmaker=PageNumCanvas)   
+        doc.build(Story, canvasmaker=partial(PageNumCanvas, len(competencies)))   
         pdfContent = buffer.getvalue()
         buffer.close()
         return pdfContent
@@ -456,10 +448,11 @@ class PageNumCanvas(canvas.Canvas):
     http://code.activestate.com/recipes/576832/
     """
     #----------------------------------------------------------------------
-    def __init__(self, *args, **kwargs):
+    def __init__(self, num_competencies, *args, **kwargs):
         """Constructor"""
         canvas.Canvas.__init__(self, *args, **kwargs)
         self.pages = []
+        self.num_competencies = num_competencies
         
     #----------------------------------------------------------------------
     def showPage(self):
@@ -496,5 +489,17 @@ class PageNumCanvas(canvas.Canvas):
         self.setFont("Rubik-Regular", 10)
         self.drawCentredString(page_width / 2, 15, page)
         if self._pageNumber == page_count:
-            self.setLineWidth(3)
-            self.line(10, 10, page_width - 10, 10)
+            self.draw_essco_info(page_width)
+            
+    # Draws ESCO competency information
+    def draw_essco_info(self, page_width):
+        self.setLineWidth(3)
+        self.line(10, 10, page_width - 10, 10)
+        if self.num_competencies > 0:
+            text_style = ParagraphStyle(name='Text_Style', fontName="Rubik-Italic", fontSize=10, leading=13, alignment=TA_CENTER, leftIndent=-35, rightIndent=-35)
+            link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations). <br/>' \
+                        'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
+            paragraph_with_link = Paragraph(link_text, text_style)
+            story = [paragraph_with_link]
+            story[0].wrapOn(self, page_width - 20, 50)
+            story[0].drawOn(self, 10, 40)
