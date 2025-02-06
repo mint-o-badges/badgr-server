@@ -494,10 +494,10 @@ class PageNumCanvas(canvas.Canvas):
             if num_competencies > 0:
                 esco = any(c['framework'] for c in self.competencies)
                 if esco:
-                    self.draw_essco_info(page_width)
+                    self.draw_esco_info(page_width)
             
     # Draws ESCO competency information
-    def draw_essco_info(self, page_width):
+    def draw_esco_info(self, page_width):
             text_style = ParagraphStyle(name='Text_Style', fontName="Rubik-Italic", fontSize=10, leading=13, alignment=TA_CENTER, leftIndent=-35, rightIndent=-35)
             link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations). <br/>' \
                         'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
