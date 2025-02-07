@@ -93,8 +93,8 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
             img_path = os.path.join(settings.MEDIA_ROOT, "uploads", "badges", "assertion-{}.png".format(context.get('badge_id', None)))
             with open(img_path, 'rb') as f:
                 badge_img = f.read()
-            msg.attach(badge_name + '.png', badge_img, "badge_image/png")
-            msg.attach(badge_name + '.pdf', pdf_document,'badge_certificate/pdf')
+            msg.attach(badge_name + '.png', badge_img, "image/png")
+            msg.attach(badge_name + '.pdf', pdf_document,'application/pdf')
         logger.event(badgrlog.EmailRendered(msg))
         msg.send()
 
