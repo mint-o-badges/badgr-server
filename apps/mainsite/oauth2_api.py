@@ -476,6 +476,8 @@ def setTokenHttpOnly(response):
                             httponly=True,
                             secure=True,
                             max_age=data['expires_in'])
+        # Remove access token from body
+        del data['access_token']
     if 'refresh_token' in 'access_token':
         response.set_cookie('refresh_token',
                             value=data['refresh_token'],
@@ -489,9 +491,8 @@ def setTokenHttpOnly(response):
                             # test right now, so change it if
                             # needed.
                             max_age=data['expires_in'])
-    # Remove tokens from body
-    del data['access_token']
-    del data['refresh_token']
+        # Remove refresh token from body
+        del data['refresh_token']
     response.content = json.dumps(data)
     return
 
