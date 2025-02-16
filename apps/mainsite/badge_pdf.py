@@ -238,7 +238,7 @@ class BadgePDFCreator:
     def add_learningpath_badges(self, Story, badges, name, badge_name):
         num_badges = len(badges)
         if num_badges > 0:
-                badgesPerPage = 6
+                badgesPerPage = 5
 
                 Story.append(PageBreak())
                 Story.append(Spacer(1, 70))
