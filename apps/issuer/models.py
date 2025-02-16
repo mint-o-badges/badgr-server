@@ -51,7 +51,6 @@ RECIPIENT_TYPE_URL = 'url'
 
 logger = badgrlog.BadgrLogger()
 
-
 class BaseAuditedModel(cachemodel.CacheModel):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     created_by = models.ForeignKey('badgeuser.BadgeUser', blank=True, null=True, related_name="+",
@@ -1085,6 +1084,9 @@ class BadgeInstance(BaseAuditedModel,
 
     def get_absolute_url(self):
         return reverse('badgeinstance_json', kwargs={'entity_id': self.entity_id})
+    
+    def get_absolute_backpack_url(self): 
+        return reverse('v1_api_localbadgeinstance_detail', kwargs={'slug': self.entity_id})
 
     @property
     def jsonld_id(self):
@@ -1225,13 +1227,18 @@ class BadgeInstance(BaseAuditedModel,
         Sends an email notification to the badge recipient.
         """
 
+
         competencyExtensions = {}
+
+        categoryExtension = None
 
         if len(self.badgeclass.cached_extensions()) > 0:
             for extension in self.badgeclass.cached_extensions():
                 if(extension.name == 'extensions:CompetencyExtension'):
                     competencyExtensions[extension.name] = json_loads(extension.original_json)
-
+                if(extension.name == 'extensions:CategoryExtension'): 
+                    categoryExtension = json_loads(extension.original_json)
+                        
         competencies = []
 
         for competency in competencyExtensions.get('extensions:CompetencyExtension', []):
@@ -1288,6 +1295,7 @@ class BadgeInstance(BaseAuditedModel,
             email_context = {
                 'name': name,
                 'badge_name': self.badgeclass.name,
+                'badge_category': categoryExtension['Category'],
                 'badge_id': self.entity_id,
                 'badge_description': self.badgeclass.description,
                 'badge_competencies': competencies,
@@ -1315,6 +1323,7 @@ class BadgeInstance(BaseAuditedModel,
             raise e
 
         template_name = 'issuer/email/notify_earner'
+       
         try:
             from badgeuser.models import CachedEmailAddress
             CachedEmailAddress.objects.get(email=self.recipient_identifier, verified=True)
@@ -1322,6 +1331,9 @@ class BadgeInstance(BaseAuditedModel,
             email_context['site_url'] = badgr_app.ui_login_redirect
         except CachedEmailAddress.DoesNotExist:
             pass
+        
+        if categoryExtension['Category']=="learningpath": 
+           template_name = 'issuer/email/notify_micro_degree_earner'
 
         adapter.send_mail(template_name, self.recipient_identifier, context=email_context)
 
@@ -1774,7 +1786,9 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
 
     @property
     def learningpath_badges(self):
-        return self.cached_learningpathbadges()
+        #TODO: return from cache
+        # return self.cached_learningpathbadges()
+        return self.learningpathbadge_set.all()
     
     @learningpath_badges.setter
     def learningpath_badges(self, badges_with_order):
