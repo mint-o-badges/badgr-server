@@ -30,7 +30,7 @@ from django.http import Http404, JsonResponse
 from django.utils import timezone
 from django.views.generic import RedirectView
 from django.conf import settings
-from issuer.models import LearningPath, LearningPathBadge, RequestedBadge
+from issuer.models import BadgeInstance, LearningPath, LearningPathBadge, RequestedBadge
 from issuer.serializers_v1 import LearningPathSerializerV1
 from rest_framework import permissions, serializers, status
 from rest_framework.exceptions import ValidationError as RestframeworkValidationError
@@ -868,3 +868,52 @@ class LearningPathList(BaseEntityListView):
     )
     def post(self, request, **kwargs):
         return super(LearningPathList, self).post(request, **kwargs)
+    
+class BadgeUserSaveMicroDegree(BaseEntityDetailView):
+    permission_classes = (permissions.AllowAny,)
+    v1_serializer_class = BaseSerializer
+    v2_serializer_class = BaseSerializerV2
+
+    def get(self, request, **kwargs):
+        """
+        Redirect to the micro degree detail page after the user logs in
+        """
+        badgrapp_id = request.query_params.get("a")
+        badgrapp = BadgrApp.objects.get_by_id_or_default(badgrapp_id)
+
+        microdegree_id = kwargs.get("entity_id")         
+        
+        intended_redirect = f"/public/learningpaths/{microdegree_id}"
+        
+        redirect_url = badgrapp.ui_login_redirect.rstrip("/")
+        response = Response(
+            status=HTTP_302_FOUND,
+            headers={"Location": redirect_url}
+        )
+        
+        response.set_cookie(
+            'intended_redirect',
+            intended_redirect,
+            max_age=604800,  # 1 week
+            httponly=True,
+            secure=settings.SECURE_SSL_REDIRECT,
+            samesite='Lax',
+            domain=badgrapp.cors.split('://')[-1] if badgrapp.cors else None
+        )
+        
+        return response
+    
+class GetRedirectPath(BaseEntityDetailView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request, **kwargs):
+        redirect_path = request.COOKIES.get('intended_redirect')
+        
+        response = Response({
+            'success': True,
+            'redirectPath': redirect_path or '/issuer' 
+        })
+        
+        response.delete_cookie('intended_redirect')
+        
+        return response    

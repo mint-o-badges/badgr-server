@@ -76,7 +76,13 @@
                                             ,
                                             {% endif %} 
                                             <br />
-                                            <span>du hast einen <span style="font-weight: 800">Badge</span> erhalten!</span>
+                                            <span>du hast einen <span style="font-weight: 800">
+                                              {%if badge_category == "learningpath" %}
+                                              Micro Degree 
+                                              {% else %}
+                                              Badge
+                                              {% endif %} 
+                                            </span> erhalten!</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -190,13 +196,15 @@
                             <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:separate;width:100%;line-height:100%; padding-top:1rem;">
                               <tr>
                                 <td align="center" bgcolor="#492e98" role="presentation" style="border:none;border-radius:10px;cursor:auto;background:#492e98;" valign="middle">
-                                  <a href="{{ site_url }}" style="background:#492e98;color:#FFFFFF;font-family:Rubik, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none; display: block; padding:15px 30px; border-radius: 10px;" target="_blank">
+                                  <a href="{{ activate_url }}" style="background:#492e98;color:#FFFFFF;font-family:Rubik, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none; display: block; padding:15px 30px; border-radius: 10px;" target="_blank">
                                       {% block call_to_action_label %}
                                       {% endblock %}
                                   </a>
                                 </td>
                               </tr>
                             </table>
+
+                            {% if oeb_info_block %} 
                           
                             <div style="background:#F5F5F5;background-color:#F5F5F5;Margin:0px auto;max-width:600px; font-family:Rubik; padding-top: 1rem;">
                               <div style="background-color: #93F993; border-radius: 10px; padding: 0.5rem !important;">
@@ -348,6 +356,7 @@
                                 </tbody>
                               </table>
                             </div>
+                            {% endif %}
                     </td>
                 </tr>
             </tbody>
