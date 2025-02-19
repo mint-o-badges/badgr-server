@@ -886,12 +886,12 @@ class BadgeClass(ResizeUploadedImage,
 
     def issue(self, recipient_id=None, evidence=None, narrative=None, notify=False,
             created_by=None, allow_uppercase=False, badgr_app=None,
-            recipient_type=RECIPIENT_TYPE_EMAIL, **kwargs):
+            recipient_type=RECIPIENT_TYPE_EMAIL, microdegree_id=None, **kwargs):
         return BadgeInstance.objects.create(
             badgeclass=self, recipient_identifier=recipient_id, recipient_type=recipient_type,
             narrative=narrative, evidence=evidence,
             notify=notify, created_by=created_by, allow_uppercase=allow_uppercase,
-            badgr_app=badgr_app,
+            badgr_app=badgr_app, microdegree_id=microdegree_id,
             user=get_user_or_none(recipient_id, recipient_type),
             **kwargs
         )
@@ -1225,7 +1225,7 @@ class BadgeInstance(BaseAuditedModel,
         self.save()
 
     # TODO: Use email related to the new domain, when one is created. Not urgent in this phase.
-    def notify_earner(self, badgr_app=None, renotify=False):
+    def notify_earner(self, badgr_app=None, renotify=False, microdegree_id=None):
         """
         Sends an email notification to the badge recipient.
         """
@@ -1334,23 +1334,21 @@ class BadgeInstance(BaseAuditedModel,
         except CachedEmailAddress.DoesNotExist:
             pass
 
-        if categoryExtension == "learningpath": 
-            template_name = 'issuer/email/notify_micro_degree_earner'
+        if categoryExtension == "learningpath" and microdegree_id is not None:
+            # if the recipient does not have an account no micro degree email is sent 
+            if self.user is not None: 
+                template_name = 'issuer/email/notify_micro_degree_earner'
 
-            url_name = "v1_api_user_save_microdegree"
+                url_name = "v1_api_user_save_microdegree"
 
-            save_url = OriginSetting.HTTP + reverse(url_name, kwargs={'entity_id': self.entity_id})
+                save_url = OriginSetting.HTTP + reverse(url_name, kwargs={'entity_id': microdegree_id})
 
-            signer = TimestampSigner()
-            token = signer.sign(str(self.user.entity_id))
+                url = "{url}?a={badgr_app}".format(
+                    url=save_url,
+                    badgr_app= badgr_app
+                )
 
-            tokenized_activate_url = "{url}?token={token}&a={badgr_app}".format(
-                url=save_url,
-                token=token,
-                badgr_app= badgr_app
-            )
-
-            email_context['activate_url']=tokenized_activate_url
+                email_context['activate_url']=url
         
         adapter.send_mail(template_name, self.recipient_identifier, context=email_context)
 
