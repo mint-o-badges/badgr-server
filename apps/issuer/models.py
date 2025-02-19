@@ -20,6 +20,7 @@ from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
+from django.core.signing import TimestampSigner
 from django.urls import reverse
 from django.db import models, transaction
 from django.db.models import ProtectedError
@@ -29,6 +30,8 @@ from json import dumps as json_dumps
 from jsonfield import JSONField
 from openbadges_bakery import bake
 from django.utils import timezone
+
+import logging 
 
 import badgrlog
 from entity.models import BaseVersionedEntity
@@ -42,6 +45,8 @@ from .utils import (add_obi_version_ifneeded, CURRENT_OBI_VERSION, generate_reba
                     generate_sha256_hashstring, get_obi_context, parse_original_datetime, UNVERSIONED_BAKED_VERSION)
 
 from geopy.geocoders import Nominatim
+
+logger2 = logging.getLogger(__name__)
 AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
 
 RECIPIENT_TYPE_EMAIL = 'email'
@@ -1225,7 +1230,12 @@ class BadgeInstance(BaseAuditedModel,
         Sends an email notification to the badge recipient.
         """
 
+        categoryExtension = None
+
         competencyExtensions = {}
+
+        categoryExtensionJson = json_loads(self.badgeclass.cached_extensions().get(name="extensions:CategoryExtension").original_json)
+        categoryExtension = categoryExtensionJson['Category']
 
         if len(self.badgeclass.cached_extensions()) > 0:
             for extension in self.badgeclass.cached_extensions():
@@ -1304,7 +1314,8 @@ class BadgeInstance(BaseAuditedModel,
                 'download_url': self.public_url + "?action=download",
                 'site_name': "Open Educational Badges",
                 'site_url': badgr_app.signup_redirect,
-                'badgr_app': badgr_app
+                'badgr_app': badgr_app,
+                'oeb_info_block': False if categoryExtension == "learningpath" else True
             }
             if badgr_app.cors == 'badgr.io':
                 email_context['promote_mobile'] = True
@@ -1323,6 +1334,24 @@ class BadgeInstance(BaseAuditedModel,
         except CachedEmailAddress.DoesNotExist:
             pass
 
+        if categoryExtension == "learningpath": 
+            template_name = 'issuer/email/notify_micro_degree_earner'
+
+            url_name = "v1_api_user_save_microdegree"
+
+            save_url = OriginSetting.HTTP + reverse(url_name, kwargs={'entity_id': self.entity_id})
+
+            signer = TimestampSigner()
+            token = signer.sign(str(self.user.entity_id))
+
+            tokenized_activate_url = "{url}?token={token}&a={badgr_app}".format(
+                url=save_url,
+                token=token,
+                badgr_app= badgr_app
+            )
+
+            email_context['activate_url']=tokenized_activate_url
+        
         adapter.send_mail(template_name, self.recipient_identifier, context=email_context)
 
     def get_extensions_manager(self):
@@ -1869,6 +1898,14 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
             for ext in badge.cached_extensions()
             if ext.name == 'extensions:StudyLoadExtension'
         )
+    
+    def get_lp_badgeinstance(self, recipient_identifier): 
+        return BadgeInstance.objects.filter(badgeclass=self.participationBadge, recipient_identifier=recipient_identifier, revoked=False).first()
+
+    def get_studyload(self):
+        studyLoadExt = self.participationBadge.cached_extensions().get(name="extensions:StudyLoadExtension")
+        studyLoadJson = json_loads(studyLoadExt.original_json)
+        return studyLoadJson['StudyLoad']
 
 class LearningPathBadge(cachemodel.CacheModel):
     learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE)
