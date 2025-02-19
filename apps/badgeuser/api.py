@@ -30,7 +30,7 @@ from django.http import Http404, JsonResponse
 from django.utils import timezone
 from django.views.generic import RedirectView
 from django.conf import settings
-from issuer.models import LearningPath, LearningPathBadge, RequestedBadge
+from issuer.models import BadgeInstance, LearningPath, LearningPathBadge, RequestedBadge
 from issuer.serializers_v1 import LearningPathSerializerV1
 from rest_framework import permissions, serializers, status
 from rest_framework.exceptions import ValidationError as RestframeworkValidationError
@@ -62,6 +62,9 @@ from mainsite.utils import (
 from mainsite.serializers import ApplicationInfoSerializer
 RATE_LIMIT_DELTA = datetime.timedelta(minutes=5)
 from django.core.signing import TimestampSigner
+import logging 
+
+logger2 = logging.getLogger(__name__)
 
 logger = badgrlog.BadgrLogger()
 
@@ -868,3 +871,65 @@ class LearningPathList(BaseEntityListView):
     )
     def post(self, request, **kwargs):
         return super(LearningPathList, self).post(request, **kwargs)
+    
+class BadgeUserSaveMicroDegree(BaseEntityDetailView):
+    permission_classes = (permissions.AllowAny,)
+    v1_serializer_class = BaseSerializer
+    v2_serializer_class = BaseSerializerV2
+
+    def get(self, request, **kwargs):
+        """
+        Redirect to the micro degree detail page after the user logs in
+        ---
+        parameters:
+            - name: token
+              type: string
+              paramType: form
+              description: 
+              required: true  
+        """
+        token = request.query_params.get("token", "")
+        badgrapp_id = request.query_params.get("a")
+
+
+        badgrapp = BadgrApp.objects.get_by_id_or_default(badgrapp_id)
+
+        learningPathInstance = BadgeInstance.objects.filter(entity_id=kwargs.get("entity_id")).first()
+        microDegreeRecipient = learningPathInstance.recipient_identifier
+
+        if learningPathInstance is None:
+            return redirect_to_frontend_error_toast(
+                request,
+                "Your link is invalid. Please log in and navigate to your" 
+                "backpack to download your micro degree.",
+            ) 
+        
+        signer = TimestampSigner()
+        user_id = signer.unsign(token, max_age=None) 
+
+        user = BadgeUser.objects.filter(entity_id=user_id).first()
+
+        # if not microDegreeRecipient in user.cached_emails():
+        #     logger2.error(f"unexpected user")
+        #     return redirect_to_frontend_error_toast(
+        #         request,
+        #         "Your token is associated with an unexpected "
+        #         "user. You may try again",
+        #     )
+
+        # Create an OAuth AccessTokenProxy instance for this user
+        accesstoken = AccessTokenProxy.objects.generate_new_token_for_user(
+            user,
+            application=(
+                badgrapp.oauth_application if badgrapp.oauth_application_id else None
+            ),
+            scope="rw:backpack rw:profile rw:issuer",
+        )
+
+        redirect_url = set_url_query_params(
+            badgrapp.ui_login_redirect.rstrip("/"),
+            redirectUri=f"{badgrapp.cors}/recipient/earned-badge/{learningPathInstance.entity_id}",
+        )
+
+        
+        return Response(status=HTTP_302_FOUND, headers={"Location": redirect_url})    
