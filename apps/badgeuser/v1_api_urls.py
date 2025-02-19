@@ -1,6 +1,6 @@
 from django.conf.urls import url
 
-from badgeuser.api import BadgeRequestVerification, BadgeUserToken, BadgeUserForgotPassword, BadgeUserEmailConfirm, BadgeUserDetail, BadgeUserResendEmailConfirmation, LearningPathList
+from badgeuser.api import BadgeRequestVerification, BadgeUserSaveMicroDegree, BadgeUserToken, BadgeUserForgotPassword, BadgeUserEmailConfirm, BadgeUserDetail, BadgeUserResendEmailConfirmation, LearningPathList
 from badgeuser.api_v1 import BadgeUserEmailList, BadgeUserEmailDetail
 
 urlpatterns = [
@@ -13,8 +13,10 @@ urlpatterns = [
     url(r'^legacyconfirmemail/(?P<confirm_id>[^/]+)$',
         BadgeUserEmailConfirm.as_view(), name='legacy_user_email_confirm'),
     url(r'^confirmemail/(?P<confirm_id>[^/]+)$', BadgeUserEmailConfirm.as_view(),
-        name='v1_api_user_email_confirm'),
+        name='v1_api_user_email_confirm'),    
     url(r'^resendemail$', BadgeUserResendEmailConfirmation.as_view(), name='v1_api_resend_user_verification_email'),
     url(r'^learningpaths$', LearningPathList.as_view(), name='v1_api_user_learningpaths'),
 
+    url(r'^save-microdegree/(?P<entity_id>[^/]+)$', BadgeUserSaveMicroDegree.as_view(),
+        name='v1_api_user_save_microdegree'),
 ]
