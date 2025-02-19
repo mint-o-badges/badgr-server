@@ -62,9 +62,6 @@ from mainsite.utils import (
 from mainsite.serializers import ApplicationInfoSerializer
 RATE_LIMIT_DELTA = datetime.timedelta(minutes=5)
 from django.core.signing import TimestampSigner
-import logging 
-
-logger2 = logging.getLogger(__name__)
 
 logger = badgrlog.BadgrLogger()
 

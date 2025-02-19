@@ -20,7 +20,6 @@ from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
-from django.core.signing import TimestampSigner
 from django.urls import reverse
 from django.db import models, transaction
 from django.db.models import ProtectedError
@@ -31,7 +30,6 @@ from jsonfield import JSONField
 from openbadges_bakery import bake
 from django.utils import timezone
 
-import logging 
 
 import badgrlog
 from entity.models import BaseVersionedEntity
@@ -46,7 +44,6 @@ from .utils import (add_obi_version_ifneeded, CURRENT_OBI_VERSION, generate_reba
 
 from geopy.geocoders import Nominatim
 
-logger2 = logging.getLogger(__name__)
 AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
 
 RECIPIENT_TYPE_EMAIL = 'email'
