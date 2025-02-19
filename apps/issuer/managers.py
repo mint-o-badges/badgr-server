@@ -295,6 +295,7 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
         notify=False,
         allow_uppercase=False,
         badgr_app=None,
+        microdegree_id=None,
         **kwargs
                ):
         """
@@ -346,7 +347,7 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
                 notify = True
 
         if notify:
-            new_instance.notify_earner(badgr_app=badgr_app)
+            new_instance.notify_earner(badgr_app=badgr_app, microdegree_id=microdegree_id)
 
         # dynamic to prevent circular import
         from issuer.models import LearningPath
@@ -362,6 +363,7 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
                 learningpath.participationBadge.issue(
                     recipient_id=recipient_identifier,
                     notify=notify,
+                    microdegree_id=learningpath.entity_id
                 )
 
         return new_instance

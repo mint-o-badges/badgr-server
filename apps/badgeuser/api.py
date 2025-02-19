@@ -883,19 +883,10 @@ class BadgeUserSaveMicroDegree(BaseEntityDetailView):
         """
         badgrapp_id = request.query_params.get("a")
         badgrapp = BadgrApp.objects.get_by_id_or_default(badgrapp_id)
+
+        microdegree_id = kwargs.get("entity_id")         
         
-        learning_path_instance = BadgeInstance.objects.filter(
-            entity_id=kwargs.get("entity_id")
-        ).first()
-        
-        if learning_path_instance is None:
-            return redirect_to_frontend_error_toast(
-                request,
-                "Your link is invalid. Please log in and navigate to your "
-                "backpack to download your micro degree.",
-            )
-        
-        intended_redirect = f"/recipient/earned-badge/{learning_path_instance.entity_id}"
+        intended_redirect = f"/public/learningpaths/{microdegree_id}"
         
         redirect_url = badgrapp.ui_login_redirect.rstrip("/")
         response = Response(
