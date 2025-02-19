@@ -880,56 +880,52 @@ class BadgeUserSaveMicroDegree(BaseEntityDetailView):
     def get(self, request, **kwargs):
         """
         Redirect to the micro degree detail page after the user logs in
-        ---
-        parameters:
-            - name: token
-              type: string
-              paramType: form
-              description: 
-              required: true  
         """
-        token = request.query_params.get("token", "")
         badgrapp_id = request.query_params.get("a")
-
-
         badgrapp = BadgrApp.objects.get_by_id_or_default(badgrapp_id)
-
-        learningPathInstance = BadgeInstance.objects.filter(entity_id=kwargs.get("entity_id")).first()
-        microDegreeRecipient = learningPathInstance.recipient_identifier
-
-        if learningPathInstance is None:
+        
+        learning_path_instance = BadgeInstance.objects.filter(
+            entity_id=kwargs.get("entity_id")
+        ).first()
+        
+        if learning_path_instance is None:
             return redirect_to_frontend_error_toast(
                 request,
-                "Your link is invalid. Please log in and navigate to your" 
+                "Your link is invalid. Please log in and navigate to your "
                 "backpack to download your micro degree.",
-            ) 
+            )
         
-        signer = TimestampSigner()
-        user_id = signer.unsign(token, max_age=None) 
-
-        user = BadgeUser.objects.filter(entity_id=user_id).first()
-
-        # if not microDegreeRecipient in user.cached_emails():
-        #     logger2.error(f"unexpected user")
-        #     return redirect_to_frontend_error_toast(
-        #         request,
-        #         "Your token is associated with an unexpected "
-        #         "user. You may try again",
-        #     )
-
-        # Create an OAuth AccessTokenProxy instance for this user
-        accesstoken = AccessTokenProxy.objects.generate_new_token_for_user(
-            user,
-            application=(
-                badgrapp.oauth_application if badgrapp.oauth_application_id else None
-            ),
-            scope="rw:backpack rw:profile rw:issuer",
-        )
-
-        redirect_url = set_url_query_params(
-            badgrapp.ui_login_redirect.rstrip("/"),
-            redirectUri=f"{badgrapp.cors}/recipient/earned-badge/{learningPathInstance.entity_id}",
-        )
-
+        intended_redirect = f"/recipient/earned-badge/{learning_path_instance.entity_id}"
         
-        return Response(status=HTTP_302_FOUND, headers={"Location": redirect_url})    
+        redirect_url = badgrapp.ui_login_redirect.rstrip("/")
+        response = Response(
+            status=HTTP_302_FOUND,
+            headers={"Location": redirect_url}
+        )
+        
+        response.set_cookie(
+            'intended_redirect',
+            intended_redirect,
+            max_age=604800,  # 1 week
+            httponly=True,
+            secure=settings.SECURE_SSL_REDIRECT,
+            samesite='Lax',
+            domain=badgrapp.cors.split('://')[-1] if badgrapp.cors else None
+        )
+        
+        return response
+    
+class GetRedirectPath(BaseEntityDetailView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request, **kwargs):
+        redirect_path = request.COOKIES.get('intended_redirect')
+        
+        response = Response({
+            'success': True,
+            'redirectPath': redirect_path or '/issuer' 
+        })
+        
+        response.delete_cookie('intended_redirect')
+        
+        return response    
