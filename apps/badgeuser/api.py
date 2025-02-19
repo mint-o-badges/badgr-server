@@ -926,9 +926,11 @@ class BadgeUserSaveMicroDegree(BaseEntityDetailView):
             scope="rw:backpack rw:profile rw:issuer",
         )
 
+        httpPrefix = 'https://' if settings.SECURE_SSL_REDIRECT else 'http://'
+
         redirect_url = set_url_query_params(
             badgrapp.ui_login_redirect.rstrip("/"),
-            redirectUri=f"{badgrapp.cors}/recipient/earned-badge/{learningPathInstance.entity_id}",
+            redirectUri=f"{httpPrefix}{badgrapp.cors}/recipient/earned-badge/{learningPathInstance.entity_id}",
         )
 
         

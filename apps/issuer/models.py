@@ -1335,7 +1335,6 @@ class BadgeInstance(BaseAuditedModel,
             pass
 
         if categoryExtension == "learningpath": 
-            logger2.error("learningpath category")
             template_name = 'issuer/email/notify_micro_degree_earner'
 
             url_name = "v1_api_user_save_microdegree"
@@ -1353,9 +1352,6 @@ class BadgeInstance(BaseAuditedModel,
 
             email_context['activate_url']=tokenized_activate_url
         
-        
-        logger2.error(f"template {template_name}")
-
         adapter.send_mail(template_name, self.recipient_identifier, context=email_context)
 
     def get_extensions_manager(self):
