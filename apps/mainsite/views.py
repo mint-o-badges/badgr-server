@@ -53,7 +53,6 @@ import mainsite
 
 from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import DefaultStorage
-from django.core.signing import TimestampSigner
 
 
 import uuid
