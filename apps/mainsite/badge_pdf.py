@@ -41,7 +41,7 @@ pdfmetrics.registerFont(TTFont('Rubik-Italic', font_path_rubik_italic))
 
 class BadgePDFCreator:
     def __init__(self):
-        pass
+        self.competencies = []
 
     def add_badge_image(self, first_page_content, badgeImage): 
         image_width = 180
@@ -259,8 +259,6 @@ class BadgePDFCreator:
                 Story.append(Paragraph(text, text_style))
                 Story.append(Spacer(1, 10))
 
-                lp_competencies = []
-
                 for i in range(num_badges):
                     extensions = badges[i].badgeclass.cached_extensions()
                     categoryExtension = extensions.get(name="extensions:CategoryExtension")
@@ -268,9 +266,8 @@ class BadgePDFCreator:
                     if category == "competency":
                         competencies = badges[i].badgeclass.json["extensions:CompetencyExtension"]
                         for competency in competencies: 
-                            if competency not in lp_competencies:
-                                competencies.append(competency) 
-                                lp_competencies.append(competency)
+                            if competency not in self.competencies:
+                                self.competencies.append(competency) 
 
                     if i != 0 and i % badgesPerPage == 0: 
                         Story.append(PageBreak())
@@ -304,9 +301,7 @@ class BadgePDFCreator:
                     Story.append(table)
                     Story.append(Spacer(1, 10))     
 
-                # competencies.extend(lp_competencies)
-                logger.error(f"competencies {competencies}")
-                self.add_competencies(Story, lp_competencies, name, badge_name)  
+                self.add_competencies(Story, self.competencies, name, badge_name)  
                
     def generate_qr_code(self, badge_instance, origin):
         ## build the qr code in the backend
