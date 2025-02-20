@@ -24,6 +24,10 @@ from django.conf import settings
 from django.db.models import Max
 from json import loads as json_loads
 
+import logging 
+
+logger = logging.getLogger(__name__)
+
 font_path_rubik_regular = os.path.join(os.path.dirname(__file__), 'Rubik-Regular.ttf')
 font_path_rubik_medium = os.path.join(os.path.dirname(__file__), 'Rubik-Medium.ttf')
 font_path_rubik_bold = os.path.join(os.path.dirname(__file__), 'Rubik-Bold.ttf')
@@ -204,7 +208,7 @@ class BadgePDFCreator:
                 Story.append(PageBreak())
                 Story.append(Spacer(1, 70))
 
-                title_style = ParagraphStyle(name='Title', fontSize=20,fontName="Rubik-Medium", textColor='#492E98', alignment=TA_LEFT)
+                title_style = ParagraphStyle(name='Title', fontSize=20,fontName="Rubik-Medium", textColor='#492E98', alignment=TA_LEFT,  textTransform="uppercase" )
                 text_style = ParagraphStyle(name='Text', fontSize=18, leading=20, textColor='#323232', alignment=TA_LEFT)
 
                 Story.append(Paragraph("Kompetenzen", title_style))
@@ -235,7 +239,8 @@ class BadgePDFCreator:
                     Story.append(rounded_rect)
                     Story.append(Spacer(1, 10)) 
 
-    def add_learningpath_badges(self, Story, badges, name, badge_name):
+    def add_learningpath_badges(self, Story, badges, name, badge_name, competencies):
+        logger.error(f"add lp badges comps {competencies}")
         num_badges = len(badges)
         if num_badges > 0:
                 badgesPerPage = 5
@@ -243,7 +248,7 @@ class BadgePDFCreator:
                 Story.append(PageBreak())
                 Story.append(Spacer(1, 70))
 
-                title_style = ParagraphStyle(name='Title', fontSize=20,fontName="Rubik-Medium", textColor='#492E98', alignment=TA_LEFT)
+                title_style = ParagraphStyle(name='Title', fontSize=20,fontName="Rubik-Medium", textColor='#492E98', alignment=TA_LEFT,  textTransform="uppercase" )
                 text_style = ParagraphStyle(name='Text', fontSize=18, leading=20, textColor='#323232', alignment=TA_LEFT)
                 
                 Story.append(Paragraph("Badges", title_style))
@@ -262,7 +267,11 @@ class BadgePDFCreator:
                     category = json_loads(categoryExtension.original_json)['Category']
                     if category == "competency":
                         competencies = badges[i].badgeclass.json["extensions:CompetencyExtension"]
-                        lp_competencies.extend(competencies)
+                        for competency in competencies: 
+                            if competency not in lp_competencies:
+                                competencies.append(competency) 
+                                lp_competencies.append(competency)
+
                     if i != 0 and i % badgesPerPage == 0: 
                         Story.append(PageBreak())
                         Story.append(Spacer(1, 70))
@@ -281,7 +290,7 @@ class BadgePDFCreator:
                     badge_title = Paragraph(f"<strong>{badges[i].badgeclass.name}</strong>", lp_badge_info_style)
                     issuer = Paragraph(badges[i].badgeclass.issuer.name, lp_badge_info_style)
                     date = Paragraph(badges[i].issued_on.strftime("%d.%m.%Y"), lp_badge_info_style)
-                    data = [[img, [badge_title, Spacer(1, 10), issuer, Spacer(1, 10), date]]]
+                    data = [[img, [badge_title, Spacer(1, 10), issuer, Spacer(1, 5), date]]]
 
                     table = Table(data, colWidths=[100, 450])
                     
@@ -295,7 +304,9 @@ class BadgePDFCreator:
                     Story.append(table)
                     Story.append(Spacer(1, 10))     
 
-                self.add_competencies(Story, lp_competencies, name, badge_name)        
+                # competencies.extend(lp_competencies)
+                logger.error(f"competencies {competencies}")
+                self.add_competencies(Story, lp_competencies, name, badge_name)  
                
     def generate_qr_code(self, badge_instance, origin):
         ## build the qr code in the backend
@@ -375,9 +386,10 @@ class BadgePDFCreator:
              ).values_list('max_id', flat=True)
 
             badgeinstances = BadgeInstance.objects.filter(id__in=badge_ids)
-            self.add_learningpath_badges(Story, badgeinstances, name, badge_class.name)
-
-        self.add_competencies(Story, competencies, name, badge_class.name)
+            self.add_learningpath_badges(Story, badgeinstances, name, badge_class.name, competencies=competencies)
+            logger.error(f"competencies after lp badges {competencies}")
+        else: 
+            self.add_competencies(Story, competencies, name, badge_class.name)
 
         frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='normal')
 
@@ -402,6 +414,7 @@ class BadgePDFCreator:
         template = PageTemplate(id='header', frames=frame ,onPage=partial(self.header, content= imageContent, instituteName=badge_instance.issuer.name))
         ## adding template to all pages 
         doc.addPageTemplates([template])
+        logger.error(f"competencies before build {competencies}")
         doc.build(Story, canvasmaker=partial(PageNumCanvas, competencies))   
         pdfContent = buffer.getvalue()
         buffer.close()
