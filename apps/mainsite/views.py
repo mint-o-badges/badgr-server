@@ -278,12 +278,12 @@ def requestBadge(req, qrCodeId):
                 'activate_url': tokenized_activate_url
             }
 
-            for email in staff_emails: 
-                adapter.send_mail(
-                    template_prefix='issuer/email/notify_staff_badge_request_via_qrcode',  
-                    email=email, 
-                    context=email_context
-                )
+            # for email in staff_emails: 
+            #     adapter.send_mail(
+            #         template_prefix='issuer/email/notify_staff_badge_request_via_qrcode',  
+            #         email=email, 
+            #         context=email_context
+            #     )
         except Exception as e:
             return JsonResponse({"error": "Failed to send email", "details": str(e)}, status=500)
 
