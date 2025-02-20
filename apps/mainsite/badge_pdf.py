@@ -24,10 +24,6 @@ from django.conf import settings
 from django.db.models import Max
 from json import loads as json_loads
 
-import logging 
-
-logger = logging.getLogger(__name__)
-
 font_path_rubik_regular = os.path.join(os.path.dirname(__file__), 'Rubik-Regular.ttf')
 font_path_rubik_medium = os.path.join(os.path.dirname(__file__), 'Rubik-Medium.ttf')
 font_path_rubik_bold = os.path.join(os.path.dirname(__file__), 'Rubik-Bold.ttf')
@@ -240,7 +236,6 @@ class BadgePDFCreator:
                     Story.append(Spacer(1, 10)) 
 
     def add_learningpath_badges(self, Story, badges, name, badge_name, competencies):
-        logger.error(f"add lp badges comps {competencies}")
         num_badges = len(badges)
         if num_badges > 0:
                 badgesPerPage = 5
@@ -382,7 +377,6 @@ class BadgePDFCreator:
 
             badgeinstances = BadgeInstance.objects.filter(id__in=badge_ids)
             self.add_learningpath_badges(Story, badgeinstances, name, badge_class.name, competencies=competencies)
-            logger.error(f"competencies after lp badges {competencies}")
         else: 
             self.add_competencies(Story, competencies, name, badge_class.name)
 
@@ -409,8 +403,7 @@ class BadgePDFCreator:
         template = PageTemplate(id='header', frames=frame ,onPage=partial(self.header, content= imageContent, instituteName=badge_instance.issuer.name))
         ## adding template to all pages 
         doc.addPageTemplates([template])
-        logger.error(f"competencies before build {competencies}")
-        doc.build(Story, canvasmaker=partial(PageNumCanvas, competencies))   
+        doc.build(Story, canvasmaker=partial(PageNumCanvas, self.competencies))   
         pdfContent = buffer.getvalue()
         buffer.close()
         return pdfContent
