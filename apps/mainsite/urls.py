@@ -1,6 +1,6 @@
 from django.views.generic.base import RedirectView, TemplateView
 from django.conf.urls.static import static
-from mainsite.views import badgeRequestsByBadgeClass, downloadQrCode, upload, nounproject, aiskills, requestBadge, deleteBadgeRequest, createCaptchaChallenge, getVersion
+from mainsite.views import badgeRequestsByBadgeClass, downloadQrCode, upload, nounproject, aiskills, aiskills_keywords, requestBadge, deleteBadgeRequest, createCaptchaChallenge, getVersion
 from mainsite.views import (
     info_view,
     email_unsubscribe,
@@ -169,6 +169,7 @@ urlpatterns = [
         name="nounproject"),
 
     url(r'^aiskills/(?P<searchterm>[^/]+)$', aiskills, name="aiskills"),
+    url(r'^aiskills-keywords/(?P<searchterm>[^/]+)$', aiskills_keywords, name="aiskills_keywords"),
 
     url(r'^request-badge/(?P<qrCodeId>[^/]+)$', requestBadge, name="request-badge"),
 
