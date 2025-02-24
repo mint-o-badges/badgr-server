@@ -10,6 +10,8 @@ import re
 import uuid
 from collections import OrderedDict
 
+import logging 
+
 import cachemodel
 import os
 from allauth.account.adapter import get_adapter
@@ -1332,8 +1334,6 @@ class BadgeInstance(BaseAuditedModel,
         except CachedEmailAddress.DoesNotExist:
             pass
         
-        if categoryExtension['Category']=="learningpath": 
-           template_name = 'issuer/email/notify_micro_degree_earner'
 
         adapter.send_mail(template_name, self.recipient_identifier, context=email_context)
 
@@ -1749,6 +1749,11 @@ class RequestedBadge(BaseVersionedEntity):
     status = models.CharField(max_length=254, blank=False, null=False, default='Pending')
 
 class LearningPath(BaseVersionedEntity, BaseAuditedModel):
+    class Meta:
+        indexes = [
+            models.Index(fields=['issuer', 'slug']),
+        ]
+        
     name = models.CharField(max_length=254, blank=False, null=False)
     description = models.TextField(blank=True, null=True, default=None)
     issuer = models.ForeignKey(Issuer, blank=False, null=False, on_delete=models.CASCADE, related_name='learningpaths')
