@@ -10,8 +10,6 @@ import re
 import uuid
 from collections import OrderedDict
 
-import logging 
-
 import cachemodel
 import os
 from allauth.account.adapter import get_adapter
@@ -1749,10 +1747,6 @@ class RequestedBadge(BaseVersionedEntity):
     status = models.CharField(max_length=254, blank=False, null=False, default='Pending')
 
 class LearningPath(BaseVersionedEntity, BaseAuditedModel):
-    class Meta:
-        indexes = [
-            models.Index(fields=['issuer', 'slug']),
-        ]
         
     name = models.CharField(max_length=254, blank=False, null=False)
     description = models.TextField(blank=True, null=True, default=None)
