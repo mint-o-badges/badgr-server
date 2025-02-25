@@ -63,7 +63,7 @@ badgecheck==1.1.8
 # openbadges==1.1.1
 openbadges-bakery==1.2.4
 
-celery==4.1.1
+celery==4.4.0
 django-celery-results==1.0.1
 python-json-logger==0.1.2
 
@@ -77,8 +77,8 @@ pycparser==2.14
 six==1.10.0
 
 #svg 2 png support
-CairoSVG==1.0.22
-cairocffi==0.9.0
+CairoSVG>=1.0.22
+cairocffi==1.7.1
 cssselect==0.9.2
 tinycss==0.4
 
@@ -126,3 +126,5 @@ svglib
 qrcode
 
 django-dbbackup
+
+redis>=4.5.0

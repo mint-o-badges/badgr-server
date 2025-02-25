@@ -28,7 +28,7 @@ urlpatterns = [
 
     url(r'^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<slug>[^/]+)/batchAssertions$',
         BatchAssertionsIssue.as_view(), name='v1_api_badgeclass_batchissue'),
-
+    url(r'^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<slug>[^/]+)/batch-assertions/status/(?P<task_id>[^/]+)$', BatchAssertionsIssue.as_view(), name='batch-assertions-status'),
     url(r'^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<slug>[^/]+)/assertions$',
         BadgeInstanceList.as_view(), name='v1_api_badgeinstance_list'),
     url(r'^issuers/(?P<slug>[^/]+)/assertions$', IssuerBadgeInstanceList.as_view(), name='v1_api_issuer_instance_list'),
