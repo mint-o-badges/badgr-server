@@ -885,6 +885,13 @@ class BadgeUserSaveMicroDegree(BaseEntityDetailView):
         
         intended_redirect = f"/public/learningpaths/{microdegree_id}"
         
+        if request.user.is_authenticated:
+            frontend_base_url = badgrapp.cors.rstrip("/") if badgrapp.cors else ""
+            detail_url = f"{frontend_base_url}{intended_redirect}"
+            return Response(
+                status=HTTP_302_FOUND,
+                headers={"Location": detail_url}
+            )
         redirect_url = badgrapp.ui_login_redirect.rstrip("/")
         response = Response(
             status=HTTP_302_FOUND,
@@ -894,11 +901,11 @@ class BadgeUserSaveMicroDegree(BaseEntityDetailView):
         response.set_cookie(
             'intended_redirect',
             intended_redirect,
-            max_age=604800,  # 1 week
+            max_age=3600,  # 1 hour
             httponly=True,
-            secure=settings.SECURE_SSL_REDIRECT,
+            # secure=settings.SECURE_SSL_REDIRECT,
             samesite='Lax',
-            domain=badgrapp.cors.split('://')[-1] if badgrapp.cors else None
+            # domain=badgrapp.cors.split('://')[-1] if badgrapp.cors else None
         )
         
         return response
