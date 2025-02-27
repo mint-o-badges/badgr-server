@@ -249,15 +249,17 @@ def createCaptchaChallenge(req):
     hmac_secret = getattr(settings, "ALTCHA_SECRET")
 
     salt = os.urandom(12).hex()
-    number = randrange(10000, 100000, 1)
+    number = randrange(10000, 50000, 1)
     challenge = createHash(salt, number)
     signature = createHmac(hmac_secret, challenge)
+    maxnumber = 500000
 
     ch = {
         "algorithm": "SHA-256",
         "challenge": challenge,
         "salt": salt,
         "signature": signature,
+        "maxnumber": maxnumber
     }
 
     return JsonResponse(ch)
