@@ -252,7 +252,7 @@ def createCaptchaChallenge(req):
     number = randrange(10000, 50000, 1)
     challenge = createHash(salt, number)
     signature = createHmac(hmac_secret, challenge)
-    maxnumber = 500000
+    maxnumber = 100000
 
     ch = {
         "algorithm": "SHA-256",
