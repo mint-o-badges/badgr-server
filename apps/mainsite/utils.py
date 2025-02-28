@@ -551,10 +551,7 @@ def validate_altcha(captcha, request=None):
         return False
     
     try:
-        if "challenge_id" in data:
-            challenge = AltchaChallenge.objects.get(id=data["challenge_id"])
-        else:
-            challenge = AltchaChallenge.objects.get(challenge=data["challenge"])
+        challenge = AltchaChallenge.objects.get(challenge=data["challenge"])
         
         if challenge.used:
             # prevent replay attacks

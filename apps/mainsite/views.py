@@ -266,7 +266,6 @@ def createCaptchaChallenge(req):
         "salt": salt,
         "signature": signature,
         "maxnumber": maxnumber,
-        "challenge_id": str(altcha_challenge.id)
     }
 
     return JsonResponse(ch)
