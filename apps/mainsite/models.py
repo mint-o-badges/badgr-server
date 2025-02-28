@@ -20,7 +20,7 @@ from oauth2_provider.models import AccessToken, Application, RefreshToken
 from rest_framework.authtoken.models import Token
 
 from mainsite.utils import set_url_query_params
-
+import uuid
 
 AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
 
@@ -399,3 +399,19 @@ class LegacyTokenProxy(Token):
     def obscured_token(self):
         if self.key:
             return "{}***".format(self.key[:4])
+        
+class AltchaChallenge(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    salt = models.CharField(max_length=24)  # 12-byte hex encoded salt
+    challenge = models.CharField(max_length=64)  # SHA-256 hash is 64 chars
+    signature = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+    used = models.BooleanField(default=False)
+    used_at = models.DateTimeField(null=True, blank=True)
+    solved_by_ip = models.GenericIPAddressField(null=True, blank=True)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['used']),
+            models.Index(fields=['created_at']),
+        ]        

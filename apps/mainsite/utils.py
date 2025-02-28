@@ -538,17 +538,42 @@ def createHmac(secret_key, challenge):
     return hmac_object.hexdigest()
 
 
-def validate_altcha(captcha):
+from django.utils import timezone
+
+def validate_altcha(captcha, request=None):
+    from mainsite.models import AltchaChallenge
 
     hmac_secret = getattr(settings, "ALTCHA_SECRET")
-
     data = json.loads(base64.b64decode(captcha))
+    
     alg_ok = data["algorithm"] == "SHA-256"
     challenge_ok = data["challenge"] == createHash(data["salt"], data["number"])
     signature_ok = data["signature"] == createHmac(hmac_secret, data["challenge"])
-    if alg_ok and challenge_ok and signature_ok:
+    
+    if not (alg_ok and challenge_ok and signature_ok):
+        return False
+    
+    try:
+        if "challenge_id" in data:
+            challenge = AltchaChallenge.objects.get(id=data["challenge_id"])
+        else:
+            challenge = AltchaChallenge.objects.get(challenge=data["challenge"])
+        
+        if challenge.used:
+            # prevent replay attacks
+            return False
+            
+        challenge.used = True
+        challenge.used_at = timezone.now()
+        
+        if request and hasattr(request, 'META'):
+            challenge.solved_by_ip = client_ip_from_request(request)
+        
+        challenge.save()
         return True
-    return False
+        
+    except AltchaChallenge.DoesNotExist:
+        return False
 
 def verifyIssuerAutomatically(url, email):
     emailDomain = email.split('@')[1].lower()
