@@ -3,6 +3,7 @@ import sys
 import os
 import subprocess
 import mainsite
+from corsheaders.defaults import default_headers
 
 from mainsite import TOP_DIR
 
@@ -231,6 +232,11 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_EXPOSE_HEADERS = (
     'link',
 )
+
+CORS_ALLOW_HEADERS = [
+    *default_headers,
+    'x-altcha-spam-filter'
+]
 
 ##
 #
