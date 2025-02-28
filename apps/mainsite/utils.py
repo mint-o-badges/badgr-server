@@ -537,9 +537,6 @@ def createHmac(secret_key, challenge):
     )
     return hmac_object.hexdigest()
 
-
-from django.utils import timezone
-
 def validate_altcha(captcha, request=None):
     from mainsite.models import AltchaChallenge
 
