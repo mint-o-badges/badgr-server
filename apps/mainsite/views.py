@@ -247,12 +247,13 @@ def createCaptchaChallenge(req):
         )
 
     hmac_secret = getattr(settings, "ALTCHA_SECRET")
+    minnumber = getattr(settings, "ALTCHA_MINNUMBER", 10000)
+    maxnumber = getattr(settings, "ALTCHA_MAXNUMBER", 100000)
 
     salt = os.urandom(12).hex()
-    number = randrange(10000, 100000, 1)
+    number = randrange(minnumber, maxnumber, 1)
     challenge = createHash(salt, number)
     signature = createHmac(hmac_secret, challenge)
-    maxnumber = 100000
 
     altcha_challenge = AltchaChallenge.objects.create(
         salt=salt,
