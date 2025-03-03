@@ -19,7 +19,7 @@ from oauth2_provider.models import get_application_model, get_grant_model, get_a
 
 import badgrlog
 from badgeuser.models import CachedEmailAddress, ProxyEmailConfirmation
-from mainsite.models import BadgrApp, EmailBlacklist, ApplicationInfo, AccessTokenProxy, LegacyTokenProxy
+from mainsite.models import AltchaChallenge, BadgrApp, EmailBlacklist, ApplicationInfo, AccessTokenProxy, LegacyTokenProxy
 from mainsite.utils import backoff_cache_key, set_url_query_params
 import mainsite
 
@@ -207,3 +207,12 @@ class SecuredAccessTokenAdmin(AccessTokenAdmin):
 
 
 badgr_admin.register(AccessTokenProxy, SecuredAccessTokenAdmin)
+
+class AltchaAdmin(ModelAdmin):
+    fields = ('id', 'created_at', 'used', 'used_at', 'solved_by_ip')
+    list_display = ('id', 'created_at', 'used', 'used_at', 'solved_by_ip')
+    list_filter = ('used', 'created_at')
+    search_fields = ('id', 'solved_by_ip')
+    readonly_fields = ('id', 'created_at')
+
+badgr_admin.register(AltchaChallenge ,AltchaAdmin)    

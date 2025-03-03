@@ -3,6 +3,7 @@ import sys
 import os
 import subprocess
 import mainsite
+from corsheaders.defaults import default_headers
 
 from mainsite import TOP_DIR
 
@@ -231,6 +232,11 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_EXPOSE_HEADERS = (
     'link',
 )
+
+CORS_ALLOW_HEADERS = [
+    *default_headers,
+    'x-altcha-spam-filter'
+]
 
 ##
 #
@@ -551,3 +557,7 @@ OIDC_STORE_ID_TOKEN = False
 # Make the Django session expire after 1 minute, so that the UI has 1 minute to convert the session authentication
 # into an access token
 SESSION_COOKIE_AGE = 60
+
+ALTCHA_SECRET = ''
+ALTCHA_MINNUMBER = 10000
+ALTCHA_MAXNUMBER = 100000

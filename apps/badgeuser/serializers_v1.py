@@ -86,7 +86,7 @@ class BadgeUserProfileSerializerV1(serializers.Serializer):
         captcha = self.context.get("captcha")
 
         if captcha is not None:
-            if validate_altcha(captcha):
+            if validate_altcha(captcha, self.context.get("request", None)):
                 user = BadgeUser.objects.create(
                     email=validated_data.get("primary_email"),
                     first_name=validated_data["first_name"],

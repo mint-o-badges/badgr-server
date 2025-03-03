@@ -474,7 +474,7 @@ def setTokenHttpOnly(response):
         response.set_cookie('access_token',
                             value=data['access_token'],
                             httponly=True,
-                            secure=True,
+                            secure=not settings.DEBUG,
                             max_age=data['expires_in'])
         # Remove access token from body
         # FIXME: keep for old clients
@@ -483,7 +483,7 @@ def setTokenHttpOnly(response):
         response.set_cookie('refresh_token',
                             value=data['refresh_token'],
                             httponly=True,
-                            secure=True,
+                            secure=not settings.DEBUG,
                             # Refresh tokens have the same max
                             # age as access tokens, since they
                             # should get renewed together with
