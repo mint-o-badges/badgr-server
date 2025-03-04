@@ -46,6 +46,7 @@ The response will then look something like this:
 ```text
 <a lot of verbose messages that aren't relevant>
 < Set-Cookie:  access_token=YOUR_ACCESS_TOKEN; expires=Tue, 19 Nov 2024 13:19:00 GMT; HttpOnly; Max-Age=86400; Path=/; Secure
+< Set-Cookie:  refresh_token=YOUR_REFRESH_TOKEN; expires=Wed, 19 Nov 2024 13:19:00 GMT; HttpOnly; Max-Age=86400; Path=/
 < 
 * Connection #0 to host api.openbadges.education left intact
 {"access_token": "YOUR_ACCESS_TOKEN", "expires_in": 86400, "token_type": "Bearer", "scope": "r:profile", "refresh_token": "YOUR_REFRESH_TOKEN"}

@@ -479,7 +479,7 @@ def setTokenHttpOnly(response):
         # Remove access token from body
         # FIXME: keep for old clients
         # del data['access_token']
-    if 'refresh_token' in 'access_token':
+    if 'refresh_token' in data:
         response.set_cookie('refresh_token',
                             value=data['refresh_token'],
                             httponly=True,
