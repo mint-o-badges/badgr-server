@@ -30,6 +30,7 @@ from jsonfield import JSONField
 from openbadges_bakery import bake
 from django.utils import timezone
 
+
 import badgrlog
 from entity.models import BaseVersionedEntity
 from issuer.managers import BadgeInstanceManager, IssuerManager, BadgeClassManager, BadgeInstanceEvidenceManager
@@ -42,6 +43,7 @@ from .utils import (add_obi_version_ifneeded, CURRENT_OBI_VERSION, generate_reba
                     generate_sha256_hashstring, get_obi_context, parse_original_datetime, UNVERSIONED_BAKED_VERSION)
 
 from geopy.geocoders import Nominatim
+
 AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
 
 RECIPIENT_TYPE_EMAIL = 'email'
@@ -880,12 +882,12 @@ class BadgeClass(ResizeUploadedImage,
 
     def issue(self, recipient_id=None, evidence=None, narrative=None, notify=False,
             created_by=None, allow_uppercase=False, badgr_app=None,
-            recipient_type=RECIPIENT_TYPE_EMAIL, **kwargs):
+            recipient_type=RECIPIENT_TYPE_EMAIL, microdegree_id=None, **kwargs):
         return BadgeInstance.objects.create(
             badgeclass=self, recipient_identifier=recipient_id, recipient_type=recipient_type,
             narrative=narrative, evidence=evidence,
             notify=notify, created_by=created_by, allow_uppercase=allow_uppercase,
-            badgr_app=badgr_app,
+            badgr_app=badgr_app, microdegree_id=microdegree_id,
             user=get_user_or_none(recipient_id, recipient_type),
             **kwargs
         )
@@ -1222,22 +1224,21 @@ class BadgeInstance(BaseAuditedModel,
         self.save()
 
     # TODO: Use email related to the new domain, when one is created. Not urgent in this phase.
-    def notify_earner(self, badgr_app=None, renotify=False):
+    def notify_earner(self, badgr_app=None, renotify=False, microdegree_id=None):
         """
         Sends an email notification to the badge recipient.
         """
 
+        categoryExtension = None
 
         competencyExtensions = {}
-
-        categoryExtension = None
 
         if len(self.badgeclass.cached_extensions()) > 0:
             for extension in self.badgeclass.cached_extensions():
                 if(extension.name == 'extensions:CompetencyExtension'):
                     competencyExtensions[extension.name] = json_loads(extension.original_json)
                 if(extension.name == 'extensions:CategoryExtension'): 
-                    categoryExtension = json_loads(extension.original_json)
+                    categoryExtension = json_loads(extension.original_json)['Category']
                         
         competencies = []
 
@@ -1312,7 +1313,8 @@ class BadgeInstance(BaseAuditedModel,
                 'download_url': self.public_url + "?action=download",
                 'site_name': "Open Educational Badges",
                 'site_url': badgr_app.signup_redirect,
-                'badgr_app': badgr_app
+                'badgr_app': badgr_app,
+                'oeb_info_block': False if categoryExtension == "learningpath" else True
             }
             if badgr_app.cors == 'badgr.io':
                 email_context['promote_mobile'] = True
@@ -1331,8 +1333,23 @@ class BadgeInstance(BaseAuditedModel,
             email_context['site_url'] = badgr_app.ui_login_redirect
         except CachedEmailAddress.DoesNotExist:
             pass
-        
 
+        if categoryExtension == "learningpath" and microdegree_id is not None:
+            # if the recipient does not have an account no micro degree email is sent 
+            if self.user is not None: 
+                template_name = 'issuer/email/notify_micro_degree_earner'
+
+                url_name = "v1_api_user_save_microdegree"
+
+                save_url = OriginSetting.HTTP + reverse(url_name, kwargs={'entity_id': microdegree_id})
+
+                url = "{url}?a={badgr_app}".format(
+                    url=save_url,
+                    badgr_app= badgr_app
+                )
+
+                email_context['activate_url']=url
+        
         adapter.send_mail(template_name, self.recipient_identifier, context=email_context)
 
     def get_extensions_manager(self):
@@ -1882,6 +1899,14 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
             for ext in badge.cached_extensions()
             if ext.name == 'extensions:StudyLoadExtension'
         )
+    
+    def get_lp_badgeinstance(self, recipient_identifier): 
+        return BadgeInstance.objects.filter(badgeclass=self.participationBadge, recipient_identifier=recipient_identifier, revoked=False).first()
+
+    def get_studyload(self):
+        studyLoadExt = self.participationBadge.cached_extensions().get(name="extensions:StudyLoadExtension")
+        studyLoadJson = json_loads(studyLoadExt.original_json)
+        return studyLoadJson['StudyLoad']
 
 class LearningPathBadge(cachemodel.CacheModel):
     learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE)
