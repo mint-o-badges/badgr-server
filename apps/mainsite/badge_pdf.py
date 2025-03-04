@@ -17,10 +17,12 @@ from io import BytesIO
 import os
 import qrcode
 import math
-from issuer.models import BadgeInstance, BadgeClass, Issuer, IssuerStaff
+from issuer.models import BadgeInstance, BadgeClass, Issuer, IssuerStaff, LearningPath
 from badgeuser.models import BadgeUser
 from mainsite.utils import get_name
 from django.conf import settings
+from django.db.models import Max
+from json import loads as json_loads
 
 font_path_rubik_regular = os.path.join(os.path.dirname(__file__), 'Rubik-Regular.ttf')
 font_path_rubik_medium = os.path.join(os.path.dirname(__file__), 'Rubik-Medium.ttf')
@@ -35,7 +37,7 @@ pdfmetrics.registerFont(TTFont('Rubik-Italic', font_path_rubik_italic))
 
 class BadgePDFCreator:
     def __init__(self):
-        pass
+        self.competencies = []
 
     def add_badge_image(self, first_page_content, badgeImage): 
         image_width = 180
@@ -202,7 +204,7 @@ class BadgePDFCreator:
                 Story.append(PageBreak())
                 Story.append(Spacer(1, 70))
 
-                title_style = ParagraphStyle(name='Title', fontSize=20,fontName="Rubik-Medium", textColor='#492E98', alignment=TA_LEFT)
+                title_style = ParagraphStyle(name='Title', fontSize=20,fontName="Rubik-Medium", textColor='#492E98', alignment=TA_LEFT,  textTransform="uppercase" )
                 text_style = ParagraphStyle(name='Text', fontSize=18, leading=20, textColor='#323232', alignment=TA_LEFT)
 
                 Story.append(Paragraph("Kompetenzen", title_style))
@@ -231,7 +233,70 @@ class BadgePDFCreator:
                     #   competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name
                     rounded_rect = RoundedRectFlowable(0, -10, 515, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload= studyload, max_studyload=max_studyload, esco=competencies[i]['framework_identifier'])    
                     Story.append(rounded_rect)
-                    Story.append(Spacer(1, 10))   
+                    Story.append(Spacer(1, 10)) 
+
+    def add_learningpath_badges(self, Story, badges, name, badge_name, competencies):
+        num_badges = len(badges)
+        if num_badges > 0:
+                badgesPerPage = 5
+
+                Story.append(PageBreak())
+                Story.append(Spacer(1, 70))
+
+                title_style = ParagraphStyle(name='Title', fontSize=20,fontName="Rubik-Medium", textColor='#492E98', alignment=TA_LEFT,  textTransform="uppercase" )
+                text_style = ParagraphStyle(name='Text', fontSize=18, leading=20, textColor='#323232', alignment=TA_LEFT)
+                
+                Story.append(Paragraph("Badges", title_style))
+
+                Story.append(Spacer(1, 15))
+                
+                text = f"die <strong>{name}</strong> mit dem Micro Degree <strong>{badge_name}</strong> erworben hat:"
+                Story.append(Paragraph(text, text_style))
+                Story.append(Spacer(1, 10))
+
+                for i in range(num_badges):
+                    extensions = badges[i].badgeclass.cached_extensions()
+                    categoryExtension = extensions.get(name="extensions:CategoryExtension")
+                    category = json_loads(categoryExtension.original_json)['Category']
+                    if category == "competency":
+                        competencies = badges[i].badgeclass.json["extensions:CompetencyExtension"]
+                        for competency in competencies: 
+                            if competency not in self.competencies:
+                                self.competencies.append(competency) 
+
+                    if i != 0 and i % badgesPerPage == 0: 
+                        Story.append(PageBreak())
+                        Story.append(Spacer(1, 70))
+                        Story.append(Paragraph("<strong>Badges</strong>", title_style))
+                        Story.append(Spacer(1, 15))
+
+                        text = f"die <strong>{name}</strong> mit dem Micro Degree <strong>{badge_name}</strong> erworben hat:"
+
+                        Story.append(Paragraph(text, text_style))
+                        Story.append(Spacer(1, 30))
+
+                    img = Image(badges[i].image, width=74, height=74)
+
+                    lp_badge_info_style = ParagraphStyle(name='Text', fontSize=14, leading=16.8, textColor='#323232', alignment=TA_LEFT)
+
+                    badge_title = Paragraph(f"<strong>{badges[i].badgeclass.name}</strong>", lp_badge_info_style)
+                    issuer = Paragraph(badges[i].badgeclass.issuer.name, lp_badge_info_style)
+                    date = Paragraph(badges[i].issued_on.strftime("%d.%m.%Y"), lp_badge_info_style)
+                    data = [[img, [badge_title, Spacer(1, 10), issuer, Spacer(1, 5), date]]]
+
+                    table = Table(data, colWidths=[100, 450])
+                    
+                    table.setStyle(TableStyle([
+                        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                        ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+                        ('LEFTPADDING', (1, 0), (1, 0), 12),
+                        ('BOTTOMPADDING', (0, 0), (-1, -1), 20),
+                    ]))    
+
+                    Story.append(table)
+                    Story.append(Spacer(1, 10))     
+
+                self.add_competencies(Story, self.competencies, name, badge_name)  
                
     def generate_qr_code(self, badge_instance, origin):
         ## build the qr code in the backend
@@ -295,7 +360,25 @@ class BadgePDFCreator:
         Story = []
         Story.extend(first_page_content)
 
-        self.add_competencies(Story, competencies, name, badge_class.name)
+        extensions = badge_class.cached_extensions()
+        categoryExtension = extensions.get(name="extensions:CategoryExtension")
+        category = json_loads(categoryExtension.original_json)['Category']  
+
+        if category == "learningpath": 
+            lp = LearningPath.objects.filter(participationBadge=badge_class).first()
+            lp_badges = [badge.badge for badge in lp.learningpath_badges]
+            badgeuser = BadgeUser.objects.get(email=badge_instance.recipient_identifier)
+            badge_ids = BadgeInstance.objects.filter(
+            badgeclass__in=lp_badges, 
+            recipient_identifier__in=badgeuser.verified_emails
+                ).values('badgeclass').annotate(
+                  max_id=Max('id')
+             ).values_list('max_id', flat=True)
+
+            badgeinstances = BadgeInstance.objects.filter(id__in=badge_ids)
+            self.add_learningpath_badges(Story, badgeinstances, name, badge_class.name, competencies=competencies)
+        else: 
+            self.add_competencies(Story, competencies, name, badge_class.name)
 
         frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='normal')
 
@@ -320,7 +403,7 @@ class BadgePDFCreator:
         template = PageTemplate(id='header', frames=frame ,onPage=partial(self.header, content= imageContent, instituteName=badge_instance.issuer.name))
         ## adding template to all pages 
         doc.addPageTemplates([template])
-        doc.build(Story, canvasmaker=partial(PageNumCanvas, competencies))   
+        doc.build(Story, canvasmaker=partial(PageNumCanvas, self.competencies))   
         pdfContent = buffer.getvalue()
         buffer.close()
         return pdfContent

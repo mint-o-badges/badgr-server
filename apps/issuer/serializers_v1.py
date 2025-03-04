@@ -733,6 +733,10 @@ class LearningPathSerializerV1(serializers.Serializer):
         max_progress = instance.calculate_progress(lp_badgeclasses)
         user_progress = instance.calculate_progress(user_completed_badges)
 
+        learningPathBadgeInstance = list(filter(lambda badge: badge.badgeclass.entity_id == representation['participationBadge_id'], request.user.cached_badgeinstances()))
+        if learningPathBadgeInstance: 
+            learningPathBadgeInstanceSlug = learningPathBadgeInstance[0].entity_id
+            representation['learningPathBadgeInstanceSlug'] = learningPathBadgeInstanceSlug
         # set lp completed at from newest badge issue date
         # FIXME: maybe set from issued participation badge instead, would need to get user participation badgeclass aswell
         completed_at = None

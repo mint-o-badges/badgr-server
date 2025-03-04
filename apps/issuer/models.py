@@ -53,7 +53,6 @@ RECIPIENT_TYPE_URL = 'url'
 
 logger = badgrlog.BadgrLogger()
 
-
 class BaseAuditedModel(cachemodel.CacheModel):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     created_by = models.ForeignKey('badgeuser.BadgeUser', blank=True, null=True, related_name="+",
@@ -1087,6 +1086,9 @@ class BadgeInstance(BaseAuditedModel,
 
     def get_absolute_url(self):
         return reverse('badgeinstance_json', kwargs={'entity_id': self.entity_id})
+    
+    def get_absolute_backpack_url(self): 
+        return reverse('v1_api_localbadgeinstance_detail', kwargs={'slug': self.entity_id})
 
     @property
     def jsonld_id(self):
@@ -1231,14 +1233,13 @@ class BadgeInstance(BaseAuditedModel,
 
         competencyExtensions = {}
 
-        categoryExtensionJson = json_loads(self.badgeclass.cached_extensions().get(name="extensions:CategoryExtension").original_json)
-        categoryExtension = categoryExtensionJson['Category']
-
         if len(self.badgeclass.cached_extensions()) > 0:
             for extension in self.badgeclass.cached_extensions():
                 if(extension.name == 'extensions:CompetencyExtension'):
                     competencyExtensions[extension.name] = json_loads(extension.original_json)
-
+                if(extension.name == 'extensions:CategoryExtension'): 
+                    categoryExtension = json_loads(extension.original_json)['Category']
+                        
         competencies = []
 
         for competency in competencyExtensions.get('extensions:CompetencyExtension', []):
@@ -1295,6 +1296,7 @@ class BadgeInstance(BaseAuditedModel,
             email_context = {
                 'name': name,
                 'badge_name': self.badgeclass.name,
+                'badge_category': categoryExtension['Category'],
                 'badge_id': self.entity_id,
                 'badge_description': self.badgeclass.description,
                 'badge_competencies': competencies,
@@ -1323,6 +1325,7 @@ class BadgeInstance(BaseAuditedModel,
             raise e
 
         template_name = 'issuer/email/notify_earner'
+       
         try:
             from badgeuser.models import CachedEmailAddress
             CachedEmailAddress.objects.get(email=self.recipient_identifier, verified=True)
@@ -1761,6 +1764,7 @@ class RequestedBadge(BaseVersionedEntity):
     status = models.CharField(max_length=254, blank=False, null=False, default='Pending')
 
 class LearningPath(BaseVersionedEntity, BaseAuditedModel):
+        
     name = models.CharField(max_length=254, blank=False, null=False)
     description = models.TextField(blank=True, null=True, default=None)
     issuer = models.ForeignKey(Issuer, blank=False, null=False, on_delete=models.CASCADE, related_name='learningpaths')
@@ -1798,7 +1802,9 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
 
     @property
     def learningpath_badges(self):
-        return self.cached_learningpathbadges()
+        #TODO: return from cache
+        # return self.cached_learningpathbadges()
+        return self.learningpathbadge_set.all()
     
     @learningpath_badges.setter
     def learningpath_badges(self, badges_with_order):
