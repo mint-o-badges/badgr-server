@@ -1238,7 +1238,7 @@ class BadgeInstance(BaseAuditedModel,
                 if(extension.name == 'extensions:CompetencyExtension'):
                     competencyExtensions[extension.name] = json_loads(extension.original_json)
                 if(extension.name == 'extensions:CategoryExtension'): 
-                    categoryExtension = json_loads(extension.original_json)['Category']
+                    categoryExtension = json_loads(extension.original_json)
                         
         competencies = []
 
