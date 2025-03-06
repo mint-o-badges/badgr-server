@@ -95,10 +95,10 @@
                             <table align="center" border="0" cellpadding="25" cellspacing="20" role="presentation"
                                     style="border-collapse: collapse; width: 100%; background-color: #FFFFFF;">
                                 <tr>
-                                    <td align="left" width="160">
+                                    <td align="left" width="175">
                                         <a href="{{ badge_instance_url }}" style="text-decoration: none;">
                                             <img alt="" height="auto" src="{{ image_url }}"
-                                                  style="border:0; display:block; outline:none; text-decoration:none; height:auto; width:160px;">
+                                                  style="border:0; display:block; outline:none; text-decoration:none; height:auto; width:175px;">
                                         </a>
                                     </td>
                                     <td align="center" style="padding-left:20px; vertical-align:middle;">
@@ -113,7 +113,7 @@
                                         </div>
                                         {% if issuer_image_url %}
                                         <img alt="" height="auto" src="{{ issuer_image_url }}"
-                                              style="border:0; display:block; outline:none; text-decoration:none;" width="75">
+                                              style="border:0; display:block; outline:none; text-decoration:none;" width="80">
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -122,40 +122,62 @@
                         </tr>
 
                         <tr>
-                        <td>
-                            <table align="center" border="0" cellpadding="20" cellspacing="0" role="presentation"
-                                    style="border-collapse: collapse; width: 100%; background-color: #FFFFFF;">
+                          <td align="center" style="font-family:Rubik, sans-serif; font-size:14px; color:#000000; text-align:left;">
+                            <div style="font-family: Rubik, sans-serif;font-size:13px;font-weight: 400; line-height:15.6px;text-align:left; width: 472px; margin-left: auto; margin-right: auto;">
+                            <p style="color:#323232;">Du hast erfolgreich an dem Lehrangebot  <span style="color: #492e98">{{ badge_name }}</span> teilgenommen.</p>
+                            </div>  
+                          </td> 
+                        </tr>
+                        {% if badge_competencies %}
+                        <tr>
+                          <td align="center">
+                            <p style="font-weight: 700; font-size:13px; line-height:16.9px; color:#323232; text-align: left; width: 472px; margin-left: auto; margin-right: auto;">
+                              Dabei hast du folgende Kompetenzen gestärkt: 
+                            </p>
+                          </td>
+                        </tr>
+                        {% for item in badge_competencies %}
+                        <tr>
+                          <td>
+                            <div style="border-radius: 10px; border: 1px solid #492e98; overflow: hidden; width: 472px; margin: 0 auto 16px; background-color: #F5F5F5;">
+                          <table align="center" border="0" cellpadding="16" cellspacing="20" role="presentation"
+                          style="border-collapse: collapse; width: 100%; background-color: #F5F5F5;">
+                              <!-- <tr style="background-color: #F5F5F5; border-width: 1px; border-style: solid; border-color:#492e98; border-radius: 10px; padding-top: 16px; padding-bottom: 16px; padding-left: 5px; align-items: center; margin-bottom: 0.25rem;"> -->
                                 <tr>
-                                    <td style="font-family:Rubik, sans-serif; font-size:14px; color:#000000; text-align:left;">
-                                      <div style="font-family: Rubik, sans-serif;font-size:13px;font-weight: 400; line-height:15.6px;text-align:left; ">
-                                      <p style="color:#323232;">Du hast erfolgreich an dem Lehrangebot  <span style="color: #492e98">{{ badge_name }}</span> teilgenommen.</p>
-                                      {% if badge_competencies %}
-                                      <p style="font-weight: 700; font-size:13px; line-height:16.9px; color:#323232;">
-                                        Dabei hast du folgende Kompetenzen gestärkt: 
-                                      </p>
-                                      {% endif %}
-                                      <ul style="margin:0px; padding: 0px">
-                                        {% for item in badge_competencies %}
-                                            <div style="background-color: #F5F5F5; border-width: 1px; border-style: solid; border-color:#492e98; border-radius: 10px; padding-top: 16px; padding-bottom: 16px; padding-left: 5px; align-items: center; margin-bottom: 0.25rem;">
-                                              <span style="font-family: Rubik, sans-serif;font-size:13px;font-weight: 700; line-height:15.6px; color: #323232">
+                                <td align="left">
+                                  <!-- <div style="background-color: #F5F5F5; border-width: 1px; border-style: solid; border-color:#492e98; border-radius: 10px; padding-top: 16px; padding-bottom: 16px; padding-left: 5px; align-items: center; margin-bottom: 0.25rem;"> -->
+                                    <span style="font-family: Rubik, sans-serif;font-size:13px;font-weight: 700; line-height:15.6px; color: #323232">
                                       {{ item.name }} {% if item.framework == "esco" %} <a href= "{{item.framework_identifier}}"> [E] </a> {% endif %} 
-                                              </span>
-                                                <!-- <div style="padding-left: 5px; padding-right: 5px; border-width: 1px; border-radius: 15px; border-style:solid; border-color:#492e98; background-color: white;">
-                                                    <img src="{% static '/images/clock_icon.svg' %}" style="width: 14px; height: auto; right: 0">
-                                                    <span style="font-family: Rubik, sans-serif;font-size:11px;font-weight: 300; line-height:15px; color: #323232"> 
-                                                      {{item.studyLoad}} Min.
+                                    </span>
+                                    <td>
+                                        <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin-left: auto; width: fit-content;">
+                                            <tr>
+                                                <td style="padding-right: 5px; vertical-align: middle;">
+                                                    <img src="{% static '/images/clock-icon.png' %}" style="width: 14px; height: auto; display: inline-block; vertical-align: middle;">
+                                                </td>
+                                                <td style="vertical-align: middle;">
+                                                    <span style="font-family: Rubik, sans-serif; font-size: 11px; font-weight: 300; line-height: 15px; color: #323232; display: inline-block; vertical-align: middle;">
+                                                        {{item.studyLoad}} Min.
                                                     </span>
-                          
-                                                </div> -->
-                                            </div>
-                                        {% endfor %}
-                                    </ul>
-                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    
                                     </td>
+                                  <!-- </div> -->
+                                  </td>
+                              </tr>
                                 </tr>
                             </table>
-                        </td>
+                            </div>
+                            </td>
+                            </tr>
+                            
+                          </td>
+                          
                         </tr>
+                        {% endfor %}
+                      {% endif %}
                         </table>
 
                        
@@ -166,34 +188,34 @@
                               
                                   <tr>
                                       
-                            <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:separate;width:100%;line-height:100%; padding-top:1rem;">
+                            <!-- <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:separate;width:100%;line-height:100%; padding-top:1rem;">
                               <tr>
-                                <td align="center" bgcolor="#492e98" role="presentation" style="border:none;border-radius:10px;cursor:auto;background:#492e98;" valign="middle">
+                                <td align="center" bgcolor="#492e98" role="presentation" style="border:none;border-radius:10px;cursor:auto;background:#492e98; width: 520px;" valign="middle">
                                   <a href="{{ activate_url }}" style="background:#492e98;color:#FFFFFF;font-family:Rubik, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none; display: block; padding:15px 30px; border-radius: 10px;" target="_blank">
                                       {% block call_to_action_label %}
                                       {% endblock %}
                                   </a>
                                 </td>
                               </tr>
-                            </table>
+                            </table> -->
 
-                            {% if oeb_info_block %} 
+                          <div style="margin-left: auto; margin-right: auto; width:520px; font-family:Rubik; padding-top: 1rem;">
+                            <p style="font-size: 18px; font-weight: 400; line-height: 130%; font-style: italic; text-align: left; color:#492e98;">
+                              Im Anhang dieser Mail findest du deine <span style="font-weight: 600">Badge-Datei</span> und das  zugehörige <span style="font-weight: 600">PDF-Zertifikat</span> <span style="text-decoration: underline;">zum Herunterladen</span>. 
+                            </p>
+                          </div>
+
                           
-                            <div style="background:#F5F5F5;background-color:#F5F5F5;Margin:0px auto;max-width:600px; font-family:Rubik; padding-top: 1rem;">
-                              <div style="background-color: #93F993; border-radius: 10px; padding: 0.5rem !important;">
-                                <p style="font-size: 16px; font-weight: 400; line-height: 20.8px; text-align: center; color: #323232">Alle deine erhaltenen Badges kannst du in deinem Rucksack auf <a href="https://openbadges.education/recipient/badges" target="_blank">Open Educational Badges</a> sammeln und mit anderen teilen. Lege jetzt ganz einfach kostenlos einen Account an oder logge dich ein. </p>
-                                <a href="https://openbadges.education/recipient/badges" style="background:#492e98;color:#FFFFFF;font-family:Rubik, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none; display: block; padding:10px 30px; border-radius: 10px; text-align: center; margin-right: 5px">
-                                  Jetzt Badges sammeln
+                            <div style="background:#F5F5F5;background-color:#F5F5F5;Margin:0px auto;width: 520px; font-family:Rubik; padding-top: 1rem;">
+                              <div style="background-color: #CCD7FF; border-radius: 10px; padding: 0.5rem !important;">
+                                <p style="font-size: 16px; font-weight: 400; line-height: 20.8px; text-align: left; color: #323232">Alle deine erhaltenen Badges kannst du auf <a href="https://openbadges.education/recipient/badges" target="_blank">Open Educational Badges</a> in deinem Rucksack sammeln und mit anderen teilen. Lege dafür einfach kostenlos einen Account an:</p>
+                                <a href="https://openbadges.education/recipient/badges" style="background:#492e98;color:#FFFFFF;font-family:Rubik, sans-serif;font-size:16px;font-weight:bold;line-height:120%;Margin:0;text-decoration:none;text-transform:none; display: block; padding:15px 60px; border-radius: 10px; text-align: center; margin-right: 5px;">
+                                  Badges im Rucksack sammeln
                               </a>
                               </div>
                           
                             </div>
                           
-                            <div style="Margin:0px auto;max-width:600px; font-family:Rubik; padding-top: 1rem;">
-                              <p style="font-size: 16px; font-weight: 400; line-height: 20.8px; font-style: italic; text-align: left; color: #323232">
-                                Im Anhang dieser Mail findest du ein <span style="color:#492e98; font-weight: 600">PDF-Zertifikat</span> , das deinen Lernerfolg ebenfalls ausweist. Die aktuellste Version findest du in deinem <a href="https://openbadges.education/recipient/badges" style="text-decoration: underline; color: blue">Rucksack auf OEB</a>.
-                              </p>
-                            </div>
                           
                                     </td>
                                   </tr>
@@ -201,138 +223,142 @@
                             </table>
                           
                         </div>
-                        <div style="background: #f5f5f5; margin: 0px auto; max-width: 600px; position: relative">
-                            <div style="line-height: 0; font-size: 0">
-                              <table
-                                cellpadding="0"
-                                cellspacing="0"
-                                role="presentation"
-                                style="background: #ecfeed; width: 100%; position:relative"
-                              >
-                                <tbody>
-                                  <tr>
-                                    <td
-                                      style="
-                                        direction: ltr;
-                                        font-size: 0px;
-                                        padding: 12px;
-                                        text-align: center;
-                                        vertical-align: top;
-                                        border: 1px solid #dbd8df;
-                                        border-left: 1px solid #dbd8df;
-                                        border-right: 1px solid #dbd8df;
-                                      "
-                                    >
-                                      <div
-                                        class="mj-column-per-100 outlook-group-fix"
-                                        style="
-                                          font-size: 13px;
-                                          text-align: left;
-                                          direction: ltr;
-                                          display: inline-block;
-                                          vertical-align: top;
-                                          width: 100%;
-                                          position: relative;
-                                        "
-                                      >
-                                        <table
-                                          cellpadding="0"
-                                          cellspacing="0"
-                                          role="presentation"
-                                          width="100%"
-                                        >
-                                          <tbody style="position: relative; !important">
-                                            <tr>
-                                              <td>
-                                                <table
-                                                  cellpadding="0"
-                                                  cellspacing="0"
-                                                  role="presentation"
-                                                  width="100%"
-                                                  style="position: relative;"
-                                                >
-                                                  <tr>
-                        
-                                                    <td
-                                                    >
-                                                      <div
-                                                        id="about-section"
-                                                        style="
-                                                          font-family: 'Rubik', Helvetica, Arial,
-                                                          sans-serif;
-                                                          font-size: 18px;
-                                                          font-weight: 500;
-                                                          line-height: 21.6px;
-                                                          padding: 10px 10px;
-                                                          color: #492e98;
-                                                        "
-                                                      >
-                                                        Du hast Fragen? <br/> <span class="break-on-small" style="font-weight: 800;">Wir haben Antworten!</span> 
-                                                      </div>
-                                                      <div style="
-                                                          padding-top: 1rem;
-                                                          font-family: 'Rubik', Helvetica, Arial,
-                                                          sans-serif;
-                                                          font-size: 13px;
-                                                          font-weight: 400;
-                                                          line-height: 16.9px;
-                                                          padding: 0px 10px;
-                                                          color: #323232;">
-                        
-                                                          <span style="font-weight: 700; line-height: 15.6px; padding-top: 1rem;">Was ist eigentlich ein Badge?</span>
-                                                          <p style="margin-top:0px;">
-                                                            Ein Badge ist ein digitales Zertifikat, das deine Fähigkeiten und Stärken feiert. <br> Du kannst Badges sammeln und mit anderen teilen.
-                                                          </p>
-                        
-                                                          <span style="font-weight: 700; line-height: 15.6px; ">Warum ist es toll, einen Badge zu bekommen?</span>
-                                                          <p style="margin-top:0px;">
-                                                            Badges zeigen dir selbst und anderen, was du erreicht hast und helfen dir, selbstbewusst in deine Zukunft zu gehen.
-                                                          </p>
-                        
-                                                          <span style="font-weight: 700; line-height: 15.6px;">Wo kann ich meine Badges sammeln?</span>
-                                                          <p style="margin-top:0px;">
-                                                            Auf unserer Plattform kannst du ganz einfach einen Account anlegen und alle deine Badges in deinem Rucksack sammeln – egal, wo du sie erhalten hast. Lege jetzt los auf <a href="https://openbadges.education/signup" style="text-decoration: underline; color: blue">https://openbadges.education/signup</a>.  
-                                                          </p>
-                                                          <span style="font-weight: 700; line-height: 15.6px;">Was sind Open Educational Badges?</span>
-                                                          <p style="margin-top:0px;">
-                                                            OEB sind ein Tool, das Lernerfahrungen und Kompetenzerwerb standardisiert sichtbar macht. Wir setzen OEB als Gemeinschaftsprojekt mit unterschiedlichen Partner:innen und Förderer:innen um. Weitere Infos findest du unter <a href="https://openbadges.education/public/about" style="text-decoration: underline; color: blue">https://openbadges.education/public/about</a> 
-                                                          </p>
-                                                          <span style="font-weight: 700; line-height: 15.6px;">Du willst noch mehr über Badges erfahren?</span>
-                                                          <p style="margin-top:0px;"">
-                                                            Dann schau hier vorbei: <a href="https://openbadges.education" style="text-decoration: underline; color: blue">https://openbadges.education</a>
-                                                          </p>
-                        
-                                                      </div>
-                                                    </td>
-                                                    <td
-                                                     style="text-align: right; vertical-align: top;"
-                                                    >
-                                                    <a href="https://www.meinbildungsraum.de/" target="_blank">
-                                                      <img 
-                                                        src="{% static '/images/logo-square.png' %}"
-                                                        style="width: 75px; height: auto; position: absolute; top:0; right:0;" />
-                                                    </a>
-                        
-                        
-                                                    </td>
-                                                 
-                                                  </tr>
-                                                </table>
-                                              </td>
-                                            </tr>
-                        
-                                          </tbody>
-                                        </table>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                </tbody>
-                              </table>
-                            </div>
-                            {% endif %}
+                       
+                      
                     </td>
                 </tr>
             </tbody>
         </table>
+        {% if oeb_info_block %} 
+
+        <div style="background: #f5f5f5; margin: 0px auto; max-width: 600px; position: relative">
+            <div style="line-height: 0; font-size: 0">
+              <table
+                cellpadding="0"
+                cellspacing="0"
+                role="presentation"
+                style="background: #ecfeed; width: 100%; position:relative"
+              >
+                <tbody>
+                  <tr>
+                    <td
+                      style="
+                        direction: ltr;
+                        font-size: 0px;
+                        padding: 12px;
+                        text-align: center;
+                        vertical-align: top;
+                        border: 1px solid #dbd8df;
+                        border-left: 1px solid #dbd8df;
+                        border-right: 1px solid #dbd8df;
+                      "
+                    >
+                      <div
+                        class="mj-column-per-100 outlook-group-fix"
+                        style="
+                          font-size: 13px;
+                          text-align: left;
+                          direction: ltr;
+                          display: inline-block;
+                          vertical-align: top;
+                          width: 100%;
+                          position: relative;
+                        "
+                      >
+                        <table
+                          cellpadding="0"
+                          cellspacing="0"
+                          role="presentation"
+                          width="100%"
+                        >
+                          <tbody style="position: relative; !important">
+                            <tr>
+                              <td>
+                                <table
+                                  cellpadding="0"
+                                  cellspacing="0"
+                                  role="presentation"
+                                  width="100%"
+                                  style="position: relative;"
+                                >
+                                  <tr>
+        
+                                    <td
+                                    >
+                                      <div
+                                        id="about-section"
+                                        style="
+                                          font-family: 'Rubik', Helvetica, Arial,
+                                          sans-serif;
+                                          font-size: 18px;
+                                          font-weight: 500;
+                                          line-height: 21.6px;
+                                          padding: 10px 10px;
+                                          color: #492e98;
+                                        "
+                                      >
+                                        Du hast Fragen? <br/> <span class="break-on-small" style="font-weight: 800;">Wir haben Antworten!</span> 
+                                      </div>
+                                      <div style="
+                                          padding-top: 1rem;
+                                          font-family: 'Rubik', Helvetica, Arial,
+                                          sans-serif;
+                                          font-size: 13px;
+                                          font-weight: 400;
+                                          line-height: 16.9px;
+                                          padding: 0px 10px;
+                                          color: #323232;">
+        
+                                          <span style="font-weight: 700; line-height: 15.6px; padding-top: 1rem;">Was ist eigentlich ein Badge?</span>
+                                          <p style="margin-top:0px;">
+                                            Ein Badge ist ein digitales Zertifikat, das deine Fähigkeiten und Stärken feiert. <br> Du kannst Badges sammeln und mit anderen teilen.
+                                          </p>
+        
+                                          <span style="font-weight: 700; line-height: 15.6px; ">Warum ist es toll, einen Badge zu bekommen?</span>
+                                          <p style="margin-top:0px;">
+                                            Badges zeigen dir selbst und anderen, was du erreicht hast und helfen dir, selbstbewusst in deine Zukunft zu gehen.
+                                          </p>
+        
+                                          <span style="font-weight: 700; line-height: 15.6px;">Wo kann ich meine Badges sammeln?</span>
+                                          <p style="margin-top:0px;">
+                                            Auf unserer Plattform kannst du ganz einfach einen Account anlegen und alle deine Badges in deinem Rucksack sammeln – egal, wo du sie erhalten hast. Lege jetzt los auf <a href="https://openbadges.education/signup" style="text-decoration: underline; color: blue">https://openbadges.education/signup</a>.  
+                                          </p>
+                                          <span style="font-weight: 700; line-height: 15.6px;">Was sind Open Educational Badges?</span>
+                                          <p style="margin-top:0px;">
+                                            OEB sind ein Tool, das Lernerfahrungen und Kompetenzerwerb standardisiert sichtbar macht. Wir setzen OEB als Gemeinschaftsprojekt mit unterschiedlichen Partner:innen und Förderer:innen um. Weitere Infos findest du unter <a href="https://openbadges.education/public/about" style="text-decoration: underline; color: blue">https://openbadges.education/public/about</a> 
+                                          </p>
+                                          <span style="font-weight: 700; line-height: 15.6px;">Du willst noch mehr über Badges erfahren?</span>
+                                          <p style="margin-top:0px;"">
+                                            Dann schau hier vorbei: <a href="https://openbadges.education" style="text-decoration: underline; color: blue">https://openbadges.education</a>
+                                          </p>
+        
+                                      </div>
+                                    </td>
+                                    <td
+                                     style="text-align: right; vertical-align: top;"
+                                    >
+                                    <a href="https://www.meinbildungsraum.de/" target="_blank">
+                                      <img 
+                                        src="{% static '/images/logo-square.png' %}"
+                                        style="width: 75px; height: auto; position: absolute; top:0; right:0;" />
+                                    </a>
+        
+        
+                                    </td>
+                                 
+                                  </tr>
+                                </table>
+                              </td>
+                            </tr>
+        
+                          </tbody>
+                        </table>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            {% endif %}
     </div>
 {% endblock main %}
