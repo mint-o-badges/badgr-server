@@ -551,7 +551,7 @@ class Issuer(ResizeUploadedImage,
             # 'badge_id': self.entity_id,
             # 'badge_description': self.badgeclass.description,
             # 'help_email': getattr(settings, 'HELP_EMAIL', 'help@badgr.io'),
-            'issuer_name': re.sub(r'[^\w\s]+', '', self.name, 0, re.I),
+            'issuer_name': self.name,
             'users': users,
             # 'issuer_email': self.issuer.email,
             # 'issuer_detail': self.issuer.public_url,
@@ -586,7 +586,7 @@ class Issuer(ResizeUploadedImage,
         try:
             email_context = {
                 # removes all special characters from the issuer name (keeps whitespces, digits and alphabetical characters )
-                'issuer_name': re.sub(r'[^\w\s]+', '', self.name, 0, re.I),
+                'issuer_name': self.name,
                 'issuer_url': self.url,
                 'issuer_email': self.email,
                 'site_name': re.sub(r'@', '', badgr_app.name),
@@ -1250,7 +1250,9 @@ class BadgeInstance(BaseAuditedModel,
                 'framework_identifier': competency.get('framework_identifier'),
                 'source': competency.get('source'),
                 'studyLoad': competency.get('studyLoad'),
-                'skill': competency.get('category')
+                'skill': competency.get('category'),
+                'hours': competency.get('hours'),
+                'minutes': str(competency.get('minutes')).zfill(2),
             }
             competencies.append(competency_entry)
 
@@ -1310,7 +1312,7 @@ class BadgeInstance(BaseAuditedModel,
                 'badge_description': self.badgeclass.description,
                 'badge_competencies': competencies,
                 'help_email': getattr(settings, 'HELP_EMAIL', 'info@opensenselab.org'),
-                'issuer_name': re.sub(r'[^\w\s]+', '', self.issuer.name, 0, re.I),
+                'issuer_name': self.issuer.name,
                 'issuer_url': self.issuer.url,
                 'issuer_email': self.issuer.email,
                 'issuer_detail': self.issuer.public_url,
