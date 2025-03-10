@@ -1293,6 +1293,15 @@ class BadgeInstance(BaseAuditedModel,
             if self.recipient_type == RECIPIENT_TYPE_EMAIL:
                 name = get_name(self)
 
+            url_name = "v1_api_user_collect_badges_in_backpack"
+
+            save_url = OriginSetting.HTTP + reverse(url_name)
+
+            url = "{url}?a={badgr_app}".format(
+                url=save_url,
+                badgr_app= badgr_app
+            )
+
             email_context = {
                 'name': name,
                 'badge_name': self.badgeclass.name,
@@ -1314,6 +1323,7 @@ class BadgeInstance(BaseAuditedModel,
                 'site_name': "Open Educational Badges",
                 'site_url': badgr_app.signup_redirect,
                 'badgr_app': badgr_app,
+                'activate_url': url,
                 'oeb_info_block': False if categoryExtension == "learningpath" else True
             }
             if badgr_app.cors == 'badgr.io':

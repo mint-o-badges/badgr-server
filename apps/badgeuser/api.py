@@ -903,12 +903,53 @@ class BadgeUserSaveMicroDegree(BaseEntityDetailView):
             intended_redirect,
             max_age=3600,  # 1 hour
             httponly=True,
-            # secure=settings.SECURE_SSL_REDIRECT,
+            secure=settings.SECURE_SSL_REDIRECT,
             samesite='Lax',
-            # domain=badgrapp.cors.split('://')[-1] if badgrapp.cors else None
+            domain=badgrapp.cors.split('://')[-1] if badgrapp.cors else None
         )
         
         return response
+    
+class BadgeUserCollectBadgesInBackpack(BaseEntityDetailView):
+    permission_classes = (permissions.AllowAny,)
+    v1_serializer_class = BaseSerializer
+    v2_serializer_class = BaseSerializerV2
+
+    def get(self, request, **kwargs):
+        """
+        Redirect to the user's backpack page after the user logs in
+        """
+        badgrapp_id = request.query_params.get("a")
+        badgrapp = BadgrApp.objects.get_by_id_or_default(badgrapp_id)
+        
+        intended_redirect = f"/recipient/badges/"
+        
+        if request.user.is_authenticated:
+            frontend_base_url = badgrapp.cors.rstrip("/") if badgrapp.cors else ""
+            detail_url = f"{frontend_base_url}{intended_redirect}"
+            return Response(
+                status=HTTP_302_FOUND,
+                headers={"Location": detail_url}
+            )
+        
+
+        redirect_url = badgrapp.ui_login_redirect.rstrip("/")
+        response = Response(
+            status=HTTP_302_FOUND,
+            headers={"Location": redirect_url}
+        )
+        
+        response.set_cookie(
+            'intended_redirect',
+            intended_redirect,
+            max_age=3600,  # 1 hour
+            httponly=True,
+            secure=settings.SECURE_SSL_REDIRECT,
+            samesite='Lax',
+            domain=badgrapp.cors.split('://')[-1] if badgrapp.cors else None
+        )
+        
+        return response    
     
 class GetRedirectPath(BaseEntityDetailView):
     permission_classes = (permissions.IsAuthenticated,)

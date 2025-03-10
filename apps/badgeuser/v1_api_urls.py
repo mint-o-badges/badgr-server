@@ -1,6 +1,8 @@
 from django.conf.urls import url
 
-from badgeuser.api import BadgeRequestVerification, BadgeUserSaveMicroDegree, BadgeUserToken, BadgeUserForgotPassword, BadgeUserEmailConfirm, BadgeUserDetail, BadgeUserResendEmailConfirmation, GetRedirectPath, LearningPathList
+from badgeuser.api import BadgeRequestVerification, BadgeUserSaveMicroDegree, BadgeUserToken, \
+      BadgeUserForgotPassword, BadgeUserEmailConfirm, BadgeUserDetail, BadgeUserResendEmailConfirmation, \
+        GetRedirectPath, LearningPathList, BadgeUserCollectBadgesInBackpack
 from badgeuser.api_v1 import BadgeUserEmailList, BadgeUserEmailDetail
 
 urlpatterns = [
@@ -19,6 +21,8 @@ urlpatterns = [
 
     url(r'^save-microdegree/(?P<entity_id>[^/]+)$', BadgeUserSaveMicroDegree.as_view(),
         name='v1_api_user_save_microdegree'),
+    url(r'^collect-badges-in-backpack$', BadgeUserCollectBadgesInBackpack.as_view(),
+        name='v1_api_user_collect_badges_in_backpack'),    
     url(r'^get-redirect-path$', GetRedirectPath.as_view(),
         name='v1_api_user_get_redirect_path'),        
 ]
