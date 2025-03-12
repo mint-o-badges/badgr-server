@@ -1326,7 +1326,8 @@ class BadgeInstance(BaseAuditedModel,
                 'site_url': badgr_app.signup_redirect,
                 'badgr_app': badgr_app,
                 'activate_url': url,
-                'oeb_info_block': False if categoryExtension == "learningpath" else True
+                "call_to_action_label": "Badge im Rucksack sammeln", 
+                'oeb_info_block': False if categoryExtension['Category'] == "learningpath" else True
             }
             if badgr_app.cors == 'badgr.io':
                 email_context['promote_mobile'] = True
@@ -1346,7 +1347,7 @@ class BadgeInstance(BaseAuditedModel,
         except CachedEmailAddress.DoesNotExist:
             pass
 
-        if categoryExtension == "learningpath" and microdegree_id is not None:
+        if categoryExtension['Category'] == "learningpath" and microdegree_id is not None:
             # if the recipient does not have an account no micro degree email is sent 
             if self.user is not None: 
                 template_name = 'issuer/email/notify_micro_degree_earner'
@@ -1361,6 +1362,8 @@ class BadgeInstance(BaseAuditedModel,
                 )
 
                 email_context['activate_url']=url
+                email_context['call_to_action_label']= "Micro Degree auf OEB ansehen"
+                
         
         adapter.send_mail(template_name, self.recipient_identifier, context=email_context)
 
