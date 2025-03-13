@@ -733,7 +733,8 @@ class LearningPathSerializerV1(serializers.Serializer):
         max_progress = instance.calculate_progress(lp_badgeclasses)
         user_progress = instance.calculate_progress(user_completed_badges)
 
-        learningPathBadgeInstance = list(filter(lambda badge: badge.badgeclass.entity_id == representation['participationBadge_id'], request.user.cached_badgeinstances()))
+
+        learningPathBadgeInstance = list(filter(lambda badge: badge.badgeclass.entity_id == representation['participationBadge_id'], request.user.cached_badgeinstances().filter(revoked=False)))
         if learningPathBadgeInstance: 
             learningPathBadgeInstanceSlug = learningPathBadgeInstance[0].entity_id
             representation['learningPathBadgeInstanceSlug'] = learningPathBadgeInstanceSlug
