@@ -266,6 +266,8 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
 
     issuerVerified = serializers.BooleanField(read_only=True, source='cached_issuer.verified')
 
+    copy_permissions = serializers.ListField(source='copy_permissions_list')
+
     class Meta:
         apispec_definition = ('BadgeClass', {})
 
@@ -382,6 +384,8 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
         instance.expires_duration = validated_data.get('expires_duration', None)
 
         instance.imageFrame = validated_data.get('imageFrame', True)
+
+        instance.copy_permissions_list = validated_data.get('copy_permissions_list', ['issuer'])
 
         logger.debug("SAVING EXTENSION")
         self.save_extensions(validated_data, instance)
