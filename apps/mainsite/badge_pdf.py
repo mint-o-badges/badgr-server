@@ -46,7 +46,7 @@ class BadgePDFCreator:
 
     def add_recipient_name(self, first_page_content, name, issuedOn):
         first_page_content.append(Spacer(1, 58))
-        recipient_style = ParagraphStyle(name='Recipient', fontSize=18, leading=21.6, textColor='#492E98',fontName='Rubik-bold',  alignment=TA_CENTER)
+        recipient_style = ParagraphStyle(name='Recipient', fontSize=18, leading=21.6, textColor='#492E98',fontName='Rubik-Bold',  alignment=TA_CENTER)
         
         recipient_name = f"<strong>{name}</strong>"
         first_page_content.append(Paragraph(recipient_name, recipient_style))
