@@ -887,6 +887,8 @@ class BadgeUserSaveMicroDegree(BaseEntityDetailView):
         
         if request.user.is_authenticated:
             frontend_base_url = badgrapp.cors.rstrip("/") if badgrapp.cors else ""
+            if frontend_base_url and not frontend_base_url.startswith(('http://', 'https://')):
+               frontend_base_url = f"https://{frontend_base_url}"
             detail_url = f"{frontend_base_url}{intended_redirect}"
             return Response(
                 status=HTTP_302_FOUND,
@@ -926,6 +928,8 @@ class BadgeUserCollectBadgesInBackpack(BaseEntityDetailView):
         
         if request.user.is_authenticated:
             frontend_base_url = badgrapp.cors.rstrip("/") if badgrapp.cors else ""
+            if frontend_base_url and not frontend_base_url.startswith(('http://', 'https://')):
+               frontend_base_url = f"https://{frontend_base_url}"
             detail_url = f"{frontend_base_url}{intended_redirect}"
             return Response(
                 status=HTTP_302_FOUND,
