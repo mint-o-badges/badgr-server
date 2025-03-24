@@ -9,6 +9,8 @@ from apispec_drf.decorators import apispec_list_operation, apispec_post_operatio
 from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, LearningPathSerializerV1
 from .models import BadgeClass, Issuer, LearningPath
 
+class EntityLimitOffsetPagination(LimitOffsetPagination):
+    default_limit = 20
 
 class EntityFilter(filters.FilterSet):
     name = filters.CharFilter(field_name='name', lookup_expr='icontains')
@@ -20,7 +22,7 @@ class LearningPathFilter(EntityFilter):
     tags = filters.CharFilter(field_name='learningpathtag__name', lookup_expr='icontains')
 
 class EntityViewSet(viewsets.ModelViewSet):
-    pagination_class = LimitOffsetPagination
+    pagination_class = EntityLimitOffsetPagination
     http_method_names = ['get', 'head', 'options']
     lookup_field = 'entity_id'
     filter_backends = [filters.DjangoFilterBackend, OrderingFilter]
