@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "apispec_drf",
     # deprecated
     "composition",
+    "django_filters",
 ]
 
 MIDDLEWARE = [
