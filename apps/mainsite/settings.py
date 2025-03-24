@@ -390,7 +390,9 @@ try:
     print(mainsite.__timestamp__)
 except Exception as e:
     print(e)
-    mainsite.__timestamp__ = datetime.now(pytz.timezone('Europe/Berlin')).strftime("%d.%m.%y %T (last restart)")
+    mainsite.__timestamp__ = datetime.now(pytz.timezone("Europe/Berlin")).strftime(
+        "%d.%m.%y %T (last restart)"
+    )
     print("ERROR in determining deployment timestamp; used current timestamp:")
     print(mainsite.__timestamp__)
 
