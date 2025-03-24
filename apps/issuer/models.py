@@ -1327,7 +1327,7 @@ class BadgeInstance(BaseAuditedModel,
                 'badgr_app': badgr_app,
                 'activate_url': url,
                 "call_to_action_label": "Badge im Rucksack sammeln", 
-                'oeb_info_block': False if categoryExtension['Category'] == "learningpath" else True
+                'oeb_info_block': False
             }
             if badgr_app.cors == 'badgr.io':
                 email_context['promote_mobile'] = True
