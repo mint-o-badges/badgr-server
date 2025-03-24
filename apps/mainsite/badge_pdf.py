@@ -252,7 +252,7 @@ class BadgePDFCreator:
                 
                 text = f"die <strong>{name}</strong> mit dem Micro Degree <strong>{badge_name}</strong> erworben hat:"
                 Story.append(Paragraph(text, text_style))
-                Story.append(Spacer(1, 10))
+                Story.append(Spacer(1, 30))
 
                 for i in range(num_badges):
                     extensions = badges[i].badgeclass.cached_extensions()
