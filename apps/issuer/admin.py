@@ -9,7 +9,7 @@ from mainsite.admin import badgr_admin
 
 from .models import Issuer, BadgeClass, BadgeInstance, BadgeInstanceEvidence, BadgeClassAlignment, BadgeClassTag, \
     BadgeClassExtension, IssuerExtension, BadgeInstanceExtension, LearningPath, LearningPathBadge, \
-         LearningPathTag, RequestedBadge, QrCode, RequestedLearningPath
+         LearningPathTag, RequestedBadge, QrCode, RequestedLearningPath, IssuerStaffRequest
 from .tasks import resend_notifications
 
 
@@ -263,6 +263,13 @@ class ReqeustedBadgeAdmin(ModelAdmin):
     readonly_fields = ('requestedOn', 'status')
 
 badgr_admin.register(RequestedBadge, ReqeustedBadgeAdmin)
+
+class IssuerStaffRequestAdmin(ModelAdmin):
+    list_display = ('issuer', 'user', 'requestedOn', 'status')
+    readonly_fields = ('requestedOn', 'status')
+
+badgr_admin.register(IssuerStaffRequest, IssuerStaffRequestAdmin)
+
 
 class QrCodeAdmin(ModelAdmin):
     list_display = ('title', 'createdBy', 'valid_from', 'expires_at')

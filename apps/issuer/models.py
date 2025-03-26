@@ -672,6 +672,31 @@ def get_user_or_none(recipient_id, recipient_type):
 
     return user
 
+class IssuerStaffRequest(BaseVersionedEntity):
+    class Status(models.TextChoices):
+        PENDING = 'Pending', 'Pending'
+        APPROVED = 'Approved', 'Approved'
+        REJECTED = 'Rejected', 'Rejected'
+        REVOKED = 'Revoked', 'Revoked'
+
+    issuer = models.ForeignKey(Issuer, blank=False, null=False,
+                               on_delete=models.CASCADE, related_name='staffrequests')
+    user = models.ForeignKey('badgeuser.BadgeUser', blank=True, null=True, on_delete=models.SET_NULL)
+    requestedOn = models.DateTimeField(blank=False, null=False, default=timezone.now)
+    status = models.CharField(
+        max_length=254, 
+        choices=Status.choices, 
+        default=Status.PENDING
+    )
+    revoked = models.BooleanField(default=False, db_index=True)
+
+    def revoke(self):
+        if self.revoked:
+            raise ValidationError("Membership request is already revoked")
+        
+        self.revoked = True
+        self.status = self.Status.REVOKED
+        self.save()
 
 class BadgeClass(ResizeUploadedImage,
                  ScrubUploadedSvgImage,

@@ -22,13 +22,13 @@ import badgrlog
 from entity.api import BaseEntityListView, BaseEntityDetailView, VersionedObjectMixin, BaseEntityView, \
     UncachedPaginatedViewMixin
 from entity.serializers import BaseSerializerV2, V2ErrorSerializer
-from issuer.models import Issuer, BadgeClass, BadgeInstance, IssuerStaff, LearningPath, QrCode, RequestedBadge
+from issuer.models import Issuer, BadgeClass, BadgeInstance, IssuerStaff, IssuerStaffRequest, LearningPath, QrCode, RequestedBadge
 from issuer.permissions import (MayIssueBadgeClass, MayEditBadgeClass, IsEditor, IsEditorButOwnerForDelete,
                                 IsStaff, ApprovedIssuersOnly, BadgrOAuthTokenHasScope,
                                 BadgrOAuthTokenHasEntityScope, AuthorizationIsBadgrOAuthToken, MayIssueLearningPath,
                                 is_learningpath_editor, is_learningpath_owner, is_learningpath_staff)
 from issuer.serializers_v1 import (IssuerSerializerV1, BadgeClassSerializerV1,
-                                   BadgeInstanceSerializerV1, QrCodeSerializerV1, LearningPathSerializerV1, RequestedBadgeSerializer,
+                                   BadgeInstanceSerializerV1, IssuerStaffRequestSerializer, QrCodeSerializerV1, LearningPathSerializerV1, RequestedBadgeSerializer,
                                    LearningPathParticipantSerializerV1)
 from issuer.serializers_v2 import IssuerSerializerV2, BadgeClassSerializerV2, BadgeInstanceSerializerV2, \
     IssuerAccessTokenSerializerV2
@@ -1035,7 +1035,60 @@ class BadgeRequestList(BaseEntityListView):
                 {"error": "An unexpected error occurred"},
                 status=HTTP_400_BAD_REQUEST
             )
-        
+
+class StaffRequestList(BaseEntityListView):
+    model = IssuerStaffRequest    
+    v1_serializer_class = IssuerStaffRequestSerializer
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope & ApprovedIssuersOnly)
+    ]
+    valid_scopes = ["rw:issuer"]
+
+    @apispec_delete_operation('IssuerStaffRequest',
+        summary="Delete multiple issuer staff requests",
+        tags=["Issuer staff requests"],
+    )
+
+    def post(self, request, **kwargs):
+        try: 
+            ids = request.data.get('ids', [])  
+
+            with transaction.atomic():
+                    deletion_queryset = IssuerStaffRequest.objects.filter(
+                        entity_id__in=ids,
+                    )
+
+                    found_ids = set(deletion_queryset.values_list('entity_id', flat=True))
+                    missing_ids = set(map(str, ids)) - set(map(str, found_ids))
+                    
+                    if missing_ids:
+                        return Response(
+                            {
+                                "error": "Some requests not found",
+                                "missing_ids": list(missing_ids)
+                            },
+                            status=HTTP_404_NOT_FOUND
+                        )
+
+                    deleted_count = deletion_queryset.delete()[0]
+
+                    return Response({
+                        "message": f"Successfully deleted {deleted_count} issuer staff requests",
+                        "deleted_count": deleted_count
+                    }, status=HTTP_200_OK)
+
+        except DjangoValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {"error": "An unexpected error occurred"},
+                status=HTTP_400_BAD_REQUEST
+            )
+                
 
 class LearningPathDetail(BaseEntityDetailView):
     model = LearningPath
@@ -1068,3 +1121,113 @@ class LearningPathDetail(BaseEntityDetailView):
             return Response({"error": "You are not authorized to delete this learning path."}, status=status.HTTP_403_FORBIDDEN)
         return super(LearningPathDetail, self).delete(request, **kwargs)
 
+class IssuerStaffRequestList(BaseEntityListView):
+    model = IssuerStaffRequest
+    v1_serializer_class = IssuerStaffRequestSerializer
+    v2_serializer_class = IssuerStaffRequestSerializer
+    permission_classes =  [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope & ApprovedIssuersOnly)
+    ]
+    valid_scopes = {
+        "post": ["*"],
+        "get": ["r:profile", "rw:profile"],
+        "put": ["rw:profile"],
+        "delete": ["rw:profile"],
+    }
+
+    @apispec_get_operation(
+        "IssuerStaffRequest",
+        summary="Get a list of staff membership requests for the institution",
+        description="Use the id of the issuer to get a list of issuer staff requests",
+        tags=["IssuerStaffRequest"],
+    )
+    def get_objects(self, request, **kwargs):
+        return IssuerStaffRequest.objects.filter(
+            issuer__entity_id=kwargs.get('issuerSlug'),
+            revoked=False,
+            status=IssuerStaffRequest.Status.PENDING
+        )
+    def get(self, request, **kwargs):
+        return super(IssuerStaffRequestList, self).get(request, **kwargs)
+
+from rest_framework import status
+from rest_framework.response import Response
+
+class IssuerStaffRequestDetail(BaseEntityDetailView):
+    model = IssuerStaffRequest
+    v1_serializer_class = IssuerStaffRequestSerializer
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope & ApprovedIssuersOnly)
+    ]
+    valid_scopes = ["rw:issuer"]
+
+    @apispec_get_operation('IssuerStaffRequest',
+        summary="Get a single IssuerStaffRequest",
+        tags=["IssuerStaffRequest"],
+    )
+    def get(self, request, **kwargs):
+        return super(IssuerStaffRequestDetail, self).get(request, **kwargs)
+
+    @apispec_put_operation('IssuerStaffRequest',
+        summary="Update a single IssuerStaffRequest",
+        tags=["IssuerStaffRequest"],
+    )
+    def put(self, request, **kwargs):
+        # Check if this is a confirmation request
+        if 'confirm' in request.path:
+            return self.confirm_request(request, **kwargs)
+        return super(IssuerStaffRequestDetail, self).put(request, **kwargs)
+
+    def confirm_request(self, request, **kwargs):
+        try:
+            import logging 
+            logger = logging.getLogger(__name__)
+            logger.error(f"kwargs {kwargs}")
+            staff_request = IssuerStaffRequest.objects.filter(entity_id=kwargs.get("requestId")).first()
+            
+            if staff_request.status != IssuerStaffRequest.Status.PENDING:
+                return Response(
+                    {"detail": "Only pending requests can be confirmed"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            staff_request.status = IssuerStaffRequest.Status.APPROVED
+            staff_request.save()
+
+            serializer = self.v1_serializer_class(staff_request)
+            return Response(serializer.data)
+
+        except IssuerStaffRequest.DoesNotExist:
+            return Response(
+                {"detail": "Staff request not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    @apispec_delete_operation('IssuerStaffRequest',
+        summary="Delete a single IssuerStaffRequest",
+        tags=["IssuerStaffRequest"],
+    )
+    def delete(self, request, **kwargs):
+        try:
+            staff_request = IssuerStaffRequest.objects.filter(entity_id=kwargs.get("requestId")).first()
+            
+            if staff_request.status != IssuerStaffRequest.Status.PENDING:
+                return Response(
+                    {"detail": "Only pending requests can be deleted"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Update status to rejected instead of hard delete
+            staff_request.status = IssuerStaffRequest.Status.REJECTED
+            staff_request.save()
+
+            serializer = self.v1_serializer_class(staff_request)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except IssuerStaffRequest.DoesNotExist:
+            return Response(
+                {"detail": "Staff request not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )

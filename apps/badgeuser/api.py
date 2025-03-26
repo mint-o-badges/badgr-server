@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import datetime
 import json
 import re
@@ -6,6 +7,7 @@ import urllib.parse
 import urllib.error
 import urllib.parse
 
+from jsonschema import ValidationError
 import requests
 
 from allauth.account.adapter import get_adapter
@@ -30,8 +32,8 @@ from django.http import Http404, JsonResponse
 from django.utils import timezone
 from django.views.generic import RedirectView
 from django.conf import settings
-from issuer.models import BadgeInstance, LearningPath, LearningPathBadge, RequestedBadge
-from issuer.serializers_v1 import LearningPathSerializerV1
+from issuer.models import BadgeInstance, IssuerStaffRequest, LearningPath, LearningPathBadge, RequestedBadge
+from issuer.serializers_v1 import IssuerStaffRequestSerializer, LearningPathSerializerV1
 from rest_framework import permissions, serializers, status
 from rest_framework.exceptions import ValidationError as RestframeworkValidationError
 from rest_framework.response import Response
@@ -62,7 +64,10 @@ from mainsite.utils import (
 from mainsite.serializers import ApplicationInfoSerializer
 RATE_LIMIT_DELTA = datetime.timedelta(minutes=5)
 from django.core.signing import TimestampSigner
+import logging 
 
+
+logger2 = logging.getLogger(__name__)
 logger = badgrlog.BadgrLogger()
 
 class BadgeUserDetail(BaseEntityDetailView):
@@ -968,4 +973,141 @@ class GetRedirectPath(BaseEntityDetailView):
         
         response.delete_cookie('intended_redirect')
         
-        return response    
+        return response   
+    
+class IssuerStaffRequestDetail(BaseEntityDetailView):
+    model = IssuerStaffRequest
+    v1_serializer_class = IssuerStaffRequestSerializer
+    v2_serializer_class = IssuerStaffRequestSerializer
+    permission_classes = (permissions.IsAuthenticated, )
+    valid_scopes = {
+        "post": ["*"],
+        "get": ["r:profile", "rw:profile"],
+        "put": ["rw:profile"],
+        "delete": ["rw:profile"],
+    }
+
+    @apispec_delete_operation('IssuerStaffRequest',
+        summary="Revoke a request for an issuer membership",
+        tags=['IssuerStaffRequest'],
+        responses=OrderedDict([
+            ('400', {
+                'description': "Issuer staff request is already revoked"
+            })
+        ]),
+    )
+    def delete(self, request, **kwargs):
+        # verify the user has permission to the staff request
+        staff_request = self.get_object(request, **kwargs)
+        logger2.error(f"staff_request {staff_request}")
+        if not self.has_object_permissions(request, staff_request):
+            logger2.error("no permission")
+            return Response(status=HTTP_404_NOT_FOUND)
+
+        try:
+            staff_request.revoke()
+        except DjangoValidationError as e:
+            raise ValidationError(e.message)
+
+        serializer = self.get_serializer_class()(staff_request, context={'request': request})
+
+        return Response(status=HTTP_200_OK, data=serializer.data)
+    
+    def get_object(self, request, **kwargs):
+        try:
+            self.object = IssuerStaffRequest.objects.filter(
+                user=request.user
+            ).first()
+        except IssuerStaffRequest.DoesNotExist:
+            raise Http404
+
+        if not self.has_object_permissions(request, self.object):
+            raise Http404
+        return self.object
+
+class IssuerStaffRequestList(BaseEntityListView):
+    model = IssuerStaffRequest
+    v1_serializer_class = IssuerStaffRequestSerializer
+    v2_serializer_class = IssuerStaffRequestSerializer
+    permission_classes = (permissions.IsAuthenticated, )
+    valid_scopes = {
+        "post": ["*"],
+        "get": ["r:profile", "rw:profile"],
+        "put": ["rw:profile"],
+        "delete": ["rw:profile"],
+    }
+
+    @apispec_post_operation(
+        "IssuerStaffRequest",
+        summary="Post a single issuer staff request",
+        description="Make a request to be part of an institution",
+        tags=["IssuerStaffRequest"],
+    )
+    @throttleable
+    def post(self, request, **kwargs):
+        """
+        Signup for a new account
+        """
+        if request.version == "v1":
+
+            # email = request.data.get("email")
+            # TODO: investigate how we can use this to improve the spam filter
+            # only send email domain to spamfilter API to protect users privacy
+            # _, email_domain = email.split("@", 1)
+            # firstname = request.data.get("first_name")
+            # lastname = request.data.get("last_name")
+
+            # apiKey = getattr(settings, "ALTCHA_API_KEY")
+            # endpoint = getattr(settings, "ALTCHA_SPAMFILTER_ENDPOINT")
+            # payload = {
+            #     "text": [firstname, lastname],
+                # the following options seem to classify too much data as spam, i commented them out for now
+                # "email": email_domain,
+                # "expectedLanguages": ["en", "de"],
+            # }
+            # params = {"apiKey": apiKey}
+            # headers = {
+            #     "Content-Type": "application/json",
+            #     "referer": getattr(settings, "HTTP_ORIGIN"),
+            # }
+            # response = requests.post(
+            #     endpoint, params=params, data=json.dumps(payload), headers=headers
+            # )
+            # if response.status_code == 200:
+            #     data = response.json()
+            #     classification = data["classification"]
+            #     if classification == "BAD":
+            #         # TODO: show reasons why data was classified as spam
+            #         return JsonResponse(
+            #             {
+            #                 "error": "Spam filter detected spam. Your account was not created."
+            #             },
+            #             status=status.HTTP_403_FORBIDDEN,
+            #         )
+
+            serializer_cls = self.get_serializer_class()
+            captcha = request.data.get("captcha")
+            serializer = serializer_cls(
+                data=request.data, context={"request": request, "captcha": captcha}
+            )
+            serializer.is_valid(raise_exception=True)
+            try:
+                serializer.save()
+            except DjangoValidationError as e:
+                raise RestframeworkValidationError(e.message)
+            return Response(serializer.data, status=HTTP_201_CREATED)
+
+        return Response(status=HTTP_404_NOT_FOUND)
+
+    @apispec_get_operation(
+        "IssuerStaffRequest",
+        summary="Get a list of issuer staff requests for the authenticated user",
+        description="Use the id of the authenticated user to get a list of issuer staff requests",
+        tags=["IssuerStaffRequest"],
+    )
+    def get_objects(self, request, **kwargs):
+        return IssuerStaffRequest.objects.filter(
+            user=request.user, revoked=False
+        )
+    def get(self, request, **kwargs):
+        return super(IssuerStaffRequestList, self).get(request, **kwargs)

@@ -6,6 +6,8 @@ import urllib.parse
 import urllib.error
 import urllib.parse
 
+from apps.backpack.badge_connect_api import BadgeConnectPagination
+from apps.mainsite.pagination import BadgrCursorPagination
 import cairosvg
 import openbadges
 from PIL import Image
@@ -16,11 +18,13 @@ from django.urls import resolve, reverse, Resolver404, NoReverseMatch
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.views.generic import RedirectView
+from django.db.models import Q
 from entity.serializers import BaseSerializerV2
 from rest_framework import status, permissions
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
 
 
 import badgrlog
@@ -34,6 +38,10 @@ from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, Learning
 from .models import Issuer, BadgeClass, BadgeInstance, LearningPath, LearningPathBadge
 from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, LearningPathSerializerV1
 from .models import Issuer, BadgeClass, BadgeInstance, LearningPath
+
+import logging 
+
+logger2 = logging.getLogger(__name__)
 
 logger = badgrlog.BadgrLogger()
 class SlugToEntityIdRedirectMixin(object):
@@ -66,38 +74,91 @@ class SlugToEntityIdRedirectMixin(object):
         else:
             raise Http404
 
-
 class JSONListView(BaseEntityListView, UncachedPaginatedViewMixin):
     """
     Abstract List Class
     """
     permission_classes = (permissions.AllowAny,)
     allow_any_unauthenticated_access = True
-
+    pagination_class = BadgeConnectPagination  # Use your offset-based pagination
+    
     def log(self, obj):
         pass
-
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
+        
         exclude_orgImg = self.request.query_params.get('exclude_orgImg', None)
         if exclude_orgImg:
             context['exclude_orgImg'] = exclude_orgImg.lower() == 'true'
-
+        
         return context
-
+    
+    def get_queryset(self, request=None, **kwargs):
+        """
+        Return the base queryset to be paginated
+        Subclasses should override this method
+        """
+        return self.model.objects.all()
+    
     def get(self, request, **kwargs):
-        objects = self.model.objects
+        # Get the queryset
+        queryset = self.get_queryset(request=request, **kwargs)
         context = self.get_context_data(**kwargs)
-        serializer_class = self.serializer_class
-        serializer = serializer_class(objects, many=True, context=context)
-        headers = dict()
-        paginator = getattr(self, 'paginator', None)
-        if paginator and callable(getattr(paginator, 'get_link_header', None)):
-            link_header = paginator.get_link_header()
-            if link_header:
-                headers['Link'] = link_header
-        return Response(serializer.data, headers=headers)
+        
+        # Apply pagination if enabled
+        limit = request.query_params.get('limit', None)
+        if limit:
+            # Initialize the paginator with the requested page size
+            self.paginator = self.pagination_class()
+            self.paginator.default_limit = limit
+            # Paginate the queryset
+            page = self.paginator.paginate_queryset(queryset, request)
+            logger2.error(f"page {page}")
+            # Serialize the paginated objects
+            serializer_class = self.serializer_class
+            serializer = serializer_class(page, many=True, context=context)
+            # Return paginated response
+            logger2.error(f"response {self.paginator.get_paginated_response(serializer.data)}")
+            return self.paginator.get_paginated_response(serializer.data)
+        else:
+            # No pagination
+            serializer_class = self.serializer_class
+            serializer = serializer_class(queryset, many=True, context=context)
+            return Response(serializer.data)
+
+# class JSONListView(BaseEntityListView, UncachedPaginatedViewMixin):
+#     """
+#     Abstract List Class
+#     """
+#     permission_classes = (permissions.AllowAny,)
+#     allow_any_unauthenticated_access = True
+
+#     def log(self, obj):
+#         pass
+
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+
+#         exclude_orgImg = self.request.query_params.get('exclude_orgImg', None)
+#         if exclude_orgImg:
+#             context['exclude_orgImg'] = exclude_orgImg.lower() == 'true'
+
+#         return context
+
+#     def get(self, request, **kwargs):
+#         objects = self.model.objects
+#         # objects = self.get_objects(request, **kwargs)
+#         context = self.get_context_data(**kwargs)
+#         serializer_class = self.serializer_class
+#         serializer = serializer_class(objects, many=True, context=context)
+#         headers = dict()
+#         paginator = getattr(self, 'paginator', None)
+#         if paginator and callable(getattr(paginator, 'get_link_header', None)):
+#             link_header = paginator.get_link_header()
+#             if link_header:
+#                 headers['Link'] = link_header
+#         return Response(serializer.data, headers=headers)
 
 
 class JSONComponentView(VersionedObjectMixin, APIView, SlugToEntityIdRedirectMixin):
@@ -355,6 +416,29 @@ class IssuerList(JSONListView):
 
     def get_json(self, request):
         return super(IssuerList, self).get_json(request)
+    
+class IssuerSearch(JSONListView):
+    permission_classes = (permissions.AllowAny,)
+    model = Issuer
+    serializer_class = IssuerSerializerV1
+
+    def log(self, obj):
+        pass
+
+    def get(self, request, **kwargs):
+        objects = self.model.objects
+
+        search_term = kwargs.get('searchterm', '')
+        logger2.error(f"searchterm {search_term}")
+        if search_term:
+            issuers = objects.filter(
+                Q(name__icontains=search_term) | 
+                Q(description__icontains=search_term)
+        )
+        serializer_class = self.serializer_class
+        serializer = serializer_class(issuers, many=True)
+        return Response(serializer.data)
+
 
 
 class BadgeClassJson(JSONComponentView):
@@ -388,20 +472,57 @@ class BadgeClassJson(JSONComponentView):
             image_url=image_url
         )
 
+class BadgeClassPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'limit'
+    max_page_size = 100
 
 class BadgeClassList(JSONListView):
     permission_classes = (permissions.AllowAny,)
     model = BadgeClass
     serializer_class = BadgeClassSerializerV1
+    # pagination_class = BadgeClassPagination
 
     def log(self, obj):
         logger.event(badgrlog.BadgeClassRetrievedEvent(obj, self.request))
 
-    def get_json(self, request):
-        self.serializer_context = {
-            'exlude_orgImg': True
-        }
-        return super(BadgeClassList, self).get_json(request)
+    def get_queryset(self, request=None, **kwargs):
+        # Apply any filtering or ordering here
+        queryset = super().get_queryset(request, **kwargs)
+        
+        # Example filter
+        # if 'category' in request.query_params:
+        #     queryset = queryset.filter(category=request.query_params['category'])
+            
+        return queryset    
+
+    def get_objects(self, request, **kwargs): 
+        queryset = self.model.objects.all() 
+
+        search_query = self.request.query_params.get('search', None)
+        logger2.error(f"search query {search_query}")
+        if search_query:
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) |
+                Q(description__icontains=search_query)
+            )  
+        return queryset    
+
+    # def get_json(self, request):
+    #     queryset = self.get_objects()
+    #     # self.serializer_context = {
+    #     #     'exlude_orgImg': True
+    #     # }
+    #     page = self.pagination_class().paginate_queryset(queryset, request)
+    #     if page is not None:
+    #         serializer = self.serializer_class(page, many=True, context={'request': request})
+    #         result = self.pagination_class().get_paginated_response(serializer.data)
+    #         return result.data
+        
+    #     serializer = self.serializer_class(queryset, many=True, context={'request': request})
+    #     logger2.error(f"serializer data {serializer.data}")
+    #     return {'result': serializer.data}
+        # return super(BadgeClassList, self).get_json(request)
 
 
 class BadgeClassImage(ImagePropertyDetailView):
