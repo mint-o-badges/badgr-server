@@ -151,8 +151,12 @@ class BackpackAssertionSerializerV2(DetailSerializerV2, OriginalJsonSerializerMi
 
     def to_representation(self, instance):
         representation = super(BackpackAssertionSerializerV2, self).to_representation(instance)
-        request_kwargs = self.context['kwargs']
-        expands = request_kwargs.get('expands', [])
+        
+        try:
+            request_kwargs = self.context['kwargs']
+            expands = request_kwargs.get('expands', [])
+        except:
+            expands = []
 
         if self.parent is not None:
             # we'll have a bare representation

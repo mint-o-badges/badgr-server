@@ -126,3 +126,5 @@ svglib
 qrcode
 
 django-dbbackup
+
+django-filter==2.4.0
