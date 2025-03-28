@@ -1,6 +1,6 @@
 from django.conf.urls import url
 
-from badgeuser.api import BadgeRequestVerification, BadgeUserSaveMicroDegree, BadgeUserToken, \
+from badgeuser.api import BadgeRequestVerification, BadgeUserConfirmStaffRequest, BadgeUserSaveMicroDegree, BadgeUserToken, \
       BadgeUserForgotPassword, BadgeUserEmailConfirm, BadgeUserDetail, BadgeUserResendEmailConfirmation, \
         GetRedirectPath, IssuerStaffRequestDetail, IssuerStaffRequestList, LearningPathList, BadgeUserCollectBadgesInBackpack
 from badgeuser.api_v1 import BadgeUserEmailList, BadgeUserEmailDetail
@@ -27,5 +27,7 @@ urlpatterns = [
         name='v1_api_user_get_redirect_path'),  
     url(r'^issuerStaffRequests$', IssuerStaffRequestList.as_view(), name='v1_api_user_issuer_staff_requests'),
     url(r'^issuerStaffRequest/(?P<issuer_id>[^/]+)$', IssuerStaffRequestDetail.as_view(), name='v1_api_user_issuer_staff_request_detail'),
+    url(r'^confirm-staff-request/(?P<entity_id>[^/]+)$', BadgeUserConfirmStaffRequest.as_view(),
+        name='v1_api_user_confirm_staffrequest'),
          
 ]
