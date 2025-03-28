@@ -7,10 +7,12 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
 from django.db import transaction
 from django.http import Http404
+from django.urls import reverse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 
 from oauthlib.oauth2.rfc6749.tokens import random_token_generator
+from apps.mainsite.utils import OriginSetting
 from rest_framework import status, serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -37,6 +39,8 @@ from apispec_drf.decorators import apispec_get_operation, apispec_put_operation,
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAdmin
 from mainsite.serializers import CursorPaginatedListSerializer
 from mainsite.models import AccessTokenProxy
+
+from allauth.account.adapter import get_adapter
 import logging 
 
 logger = badgrlog.BadgrLogger()
@@ -1197,6 +1201,15 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
             staff_request.save()
 
             serializer = self.v1_serializer_class(staff_request)
+
+            email_context = {
+            "issuer": staff_request.issuer,
+            "activate_url": OriginSetting.HTTP + reverse("v1_api_user_confirm_staffrequest", kwargs= {'entity_id': staff_request.entity_id}),
+            "call_to_action_label": "Jetzt loslegen"
+            }
+            get_adapter().send_mail(
+                "account/email/staff_request_confirmed", staff_request.user.email, email_context
+            )
             return Response(serializer.data)
 
         except IssuerStaffRequest.DoesNotExist:

@@ -1251,7 +1251,8 @@ class BadgeUserConfirmStaffRequest(BaseEntityDetailView, BaseRedirectView):
         badgrapp_id = request.query_params.get("a")
         badgrapp = BadgrApp.objects.get_by_id_or_default(badgrapp_id)
 
-        issuer_id = kwargs.get("entity_id")
-        intended_redirect = f"/issuer/issuers/{issuer_id}/staff"
+        request_id = kwargs.get("entity_id")
+        request = IssuerStaffRequest.objects.filter(entity_id=request_id).first()
+        intended_redirect = f"/issuer/issuers/{request.issuer.entity_id}"
 
         return self._prepare_redirect(request, badgrapp, intended_redirect)
