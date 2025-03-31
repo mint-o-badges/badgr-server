@@ -483,9 +483,55 @@ class BadgeUserForgotPassword(BaseUserRecoveryView):
         user.set_password(password)
         user.save()
         return self.get_response()
+    
+class BaseRedirectView:
+    """
+    A base view for handling conditional redirects with flexible configuration.
+    """
+    def _prepare_redirect(self, request, badgrapp, intended_redirect):
+        """
+        Prepare redirect URL and response based on authentication status.
+        
+        :param request: HTTP request object
+        :param badgrapp: BadgrApp instance
+        :param intended_redirect: The target redirect path
+        :return: Response object with appropriate redirect
+        """
+        # Prepare frontend base URL
+        frontend_base_url = badgrapp.cors.rstrip("/") if badgrapp.cors else ""
+        if frontend_base_url and not frontend_base_url.startswith(('http://', 'https://')):
+            frontend_base_url = f"https://{frontend_base_url}"
+
+        # If user is authenticated, redirect to the intended page
+        if request.user.is_authenticated:
+            detail_url = f"{frontend_base_url}{intended_redirect}"
+            return Response(
+                status=HTTP_302_FOUND,
+                headers={"Location": detail_url}
+            )
+
+        # If not authenticated, prepare redirect to login
+        redirect_url = badgrapp.ui_login_redirect.rstrip("/")
+        response = Response(
+            status=HTTP_302_FOUND,
+            headers={"Location": redirect_url}
+        )
+
+        # Set cookie for intended redirect
+        response.set_cookie(
+            'intended_redirect',
+            intended_redirect,
+            max_age=3600,  # 1 hour
+            httponly=True,
+            # secure=settings.SECURE_SSL_REDIRECT,
+            samesite='Lax',
+            # domain=badgrapp.cors.split('://')[-1] if badgrapp.cors else None
+        )
+
+        return response      
 
 
-class BadgeUserEmailConfirm(BaseUserRecoveryView):
+class BadgeUserEmailConfirm(BaseUserRecoveryView, BaseRedirectView):
     permission_classes = (permissions.AllowAny,)
     v1_serializer_class = BaseSerializer
     v2_serializer_class = BaseSerializerV2
@@ -610,27 +656,30 @@ class BadgeUserEmailConfirm(BaseUserRecoveryView):
         process_email_verification.delay(email_address.pk)
 
         # Create an OAuth AccessTokenProxy instance for this user
-        accesstoken = AccessTokenProxy.objects.generate_new_token_for_user(
-            user,
-            application=(
-                badgrapp.oauth_application if badgrapp.oauth_application_id else None
-            ),
-            scope="rw:backpack rw:profile rw:issuer",
+        # accesstoken = AccessTokenProxy.objects.generate_new_token_for_user(
+        #     user,
+        #     application=(
+        #         badgrapp.oauth_application if badgrapp.oauth_application_id else None
+        #     ),
+        #     scope="rw:backpack rw:profile rw:issuer",
+        # )
+
+        redirect_url = badgrapp.ui_login_redirect.rstrip("/")
+
+        response = Response(status=HTTP_302_FOUND, headers={"Location": redirect_url})
+
+        intended_redirect = f"/auth/welcome"
+
+        response.set_cookie(
+            'intended_redirect',
+            intended_redirect,
+            max_age=3600,
+            httponly=True,
+            secure=request.is_secure(),
+            samesite='Lax'
         )
 
-        redirect_url = get_adapter().get_email_confirmation_redirect_url(
-            request, badgr_app=badgrapp
-        )
-
-        if badgrapp.use_auth_code_exchange:
-            authcode = authcode_for_accesstoken(accesstoken)
-            redirect_url = set_url_query_params(redirect_url, authCode=authcode)
-        else:
-            redirect_url = set_url_query_params(
-                redirect_url, authToken=accesstoken.token
-            )
-
-        return Response(status=HTTP_302_FOUND, headers={"Location": redirect_url})
+        return response
 
 
 class BadgeUserAccountConfirm(RedirectView):
@@ -1046,10 +1095,6 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
         ]),
     )
     def post(self, request, issuer_id, **kwargs):
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"kwargs: {kwargs}")
-        # Validate that the issuer exists
         try:
             issuer = Issuer.objects.get(entity_id=issuer_id)
         except Issuer.DoesNotExist:
@@ -1072,6 +1117,13 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
                 {"detail": "An active staff request already exists for this issuer"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
+        for member in issuer.cached_issuerstaff():
+            if request.user == member.cached_user:
+                return Response(
+                    {"detail": "Requesting user is already part of this institution"},
+                     status=status.HTTP_400_BAD_REQUEST
+                ) 
 
         try:
             staff_request = IssuerStaffRequest.objects.create(
