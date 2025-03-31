@@ -739,6 +739,18 @@ class BadgeClass(ResizeUploadedImage,
     expires_duration = models.CharField(max_length=254, choices=EXPIRES_DURATION_CHOICES,
                                         blank=True, null=True, default=None)
 
+    # permissions saved as integer in binary representation
+    # issuer should always be set
+    COPY_PERMISSIONS_ISSUER = 0b1    # 1
+    COPY_PERMISSIONS_OTHERS = 0b10   # 2
+    # COPY_PERMISSIONS_THIRD = 0b100 # 4
+    COPY_PERMISSIONS_CHOICES = (
+        (COPY_PERMISSIONS_ISSUER, 'Issuer'),
+        (COPY_PERMISSIONS_OTHERS, 'Everyone'),
+    )
+    COPY_PERMISSIONS_KEYS = ('issuer', 'others', )
+    copy_permissions = models.PositiveSmallIntegerField(default=COPY_PERMISSIONS_ISSUER)
+
     old_json = JSONField()
 
     objects = BadgeClassManager()
@@ -1012,6 +1024,22 @@ class BadgeClass(ResizeUploadedImage,
         duration_kwargs = dict()
         duration_kwargs[self.expires_duration] = self.expires_amount
         return issued_on + dateutil.relativedelta.relativedelta(**duration_kwargs)
+
+    @property
+    def copy_permissions_list(self):
+        # turn db value into string[] using keys
+        binary = bin(self.copy_permissions)[:1:-1]
+        return [self.COPY_PERMISSIONS_KEYS[i] for i, x in enumerate(binary) if int(x)]
+
+    @copy_permissions_list.setter
+    def copy_permissions_list(self, value):
+        if not value:
+            self.copy_permissions = 0
+        else:
+            # turn string[] of KEYS into db value
+            binary_map = [pow((1 if x in value else 0) * 2, i) for i, x in enumerate(self.COPY_PERMISSIONS_KEYS)]
+            print(binary_map)
+            self.copy_permissions = sum(map(int, binary_map))
 
 
 class BadgeInstance(BaseAuditedModel,

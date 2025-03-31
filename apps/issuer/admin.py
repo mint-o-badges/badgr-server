@@ -4,6 +4,7 @@ from django.http import HttpResponseRedirect
 
 from django_object_actions import DjangoObjectActions
 from django.utils.safestring import mark_safe
+from django import forms
 
 from mainsite.admin import badgr_admin
 
@@ -95,7 +96,40 @@ class BadgeClassExtensionInline(TabularInline):
     fields = ('name', 'original_json')
 
 
+class BinaryMultipleChoiceField(forms.MultipleChoiceField):
+    widget=forms.CheckboxSelectMultiple
+
+    def to_python(self, value):
+        if not value:
+            return 0
+        else:
+            return sum(map(int, value))
+
+    def prepare_value(self, value):
+        binary = bin(value)[:1:-1]
+        ret = [pow(int(x) * 2, i) for i, x in enumerate(binary) if int(x)]
+        return ret
+
+    def validate(self, value):
+        return isinstance(value, int) 
+
+    def has_changed(self, initial, data):
+        return initial != data
+
+class BadgeModelForm(forms.ModelForm):
+    copy_permissions = BinaryMultipleChoiceField(
+        required=False,
+        choices=BadgeClass.COPY_PERMISSIONS_CHOICES,
+    )
+
+    class Meta:
+        exclude = []
+        model = BadgeClass
+
+
 class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
+    form = BadgeModelForm
+
     readonly_fields = ('created_by', 'created_at', 'updated_at', 'old_json',
                        'source', 'source_url', 'entity_id', 'slug')
     list_display = ('badge_image', 'name', 'entity_id', 'issuer_link')
@@ -112,7 +146,7 @@ class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
             'fields': ('issuer', 'image', 'imageFrame', 'name', 'description')
         }),
         ('Configuration', {
-            'fields': ('criteria_url', 'criteria_text', 'expires_duration', 'expires_amount',)
+            'fields': ('criteria_url', 'criteria_text', 'expires_duration', 'expires_amount', 'copy_permissions',)
         }),
         ('JSON', {
             'fields': ('old_json',)
