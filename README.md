@@ -90,28 +90,28 @@ development server will reload itself in the docker container whenever changes a
 
 To run the project with docker in a development mode:
 
-* `docker-compose up`: build and get django and other components running
-* `docker-compose exec api python /badgr_server/manage.py migrate` - (while running) set up database tables
-* `docker-compose exec api python /badgr_server/manage.py dist` - generate docs swagger file(s)
-* `docker-compose exec api python /badgr_server/manage.py collectstatic` - Put built front-end assets into the static directory (Admin panel CSS, swagger docs).
-* `docker-compose exec api python /badgr_server/manage.py createsuperuser` - follow prompts to create your first admin user account
+* `docker compose up`: build and get django and other components running
+* `docker compose exec api python /badgr_server/manage.py migrate` - (while running) set up database tables
+* `docker compose exec api python /badgr_server/manage.py dist` - generate docs swagger file(s)
+* `docker compose exec api python /badgr_server/manage.py collectstatic` - Put built front-end assets into the static directory (Admin panel CSS, swagger docs).
+* `docker compose exec api python /badgr_server/manage.py createsuperuser` - follow prompts to create your first admin user account
 
 ### Running the Django Server in "Production"
 
-By default `docker-compose` will look for a `docker-compose.yml` for instructions of what to do. This file
-is the development (and thus default) config for `docker-compose`.
+By default `docker compose` will look for a `docker-compose.yml` for instructions of what to do. This file
+is the development (and thus default) config for `docker compose`.
 
 If you'd like to run the project with a more production-like setup, you can specify the `docker-compose.prod.yml`
 file. This setup **copies** the project code in (instead of mirroring) and uses nginx with uwsgi to run django.
 
-* `docker-compose -f docker-compose.prod.yml up -d` - build and get django and other components (production mode)
+* `docker compose -f docker-compose.prod.yml up -d` - build and get django and other components (production mode)
 
-* `docker-compose -f docker-compose.prod.yml exec api python /badgr_server/manage.py migrate` - (while running) set up database tables
+* `docker compose -f docker-compose.prod.yml exec api python /badgr_server/manage.py migrate` - (while running) set up database tables
 
 If you are using the production setup and you have made changes you wish to see reflected in the running container,
 you will need to stop and then rebuild the production containers:
 
-* `docker-compose -f docker-compose.prod.yml build` - (re)build the production containers
+* `docker compose -f docker-compose.prod.yml build` - (re)build the production containers
 
 * If the extension urls aren't adjusted (or the url changes, or for some other reason it seems as if extension schemas can't be loaded, e.g. because of 401 errors in the badge creation process), run the script in `scripts/change-extension-url.sh`.
 
@@ -166,14 +166,14 @@ Do note that the OIDC authentication mechanism produces access tokens that, in c
 They can thus access anything on the page not limited to admin / superuser users. This also is the default behavior for the tokens we generate ourselves.
 
 ### Run the tests
-For the tests to run you first need to run docker (`docker-compose up`).
-Then within docker, run `tox`: `docker-compose exec api tox`.
-Note that you might have to run `docker-compose build` once for the new changes to the testing enviornment to take effect.
+For the tests to run you first need to run docker (`docker compose up`).
+Then within docker, run `tox`: `docker compose exec api tox`.
+Note that you might have to run `docker compose build` once for the new changes to the testing enviornment to take effect.
 To just run a single test:
 ```bash
-docker-compose exec api python /badgr_server/manage.py test -k <test-name>
+docker compose exec api python /badgr_server/manage.py test -k <test-name>
 # Example:
-docker-compose exec api python /badgr_server/manage.py test issuer.tests.test_issuer.IssuerTests.test_cant_create_issuer_with_unverified_email_v1
+docker compose exec api python /badgr_server/manage.py test issuer.tests.test_issuer.IssuerTests.test_cant_create_issuer_with_unverified_email_v1
 ```
 
 ### Debug
