@@ -523,9 +523,9 @@ class BaseRedirectView:
             intended_redirect,
             max_age=3600,  # 1 hour
             httponly=True,
-            # secure=settings.SECURE_SSL_REDIRECT,
+            secure=settings.SECURE_SSL_REDIRECT,
             samesite='Lax',
-            # domain=badgrapp.cors.split('://')[-1] if badgrapp.cors else None
+            domain=badgrapp.cors.split('://')[-1] if badgrapp.cors else None
         )
 
         return response      
@@ -968,55 +968,30 @@ class BaseRedirectView:
         )
 
         return response    
-    
-class BadgeUserSaveMicroDegree(BaseEntityDetailView):
+ 
+class BadgeUserSaveMicroDegree(BaseEntityDetailView, BaseRedirectView):
     permission_classes = (permissions.AllowAny,)
     v1_serializer_class = BaseSerializer
     v2_serializer_class = BaseSerializerV2
-
+    
     def get(self, request, **kwargs):
         """
         Redirect to the micro degree detail page after the user logs in
         """
         badgrapp_id = request.query_params.get("a")
         badgrapp = BadgrApp.objects.get_by_id_or_default(badgrapp_id)
-
-        microdegree_id = kwargs.get("entity_id")         
         
+        microdegree_id = kwargs.get("entity_id")
         intended_redirect = f"/public/learningpaths/{microdegree_id}"
         
-        if request.user.is_authenticated:
-            frontend_base_url = badgrapp.cors.rstrip("/") if badgrapp.cors else ""
-            if frontend_base_url and not frontend_base_url.startswith(('http://', 'https://')):
-               frontend_base_url = f"https://{frontend_base_url}"
-            detail_url = f"{frontend_base_url}{intended_redirect}"
-            return Response(
-                status=HTTP_302_FOUND,
-                headers={"Location": detail_url}
-            )
-        redirect_url = badgrapp.ui_login_redirect.rstrip("/")
-        response = Response(
-            status=HTTP_302_FOUND,
-            headers={"Location": redirect_url}
-        )
-        
-        response.set_cookie(
-            'intended_redirect',
-            intended_redirect,
-            max_age=3600,  # 1 hour
-            httponly=True,
-            secure=settings.SECURE_SSL_REDIRECT,
-            samesite='Lax',
-            domain=badgrapp.cors.split('://')[-1] if badgrapp.cors else None
-        )
-        
-        return response    
-    
-class BadgeUserCollectBadgesInBackpack(BaseEntityDetailView):
+        return self._prepare_redirect(request, badgrapp, intended_redirect)
+
+
+class BadgeUserCollectBadgesInBackpack(BaseEntityDetailView, BaseRedirectView):
     permission_classes = (permissions.AllowAny,)
     v1_serializer_class = BaseSerializer
     v2_serializer_class = BaseSerializerV2
-
+    
     def get(self, request, **kwargs):
         """
         Redirect to the user's backpack page after the user logs in
@@ -1024,36 +999,9 @@ class BadgeUserCollectBadgesInBackpack(BaseEntityDetailView):
         badgrapp_id = request.query_params.get("a")
         badgrapp = BadgrApp.objects.get_by_id_or_default(badgrapp_id)
         
-        intended_redirect = f"/recipient/badges/"
+        intended_redirect = "/recipient/badges/"
         
-        if request.user.is_authenticated:
-            frontend_base_url = badgrapp.cors.rstrip("/") if badgrapp.cors else ""
-            if frontend_base_url and not frontend_base_url.startswith(('http://', 'https://')):
-               frontend_base_url = f"https://{frontend_base_url}"
-            detail_url = f"{frontend_base_url}{intended_redirect}"
-            return Response(
-                status=HTTP_302_FOUND,
-                headers={"Location": detail_url}
-            )
-        
-
-        redirect_url = badgrapp.ui_login_redirect.rstrip("/")
-        response = Response(
-            status=HTTP_302_FOUND,
-            headers={"Location": redirect_url}
-        )
-        
-        response.set_cookie(
-            'intended_redirect',
-            intended_redirect,
-            max_age=3600,  # 1 hour
-            httponly=True,
-            secure=settings.SECURE_SSL_REDIRECT,
-            samesite='Lax',
-            domain=badgrapp.cors.split('://')[-1] if badgrapp.cors else None
-        )
-        
-        return response    
+        return self._prepare_redirect(request, badgrapp, intended_redirect)  
     
 class GetRedirectPath(BaseEntityDetailView):
     permission_classes = (permissions.IsAuthenticated,)
