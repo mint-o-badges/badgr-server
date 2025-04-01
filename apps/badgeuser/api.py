@@ -1286,7 +1286,11 @@ class IssuerStaffRequestList(BaseEntityListView):
     )
     def get_objects(self, request, **kwargs):
         return IssuerStaffRequest.objects.filter(
-            user=request.user, revoked=False
+            user=request.user, revoked=False,
+             status__in=[
+                IssuerStaffRequest.Status.PENDING, 
+                IssuerStaffRequest.Status.APPROVED
+            ]
         )
     def get(self, request, **kwargs):
         return super(IssuerStaffRequestList, self).get(request, **kwargs)
