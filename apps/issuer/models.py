@@ -2200,6 +2200,8 @@ class QrCode(BaseVersionedEntity):
 
     expires_at = models.DateTimeField(blank=True, null=True, default=None)
 
+    notifications = models.BooleanField(null=False, default=False)
+
 
 class RequestedBadge(BaseVersionedEntity):
 
