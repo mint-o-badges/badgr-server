@@ -29,6 +29,9 @@ network systems.
 Prerequisites:
 
 * Install docker (see [instructions](https://docs.docker.com/install/))
+* Install python
+  * Make sure you have the version(s) installed referenced in the [.pre-commit-config.yaml](.pre-commit-config.yaml)
+  * Also install `python-devel`, required to run the pre-commit hooks
 
 ### Copy local settings example file
 
