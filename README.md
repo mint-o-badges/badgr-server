@@ -48,6 +48,7 @@ Edit the `settings_local.dev.py` and/or `settings_local.prod.py` to adjust the f
     * The default `EMAIL_BACKEND= 'django.core.mail.backends.console.EmailBackend'` will log email content to console, which is often adequate for development. Other options are available. See Django docs for [sending email](https://docs.djangoproject.com/en/1.11/topics/email/).
 * Set `SECRET_KEY` and `UNSUBSCRIBE_SECRET_KEY` each to (different) cryptographically secure random values.
     * Generate values with: `python -c "import base64; import os; print(base64.b64encode(os.urandom(30)).decode('utf-8'))"`
+    * Remove that part `.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(40))` to prevent issues with the admin panel login
 * Set `AUTHCODE_SECRET_KEY` to a 32 byte url-safe base64-encoded random string. This key is used for symmetrical encryption of authentication tokens.  If not defined, services like OAuth will not work.
     * Generate a value with: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key())"`
 
@@ -132,6 +133,8 @@ The production server will be reachable on port `8080`:
 
 * http://localhost:8080/ (production)
 
+Note: An error message when accessing the above mentioned URLs is perfectly fine, since the server doesn't actually serve anything on the root url.
+
 There are various examples of URLs in this readme and they all feature the development port. You will
 need to adjust that if you are using the production server.
 
@@ -146,11 +149,13 @@ need to adjust that if you are using the production server.
 
 If your [badgr-ui](https://github.com/concentricsky/badgr-ui) is running on http://localhost:4000, use the following values:
 * CORS: ensure this setting matches the domain on which you are running badgr-ui, including the port if other than the standard HTTP or HTTPS ports. `localhost:4000`
+* Oauth authorization redirect: `http://localhost:4000/`
 * Signup redirect: `http://localhost:4000/signup/`
 * Email confirmation redirect: `http://localhost:4000/auth/login/`
 * Forgot password redirect: `http://localhost:4000/change-password/`
 * UI login redirect: `http://localhost:4000/auth/login/`
 * UI signup success redirect: `http://localhost:4000/signup/success/`
+* UI signup failure redirect: `http://localhost:4000/signup/failure/`
 * UI connect success redirect: `http://localhost:4000/profile/`
 * Public pages redirect: `http://localhost:4000/public/`
 
