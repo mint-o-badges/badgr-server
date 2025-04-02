@@ -185,7 +185,7 @@ docker compose exec api python /badgr_server/manage.py test issuer.tests.test_is
 ```
 
 ### Debug
-For debugging, in the `Docerfile.dev.api` `debugpy` is also installed and there is the docker compose file `docker-compose.debug.yml`.
+For debugging, in the `Dockerfile.dev.api` `debugpy` is also installed and there is the docker compose file `docker-compose.debug.yml`.
 In VSCode you can create a `launch.json` by choosing `Python` as debugger and `Remote Attach` as debug configuration (and defaults for the rest).
 You can then start the application with
 ```bash
