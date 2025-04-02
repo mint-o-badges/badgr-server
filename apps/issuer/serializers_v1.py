@@ -268,6 +268,9 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
 
     copy_permissions = serializers.ListField(source='copy_permissions_list')
 
+    customCriteria = serializers.ListField(required=False)
+
+
     class Meta:
         apispec_definition = ('BadgeClass', {})
 
@@ -426,7 +429,7 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
             raise serializers.ValidationError(
                 "One or both of the criteria_text and criteria_url fields must be provided"
             )
-
+        
         new_badgeclass = BadgeClass.objects.create(**validated_data)
         return new_badgeclass
 

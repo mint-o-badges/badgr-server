@@ -671,8 +671,6 @@ def get_user_or_none(recipient_id, recipient_type):
             user = verified_recipient_id.user
 
     return user
-
-
 class BadgeClass(ResizeUploadedImage,
                  ScrubUploadedSvgImage,
                  HashUploadedImage,
@@ -725,6 +723,8 @@ class BadgeClass(ResizeUploadedImage,
     )
     COPY_PERMISSIONS_KEYS = ('issuer', 'others', )
     copy_permissions = models.PositiveSmallIntegerField(default=COPY_PERMISSIONS_ISSUER)
+
+    customCriteria = JSONField(default={})
 
     old_json = JSONField()
 
@@ -1066,7 +1066,7 @@ class BadgeInstance(BaseAuditedModel,
     salt = models.CharField(max_length=254, blank=True, null=True, default=None)
 
     narrative = models.TextField(blank=True, null=True, default=None)
-
+    
     old_json = JSONField()
 
     objects = BadgeInstanceManager()
@@ -1970,4 +1970,5 @@ class RequestedLearningPath(BaseVersionedEntity):
 
     requestedOn = models.DateTimeField(blank=False, null=False, default=timezone.now)
 
-    status = models.CharField(max_length=254, blank=False, null=False, default='Pending')    
+    status = models.CharField(max_length=254, blank=False, null=False, default='Pending')  
+
