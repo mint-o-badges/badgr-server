@@ -26,7 +26,8 @@ urlpatterns = [
     url(r'^get-redirect-path$', GetRedirectPath.as_view(),
         name='v1_api_user_get_redirect_path'),  
     url(r'^issuerStaffRequests$', IssuerStaffRequestList.as_view(), name='v1_api_user_issuer_staff_requests'),
-    url(r'^issuerStaffRequest/(?P<issuer_id>[^/]+)$', IssuerStaffRequestDetail.as_view(), name='v1_api_user_issuer_staff_request_detail'),
+    url(r'^issuerStaffRequest/issuer/(?P<issuer_id>[^/]+)$', IssuerStaffRequestDetail.as_view(), name='v1_api_user_issuer_staff_request_detail'),
+    url(r'^issuerStaffRequest/request/(?P<request_id>[^/]+)$', IssuerStaffRequestDetail.as_view(), name='v1_api_user_issuer_staff__revoke_request_detail'),
     url(r'^confirm-staff-request/(?P<entity_id>[^/]+)$', BadgeUserConfirmStaffRequest.as_view(),
         name='v1_api_user_confirm_staffrequest'),
          

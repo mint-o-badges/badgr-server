@@ -1125,9 +1125,7 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
     def delete(self, request, **kwargs):
         # verify the user has permission to the staff request
         staff_request = self.get_object(request, **kwargs)
-        logger2.error(f"staff_request {staff_request}")
         if not self.has_object_permissions(request, staff_request):
-            logger2.error("no permission")
             return Response(status=HTTP_404_NOT_FOUND)
 
         try:
@@ -1142,7 +1140,7 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
     def get_object(self, request, **kwargs):
         try:
             self.object = IssuerStaffRequest.objects.filter(
-                user=request.user
+                entity_id=kwargs.get("request_id"),
             ).first()
         except IssuerStaffRequest.DoesNotExist:
             raise Http404
@@ -1163,68 +1161,6 @@ class IssuerStaffRequestList(BaseEntityListView):
         "delete": ["rw:profile"],
     }
 
-    @apispec_post_operation(
-        "IssuerStaffRequest",
-        summary="Post a single issuer staff request",
-        description="Make a request to be part of an institution",
-        tags=["IssuerStaffRequest"],
-    )
-    @throttleable
-    def post(self, request, **kwargs):
-        """
-        Signup for a new account
-        """
-        if request.version == "v1":
-
-            # email = request.data.get("email")
-            # TODO: investigate how we can use this to improve the spam filter
-            # only send email domain to spamfilter API to protect users privacy
-            # _, email_domain = email.split("@", 1)
-            # firstname = request.data.get("first_name")
-            # lastname = request.data.get("last_name")
-
-            # apiKey = getattr(settings, "ALTCHA_API_KEY")
-            # endpoint = getattr(settings, "ALTCHA_SPAMFILTER_ENDPOINT")
-            # payload = {
-            #     "text": [firstname, lastname],
-                # the following options seem to classify too much data as spam, i commented them out for now
-                # "email": email_domain,
-                # "expectedLanguages": ["en", "de"],
-            # }
-            # params = {"apiKey": apiKey}
-            # headers = {
-            #     "Content-Type": "application/json",
-            #     "referer": getattr(settings, "HTTP_ORIGIN"),
-            # }
-            # response = requests.post(
-            #     endpoint, params=params, data=json.dumps(payload), headers=headers
-            # )
-            # if response.status_code == 200:
-            #     data = response.json()
-            #     classification = data["classification"]
-            #     if classification == "BAD":
-            #         # TODO: show reasons why data was classified as spam
-            #         return JsonResponse(
-            #             {
-            #                 "error": "Spam filter detected spam. Your account was not created."
-            #             },
-            #             status=status.HTTP_403_FORBIDDEN,
-            #         )
-
-            serializer_cls = self.get_serializer_class()
-            captcha = request.data.get("captcha")
-            serializer = serializer_cls(
-                data=request.data, context={"request": request, "captcha": captcha}
-            )
-            serializer.is_valid(raise_exception=True)
-            try:
-                serializer.save()
-            except DjangoValidationError as e:
-                raise RestframeworkValidationError(e.message)
-            return Response(serializer.data, status=HTTP_201_CREATED)
-
-        return Response(status=HTTP_404_NOT_FOUND)
-
     @apispec_get_operation(
         "IssuerStaffRequest",
         summary="Get a list of issuer staff requests for the authenticated user",
@@ -1236,7 +1172,6 @@ class IssuerStaffRequestList(BaseEntityListView):
             user=request.user, revoked=False,
              status__in=[
                 IssuerStaffRequest.Status.PENDING, 
-                IssuerStaffRequest.Status.APPROVED
             ]
         )
     def get(self, request, **kwargs):
