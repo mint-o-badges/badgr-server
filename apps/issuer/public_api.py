@@ -6,8 +6,6 @@ import urllib.parse
 import urllib.error
 import urllib.parse
 
-from apps.backpack.badge_connect_api import BadgeConnectPagination
-from apps.mainsite.pagination import BadgrCursorPagination
 import cairosvg
 import openbadges
 from PIL import Image
@@ -24,7 +22,6 @@ from rest_framework import status, permissions
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.pagination import PageNumberPagination
 
 
 import badgrlog
@@ -38,10 +35,6 @@ from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, Learning
 from .models import Issuer, BadgeClass, BadgeInstance, LearningPath, LearningPathBadge
 from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, LearningPathSerializerV1
 from .models import Issuer, BadgeClass, BadgeInstance, LearningPath
-
-import logging 
-
-logger2 = logging.getLogger(__name__)
 
 logger = badgrlog.BadgrLogger()
 class SlugToEntityIdRedirectMixin(object):
@@ -374,7 +367,6 @@ class IssuerSearch(JSONListView):
         objects = self.model.objects
 
         search_term = kwargs.get('searchterm', '')
-        logger2.error(f"searchterm {search_term}")
         if search_term:
             issuers = objects.filter(
                 Q(name__icontains=search_term) | 
