@@ -1119,7 +1119,6 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
         ]),
     )
     def delete(self, request, **kwargs):
-        # verify the user has permission to the staff request
         staff_request = self.get_object(request, **kwargs)
         if not self.has_object_permissions(request, staff_request):
             return Response(status=HTTP_404_NOT_FOUND)

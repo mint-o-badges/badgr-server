@@ -1135,7 +1135,6 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
         tags=["IssuerStaffRequest"],
     )
     def put(self, request, **kwargs):
-        # Check if this is a confirmation request
         if 'confirm' in request.path:
             return self.confirm_request(request, **kwargs)
         return super(IssuerStaffRequestDetail, self).put(request, **kwargs)
