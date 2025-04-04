@@ -1078,7 +1078,7 @@ class IssuerStaffRequestList(BaseEntityListView):
     v2_serializer_class = IssuerStaffRequestSerializer
     permission_classes =  [
         IsServerAdmin
-        | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope & ApprovedIssuersOnly)
+        | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope & ApprovedIssuersOnly & MayEditBadgeClass)
     ]
     valid_scopes = {
         "post": ["*"],
@@ -1102,9 +1102,7 @@ class IssuerStaffRequestList(BaseEntityListView):
                 {"response": "Institution not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
-                
-        if(request.user not in issuer.cached_issuerstaff()): 
-            return Response({"error": "You are not authorized on this institution."}, status=status.HTTP_403_FORBIDDEN)
+        
         return IssuerStaffRequest.objects.filter(
             issuer__entity_id=issuerSlug,
             revoked=False,
@@ -1121,7 +1119,7 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
     v1_serializer_class = IssuerStaffRequestSerializer
     permission_classes = [
         IsServerAdmin
-        | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope & ApprovedIssuersOnly)
+        | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope & ApprovedIssuersOnly & MayEditBadgeClass)
     ]
     valid_scopes = ["rw:issuer"]
 
@@ -1145,9 +1143,6 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
     def confirm_request(self, request, **kwargs):
         try:
             staff_request = IssuerStaffRequest.objects.get(entity_id=kwargs.get("requestId"))
-
-            if(request.user not in staff_request.issuer.cached_issuerstaff()):
-                 return Response({"error": "You are not authorized on this institution."}, status=status.HTTP_403_FORBIDDEN)
             
             if staff_request.status != IssuerStaffRequest.Status.PENDING:
                 return Response(
@@ -1183,9 +1178,6 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
     def delete(self, request, **kwargs):
         try:
             staff_request = IssuerStaffRequest.objects.get(entity_id=kwargs.get("requestId"))
-
-            if(request.user not in staff_request.issuer.cached_issuerstaff()):
-                return Response({"error": "You are not authorized on this institution."}, status=status.HTTP_403_FORBIDDEN)
             
             if staff_request.status != IssuerStaffRequest.Status.PENDING:
                 return Response(
