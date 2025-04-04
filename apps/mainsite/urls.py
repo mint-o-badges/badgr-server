@@ -172,7 +172,6 @@ urlpatterns = [
     url(r'^aiskills-keywords/(?P<searchterm>[^/]+)$', aiskills_keywords, name="aiskills_keywords"),
 
     url(r'^request-badge/(?P<qrCodeId>[^/]+)$', requestBadge, name="request-badge"),
-    url(r'^issuerStaffRequest/(?P<issuerId>[^/]+)$', issuerStaffRequest, name="request-issuer-staff"),
 
     url(r'^get-server-version', getVersion, name="get-server-version"),
 

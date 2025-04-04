@@ -314,32 +314,7 @@ def requestBadge(req, qrCodeId):
 
         badge.save()
 
-        return JsonResponse({"message": "Badge request received"}, status=status.HTTP_200_OK)
-    
-@api_view(["POST", "GET"])
-@permission_classes([IsAuthenticated])
-def issuerStaffRequest(req, issuerId):
-    if req.method != "POST" and req.method != "GET":
-        return JsonResponse(
-            {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
-        )
-    issuer = Issuer.objects.get(entity_id=issuerId) 
-
-    if req.method == "GET":
-        requests = issuerStaffRequest.objects.filter(user=req.user, issuer=issuer)
-        serializer = IssuerStaffRequestSerializer(requests, many=True)  
-        return JsonResponse({"issuer_staff_requests": serializer.data}, status=status.HTTP_200_OK)
-   
-    elif req.method == "POST":   
-
-        request = IssuerStaffRequest() 
-
-        request.issuer = issuer
-        request.user = req.user
-
-        request.save()
-
-        return JsonResponse({"message": "Issuer staff request received"}, status=status.HTTP_200_OK)    
+        return JsonResponse({"message": "Badge request received"}, status=status.HTTP_200_OK)  
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
