@@ -326,7 +326,7 @@ def issuerStaffRequest(req, issuerId):
     issuer = Issuer.objects.get(entity_id=issuerId) 
 
     if req.method == "GET":
-        requests = issuerStaffRequest.objects.filter(user=req.user)
+        requests = issuerStaffRequest.objects.filter(user=req.user, issuer=issuer)
         serializer = IssuerStaffRequestSerializer(requests, many=True)  
         return JsonResponse({"issuer_staff_requests": serializer.data}, status=status.HTTP_200_OK)
    
