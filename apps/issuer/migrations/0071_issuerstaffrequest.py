@@ -9,16 +9,10 @@ import django.utils.timezone
 class Migration(migrations.Migration):
 
     dependencies = [
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('issuer', '0069_delete_learningpathparticipant'),
+        ('issuer', '0070_badgeclass_copy_permissions'),
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='badgeclass',
-            name='copy_permissions',
-            field=models.PositiveSmallIntegerField(default=1),
-        ),
         migrations.CreateModel(
             name='IssuerStaffRequest',
             fields=[
