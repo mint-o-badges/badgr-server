@@ -1039,60 +1039,7 @@ class BadgeRequestList(BaseEntityListView):
                 {"error": "An unexpected error occurred"},
                 status=HTTP_400_BAD_REQUEST
             )
-
-class StaffRequestList(BaseEntityListView):
-    model = IssuerStaffRequest    
-    v1_serializer_class = IssuerStaffRequestSerializer
-    permission_classes = [
-        IsServerAdmin
-        | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope & ApprovedIssuersOnly)
-    ]
-    valid_scopes = ["rw:issuer"]
-
-    @apispec_delete_operation('IssuerStaffRequest',
-        summary="Delete multiple issuer staff requests",
-        tags=["Issuer staff requests"],
-    )
-
-    def post(self, request, **kwargs):
-        try: 
-            ids = request.data.get('ids', [])  
-
-            with transaction.atomic():
-                    deletion_queryset = IssuerStaffRequest.objects.filter(
-                        entity_id__in=ids,
-                    )
-
-                    found_ids = set(deletion_queryset.values_list('entity_id', flat=True))
-                    missing_ids = set(map(str, ids)) - set(map(str, found_ids))
-                    
-                    if missing_ids:
-                        return Response(
-                            {
-                                "error": "Some requests not found",
-                                "missing_ids": list(missing_ids)
-                            },
-                            status=HTTP_404_NOT_FOUND
-                        )
-
-                    deleted_count = deletion_queryset.delete()[0]
-
-                    return Response({
-                        "message": f"Successfully deleted {deleted_count} issuer staff requests",
-                        "deleted_count": deleted_count
-                    }, status=HTTP_200_OK)
-
-        except DjangoValidationError as e:
-            return Response(
-                {"error": str(e)},
-                status=HTTP_400_BAD_REQUEST
-            )
-        except Exception as e:
-            return Response(
-                {"error": "An unexpected error occurred"},
-                status=HTTP_400_BAD_REQUEST
-            )
-                
+              
 
 class LearningPathDetail(BaseEntityDetailView):
     model = LearningPath
