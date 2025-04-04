@@ -1094,8 +1094,19 @@ class IssuerStaffRequestList(BaseEntityListView):
         tags=["IssuerStaffRequest"],
     )
     def get_objects(self, request, **kwargs):
+        issuerSlug = kwargs.get('issuerSlug')
+        try: 
+            issuer = Issuer.objects.get(entity_id=issuerSlug)
+        except Issuer.DoesNotExist: 
+            return Response(
+                {"response": "Institution not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+                
+        if(request.user not in issuer.cached_issuerstaff()): 
+            return Response({"error": "You are not authorized on this institution."}, status=status.HTTP_403_FORBIDDEN)
         return IssuerStaffRequest.objects.filter(
-            issuer__entity_id=kwargs.get('issuerSlug'),
+            issuer__entity_id=issuerSlug,
             revoked=False,
             status=IssuerStaffRequest.Status.PENDING
         )
@@ -1133,10 +1144,10 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
 
     def confirm_request(self, request, **kwargs):
         try:
-            import logging 
-            logger = logging.getLogger(__name__)
-            logger.error(f"kwargs {kwargs}")
-            staff_request = IssuerStaffRequest.objects.filter(entity_id=kwargs.get("requestId")).first()
+            staff_request = IssuerStaffRequest.objects.get(entity_id=kwargs.get("requestId"))
+
+            if(request.user not in staff_request.issuer.cached_issuerstaff()):
+                 return Response({"error": "You are not authorized on this institution."}, status=status.HTTP_403_FORBIDDEN)
             
             if staff_request.status != IssuerStaffRequest.Status.PENDING:
                 return Response(
@@ -1171,7 +1182,10 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
     )
     def delete(self, request, **kwargs):
         try:
-            staff_request = IssuerStaffRequest.objects.filter(entity_id=kwargs.get("requestId")).first()
+            staff_request = IssuerStaffRequest.objects.get(entity_id=kwargs.get("requestId"))
+
+            if(request.user not in staff_request.issuer.cached_issuerstaff()):
+                return Response({"error": "You are not authorized on this institution."}, status=status.HTTP_403_FORBIDDEN)
             
             if staff_request.status != IssuerStaffRequest.Status.PENDING:
                 return Response(
