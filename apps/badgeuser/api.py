@@ -1047,7 +1047,7 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
             issuer = Issuer.objects.get(entity_id=issuer_id)
         except Issuer.DoesNotExist:
             return Response(
-                {"detail": "Issuer not found"},
+                {"response": "Issuer not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
 
@@ -1061,14 +1061,14 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
 
         if existing_request:
             return Response(
-                {"detail": "An active staff request already exists for this issuer"},
+                {"response": "Für diese Institution liegt noch eine offene Anfrage von dir vor!"},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
         for member in issuer.cached_issuerstaff():
             if request.user == member.cached_user:
                 return Response(
-                    {"detail": "Requesting user is already part of this institution"},
+                    {"response": "Du bist bereits Teil dieser Institution!"},
                      status=status.HTTP_400_BAD_REQUEST
                 ) 
 
@@ -1081,7 +1081,7 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
             )
         except Exception as e:
             return Response(
-                {"detail": str(e)},
+                {"response": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
