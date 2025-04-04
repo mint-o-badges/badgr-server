@@ -958,9 +958,9 @@ class BaseRedirectView:
             intended_redirect,
             max_age=3600,  # 1 hour
             httponly=True,
-            # secure=settings.SECURE_SSL_REDIRECT,
+            secure=settings.SECURE_SSL_REDIRECT,
             samesite='Lax',
-            # domain=badgrapp.cors.split('://')[-1] if badgrapp.cors else None
+            domain=badgrapp.cors.split('://')[-1] if badgrapp.cors else None
         )
 
         return response    
