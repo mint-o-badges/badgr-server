@@ -1,6 +1,6 @@
 from django.views.generic.base import RedirectView, TemplateView
 from django.conf.urls.static import static
-from mainsite.views import badgeRequestsByBadgeClass, downloadQrCode, issuerStaffRequest, upload, nounproject, aiskills, aiskills_keywords, requestBadge, deleteBadgeRequest, createCaptchaChallenge, getVersion
+from mainsite.views import badgeRequestsByBadgeClass, downloadQrCode, upload, nounproject, aiskills, aiskills_keywords, requestBadge, deleteBadgeRequest, createCaptchaChallenge, getVersion
 from mainsite.views import (
     info_view,
     email_unsubscribe,
