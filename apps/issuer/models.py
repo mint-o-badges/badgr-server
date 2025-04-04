@@ -681,7 +681,7 @@ class IssuerStaffRequest(BaseVersionedEntity):
 
     issuer = models.ForeignKey(Issuer, blank=False, null=False,
                                on_delete=models.CASCADE, related_name='staffrequests')
-    user = models.ForeignKey('badgeuser.BadgeUser', blank=True, null=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey('badgeuser.BadgeUser', blank=True, null=True, on_delete=models.CASCADE)
     requestedOn = models.DateTimeField(blank=False, null=False, default=timezone.now)
     status = models.CharField(
         max_length=254, 
