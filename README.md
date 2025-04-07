@@ -95,10 +95,10 @@ development server will reload itself in the docker container whenever changes a
 To run the project with docker in a development mode:
 
 * `docker compose up`: build and get django and other components running
-* `docker compose exec api python /badgr_server/manage.py migrate` - (while running) set up database tables
-* `docker compose exec api python /badgr_server/manage.py dist` - generate docs swagger file(s)
-* `docker compose exec api python /badgr_server/manage.py collectstatic` - Put built front-end assets into the static directory (Admin panel CSS, swagger docs).
-* `docker compose exec api python /badgr_server/manage.py createsuperuser` - follow prompts to create your first admin user account
+* `docker compose exec api python manage.py migrate` - (while running) set up database tables
+* `docker compose exec api python manage.py dist` - generate docs swagger file(s)
+* `docker compose exec api python manage.py collectstatic` - Put built front-end assets into the static directory (Admin panel CSS, swagger docs).
+* `docker compose exec api python manage.py createsuperuser` - follow prompts to create your first admin user account
 
 ### Running the Django Server in "Production"
 
@@ -110,7 +110,7 @@ file. This setup **copies** the project code in (instead of mirroring) and uses 
 
 * `docker compose -f docker-compose.prod.yml up -d` - build and get django and other components (production mode)
 
-* `docker compose -f docker-compose.prod.yml exec api python /badgr_server/manage.py migrate` - (while running) set up database tables
+* `docker compose -f docker-compose.prod.yml exec api python manage.py migrate` - (while running) set up database tables
 
 If you are using the production setup and you have made changes you wish to see reflected in the running container,
 you will need to stop and then rebuild the production containers:
