@@ -29,6 +29,9 @@ network systems.
 Prerequisites:
 
 * Install docker (see [instructions](https://docs.docker.com/install/))
+* Install python
+  * Make sure you have the version(s) installed referenced in the [.pre-commit-config.yaml](.pre-commit-config.yaml)
+  * Also install `python-devel`, required to run the pre-commit hooks
 
 ### Copy local settings example file
 
@@ -45,6 +48,7 @@ Edit the `settings_local.dev.py` and/or `settings_local.prod.py` to adjust the f
     * The default `EMAIL_BACKEND= 'django.core.mail.backends.console.EmailBackend'` will log email content to console, which is often adequate for development. Other options are available. See Django docs for [sending email](https://docs.djangoproject.com/en/1.11/topics/email/).
 * Set `SECRET_KEY` and `UNSUBSCRIBE_SECRET_KEY` each to (different) cryptographically secure random values.
     * Generate values with: `python -c "import base64; import os; print(base64.b64encode(os.urandom(30)).decode('utf-8'))"`
+    * Remove that part `.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(40))` to prevent issues with the admin panel login
 * Set `AUTHCODE_SECRET_KEY` to a 32 byte url-safe base64-encoded random string. This key is used for symmetrical encryption of authentication tokens.  If not defined, services like OAuth will not work.
     * Generate a value with: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key())"`
 
@@ -90,28 +94,28 @@ development server will reload itself in the docker container whenever changes a
 
 To run the project with docker in a development mode:
 
-* `docker-compose up`: build and get django and other components running
-* `docker-compose exec api python /badgr_server/manage.py migrate` - (while running) set up database tables
-* `docker-compose exec api python /badgr_server/manage.py dist` - generate docs swagger file(s)
-* `docker-compose exec api python /badgr_server/manage.py collectstatic` - Put built front-end assets into the static directory (Admin panel CSS, swagger docs).
-* `docker-compose exec api python /badgr_server/manage.py createsuperuser` - follow prompts to create your first admin user account
+* `docker compose up`: build and get django and other components running
+* `docker compose exec api python /badgr_server/manage.py migrate` - (while running) set up database tables
+* `docker compose exec api python /badgr_server/manage.py dist` - generate docs swagger file(s)
+* `docker compose exec api python /badgr_server/manage.py collectstatic` - Put built front-end assets into the static directory (Admin panel CSS, swagger docs).
+* `docker compose exec api python /badgr_server/manage.py createsuperuser` - follow prompts to create your first admin user account
 
 ### Running the Django Server in "Production"
 
-By default `docker-compose` will look for a `docker-compose.yml` for instructions of what to do. This file
-is the development (and thus default) config for `docker-compose`.
+By default `docker compose` will look for a `docker-compose.yml` for instructions of what to do. This file
+is the development (and thus default) config for `docker compose`.
 
 If you'd like to run the project with a more production-like setup, you can specify the `docker-compose.prod.yml`
 file. This setup **copies** the project code in (instead of mirroring) and uses nginx with uwsgi to run django.
 
-* `docker-compose -f docker-compose.prod.yml up -d` - build and get django and other components (production mode)
+* `docker compose -f docker-compose.prod.yml up -d` - build and get django and other components (production mode)
 
-* `docker-compose -f docker-compose.prod.yml exec api python /badgr_server/manage.py migrate` - (while running) set up database tables
+* `docker compose -f docker-compose.prod.yml exec api python /badgr_server/manage.py migrate` - (while running) set up database tables
 
 If you are using the production setup and you have made changes you wish to see reflected in the running container,
 you will need to stop and then rebuild the production containers:
 
-* `docker-compose -f docker-compose.prod.yml build` - (re)build the production containers
+* `docker compose -f docker-compose.prod.yml build` - (re)build the production containers
 
 * If the extension urls aren't adjusted (or the url changes, or for some other reason it seems as if extension schemas can't be loaded, e.g. because of 401 errors in the badge creation process), run the script in `scripts/change-extension-url.sh`.
 
@@ -129,6 +133,8 @@ The production server will be reachable on port `8080`:
 
 * http://localhost:8080/ (production)
 
+Note: An error message when accessing the above mentioned URLs is perfectly fine, since the server doesn't actually serve anything on the root url.
+
 There are various examples of URLs in this readme and they all feature the development port. You will
 need to adjust that if you are using the production server.
 
@@ -143,11 +149,13 @@ need to adjust that if you are using the production server.
 
 If your [badgr-ui](https://github.com/concentricsky/badgr-ui) is running on http://localhost:4000, use the following values:
 * CORS: ensure this setting matches the domain on which you are running badgr-ui, including the port if other than the standard HTTP or HTTPS ports. `localhost:4000`
+* Oauth authorization redirect: `http://localhost:4000/`
 * Signup redirect: `http://localhost:4000/signup/`
 * Email confirmation redirect: `http://localhost:4000/auth/login/`
 * Forgot password redirect: `http://localhost:4000/change-password/`
 * UI login redirect: `http://localhost:4000/auth/login/`
 * UI signup success redirect: `http://localhost:4000/signup/success/`
+* UI signup failure redirect: `http://localhost:4000/signup/failure/`
 * UI connect success redirect: `http://localhost:4000/profile/`
 * Public pages redirect: `http://localhost:4000/public/`
 
@@ -166,18 +174,18 @@ Do note that the OIDC authentication mechanism produces access tokens that, in c
 They can thus access anything on the page not limited to admin / superuser users. This also is the default behavior for the tokens we generate ourselves.
 
 ### Run the tests
-For the tests to run you first need to run docker (`docker-compose up`).
-Then within docker, run `tox`: `docker-compose exec api tox`.
-Note that you might have to run `docker-compose build` once for the new changes to the testing enviornment to take effect.
+For the tests to run you first need to run docker (`docker compose up`).
+Then within docker, run `tox`: `docker compose exec api tox`.
+Note that you might have to run `docker compose build` once for the new changes to the testing enviornment to take effect.
 To just run a single test:
 ```bash
-docker-compose exec api python /badgr_server/manage.py test -k <test-name>
+docker compose exec api python /badgr_server/manage.py test -k <test-name>
 # Example:
-docker-compose exec api python /badgr_server/manage.py test issuer.tests.test_issuer.IssuerTests.test_cant_create_issuer_with_unverified_email_v1
+docker compose exec api python /badgr_server/manage.py test issuer.tests.test_issuer.IssuerTests.test_cant_create_issuer_with_unverified_email_v1
 ```
 
 ### Debug
-For debugging, in the `Docerfile.dev.api` `debugpy` is also installed and there is the docker compose file `docker-compose.debug.yml`.
+For debugging, in the `Dockerfile.dev.api` `debugpy` is also installed and there is the docker compose file `docker-compose.debug.yml`.
 In VSCode you can create a `launch.json` by choosing `Python` as debugger and `Remote Attach` as debug configuration (and defaults for the rest).
 You can then start the application with
 ```bash
@@ -225,3 +233,9 @@ You will also need to have `commitizen` installed, e.g. via
 ```bash
 pip install commitizen
 ```
+
+## Branches
+
+Development happens in feature branches (e.g. `feat/foo` or `fix/bar`). Those are then merged (via a PR) into `develop`. The `develop` branch is synchronized automatically with `develop.openbadges.education`. Once dev tests have completed on `develop.openbadges.education`, `develop` is merged (via a PR) into `main`. The `main` branch is synchronized automatically with `staging.openbadges.education`. Once this state is ready for a deployment, checkout `deployment.md` for informatoin on how to deploy to `openbadges.education`.
+
+

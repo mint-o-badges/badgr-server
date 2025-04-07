@@ -16,6 +16,7 @@ from django.urls import resolve, reverse, Resolver404, NoReverseMatch
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.views.generic import RedirectView
+from django.db.models import Q
 from entity.serializers import BaseSerializerV2
 from rest_framework import status, permissions
 from rest_framework.exceptions import ValidationError
@@ -66,26 +67,25 @@ class SlugToEntityIdRedirectMixin(object):
         else:
             raise Http404
 
-
 class JSONListView(BaseEntityListView, UncachedPaginatedViewMixin):
     """
     Abstract List Class
     """
     permission_classes = (permissions.AllowAny,)
     allow_any_unauthenticated_access = True
-
+    
     def log(self, obj):
         pass
-
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
+        
         exclude_orgImg = self.request.query_params.get('exclude_orgImg', None)
         if exclude_orgImg:
             context['exclude_orgImg'] = exclude_orgImg.lower() == 'true'
-
+        
         return context
-
+    
     def get(self, request, **kwargs):
         objects = self.model.objects
         context = self.get_context_data(**kwargs)
@@ -98,7 +98,6 @@ class JSONListView(BaseEntityListView, UncachedPaginatedViewMixin):
             if link_header:
                 headers['Link'] = link_header
         return Response(serializer.data, headers=headers)
-
 
 class JSONComponentView(VersionedObjectMixin, APIView, SlugToEntityIdRedirectMixin):
     """
@@ -355,6 +354,28 @@ class IssuerList(JSONListView):
 
     def get_json(self, request):
         return super(IssuerList, self).get_json(request)
+    
+class IssuerSearch(JSONListView):
+    permission_classes = (permissions.AllowAny,)
+    model = Issuer
+    serializer_class = IssuerSerializerV1
+
+    def log(self, obj):
+        pass
+
+    def get(self, request, **kwargs):
+        objects = self.model.objects
+
+        search_term = kwargs.get('searchterm', '')
+        if search_term:
+            issuers = objects.filter(
+                Q(name__icontains=search_term) | 
+                Q(description__icontains=search_term)
+        )
+        serializer_class = self.serializer_class
+        serializer = serializer_class(issuers, many=True)
+        return Response(serializer.data)
+
 
 
 class BadgeClassJson(JSONComponentView):
@@ -387,7 +408,6 @@ class BadgeClassJson(JSONComponentView):
             public_url=self.current_object.public_url,
             image_url=image_url
         )
-
 
 class BadgeClassList(JSONListView):
     permission_classes = (permissions.AllowAny,)

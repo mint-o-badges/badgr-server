@@ -27,7 +27,7 @@ from mainsite.serializers import DateTimeWithUtcZAtEndField, HumanReadableBoolea
 from mainsite.utils import OriginSetting, validate_altcha, verifyIssuerAutomatically
 from mainsite.validators import ChoicesValidator, BadgeExtensionValidator, PositiveIntegerValidator, TelephoneValidator
 from .models import Issuer, BadgeClass, IssuerStaff, BadgeInstance, BadgeClassExtension, \
-        RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL, LearningPath, LearningPathBadge, QrCode, RequestedBadge, RequestedLearningPath
+        RECIPIENT_TYPE_EMAIL, RECIPIENT_TYPE_ID, RECIPIENT_TYPE_URL, IssuerStaffRequest, LearningPath, LearningPathBadge, QrCode, RequestedBadge, RequestedLearningPath
 
 from badgeuser.models import TermsVersion
 
@@ -266,6 +266,8 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
 
     issuerVerified = serializers.BooleanField(read_only=True, source='cached_issuer.verified')
 
+    copy_permissions = serializers.ListField(source='copy_permissions_list')
+
     class Meta:
         apispec_definition = ('BadgeClass', {})
 
@@ -382,6 +384,8 @@ class BadgeClassSerializerV1(OriginalJsonSerializerMixin, ExtensionsSaverMixin, 
         instance.expires_duration = validated_data.get('expires_duration', None)
 
         instance.imageFrame = validated_data.get('imageFrame', True)
+
+        instance.copy_permissions_list = validated_data.get('copy_permissions_list', ['issuer'])
 
         logger.debug("SAVING EXTENSION")
         self.save_extensions(validated_data, instance)
@@ -646,6 +650,12 @@ class RequestedBadgeSerializer(serializers.ModelSerializer):
         model = RequestedBadge
         fields = '__all__' 
 
+class IssuerStaffRequestSerializer(serializers.ModelSerializer):
+    issuer = IssuerSerializerV1(read_only=True)
+    user = BadgeUserProfileSerializerV1(read_only=True)
+    class Meta:
+        model = IssuerStaffRequest
+        fields = '__all__' 
 
 class RequestedLearningPathSerializer(serializers.ModelSerializer):
     class Meta:

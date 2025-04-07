@@ -41,8 +41,8 @@ from rest_framework.authentication import (
 )
 
 from issuer.tasks import rebake_all_assertions, update_issuedon_all_assertions
-from issuer.models import BadgeClass, LearningPath, QrCode, RequestedBadge, RequestedLearningPath
-from issuer.serializers_v1 import RequestedBadgeSerializer, RequestedLearningPathSerializer
+from issuer.models import BadgeClass, Issuer, IssuerStaffRequest, LearningPath, QrCode, RequestedBadge, RequestedLearningPath
+from issuer.serializers_v1 import IssuerStaffRequestSerializer, RequestedBadgeSerializer, RequestedLearningPathSerializer
 from mainsite.admin_actions import clear_cache
 from mainsite.models import EmailBlacklist, BadgrApp, AltchaChallenge
 from mainsite.serializers import LegacyVerifiedAuthTokenSerializer
@@ -314,7 +314,7 @@ def requestBadge(req, qrCodeId):
 
         badge.save()
 
-        return JsonResponse({"message": "Badge request received"}, status=status.HTTP_200_OK)
+        return JsonResponse({"message": "Badge request received"}, status=status.HTTP_200_OK)  
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
