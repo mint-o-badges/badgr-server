@@ -37,8 +37,17 @@ class Command(BaseCommand):
                 )
                 > 0
             ):
+                request_url = (
+                    f"https://openbadges.education/issuer/issuers/{qr.issuer.entity_id}"
+                    f"/badges/{qr.badgeclass.entity_id}?focusRequests=true"
+                )
+
                 ctx = {
                     "badge_name": qr.badgeclass.name,
+                    "number_of_open_requests": len(
+                        RequestedBadge.objects.filter(qrcode=qr)
+                    ),
+                    "activate_url": request_url,
                     "call_to_action_label": "Anfrage bestätigen",
                 }
                 get_adapter().send_mail(
