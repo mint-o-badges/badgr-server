@@ -1115,9 +1115,9 @@ class QRCodeDetail(BaseEntityView):
         tags=["QrCodes"],
     )
     def post(self, request, **kwargs):
-
+        context = self.get_context_data(**kwargs)
         serializer_class = self.get_serializer_class()
-        serializer = serializer_class(data=request.data)
+        serializer = serializer_class(data=request.data, context=context)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=HTTP_201_CREATED)
