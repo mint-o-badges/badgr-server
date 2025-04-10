@@ -396,8 +396,13 @@ class IssuerList(JSONListView):
         pass
 
     def get_context_data(self, **kwargs):
+        context = super(IssuerList, self).get_context_data(**kwargs)
+
         # some fields have to be excluded due to data privacy concerns
-        return dict(exclude_fields=["staff, "])
+        # in the get routes
+        if self.request.method == "GET":
+            context["exclude_fields"] = ["staff", "created_by"]
+        return context
 
     def get_json(self, request):
         return super(IssuerList, self).get_json(request)
