@@ -1156,7 +1156,7 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
 
             email_context = {
             "issuer": staff_request.issuer,
-            "activate_url": OriginSetting.HTTP + reverse("v1_api_user_confirm_staffrequest", kwargs= {'entity_id': staff_request.entity_id}),
+            "activate_url": OriginSetting.HTTP + reverse("v1_api_user_confirm_staffrequest", kwargs= {'entity_id': staff_request.issuer.entity_id}),
             "call_to_action_label": "Jetzt loslegen"
             }
             get_adapter().send_mail(
