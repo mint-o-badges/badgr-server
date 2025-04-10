@@ -209,12 +209,12 @@ class OriginalJsonSerializerMixin(serializers.Serializer):
 
 class ExcludeFieldsMixin:
     """
-    A mixin to exclude specific fields from the given dictionary
+    A mixin to recursively exclude specific fields from the given dictionary
     """
 
     def exclude_fields(self, data, fields_to_exclude):
         """
-        Exclude specified fields from the data dictionary.
+        Exclude specified fields from the data dictionary recursively.
         """
         for field in fields_to_exclude:
             if isinstance(data, dict):

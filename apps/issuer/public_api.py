@@ -96,7 +96,10 @@ class JSONListView(BaseEntityListView, UncachedPaginatedViewMixin):
 
         exclude_orgImg = self.request.query_params.get("exclude_orgImg", None)
         if exclude_orgImg:
-            context["exclude_fields"] = ["extensions:OrgImageExtension"]
+            context["exclude_fields"] = [
+                *context.get("exclude_fields", []),
+                "extensions:OrgImageExtension",
+            ]
 
         return context
 
@@ -401,7 +404,11 @@ class IssuerList(JSONListView):
         # some fields have to be excluded due to data privacy concerns
         # in the get routes
         if self.request.method == "GET":
-            context["exclude_fields"] = ["staff", "created_by"]
+            context["exclude_fields"] = [
+                *context.get("exclude_fields", []),
+                "staff",
+                "created_by",
+            ]
         return context
 
     def get_json(self, request):
@@ -473,8 +480,19 @@ class BadgeClassList(JSONListView):
     def log(self, obj):
         logger.event(badgrlog.BadgeClassRetrievedEvent(obj, self.request))
 
+    def get_context_data(self, **kwargs):
+        context = super(BadgeClassList, self).get_context_data(**kwargs)
+
+        # some fields have to be excluded due to data privacy concerns
+        # in the get routes
+        if self.request.method == "GET":
+            context["exclude_fields"] = [
+                *context.get("exclude_fields", []),
+                "created_by",
+            ]
+        return context
+
     def get_json(self, request):
-        self.serializer_context = {"exlude_orgImg": True}
         return super(BadgeClassList, self).get_json(request)
 
 
