@@ -96,7 +96,7 @@ class JSONListView(BaseEntityListView, UncachedPaginatedViewMixin):
 
         exclude_orgImg = self.request.query_params.get("exclude_orgImg", None)
         if exclude_orgImg:
-            context["exclude_orgImg"] = exclude_orgImg.lower() == "true"
+            context["exclude_fields"] = ["extensions:OrgImageExtension"]
 
         return context
 

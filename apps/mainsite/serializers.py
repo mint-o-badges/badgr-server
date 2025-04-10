@@ -217,7 +217,13 @@ class ExcludeFieldsMixin:
         Exclude specified fields from the data dictionary.
         """
         for field in fields_to_exclude:
-            data.pop(field, None)
+            if isinstance(data, dict):
+                data.pop(field, None)
+                for key in data.keys():
+                    data[key] = self.exclude_fields(data[key], [field])
+            elif isinstance(data, list):
+                for item in data:
+                    self.exclude_fields(item, [field])
 
         return data
 

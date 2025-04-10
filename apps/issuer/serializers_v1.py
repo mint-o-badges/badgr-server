@@ -329,7 +329,10 @@ class BadgeClassExpirationSerializerV1(serializers.Serializer):
 
 
 class BadgeClassSerializerV1(
-    OriginalJsonSerializerMixin, ExtensionsSaverMixin, serializers.Serializer
+    OriginalJsonSerializerMixin,
+    ExtensionsSaverMixin,
+    ExcludeFieldsMixin,
+    serializers.Serializer,
 ):
     created_at = DateTimeWithUtcZAtEndField(read_only=True)
     updated_at = DateTimeWithUtcZAtEndField(read_only=True)
@@ -385,8 +388,11 @@ class BadgeClassSerializerV1(
         return super(BadgeClassSerializerV1, self).to_internal_value(data)
 
     def to_representation(self, instance):
-        exclude_orgImg = self.context.get("exclude_orgImg", None)
         representation = super(BadgeClassSerializerV1, self).to_representation(instance)
+
+        exclude_fields = self.context.get("exclude_fields", [])
+        self.exclude_fields(representation, exclude_fields)
+
         representation["issuerName"] = instance.cached_issuer.name
         representation["issuerOwnerAcceptedTos"] = any(
             user.agreed_terms_version == TermsVersion.cached.latest_version()
@@ -398,12 +404,7 @@ class BadgeClassSerializerV1(
         representation["json"] = instance.get_json(
             obi_version="1_1", use_canonical_id=True
         )
-        if "extensions" in representation and exclude_orgImg:
-            representation["extensions"] = {
-                name: value
-                for name, value in representation["extensions"].items()
-                if name != "extensions:OrgImageExtension"
-            }
+
         return representation
 
     def validate_image(self, image):
@@ -894,7 +895,7 @@ class LearningPathSerializerV1(serializers.Serializer):
             {
                 "badge": BadgeClassSerializerV1(
                     badge.badge,
-                    context={"exclude_orgImg": "extensions:OrgImageExtension"},
+                    context={"exclude_fields": ["extensions:OrgImageExtension"]},
                 ).data,
                 "order": badge.order,
             }
@@ -957,7 +958,7 @@ class LearningPathSerializerV1(serializers.Serializer):
                 "completed_badges": BadgeClassSerializerV1(
                     user_completed_badges,
                     many=True,
-                    context={"exclude_orgImg": "extensions:OrgImageExtension"},
+                    context={"exclude_fields": ["extensions:OrgImageExtension"]},
                 ).data,
             }
         )
