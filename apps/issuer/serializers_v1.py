@@ -840,7 +840,7 @@ class BadgeOrderSerializer(serializers.Serializer):
         apispec_definition = ("LearningPathBadge", {})
 
 
-class LearningPathSerializerV1(serializers.Serializer):
+class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
     created_at = DateTimeWithUtcZAtEndField(read_only=True)
     updated_at = DateTimeWithUtcZAtEndField(read_only=True)
     issuer_id = serializers.CharField(max_length=254)
@@ -876,7 +876,6 @@ class LearningPathSerializerV1(serializers.Serializer):
         )
 
     def to_representation(self, instance):
-
         request = self.context.get("request")
         representation = super(LearningPathSerializerV1, self).to_representation(
             instance
@@ -962,6 +961,9 @@ class LearningPathSerializerV1(serializers.Serializer):
                 ).data,
             }
         )
+
+        exclude_fields = self.context.get("exclude_fields", [])
+        self.exclude_fields(representation, exclude_fields)
 
         return representation
 

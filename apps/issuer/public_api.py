@@ -426,13 +426,16 @@ class IssuerSearch(JSONListView):
     def get(self, request, **kwargs):
         objects = self.model.objects
 
+        issuers = []
         search_term = kwargs.get("searchterm", "")
         if search_term:
             issuers = objects.filter(
                 Q(name__icontains=search_term) | Q(description__icontains=search_term)
             )
         serializer_class = self.serializer_class
-        serializer = serializer_class(issuers, many=True)
+        serializer = serializer_class(
+            issuers, many=True, context={"exclude_fields": ["staff", "created_by"]}
+        )
         return Response(serializer.data)
 
 
@@ -887,14 +890,31 @@ class LearningPathJson(BaseEntityDetailViewPublic, SlugToEntityIdRedirectMixin):
     model = LearningPath
     serializer_class = LearningPathSerializerV1
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context["exclude_fields"] = [
+            *context.get("exclude_fields", []),
+            "created_by",
+        ]
+
+        return context
+
 
 class LearningPathList(JSONListView):
     permission_classes = (permissions.AllowAny,)
     model = LearningPath
     serializer_class = LearningPathSerializerV1
 
-    # def log(self, obj):
-    #     logger.event(badgrlog.BadgeClassRetrievedEvent(obj, self.request))
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context["exclude_fields"] = [
+            *context.get("exclude_fields", []),
+            "created_by",
+        ]
+
+        return context
 
     def get_json(self, request):
         return super(LearningPathList, self).get_json(request)
@@ -920,7 +940,9 @@ class BadgeLearningPathList(JSONListView):
         }  # Use set comprehension for uniqueness
 
         serialized_learning_paths = self.serializer_class(
-            learning_paths, many=True, context={"request": request}
+            learning_paths,
+            many=True,
+            context={"request": request, "exclude_fields": ["created_by"]},
         )
 
         return Response(serialized_learning_paths.data)
