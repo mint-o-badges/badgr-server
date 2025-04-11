@@ -1179,6 +1179,10 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
             staff_request = IssuerStaffRequest.objects.get(entity_id=kwargs.get("requestId"))
             
             if staff_request.status != IssuerStaffRequest.Status.PENDING:
+                if staff_request.status == IssuerStaffRequest.Status.REVOKED: 
+                    return Response({
+                        "detail": "Request has already been revoked.",
+                    }, status=status.HTTP_200_OK)
                 return Response(
                     {"detail": "Only pending requests can be deleted"},
                     status=status.HTTP_400_BAD_REQUEST
