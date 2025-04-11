@@ -3,13 +3,16 @@ from django.views.decorators.clickjacking import xframe_options_exempt
 from rest_framework.urlpatterns import format_suffix_patterns
 
 from .public_api import (IssuerJson, IssuerList, IssuerBadgesJson, IssuerLearningPathsJson, IssuerImage, BadgeClassJson, BadgeClassList,
-                         BadgeClassImage, BadgeClassCriteria, BadgeInstanceJson, LearningPathJson,
+                         BadgeClassImage, BadgeClassCriteria, BadgeInstanceJson, IssuerSearch, LearningPathJson,
                          BadgeInstanceImage, BackpackCollectionJson, BakedBadgeInstanceImage, LearningPathList,
                          OEmbedAPIEndpoint, VerifyBadgeAPIEndpoint, BadgeLearningPathList)
 
 json_patterns = [
     url(r'^issuers/(?P<entity_id>[^/.]+)$',
         xframe_options_exempt(IssuerJson.as_view(slugToEntityIdRedirect=True)), name='issuer_json'),
+    url(r'^issuers/search/(?P<searchterm>[^/]+)$',
+        xframe_options_exempt(IssuerSearch.as_view()), 
+    name='issuer_search'),
     url(r'^issuers/(?P<entity_id>[^/.]+)/badges$', xframe_options_exempt(
         IssuerBadgesJson.as_view(slugToEntityIdRedirect=True)), name='issuer_badges_json'),
     url(r'^issuers/(?P<entity_id>[^/.]+)/learningpaths$', xframe_options_exempt(
