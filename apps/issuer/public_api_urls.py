@@ -10,8 +10,9 @@ from .public_api import (IssuerJson, IssuerList, IssuerBadgesJson, IssuerLearnin
 json_patterns = [
     url(r'^issuers/(?P<entity_id>[^/.]+)$',
         xframe_options_exempt(IssuerJson.as_view(slugToEntityIdRedirect=True)), name='issuer_json'),
-     url(r'^issuers/search/(?P<searchterm>[^/.]+)$',
-        xframe_options_exempt(IssuerSearch.as_view()), name='issuer_search'),    
+    url(r'^issuers/search/(?P<searchterm>[^/]+)$',
+        xframe_options_exempt(IssuerSearch.as_view()), 
+    name='issuer_search'),
     url(r'^issuers/(?P<entity_id>[^/.]+)/badges$', xframe_options_exempt(
         IssuerBadgesJson.as_view(slugToEntityIdRedirect=True)), name='issuer_badges_json'),
     url(r'^issuers/(?P<entity_id>[^/.]+)/learningpaths$', xframe_options_exempt(
