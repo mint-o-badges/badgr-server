@@ -231,7 +231,7 @@ class ExcludeFieldsMixin:
     ]
     ```
 
-    You can hook into `OriginalJsonSerializerMixin`s `to_representation` method
+    You can also hook into the `to_representation` method
     to exclude fields from the final json (e.g. when extensions are present)
     instead of using the get_fields method:
     ```
