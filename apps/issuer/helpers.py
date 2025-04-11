@@ -137,6 +137,183 @@ class DjangoCacheRequestsCacheBackend(BaseCache):
         self.responses = DjangoCacheDict(namespace, 'responses')
         self.keys_map = DjangoCacheDict(namespace, 'urls')
 
+import json
+from django.core.exceptions import ValidationError as DjangoValidationError
+from rest_framework import serializers
+from rest_framework.exceptions import ValidationError as RestframeworkValidationError
+import openbadges
+from .models import ImportedBadgeAssertion
+
+def first_node_match(graph, criteria):
+    """Find the first node in a graph that matches all criteria."""
+    for node in graph:
+        match = True
+        for k, v in criteria.items():
+            if node.get(k) != v:
+                match = False
+                break
+        if match:
+            return node
+    return None
+
+
+class ImportedBadgeHelper:
+    _cache_instance = None
+    error_map = [
+        (['FETCH_HTTP_NODE'], {
+            'name': "FETCH_HTTP_NODE",
+            'description': "Unable to reach URL",
+        }),
+        (['VERIFY_RECIPIENT_IDENTIFIER'], {
+            'name': 'VERIFY_RECIPIENT_IDENTIFIER',
+            'description': "The recipient does not match any of your verified emails",
+        }),
+        (['VERIFY_JWS', 'VERIFY_KEY_OWNERSHIP'], {
+            'name': "VERIFY_SIGNATURE",
+            "description": "Could not verify signature",
+        }),
+        (['VERIFY_SIGNED_ASSERTION_NOT_REVOKED'], {
+            'name': "ASSERTION_REVOKED",
+            "description": "This assertion has been revoked",
+        }),
+    ]
+
+    @classmethod
+    def translate_errors(cls, badgecheck_messages):
+        for m in badgecheck_messages:
+            if m.get('messageLevel') == 'ERROR':
+                for errors, backpack_error in cls.error_map:
+                    if m.get('name') in errors:
+                        yield backpack_error
+                yield m
+
+    @classmethod
+    def badgecheck_options(cls):
+        from django.conf import settings
+        return getattr(settings, 'BADGECHECK_OPTIONS', {
+            'include_original_json': True,
+            'use_cache': True,
+        })
+
+    @classmethod
+    def get_or_create_imported_badge(cls, url=None, imagefile=None, assertion=None, created_by=None):
+        """
+        Import an external badge directly to the ImportedBadgeAssertion model
+        without creating Issuer and BadgeClass objects.
+        """
+        # Validate that only one input method is provided
+        query = (url, imagefile, assertion)
+        query = [v for v in query if v is not None]
+        if len(query) != 1:
+            raise ValidationError("Must provide only 1 of: url, imagefile or assertion")
+        query = query[0]
+
+        # Prepare recipient profile for verification
+        if created_by:
+            emails = [d.email for d in created_by.email_items.all()]
+            badgecheck_recipient_profile = {
+                'email': emails + [v.email for v in created_by.cached_email_variants()],
+                'telephone': created_by.cached_verified_phone_numbers(),
+                'url': created_by.cached_verified_urls()
+            }
+        else:
+            badgecheck_recipient_profile = None
+
+        try:
+            if isinstance(query, dict):
+                try:
+                    query = json.dumps(query)
+                except (TypeError, ValueError):
+                    raise ValidationError("Could not parse dict to json")
+                    
+            response = openbadges.verify(
+                query, 
+                recipient_profile=badgecheck_recipient_profile, 
+                **cls.badgecheck_options()
+            )
+        except ValueError as e:
+            raise ValidationError([{'name': "INVALID_BADGE", 'description': str(e)}])
+
+        report = response.get('report', {})
+        is_valid = report.get('valid')
+
+        if not is_valid:
+            if report.get('errorCount', 0) > 0:
+                errors = list(cls.translate_errors(report.get('messages', [])))
+            else:
+                errors = [{'name': "UNABLE_TO_VERIFY", 'description': "Unable to verify the assertion"}]
+            raise ValidationError(errors)
+
+        graph = response.get('graph', [])
+
+        assertion_data = first_node_match(graph, dict(type="Assertion"))
+        if not assertion_data:
+            raise ValidationError([{'name': "ASSERTION_NOT_FOUND", 'description': "Unable to find an assertion"}])
+
+        badgeclass_data = first_node_match(graph, dict(id=assertion_data.get('badge', None)))
+        if not badgeclass_data:
+            raise ValidationError([{'name': "ASSERTION_NOT_FOUND", 'description': "Unable to find a badgeclass"}])
+
+        issuer_data = first_node_match(graph, dict(id=badgeclass_data.get('issuer', None)))
+        if not issuer_data:
+            raise ValidationError([{'name': "ASSERTION_NOT_FOUND", 'description': "Unable to find an issuer"}])
+
+        original_json = response.get('input').get('original_json', {})
+
+        recipient_profile = report.get('recipientProfile', {})
+        recipient_type, recipient_identifier = list(recipient_profile.items())[0]
+
+        existing_badge = ImportedBadgeAssertion.objects.filter(
+            created_by=created_by,
+            recipient_identifier=recipient_identifier,
+            issuer_url=issuer_data.get('url', ''),
+            badge_name=badgeclass_data.get('name', ''),
+            original_json__contains=assertion_data.get('id', '')
+        ).first()
+
+        if existing_badge:
+            return existing_badge, False
+
+        badge_image = None
+        badge_image_url = badgeclass_data.get('image', '')
+        
+        with transaction.atomic():
+            imported_badge = ImportedBadgeAssertion(
+                user=created_by,
+                
+                badge_name=badgeclass_data.get('name', ''),
+                badge_description=badgeclass_data.get('description', ''),
+                # badge_criteria_url=badgeclass_data.get('criteria', {}).get('id', 
+                #                    badgeclass_data.get('criteria', '')),
+                badge_image_url=badge_image_url,
+                
+                issuer_name=issuer_data.get('name', ''),
+                issuer_url=issuer_data.get('url', ''),
+                issuer_email=issuer_data.get('email', ''),
+                issuer_image_url=issuer_data.get('image', ''),
+                
+                issued_on=assertion_data.get('issuedOn', ''),
+                expires_at=assertion_data.get('expires', None),
+                
+                recipient_identifier=recipient_identifier,
+                recipient_type=recipient_type,
+                
+                original_json=original_json or {
+                    'assertion': assertion_data,
+                    'badgeclass': badgeclass_data,
+                    'issuer': issuer_data
+                },
+                
+                narrative=assertion_data.get('narrative', ''),
+                verification_url=assertion_data.get('verification', {}).get('url', '')
+            )
+            
+            if badge_image:
+                imported_badge.image.save(f"test.png", badge_image, save=False)
+                
+            imported_badge.save()
+            
+        return imported_badge, True
 
 class BadgeCheckHelper(object):
     _cache_instance = None

@@ -10,8 +10,8 @@ from rest_framework.fields import SkipField
 
 import badgrlog
 from backpack.models import BackpackCollection, BackpackCollectionBadgeInstance
-from issuer.helpers import BadgeCheckHelper
-from issuer.models import BadgeInstance
+from issuer.helpers import BadgeCheckHelper, ImportedBadgeHelper
+from issuer.models import BadgeInstance, ImportedBadgeAssertion
 from issuer.serializers_v1 import EvidenceItemSerializer
 from mainsite.drf_fields import Base64FileField
 from mainsite.serializers import StripTagsCharField, MarkdownCharField
@@ -19,6 +19,120 @@ from mainsite.utils import OriginSetting
 
 logger = badgrlog.BadgrLogger()
 
+class ImportedBadgeAssertionSerializer(serializers.Serializer):
+    """
+    Serializer for importing and retrieving imported badge assertions.
+    """
+    image = Base64FileField(required=False, write_only=True)
+    url = serializers.URLField(required=False, write_only=True)
+    assertion = serializers.CharField(required=False, write_only=True)
+    
+    id = serializers.CharField(source='entity_id', read_only=True)
+    badge_name = serializers.CharField(read_only=True)
+    badge_description = serializers.CharField(read_only=True)
+    issuer_name = serializers.CharField(read_only=True)
+    issuer_url = serializers.URLField(read_only=True)
+    issued_on = serializers.DateTimeField(read_only=True)
+    recipient_identifier = serializers.CharField(read_only=True)
+    recipient_type = serializers.CharField(read_only=True)
+    acceptance = serializers.CharField(default='Accepted')
+    narrative = MarkdownCharField(read_only=True)
+    pending = serializers.ReadOnlyField()
+    
+    original_json = serializers.JSONField(read_only=True)
+    
+    def to_representation(self, obj):
+        from django.conf import settings
+        
+        representation = super().to_representation(obj)
+        
+        if obj.image:
+            representation['image'] = obj.image.url
+        elif obj.badge_image_url:
+            representation['image'] = obj.badge_image_url
+            
+        # representation['shareUrl'] = obj.share_url
+        
+        representation['imagePreview'] = {
+            "type": "image",
+            "id": obj.image_url()
+        }
+        
+        if obj.issuer_image_url:
+            representation['issuerImagePreview'] = {
+                "type": "image",
+                "id": obj.issuer_image_url
+            }
+
+        representation['verification'] = {
+            'type': 'HostedBadge',
+            'url': obj.verification_url
+        }
+        
+        # Format the badge JSON for client compatibility with existing code
+        # This ensures the frontend still works with both native and imported badges
+        representation['json'] = {
+            'id': obj.original_json.get('assertion', {}).get('id'),
+            'type': 'Assertion',
+            'badge': {
+                'name': obj.badge_name,
+                'description': obj.badge_description,
+                'image': obj.badge_image_url,
+                'issuer': {
+                    'name': obj.issuer_name,
+                    'url': obj.issuer_url,
+                    'email': obj.issuer_email,
+                    'image': obj.issuer_image_url
+                }
+            },
+            'issuedOn': obj.issued_on if obj.issued_on else None,
+            'recipient': {
+                'type': obj.recipient_type,
+                'identity': obj.recipient_identifier
+            },
+            'verification': {
+                'type': 'HostedBadge',
+                'url': obj.verification_url
+            }
+        }
+        
+        return representation
+    
+    def validate(self, data):
+        """
+        Ensure only one assertion input field given.
+        """
+        fields_present = ['image' in data, 'url' in data,
+                          'assertion' in data and data.get('assertion')]
+        if (fields_present.count(True) > 1):
+            raise serializers.ValidationError(
+                "Only one instance input field allowed.")
+
+        return data
+    
+    def create(self, validated_data):
+        owner = validated_data.get('created_by')
+        
+        try:
+            instance, created = ImportedBadgeHelper.get_or_create_imported_badge(
+                url=validated_data.get('url', None),
+                imagefile=validated_data.get('image', None),
+                assertion=validated_data.get('assertion', None),
+                created_by=owner,
+            )
+            if not created:
+                if instance.acceptance == ImportedBadgeAssertion.ACCEPTANCE_ACCEPTED:
+                    raise RestframeworkValidationError(
+                        [{
+                            'name': "DUPLICATE_BADGE",
+                            'description': "You already have this badge in your backpack"
+                        }])
+                instance.acceptance = ImportedBadgeAssertion.ACCEPTANCE_ACCEPTED
+                instance.save()
+        except DjangoValidationError as e:
+            raise RestframeworkValidationError(e.args[0])
+        return instance
+    
 
 class LocalBadgeInstanceUploadSerializerV1(serializers.Serializer):
     image = Base64FileField(required=False, write_only=True)
@@ -37,6 +151,9 @@ class LocalBadgeInstanceUploadSerializerV1(serializers.Serializer):
     # json = V1InstanceSerializer(read_only=True)
 
     def to_representation(self, obj):
+        import logging 
+        logger = logging.getLogger(__name__)
+        logger.error(f"obj {obj}")
         """
         If the APIView initialized the serializer with the extra context
         variable 'format' from a query param in the GET request with the
@@ -47,12 +164,12 @@ class LocalBadgeInstanceUploadSerializerV1(serializers.Serializer):
         representation = super(LocalBadgeInstanceUploadSerializerV1, self).to_representation(obj)
 
         # supress errors for badges without extensions (i.e. imported)
-        try:
-            representation['extensions']["extensions:CompetencyExtension"] = obj.badgeclass.json['extensions:CompetencyExtension']
-            representation['extensions']["extensions:CategoryExtension"] = obj.badgeclass.json['extensions:CategoryExtension']
-            representation['extensions']["extensions:StudyLoadExtension"] = obj.badgeclass.json['extensions:StudyLoadExtension']
-        except KeyError:
-            pass
+        # try:
+        #     representation['extensions']["extensions:CompetencyExtension"] = obj.badgeclass.json['extensions:CompetencyExtension']
+        #     representation['extensions']["extensions:CategoryExtension"] = obj.badgeclass.json['extensions:CategoryExtension']
+        #     representation['extensions']["extensions:StudyLoadExtension"] = obj.badgeclass.json['extensions:StudyLoadExtension']
+        # except KeyError:
+        #     pass
 
         representation['id'] = obj.entity_id
         representation['json'] = V1BadgeInstanceSerializer(obj, context=self.context).data
@@ -91,9 +208,13 @@ class LocalBadgeInstanceUploadSerializerV1(serializers.Serializer):
         return data
 
     def create(self, validated_data):
+        import logging 
+        logger2 = logging.getLogger(__name__)
+        logger2.error(f"vdata {validated_data}")
         owner = validated_data.get('created_by')
+        
         try:
-            instance, created = BadgeCheckHelper.get_or_create_assertion(
+            instance, created = BadgeCheckHelper.get_or_create_imported_badge(
                 url=validated_data.get('url', None),
                 imagefile=validated_data.get('image', None),
                 assertion=validated_data.get('assertion', None),

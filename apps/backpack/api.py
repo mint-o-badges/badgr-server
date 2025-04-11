@@ -1,6 +1,7 @@
 # encoding: utf-8
 
 
+from django.http import Http404
 import badgrlog
 import datetime
 
@@ -11,11 +12,11 @@ from rest_framework import serializers
 from rest_framework import status
 
 from backpack.models import BackpackCollection, BackpackBadgeShare, BackpackCollectionShare
-from backpack.serializers_v1 import CollectionSerializerV1, LocalBadgeInstanceUploadSerializerV1
+from backpack.serializers_v1 import CollectionSerializerV1, ImportedBadgeAssertionSerializer, LocalBadgeInstanceUploadSerializerV1
 from backpack.serializers_v2 import BackpackAssertionSerializerV2, BackpackCollectionSerializerV2, \
     BackpackImportSerializerV2, BackpackAssertionAcceptanceSerializerV2
 from entity.api import BaseEntityListView, BaseEntityDetailView
-from issuer.models import BadgeInstance
+from issuer.models import BadgeInstance, ImportedBadgeAssertion
 from issuer.permissions import AuditedModelOwner, VerifiedEmailMatchesRecipientIdentifier, BadgrOAuthTokenHasScope
 from issuer.public_api import ImagePropertyDetailView
 from apispec_drf.decorators import apispec_list_operation, apispec_post_operation, apispec_get_operation, \
@@ -37,6 +38,55 @@ def _scrub_boolean(boolean_str, default=None):
         return False
     return default
 
+
+class ImportedBadgeInstanceList(BaseEntityListView):
+    """
+    API endpoint for importing and listing imported badge assertions
+    """
+    model = ImportedBadgeAssertion
+    v1_serializer_class = ImportedBadgeAssertionSerializer
+    permission_classes = (permissions.IsAuthenticated, )
+    http_method_names = ('get', 'post')
+    
+    def get_objects(self, request, **kwargs):
+        return ImportedBadgeAssertion.objects.filter(user=self.request.user)
+                
+    def get_queryset(self):
+        """Filter imported badges to the current user"""
+        return ImportedBadgeAssertion.objects.filter(user=self.request.user)
+    
+    def post(self, request, **kwargs):
+        """Create a new imported badge instance"""
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(data=request.data)
+        if serializer.is_valid():
+            serializer.validated_data['created_by'] = request.user
+            instance = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ImportedBadgeInstanceDetail(BaseEntityDetailView):
+    """
+    API endpoint for retrieving, updating, or deleting an imported badge
+    """
+    model = ImportedBadgeAssertion
+    v1_serializer_class = ImportedBadgeAssertionSerializer
+    
+    def get_object(self, **kwargs):
+        entity_id = kwargs.get('entity_id')
+        try:
+            return ImportedBadgeAssertion.objects.get(
+                entity_id=entity_id,
+                created_by=self.request.user
+            )
+        except ImportedBadgeAssertion.DoesNotExist:
+            raise Http404
+        
+    def delete(self, request, **kwargs):
+        """Delete an imported badge from the backpack"""
+        badge = self.get_object(**kwargs)
+        badge.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class BackpackAssertionList(BaseEntityListView):
     model = BadgeInstance
@@ -76,9 +126,23 @@ class BackpackAssertionList(BaseEntityListView):
                     or (not include_revoked and b.revoked)
                     or (not include_pending and b.pending)):
                 return False
+            elif isinstance(b, ImportedBadgeAssertion):
+                if ((not include_expired and b.expires_at is not None
+                        and b.expires_at < timezone.now())
+                    or (not include_revoked and b.revoked)):
+                    return False
             return True
+        
+        regular_badges = self.request.user.cached_badgeinstances()
+        
+        # Get imported badges
+        imported_badges = ImportedBadgeAssertion.objects.filter(user=self.request.user)
+        
+        # Combine and filter both sets of badges
+        all_badges = list(regular_badges) + list(imported_badges)
+        return list(filter(badge_filter, all_badges))
 
-        return list(filter(badge_filter, self.request.user.cached_badgeinstances()))
+        # return list(filter(badge_filter, self.request.user.cached_badgeinstances()))
 
     @apispec_list_operation('Assertion',
                             summary="Get a list of Assertions in authenticated user's backpack ",

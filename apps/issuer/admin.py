@@ -10,7 +10,7 @@ from mainsite.admin import badgr_admin
 
 from .models import Issuer, BadgeClass, BadgeInstance, BadgeInstanceEvidence, BadgeClassAlignment, BadgeClassTag, \
     BadgeClassExtension, IssuerExtension, BadgeInstanceExtension, LearningPath, LearningPathBadge, \
-         LearningPathTag, RequestedBadge, QrCode, RequestedLearningPath, IssuerStaffRequest
+         LearningPathTag, RequestedBadge, QrCode, RequestedLearningPath, IssuerStaffRequest, ImportedBadgeAssertion
 from .tasks import resend_notifications
 
 
@@ -282,6 +282,11 @@ class BadgeInstanceAdmin(DjangoObjectActions, ModelAdmin):
 
 badgr_admin.register(BadgeInstance, BadgeInstanceAdmin)
 
+class ImportedBadgeAssertionAdmin(ModelAdmin): 
+    readonly_fields = ('created_at', 'created_by', 'updated_at', 'image', 'entity_id')
+    list_display = ('image', 'recipient_identifier', 'entity_id', 'badge_name', 'badge_description')
+
+badgr_admin.register(ImportedBadgeAssertion, ImportedBadgeAssertionAdmin)   
 
 class ExtensionAdmin(ModelAdmin):
     list_display = ('name',)
