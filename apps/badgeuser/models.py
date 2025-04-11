@@ -471,7 +471,6 @@ class BadgeUser(BaseVersionedEntity, AbstractUser, cachemodel.CacheModel):
 
     @cachemodel.cached_method(auto_publish=True)
     def get_badges_from_user(self):
-        print(BadgeInstance.objects)
         return BadgeInstance.objects.filter(recipient_identifier__in=self.all_recipient_identifiers)
 
     @cachemodel.cached_method(auto_publish=True)
