@@ -268,6 +268,11 @@ class IssuerSerializerV1(
         representation["recipientCount"] = 0
         representation["pathwayCount"] = 0
 
+        representation["ownerAcceptedTos"] = any(
+            user.agreed_terms_version == TermsVersion.cached.latest_version()
+            for user in instance.owners
+        )
+
         return representation
 
 
