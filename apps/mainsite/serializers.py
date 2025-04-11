@@ -209,12 +209,44 @@ class OriginalJsonSerializerMixin(serializers.Serializer):
 
 class ExcludeFieldsMixin:
     """
-    A mixin to recursively exclude specific fields from the given dictionary
+    A mixin to recursively exclude specific fields from the given request data.
+
+    Use in a serializers `get_fields` method to enable it:
+    ```
+    def get_fields(self):
+        fields = super().get_fields()
+        ...
+        # Use the mixin to exclude any fields that are unwantend in the final result
+        exclude_fields = self.context.get("exclude_fields", [])
+        self.exclude_fields(fields, exclude_fields)
+        return fields
+    ```
+
+    Then use the context of the serializer to enable it:
+    ```
+    context["exclude_fields"] = [
+        *context.get("exclude_fields", []),
+        "staff",
+        "created_by",
+    ]
+    ```
+
+    You can hook into `OriginalJsonSerializerMixin`s `to_representation` method
+    to exclude fields from the final json (e.g. when extensions are present)
+    instead of using the get_fields method:
+    ```
+    def to_representation(self, instance):
+        representation = super(BadgeClassSerializerV1, self).to_representation(instance)
+        exclude_fields = self.context.get("exclude_fields", [])
+        self.exclude_fields(representation, exclude_fields)
+        ...
+        return representation
+    ```
     """
 
     def exclude_fields(self, data, fields_to_exclude):
         """
-        Exclude specified fields from the data dictionary recursively.
+        Exclude specified fields from the given request data recusively.
         """
         for field in fields_to_exclude:
             if isinstance(data, dict):
