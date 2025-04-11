@@ -1,4 +1,4 @@
 {% load i18n %}
 {% autoescape off %}
-{% blocktrans %}Badge-Anfrage per QR-Code{% endblocktrans %}
+{% blocktrans %}Badge-Anfragen per QR-Code{% endblocktrans %}
 {% endautoescape %}
