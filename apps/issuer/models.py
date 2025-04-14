@@ -1144,6 +1144,7 @@ class BadgeClass(
                 ),
                 name=self.name,
                 description=self.description_nonnull,
+                copy_permissions = self.copy_permissions_list,
                 issuer=(
                     self.cached_issuer.jsonld_id
                     if use_canonical_id
