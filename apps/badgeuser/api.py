@@ -32,7 +32,7 @@ from django.http import Http404, JsonResponse
 from django.utils import timezone
 from django.views.generic import RedirectView
 from django.conf import settings
-from issuer.models import BadgeInstance, Issuer, IssuerStaffRequest, LearningPath, LearningPathBadge, RequestedBadge
+from issuer.models import BadgeInstance, Issuer, IssuerStaff, IssuerStaffRequest, LearningPath, LearningPathBadge, RequestedBadge
 from issuer.serializers_v1 import IssuerStaffRequestSerializer, LearningPathSerializerV1
 from rest_framework import permissions, serializers, status
 from rest_framework.exceptions import ValidationError as RestframeworkValidationError
@@ -1097,10 +1097,11 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
         }
 
         for member in issuer.cached_issuerstaff():
-            email = member.cached_user.email
-            get_adapter().send_mail(
-                "account/email/email_staff_request", email, email_context
-            )
+            if member.role == IssuerStaff.ROLE_OWNER:
+                email = member.cached_user.email
+                get_adapter().send_mail(
+                    "account/email/email_staff_request", email, email_context
+                )
 
         return Response(
             serializer.data, 

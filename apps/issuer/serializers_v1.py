@@ -409,7 +409,6 @@ class BadgeClassSerializerV1(
         representation["json"] = instance.get_json(
             obi_version="1_1", use_canonical_id=True
         )
-
         return representation
 
     def validate_image(self, image):
@@ -755,6 +754,7 @@ class QrCodeSerializerV1(serializers.Serializer):
     badgeclass_id = serializers.CharField(max_length=254)
     issuer_id = serializers.CharField(max_length=254)
     request_count = serializers.SerializerMethodField()
+    notifications = serializers.BooleanField(default=False)
 
     valid_from = DateTimeWithUtcZAtEndField(
         required=False, allow_null=True, default_timezone=pytz.utc
@@ -771,6 +771,7 @@ class QrCodeSerializerV1(serializers.Serializer):
         createdBy = validated_data.get("createdBy")
         badgeclass_id = validated_data.get("badgeclass_id")
         issuer_id = validated_data.get("issuer_id")
+        notifications = validated_data.get("notifications")
 
         try:
             issuer = Issuer.objects.get(entity_id=issuer_id)
@@ -785,14 +786,22 @@ class QrCodeSerializerV1(serializers.Serializer):
             raise serializers.ValidationError(
                 f"BadgeClass with ID '{badgeclass_id}' does not exist."
             )
+        try:
+            created_by_user = self.context["request"].user
+        except DjangoValidationError:
+            raise serializers.ValidationError(
+                "Cannot determine the creating user of the qr code"
+            )
 
         new_qrcode = QrCode.objects.create(
             title=title,
             createdBy=createdBy,
             issuer=issuer,
             badgeclass=badgeclass,
+            created_by_user=created_by_user,
             valid_from=validated_data.get("valid_from"),
             expires_at=validated_data.get("expires_at"),
+            notifications=notifications,
         )
 
         return new_qrcode
@@ -802,6 +811,9 @@ class QrCodeSerializerV1(serializers.Serializer):
         instance.createdBy = validated_data.get("createdBy", instance.createdBy)
         instance.valid_from = validated_data.get("valid_from", instance.valid_from)
         instance.expires_at = validated_data.get("expires_at", instance.expires_at)
+        instance.notifications = validated_data.get(
+            "notifications", instance.notifications
+        )
         instance.save()
         return instance
 
