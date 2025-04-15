@@ -814,12 +814,6 @@ class QrCodeSerializerV1(serializers.Serializer):
             raise serializers.ValidationError(
                 f"BadgeClass with ID '{badgeclass_id}' does not exist."
             )
-        # try:
-        #     created_by_user = self.context["request"].user
-        # except DjangoValidationError:
-        #     raise serializers.ValidationError(
-        #         "Cannot determine the creating user of the qr code"
-        #     )
 
         new_qrcode = QrCode.objects.create(
             title=title,
