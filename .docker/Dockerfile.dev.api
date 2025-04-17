@@ -39,7 +39,7 @@ RUN curl -fsSLO "$SUPERCRONIC_URL" \
     && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
 
 
-RUN pip --timeout=1000 install -r requirements.txt
+RUN pip --timeout=1000 install --no-dependencies -r requirements.txt
 RUN pip --timeout=1000 install debugpy
 
 ENTRYPOINT ["/badgr_server/entrypoint.dev.sh"]
