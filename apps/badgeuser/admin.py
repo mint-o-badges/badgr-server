@@ -1,3 +1,4 @@
+from django.db import models
 from django.contrib.admin import ModelAdmin, TabularInline
 from django.core.cache import cache
 from django.utils import timezone
@@ -9,6 +10,7 @@ from mainsite.admin import badgr_admin
 from mainsite.utils import backoff_cache_key
 from .models import (BadgeUser, EmailAddressVariant, TermsVersion, TermsAgreement, CachedEmailAddress,
                      UserRecipientIdentifier)
+from issuer.models import BadgeInstance, Issuer
 
 
 class ExternalToolInline(TabularInline):
@@ -46,7 +48,7 @@ class BadgeUserAdmin(DjangoObjectActions, ModelAdmin):
     readonly_fields = ('entity_id', 'date_joined', 'last_login', 'username',
             'entity_id', 'agreed_terms_version', 'login_backoff', 'has_usable_password',)
     list_display = ('email', 'first_name', 'last_name', 'is_active', 'is_staff',
-            'entity_id', 'date_joined')
+            'issuers', 'assertion_count', 'date_joined')
     list_filter = ('is_active', 'is_staff', 'is_superuser', 'date_joined', 'last_login')
     search_fields = ('email', 'first_name', 'last_name', 'username', 'entity_id')
     fieldsets = ((
@@ -86,6 +88,11 @@ class BadgeUserAdmin(DjangoObjectActions, ModelAdmin):
         'clear_login_backoff'
     ]
 
+    def get_queryset(self, request):
+        qs = super(BadgeUserAdmin, self).get_queryset(request)
+        qs = qs.annotate(number_of_assertions=models.Count('badgeinstance'))
+        return qs
+
     def clear_login_backoff(self, request, obj):
         for email in obj.all_verified_recipient_identifiers:
             cache_key = backoff_cache_key(email)
@@ -109,6 +116,15 @@ class BadgeUserAdmin(DjangoObjectActions, ModelAdmin):
             return format_html("<ul><li>{}</li></ul>".format("</li><li>".join(blocks)))
         return "None"
     login_backoff.allow_tags = True
+
+    def assertion_count(self, obj):
+        return obj.number_of_assertions
+
+    assertion_count.admin_order_field = 'number_of_assertions'
+
+    def issuers(self, obj):
+        issuers = Issuer.objects.filter(staff=obj)
+        return ','.join([x.name for x in issuers])
 
 
 badgr_admin.register(BadgeUser, BadgeUserAdmin)
