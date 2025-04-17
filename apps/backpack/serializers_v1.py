@@ -38,6 +38,7 @@ class ImportedBadgeAssertionSerializer(serializers.Serializer):
     narrative = MarkdownCharField(read_only=True)
 
     original_json = serializers.JSONField(read_only=True)
+    extensions = serializers.DictField(source="extension_items", read_only=True)
 
     def to_representation(self, obj):
         from django.conf import settings

@@ -1275,7 +1275,7 @@ class BadgeClass(
             self.copy_permissions = sum(map(int, binary_map))
 
 
-class ImportedBadgeAssertion(BaseVersionedEntity, BaseAuditedModel):
+class ImportedBadgeAssertion(BaseVersionedEntity, BaseAuditedModel, BaseOpenBadgeObjectModel):
     """
     Model for storing imported badges separately from the system's own badges.
     This keeps external badge data isolated from internal data models.
@@ -1299,11 +1299,6 @@ class ImportedBadgeAssertion(BaseVersionedEntity, BaseAuditedModel):
 
     issued_on = models.DateTimeField()
     expires_at = models.DateTimeField(blank=True, null=True)
-
-    source = models.CharField(max_length=254, default="import")
-    source_url = models.CharField(
-        max_length=254, blank=True, null=True, default=None, unique=True
-    )
 
     RECIPIENT_TYPE_EMAIL = "email"
     RECIPIENT_TYPE_ID = "openBadgeId"
@@ -1353,6 +1348,11 @@ class ImportedBadgeAssertion(BaseVersionedEntity, BaseAuditedModel):
         if self.image:
             return self.image.url
         return self.badge_image_url
+    
+    def get_extensions_manager(self):
+        return self.importedbadgeassertionextension_set
+    
+
 
 
 class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectModel):
@@ -2267,8 +2267,18 @@ class BadgeInstanceExtension(BaseOpenBadgeExtension):
 
     def delete(self, *args, **kwargs):
         super(BadgeInstanceExtension, self).delete(*args, **kwargs)
-        self.badgeinstance.publish()
+        self.badgeinstance.publish()        
 
+class ImportedBadgeAssertionExtension(BaseOpenBadgeExtension):
+    importedBadge = models.ForeignKey("issuer.ImportedBadgeAssertion", on_delete=models.CASCADE)
+
+    def publish(self):
+        super(ImportedBadgeAssertionExtension, self).publish()
+        self.importedBadge.publish()
+
+    def delete(self, *args, **kwargs):
+        super(ImportedBadgeAssertionExtension, self).delete(*args, **kwargs)
+        self.importedBadge.publish()
 
 class QrCode(BaseVersionedEntity):
 

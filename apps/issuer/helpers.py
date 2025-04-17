@@ -146,7 +146,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError as RestframeworkValidationError
 import openbadges
-from .models import ImportedBadgeAssertion
+from .models import ImportedBadgeAssertion, ImportedBadgeAssertionExtension
 
 def first_node_match(graph, criteria):
     """Find the first node in a graph that matches all criteria."""
@@ -311,6 +311,7 @@ class ImportedBadgeHelper:
                 ]
             )
 
+
         original_json = response.get("input").get("original_json", {})
 
         recipient_profile = report.get("recipientProfile", {})
@@ -359,6 +360,17 @@ class ImportedBadgeHelper:
             )
 
             imported_badge.save()
+
+            for extension_key, extension_data in badgeclass_data.items():
+
+                if extension_key.startswith('extensions:'):
+                    
+                    extension = ImportedBadgeAssertionExtension(
+                        importedBadge=imported_badge,
+                        name=extension_key,
+                        original_json=json.dumps(extension_data)
+                    )
+                    extension.save()
 
         return imported_badge, True
 
