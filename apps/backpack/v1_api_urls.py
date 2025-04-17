@@ -2,7 +2,7 @@ from django.conf.urls import url
 
 from backpack.api import BackpackAssertionList, BackpackAssertionDetail, \
         BackpackAssertionDetailImage, BackpackCollectionList, \
-        BackpackCollectionDetail, ShareBackpackAssertion, ShareBackpackCollection
+        BackpackCollectionDetail, ImportedBadgeInstanceDetail, ImportedBadgeInstanceList, ShareBackpackAssertion, ShareBackpackCollection
 from backpack.api_v1 import CollectionLocalBadgeInstanceList, \
         CollectionLocalBadgeInstanceDetail, CollectionGenerateShare
 
@@ -34,6 +34,8 @@ urlpatterns = [
     url(r'^share/collection/(?P<slug>[^/]+)$', ShareBackpackCollection.as_view(),
         name='v1_api_analytics_share_collection'),
 
-    url(r'^badges/pdf/(?P<slug>[^/]+)$', pdf, name='generate-pdf')    
+    url(r'^badges/pdf/(?P<slug>[^/]+)$', pdf, name='generate-pdf'),
+    url(r'^imported-badges$', ImportedBadgeInstanceList.as_view(), name='v1_api_importedbadge_list'),
+    url(r'^imported-badges/(?P<entity_id>[^/]+)$', ImportedBadgeInstanceDetail.as_view(), name='v1_api_importedbadge_detail'),    
 
 ]
