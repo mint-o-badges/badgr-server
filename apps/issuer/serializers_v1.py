@@ -1,16 +1,20 @@
-from functools import reduce
-import os
-import pytz
-import uuid
 import json
-
 import logging
+import os
+import uuid
+from functools import reduce
 
-
+import pytz
+from badgeuser.models import TermsVersion
+from badgeuser.serializers_v1 import (
+    BadgeUserIdentifierFieldV1,
+    BadgeUserProfileSerializerV1,
+)
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.urls import reverse
 from django.core.validators import EmailValidator, URLValidator
 from django.db.models import Q
+from django.urls import reverse
+from django.utils import timezone
 from django.utils.html import strip_tags
 from mainsite.drf_fields import ValidImageField
 from mainsite.models import BadgrApp
@@ -30,40 +34,17 @@ from mainsite.validators import (
     TelephoneValidator,
 )
 from rest_framework import serializers
-from django.db import transaction
-from json import loads as json_loads
-
 
 from . import utils
-from badgeuser.serializers_v1 import (
-    BadgeUserProfileSerializerV1,
-    BadgeUserIdentifierFieldV1,
-)
-from mainsite.drf_fields import ValidImageField
-from mainsite.models import BadgrApp
-from mainsite.serializers import (
-    DateTimeWithUtcZAtEndField,
-    HumanReadableBooleanField,
-    StripTagsCharField,
-    MarkdownCharField,
-    OriginalJsonSerializerMixin,
-)
-from mainsite.utils import OriginSetting, validate_altcha, verifyIssuerAutomatically
-from mainsite.validators import (
-    ChoicesValidator,
-    BadgeExtensionValidator,
-    PositiveIntegerValidator,
-    TelephoneValidator,
-)
 from .models import (
-    Issuer,
-    BadgeClass,
-    IssuerStaff,
-    BadgeInstance,
-    BadgeClassExtension,
     RECIPIENT_TYPE_EMAIL,
     RECIPIENT_TYPE_ID,
     RECIPIENT_TYPE_URL,
+    BadgeClass,
+    BadgeClassExtension,
+    BadgeInstance,
+    Issuer,
+    IssuerStaff,
     IssuerStaffRequest,
     LearningPath,
     LearningPathBadge,
@@ -71,8 +52,6 @@ from .models import (
     RequestedBadge,
     RequestedLearningPath,
 )
-
-from badgeuser.models import TermsVersion
 
 logger = logging.getLogger(__name__)
 
@@ -195,15 +174,6 @@ class IssuerSerializerV1(
 
     class Meta:
         apispec_definition = ("Issuer", {})
-
-    def get_fields(self):
-        fields = super().get_fields()
-
-        # Use the mixin to exclude any fields that are unwantend in the final result
-        exclude_fields = self.context.get("exclude_fields", [])
-        self.exclude_fields(fields, exclude_fields)
-
-        return fields
 
     def get_fields(self):
         fields = super().get_fields()
@@ -784,6 +754,7 @@ class QrCodeSerializerV1(serializers.Serializer):
     badgeclass_id = serializers.CharField(max_length=254)
     issuer_id = serializers.CharField(max_length=254)
     request_count = serializers.SerializerMethodField()
+    notifications = serializers.BooleanField(default=False)
 
     valid_from = DateTimeWithUtcZAtEndField(
         required=False, allow_null=True, default_timezone=pytz.utc
@@ -800,6 +771,7 @@ class QrCodeSerializerV1(serializers.Serializer):
         createdBy = validated_data.get("createdBy")
         badgeclass_id = validated_data.get("badgeclass_id")
         issuer_id = validated_data.get("issuer_id")
+        notifications = validated_data.get("notifications")
 
         try:
             issuer = Issuer.objects.get(entity_id=issuer_id)
@@ -814,14 +786,22 @@ class QrCodeSerializerV1(serializers.Serializer):
             raise serializers.ValidationError(
                 f"BadgeClass with ID '{badgeclass_id}' does not exist."
             )
+        try:
+            created_by_user = self.context["request"].user
+        except DjangoValidationError:
+            raise serializers.ValidationError(
+                "Cannot determine the creating user of the qr code"
+            )
 
         new_qrcode = QrCode.objects.create(
             title=title,
             createdBy=createdBy,
             issuer=issuer,
             badgeclass=badgeclass,
+            created_by_user=created_by_user,
             valid_from=validated_data.get("valid_from"),
             expires_at=validated_data.get("expires_at"),
+            notifications=notifications,
         )
 
         return new_qrcode
@@ -831,6 +811,9 @@ class QrCodeSerializerV1(serializers.Serializer):
         instance.createdBy = validated_data.get("createdBy", instance.createdBy)
         instance.valid_from = validated_data.get("valid_from", instance.valid_from)
         instance.expires_at = validated_data.get("expires_at", instance.expires_at)
+        instance.notifications = validated_data.get(
+            "notifications", instance.notifications
+        )
         instance.save()
         return instance
 
