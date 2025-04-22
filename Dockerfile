@@ -18,7 +18,7 @@ RUN python -m venv /badgr_server/venv
 ENV PATH="/badgr_server/venv/bin:$PATH"
 
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-dependencies -r requirements.txt
 
 # ------------------------------> Final image
 FROM python:3.8.14-slim-buster

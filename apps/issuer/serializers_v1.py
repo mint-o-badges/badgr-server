@@ -20,6 +20,7 @@ from mainsite.drf_fields import ValidImageField
 from mainsite.models import BadgrApp
 from mainsite.serializers import (
     DateTimeWithUtcZAtEndField,
+    ExcludeFieldsMixin,
     HumanReadableBooleanField,
     MarkdownCharField,
     OriginalJsonSerializerMixin,
@@ -122,7 +123,9 @@ class IssuerStaffSerializerV1(serializers.Serializer):
         )
 
 
-class IssuerSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
+class IssuerSerializerV1(
+    OriginalJsonSerializerMixin, ExcludeFieldsMixin, serializers.Serializer
+):
     created_at = DateTimeWithUtcZAtEndField(read_only=True)
     created_by = BadgeUserIdentifierFieldV1()
     name = StripTagsCharField(max_length=1024)
@@ -171,6 +174,15 @@ class IssuerSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
 
     class Meta:
         apispec_definition = ("Issuer", {})
+
+    def get_fields(self):
+        fields = super().get_fields()
+
+        # Use the mixin to exclude any fields that are unwantend in the final result
+        exclude_fields = self.context.get("exclude_fields", [])
+        self.exclude_fields(fields, exclude_fields)
+
+        return fields
 
     def validate_image(self, image):
         if image is not None:
@@ -240,19 +252,26 @@ class IssuerSerializerV1(OriginalJsonSerializerMixin, serializers.Serializer):
         instance.save(force_resize=force_image_resize)
         return instance
 
-    def to_representation(self, obj):
-        representation = super(IssuerSerializerV1, self).to_representation(obj)
-        representation["json"] = obj.get_json(obi_version="1_1", use_canonical_id=True)
+    def to_representation(self, instance):
+        representation = super(IssuerSerializerV1, self).to_representation(instance)
+        representation["json"] = instance.get_json(
+            obi_version="1_1", use_canonical_id=True
+        )
 
         if self.context.get("embed_badgeclasses", False):
             representation["badgeclasses"] = BadgeClassSerializerV1(
-                obj.badgeclasses.all(), many=True, context=self.context
+                instance.badgeclasses.all(), many=True, context=self.context
             ).data
-        representation["badgeClassCount"] = len(obj.cached_badgeclasses())
-        representation["learningPathCount"] = len(obj.cached_learningpaths())
+        representation["badgeClassCount"] = len(instance.cached_badgeclasses())
+        representation["learningPathCount"] = len(instance.cached_learningpaths())
         representation["recipientGroupCount"] = 0
         representation["recipientCount"] = 0
         representation["pathwayCount"] = 0
+
+        representation["ownerAcceptedTos"] = any(
+            user.agreed_terms_version == TermsVersion.cached.latest_version()
+            for user in instance.owners
+        )
 
         return representation
 
@@ -315,7 +334,10 @@ class BadgeClassExpirationSerializerV1(serializers.Serializer):
 
 
 class BadgeClassSerializerV1(
-    OriginalJsonSerializerMixin, ExtensionsSaverMixin, serializers.Serializer
+    OriginalJsonSerializerMixin,
+    ExtensionsSaverMixin,
+    ExcludeFieldsMixin,
+    serializers.Serializer,
 ):
     created_at = DateTimeWithUtcZAtEndField(read_only=True)
     updated_at = DateTimeWithUtcZAtEndField(read_only=True)
@@ -374,8 +396,11 @@ class BadgeClassSerializerV1(
         return super(BadgeClassSerializerV1, self).to_internal_value(data)
 
     def to_representation(self, instance):
-        exclude_orgImg = self.context.get("exclude_orgImg", None)
         representation = super(BadgeClassSerializerV1, self).to_representation(instance)
+
+        exclude_fields = self.context.get("exclude_fields", [])
+        self.exclude_fields(representation, exclude_fields)
+
         representation["issuerName"] = instance.cached_issuer.name
         representation["issuerOwnerAcceptedTos"] = any(
             user.agreed_terms_version == TermsVersion.cached.latest_version()
@@ -387,12 +412,6 @@ class BadgeClassSerializerV1(
         representation["json"] = instance.get_json(
             obi_version="1_1", use_canonical_id=True
         )
-        if "extensions" in representation and exclude_orgImg:
-            representation["extensions"] = {
-                name: value
-                for name, value in representation["extensions"].items()
-                if name != "extensions:OrgImageExtension"
-            }
         return representation
 
     def validate_image(self, image):
@@ -770,7 +789,6 @@ class QrCodeSerializerV1(serializers.Serializer):
             raise serializers.ValidationError(
                 f"BadgeClass with ID '{badgeclass_id}' does not exist."
             )
-
         try:
             created_by_user = self.context["request"].user
         except DjangoValidationError:
@@ -842,7 +860,7 @@ class BadgeOrderSerializer(serializers.Serializer):
         apispec_definition = ("LearningPathBadge", {})
 
 
-class LearningPathSerializerV1(serializers.Serializer):
+class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
     created_at = DateTimeWithUtcZAtEndField(read_only=True)
     updated_at = DateTimeWithUtcZAtEndField(read_only=True)
     issuer_id = serializers.CharField(max_length=254)
@@ -878,7 +896,6 @@ class LearningPathSerializerV1(serializers.Serializer):
         )
 
     def to_representation(self, instance):
-
         request = self.context.get("request")
         representation = super(LearningPathSerializerV1, self).to_representation(
             instance
@@ -897,7 +914,7 @@ class LearningPathSerializerV1(serializers.Serializer):
             {
                 "badge": BadgeClassSerializerV1(
                     badge.badge,
-                    context={"exclude_orgImg": "extensions:OrgImageExtension"},
+                    context={"exclude_fields": ["extensions:OrgImageExtension"]},
                 ).data,
                 "order": badge.order,
             }
@@ -943,8 +960,8 @@ class LearningPathSerializerV1(serializers.Serializer):
                 learningPathBadgeInstanceSlug
             )
         # set lp completed at from newest badge issue date
-        # FIXME: maybe set from issued participation badge instead, would need to
-        # get user participation badgeclass aswell
+        # FIXME: maybe set from issued participation badge instead, would need to get
+        # user participation badgeclass aswell
         completed_at = None
         if user_progress >= max_progress:
             completed_at = reduce(
@@ -960,10 +977,13 @@ class LearningPathSerializerV1(serializers.Serializer):
                 "completed_badges": BadgeClassSerializerV1(
                     user_completed_badges,
                     many=True,
-                    context={"exclude_orgImg": "extensions:OrgImageExtension"},
+                    context={"exclude_fields": ["extensions:OrgImageExtension"]},
                 ).data,
             }
         )
+
+        exclude_fields = self.context.get("exclude_fields", [])
+        self.exclude_fields(representation, exclude_fields)
 
         return representation
 
