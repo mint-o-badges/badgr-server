@@ -1777,7 +1777,8 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
 
             if not self.ob_json_2_0 or force_recreate:
                 self.ob_json_2_0 = json_dumps(self.get_json_2_0())
-                self.save(update_fields=['ob_json_2_0'])
+                if self.pk:
+                    self.save(update_fields=['ob_json_2_0'])
 
             json = json_loads(self.ob_json_2_0, object_pairs_hook=OrderedDict)
 
