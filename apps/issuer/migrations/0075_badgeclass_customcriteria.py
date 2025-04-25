@@ -7,7 +7,7 @@ import jsonfield.fields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0070_badgeclass_copy_permissions'),
+        ('issuer', '0074_badgeinstance_ob_json_2_0'),
     ]
 
     operations = [

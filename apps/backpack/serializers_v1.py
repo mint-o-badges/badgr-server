@@ -440,6 +440,8 @@ class V1BadgeClassSerializer(serializers.Serializer):
         representation = super(V1BadgeClassSerializer, self).to_representation(instance)
         if 'alignment' in instance:
             representation['alignment'] = instance['alignment']
+        if 'customCriteria' in instance:
+            representation['customCriteria'] = instance['customCriteria']    
         return representation
 
 
@@ -461,6 +463,7 @@ class V1BadgeInstanceSerializer(V1InstanceSerializer):
     """
     pending = serializers.ReadOnlyField()
 
+
     def to_representation(self, instance):
         localbadgeinstance_json = instance.json
         if 'evidence' in localbadgeinstance_json:
@@ -472,7 +475,7 @@ class V1BadgeInstanceSerializer(V1InstanceSerializer):
         if instance.cached_badgeclass.criteria_text:
             localbadgeinstance_json['badge']['criteria_text'] = instance.cached_badgeclass.criteria_text
         if instance.cached_badgeclass.criteria_url:
-            localbadgeinstance_json['badge']['criteria_url'] = instance.cached_badgeclass.criteria_url
+            localbadgeinstance_json['badge']['criteria_url'] = instance.cached_badgeclass.criteria_url           
         localbadgeinstance_json['badge']['issuer'] = instance.cached_issuer.json
 
         # clean up recipient to match V1InstanceSerializer
