@@ -412,6 +412,8 @@ class BadgeClassSerializerV1(
         representation["json"] = instance.get_json(
             obi_version="1_1", use_canonical_id=True
         )
+        if representation['criteria_text'] is None:
+            representation['criteria_text'] = instance.get_criteria()
         return representation
 
     def validate_image(self, image):
