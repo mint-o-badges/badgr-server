@@ -552,13 +552,14 @@ class BadgeClassSerializerV1(
         if "issuer" in self.context:
             validated_data["issuer"] = self.context.get("issuer")
 
-        if (
-            validated_data.get("criteria_text", None) is None
-            and validated_data.get("criteria_url", None) is None
-        ):
-            raise serializers.ValidationError(
-                "One or both of the criteria_text and criteria_url fields must be provided"
-            )
+        #criteria_text is now created at runtime
+        # if (
+        #     validated_data.get("criteria_text", None) is None
+        #     and validated_data.get("criteria_url", None) is None
+        # ):
+        #     raise serializers.ValidationError(
+        #         "One or both of the criteria_text and criteria_url fields must be provided"
+        #     )
         
         new_badgeclass = BadgeClass.objects.create(**validated_data)
         return new_badgeclass

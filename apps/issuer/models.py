@@ -7,7 +7,7 @@ import re
 import urllib.parse
 import uuid
 from collections import OrderedDict
-from json import dumps as json_dumps, loads as json_loads
+from json import dumps as json_dumps, loads as json_loads, JSONDecodeError
 
 import badgrlog
 import cachemodel
@@ -1134,6 +1134,46 @@ class BadgeClass(
                 self.image.name
             )
 
+    def get_criteria(self):
+        categoryExtension = self.cached_extensions().get(name="extensions:CategoryExtension")
+        category = json_loads(categoryExtension.original_json)
+        if self.criteria_text:
+            return self.criteria_text
+        elif category['Category'] == "competency":
+            competencyExtensions = {}
+
+            if len(self.cached_extensions()) > 0:
+                for extension in self.cached_extensions():
+                    if extension.name == "extensions:CompetencyExtension":
+                        competencyExtensions[extension.name] = json_loads(
+                            extension.original_json
+                        )
+
+            competencies = []
+
+            for competency in competencyExtensions.get(
+                "extensions:CompetencyExtension", []
+            ):
+                competencies.append(competency.get("name"))
+
+            md =  f"""
+                    *Folgende Kriterien sind auf Basis deiner Eingaben als Metadaten im Badge hinterlegt*: 
+                    Du hast erfolgreich an **{self.name}** teilgenommen.
+                    Dabei hast du folgende Kompetenzen gestärkt:
+                    """
+            for comp in competencies:
+                md += f"- {comp}\n"
+
+            return md.strip()               
+        else: 
+            return f"""
+                    *Folgende Kriterien sind auf Basis deiner Eingaben als Metadaten im Badge hinterlegt*: 
+                    Du hast erfolgreich an **{self.name}** teilgenommen.  
+                   """
+
+
+
+
     def get_json(
         self,
         obi_version=CURRENT_OBI_VERSION,
@@ -1183,8 +1223,7 @@ class BadgeClass(
             json["criteria"] = {}
             if self.criteria_url:
                 json["criteria"]["id"] = self.criteria_url
-            if self.criteria_text:
-                json["criteria"]["narrative"] = self.criteria_text
+            json["criteria"]["narrative"] = self.get_criteria()
 
         # source_url
         if self.source_url:
@@ -1218,6 +1257,9 @@ class BadgeClass(
                 for k, v in list(extra.items()):
                     if k not in json:
                         json[k] = v
+
+        if self.customCriteria:
+            json["customCriteria"] = self.customCriteria                    
 
         return json
 
