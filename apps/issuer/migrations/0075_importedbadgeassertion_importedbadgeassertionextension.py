@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('issuer', '0073_auto_20250408_1502'),
+        ('issuer', '0074_badgeinstance_ob_json_2_0'),
     ]
 
     operations = [
