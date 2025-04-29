@@ -439,9 +439,7 @@ class V1BadgeClassSerializer(serializers.Serializer):
     def to_representation(self, instance):
         representation = super(V1BadgeClassSerializer, self).to_representation(instance)
         if 'alignment' in instance:
-            representation['alignment'] = instance['alignment']
-        if 'customCriteria' in instance:
-            representation['customCriteria'] = instance['customCriteria']    
+            representation['alignment'] = instance['alignment']  
         return representation
 
 

@@ -874,7 +874,8 @@ class BadgeClass(
     image_preview = models.FileField(upload_to="uploads/badges", blank=True, null=True)
     description = models.TextField(blank=True, null=True, default=None)
 
-    criteria_url = models.CharField(max_length=254, blank=True, null=True, default=None)
+    # TODO: criteria_url and criteria_text are deprecated and should be removed once the migration to the criteria field was done
+    criteria_url = models.CharField(max_length=254, blank=True, null=True, default=None) 
     criteria_text = models.TextField(blank=True, null=True)
 
     expires_amount = models.IntegerField(blank=True, null=True, default=None)
@@ -901,7 +902,7 @@ class BadgeClass(
     )
     copy_permissions = models.PositiveSmallIntegerField(default=COPY_PERMISSIONS_ISSUER)
 
-    customCriteria = JSONField(default={})
+    criteria = models.JSONField(blank=True, null=True)
 
     old_json = JSONField()
 
@@ -1135,41 +1136,66 @@ class BadgeClass(
             )
 
     def get_criteria(self):
-        categoryExtension = self.cached_extensions().get(name="extensions:CategoryExtension")
-        category = json_loads(categoryExtension.original_json)
-        if self.criteria_text:
-            return self.criteria_text
-        elif category['Category'] == "competency":
-            competencyExtensions = {}
+        """Get criteria items list if criteria is an object"""
+        # categoryExtension = self.cached_extensions().get(name="extensions:CategoryExtension")
+        # category = json_loads(categoryExtension.original_json)
+        # if category['Category'] == "competency":
+        #     competencyExtensions = {}
 
-            if len(self.cached_extensions()) > 0:
-                for extension in self.cached_extensions():
-                    if extension.name == "extensions:CompetencyExtension":
-                        competencyExtensions[extension.name] = json_loads(
-                            extension.original_json
-                        )
+        #     if len(self.cached_extensions()) > 0:
+        #         for extension in self.cached_extensions():
+        #             if extension.name == "extensions:CompetencyExtension":
+        #                 competencyExtensions[extension.name] = json_loads(
+        #                     extension.original_json
+        #                 )
 
-            competencies = []
+        #     competencies = []
 
-            for competency in competencyExtensions.get(
-                "extensions:CompetencyExtension", []
-            ):
-                competencies.append(competency.get("name"))
+        #     for competency in competencyExtensions.get(
+        #         "extensions:CompetencyExtension", []
+        #     ):
+        #         competencies.append(competency.get("name"))
 
-            md =  f"""
-                    *Folgende Kriterien sind auf Basis deiner Eingaben als Metadaten im Badge hinterlegt*: 
-                    Du hast erfolgreich an **{self.name}** teilgenommen.
-                    Dabei hast du folgende Kompetenzen gestärkt:
-                    """
-            for comp in competencies:
-                md += f"- {comp}\n"
+        if isinstance(self.criteria, dict):
+            return self.criteria.get('criteria', [])
+        return []
 
-            return md.strip()               
-        else: 
-            return f"""
-                    *Folgende Kriterien sind auf Basis deiner Eingaben als Metadaten im Badge hinterlegt*: 
-                    Du hast erfolgreich an **{self.name}** teilgenommen.  
-                   """
+    # def get_criteria(self):
+    #     categoryExtension = self.cached_extensions().get(name="extensions:CategoryExtension")
+    #     category = json_loads(categoryExtension.original_json)
+    #     if self.criteria_text:
+    #         return self.criteria_text
+    #     elif category['Category'] == "competency":
+    #         competencyExtensions = {}
+
+    #         if len(self.cached_extensions()) > 0:
+    #             for extension in self.cached_extensions():
+    #                 if extension.name == "extensions:CompetencyExtension":
+    #                     competencyExtensions[extension.name] = json_loads(
+    #                         extension.original_json
+    #                     )
+
+    #         competencies = []
+
+    #         for competency in competencyExtensions.get(
+    #             "extensions:CompetencyExtension", []
+    #         ):
+    #             competencies.append(competency.get("name"))
+
+    #         md =  f"""
+    #                 *Folgende Kriterien sind auf Basis deiner Eingaben als Metadaten im Badge hinterlegt*: 
+    #                 Du hast erfolgreich an **{self.name}** teilgenommen.
+    #                 Dabei hast du folgende Kompetenzen gestärkt:
+    #                 """
+    #         for comp in competencies:
+    #             md += f"- {comp}\n"
+
+    #         return md.strip()               
+    #     else: 
+    #         return f"""
+    #                 *Folgende Kriterien sind auf Basis deiner Eingaben als Metadaten im Badge hinterlegt*: 
+    #                 Du hast erfolgreich an **{self.name}** teilgenommen.  
+    #                """
 
 
 
@@ -1256,10 +1282,7 @@ class BadgeClass(
             if extra is not None:
                 for k, v in list(extra.items()):
                     if k not in json:
-                        json[k] = v
-
-        if self.customCriteria:
-            json["customCriteria"] = self.customCriteria                    
+                        json[k] = v                  
 
         return json
 

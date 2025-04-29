@@ -130,8 +130,8 @@ class BadgeModelForm(forms.ModelForm):
 class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
     form = BadgeModelForm
 
-    readonly_fields = ('created_by', 'created_at', 'updated_at', 'old_json', 'customCriteria',
-                       'source', 'source_url', 'entity_id', 'slug')
+    readonly_fields = ('created_by', 'created_at', 'updated_at', 'old_json',
+                       'source', 'source_url', 'entity_id', 'slug', 'criteria')
     list_display = ('badge_image', 'name', 'entity_id', 'issuer_link')
     list_display_links = ('badge_image', 'name',)
     list_filter = ('created_at',)
@@ -149,7 +149,7 @@ class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
             'fields': ('criteria_url', 'criteria_text', 'expires_duration', 'expires_amount', 'copy_permissions',)
         }),
         ('JSON', {
-            'fields': ('old_json', 'customCriteria')
+            'fields': ('old_json', 'criteria')
         }),
     )
     inlines = [
