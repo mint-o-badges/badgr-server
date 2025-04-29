@@ -4,6 +4,7 @@ import os
 import uuid
 from functools import reduce
 
+from rest_framework.fields import JSONField
 import pytz
 from badgeuser.models import TermsVersion
 from badgeuser.serializers_v1 import (
@@ -347,7 +348,7 @@ class BadgeClassSerializerV1(
     image = ValidImageField(required=False)
     imageFrame = serializers.BooleanField(default=True, required=False)
     slug = StripTagsCharField(max_length=255, read_only=True, source="entity_id")
-    criteria = MarkdownCharField(allow_blank=True, required=False, write_only=True)
+    criteria = JSONField(required=False)
     criteria_text = MarkdownCharField(required=False, allow_null=True, allow_blank=True)
     criteria_url = StripTagsCharField(
         required=False, allow_blank=True, allow_null=True, validators=[URLValidator()]
@@ -382,6 +383,7 @@ class BadgeClassSerializerV1(
 
     copy_permissions = serializers.ListField(source="copy_permissions_list")
 
+
     class Meta:
         apispec_definition = ("BadgeClass", {})
 
@@ -409,6 +411,8 @@ class BadgeClassSerializerV1(
         representation["json"] = instance.get_json(
             obi_version="1_1", use_canonical_id=True
         )
+        if representation['criteria_text'] is None:
+            representation['criteria_text'] = instance.get_criteria()
         return representation
 
     def validate_image(self, image):
@@ -475,32 +479,12 @@ class BadgeClassSerializerV1(
         if new_description:
             instance.description = strip_tags(new_description)
 
-        # Assure both criteria_url and criteria_text will not be empty
-        if "criteria_url" in validated_data or "criteria_text" in validated_data:
-            end_criteria_url = (
-                validated_data["criteria_url"]
-                if "criteria_url" in validated_data
-                else instance.criteria_url
-            )
-            end_criteria_text = (
-                validated_data["criteria_text"]
-                if "criteria_text" in validated_data
-                else instance.criteria_text
-            )
-
-            if (end_criteria_url is None or not end_criteria_url.strip()) and (
-                end_criteria_text is None or not end_criteria_text.strip()
-            ):
-                raise serializers.ValidationError(
-                    "Changes cannot be made that would leave both criteria_url and criteria_text blank."
-                )
-            else:
-                instance.criteria_text = end_criteria_text
-                instance.criteria_url = end_criteria_url
-
         if "image" in validated_data:
             instance.image = validated_data.get("image")
             force_image_resize = True
+
+        if "criteria" in validated_data:
+            instance.criteria = validated_data.get("criteria")
 
         instance.alignment_items = validated_data.get("alignment_items")
         instance.tag_items = validated_data.get("tag_items")
@@ -521,23 +505,6 @@ class BadgeClassSerializerV1(
 
         return instance
 
-    def validate(self, data):
-        if "criteria" in data:
-            if "criteria_url" in data or "criteria_text" in data:
-                raise serializers.ValidationError(
-                    "The criteria field is mutually-exclusive with the criteria_url and criteria_text fields"
-                )
-
-            if utils.is_probable_url(data.get("criteria")):
-                data["criteria_url"] = data.pop("criteria")
-            elif not isinstance(data.get("criteria"), str):
-                raise serializers.ValidationError(
-                    "Provided criteria text could not be properly processed as URL or plain text."
-                )
-            else:
-                data["criteria_text"] = data.pop("criteria")
-        return data
-
     def create(self, validated_data, **kwargs):
 
         logger.info("CREATE NEW BADGECLASS")
@@ -549,14 +516,15 @@ class BadgeClassSerializerV1(
         if "issuer" in self.context:
             validated_data["issuer"] = self.context.get("issuer")
 
-        if (
-            validated_data.get("criteria_text", None) is None
-            and validated_data.get("criteria_url", None) is None
-        ):
-            raise serializers.ValidationError(
-                "One or both of the criteria_text and criteria_url fields must be provided"
-            )
-
+        #criteria_text is now created at runtime
+        # if (
+        #     validated_data.get("criteria_text", None) is None
+        #     and validated_data.get("criteria_url", None) is None
+        # ):
+        #     raise serializers.ValidationError(
+        #         "One or both of the criteria_text and criteria_url fields must be provided"
+        #     )
+        
         new_badgeclass = BadgeClass.objects.create(**validated_data)
         return new_badgeclass
 
