@@ -1136,66 +1136,43 @@ class BadgeClass(
             )
 
     def get_criteria(self):
-        """Get criteria items list if criteria is an object"""
-        # categoryExtension = self.cached_extensions().get(name="extensions:CategoryExtension")
-        # category = json_loads(categoryExtension.original_json)
-        # if category['Category'] == "competency":
-        #     competencyExtensions = {}
+        categoryExtension = self.cached_extensions().get(name="extensions:CategoryExtension")
+        if not categoryExtension: 
+            return None
+        category = json_loads(categoryExtension.original_json)
+        if self.criteria:
+            return self.criteria
+        elif category['Category'] == "competency":
+            competencyExtensions = {}
 
-        #     if len(self.cached_extensions()) > 0:
-        #         for extension in self.cached_extensions():
-        #             if extension.name == "extensions:CompetencyExtension":
-        #                 competencyExtensions[extension.name] = json_loads(
-        #                     extension.original_json
-        #                 )
+            if len(self.cached_extensions()) > 0:
+                for extension in self.cached_extensions():
+                    if extension.name == "extensions:CompetencyExtension":
+                        competencyExtensions[extension.name] = json_loads(
+                            extension.original_json
+                        )
 
-        #     competencies = []
+            competencies = []
 
-        #     for competency in competencyExtensions.get(
-        #         "extensions:CompetencyExtension", []
-        #     ):
-        #         competencies.append(competency.get("name"))
+            for competency in competencyExtensions.get(
+                "extensions:CompetencyExtension", []
+            ):
+                competencies.append(competency.get("name"))
 
-        if isinstance(self.criteria, dict):
-            return self.criteria.get('criteria', [])
-        return []
+            md =  f"""
+                    *Folgende Kriterien sind auf Basis deiner Eingaben als Metadaten im Badge hinterlegt*: 
+                    Du hast erfolgreich an **{self.name}** teilgenommen.
+                    Dabei hast du folgende Kompetenzen gestärkt:
+                    """
+            for comp in competencies:
+                md += f"- {comp}\n"
 
-    # def get_criteria(self):
-    #     categoryExtension = self.cached_extensions().get(name="extensions:CategoryExtension")
-    #     category = json_loads(categoryExtension.original_json)
-    #     if self.criteria_text:
-    #         return self.criteria_text
-    #     elif category['Category'] == "competency":
-    #         competencyExtensions = {}
-
-    #         if len(self.cached_extensions()) > 0:
-    #             for extension in self.cached_extensions():
-    #                 if extension.name == "extensions:CompetencyExtension":
-    #                     competencyExtensions[extension.name] = json_loads(
-    #                         extension.original_json
-    #                     )
-
-    #         competencies = []
-
-    #         for competency in competencyExtensions.get(
-    #             "extensions:CompetencyExtension", []
-    #         ):
-    #             competencies.append(competency.get("name"))
-
-    #         md =  f"""
-    #                 *Folgende Kriterien sind auf Basis deiner Eingaben als Metadaten im Badge hinterlegt*: 
-    #                 Du hast erfolgreich an **{self.name}** teilgenommen.
-    #                 Dabei hast du folgende Kompetenzen gestärkt:
-    #                 """
-    #         for comp in competencies:
-    #             md += f"- {comp}\n"
-
-    #         return md.strip()               
-    #     else: 
-    #         return f"""
-    #                 *Folgende Kriterien sind auf Basis deiner Eingaben als Metadaten im Badge hinterlegt*: 
-    #                 Du hast erfolgreich an **{self.name}** teilgenommen.  
-    #                """
+            return md.strip()               
+        else: 
+            return f"""
+                    *Folgende Kriterien sind auf Basis deiner Eingaben als Metadaten im Badge hinterlegt*: 
+                    Du hast erfolgreich an **{self.name}** teilgenommen.  
+                   """
 
 
 

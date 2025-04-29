@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.urls import reverse
 from django.utils.dateparse import parse_datetime, parse_date
 from rest_framework import serializers
+from rest_framework.fields import JSONField
 from rest_framework.exceptions import ValidationError as RestframeworkValidationError
 from rest_framework.fields import SkipField
 
@@ -429,7 +430,7 @@ class V1BadgeClassSerializer(serializers.Serializer):
     name = BadgeStringField()
     description = BadgeStringField()
     image = BadgeImageURLField()
-    criteria = BadgeURLField()
+    criteria = JSONField(required=False)
     criteria_text = BadgeStringField(required=False)
     criteria_url = BadgeURLField(required=False)
     issuer = V1IssuerSerializer()
@@ -469,11 +470,7 @@ class V1BadgeInstanceSerializer(V1InstanceSerializer):
         localbadgeinstance_json['uid'] = instance.entity_id
         localbadgeinstance_json['badge'] = instance.cached_badgeclass.json
         localbadgeinstance_json['badge']['slug'] = instance.cached_badgeclass.entity_id
-        localbadgeinstance_json['badge']['criteria'] = instance.cached_badgeclass.get_criteria_url()
-        if instance.cached_badgeclass.criteria_text:
-            localbadgeinstance_json['badge']['criteria_text'] = instance.cached_badgeclass.criteria_text
-        if instance.cached_badgeclass.criteria_url:
-            localbadgeinstance_json['badge']['criteria_url'] = instance.cached_badgeclass.criteria_url           
+        localbadgeinstance_json['badge']['criteria'] = instance.cached_badgeclass.get_criteria()    
         localbadgeinstance_json['badge']['issuer'] = instance.cached_issuer.json
 
         # clean up recipient to match V1InstanceSerializer
