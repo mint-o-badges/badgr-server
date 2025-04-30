@@ -38,37 +38,42 @@ pdfmetrics.registerFont(TTFont('Rubik-Italic', font_path_rubik_italic))
 class BadgePDFCreator:
     def __init__(self):
         self.competencies = []
+        self.used_space = 0
 
     def add_badge_image(self, first_page_content, badgeImage): 
         image_width = 180
         image_height = 180
         first_page_content.append(Image(badgeImage, width=image_width, height=image_height))
+        self.used_space += image_height  
 
     def add_recipient_name(self, first_page_content, name, issuedOn):
         first_page_content.append(Spacer(1, 58))
+        self.used_space += 58
         recipient_style = ParagraphStyle(name='Recipient', fontSize=18, leading=21.6, textColor='#492E98',fontName='Rubik-Bold',  alignment=TA_CENTER)
         
         recipient_name = f"<strong>{name}</strong>"
         first_page_content.append(Paragraph(recipient_name, recipient_style))
         first_page_content.append(Spacer(1, 25))
+        self.used_space += 46.6  # spacer and paragraph
 
         text_style = ParagraphStyle(name='Text_Style', fontSize=18, alignment=TA_CENTER)
         
         text = "hat am " + issuedOn.strftime("%d.%m.%Y")
         first_page_content.append(Paragraph(text, text_style))
         first_page_content.append(Spacer(1, 10))
+        self.used_space += 28  # spacer and paragraph
 
         text = "den folgenden Badge erworben:"
         first_page_content.append(Paragraph(text, text_style))
         first_page_content.append(Spacer(1, 25))
-
+        self.used_space += 43  # spacer and paragraph
 
     def add_title(self, first_page_content, badge_class_name):
-
-        title_style = ParagraphStyle(name='Title', fontSize=20, textColor='#492E98', fontName="Rubik-Bold" , leading=30, alignment=TA_CENTER)
+        title_style = ParagraphStyle(name='Title', fontSize=20, textColor='#492E98', fontName="Rubik-Bold", leading=30, alignment=TA_CENTER)
         first_page_content.append(Spacer(1, 10))
         first_page_content.append(Paragraph(f"<strong>{badge_class_name}</strong>", title_style))
         first_page_content.append(Spacer(1, 15))
+        self.used_space += 55  # Two spacers and paragraph
 
     def truncate_text(text, max_words=70):
         words = text.split()
@@ -83,23 +88,35 @@ class BadgePDFCreator:
         line_height = 16.5
         num_lines = math.ceil(len(text) / line_char_count)
         spacer_height = 175 - (num_lines - 1) * line_height
-        first_page_content.append(Spacer(1, max(spacer_height, 0)))
+        spacer_height = max(spacer_height, 0)
+        first_page_content.append(Spacer(1, spacer_height))
+        self.used_space += spacer_height  
                                 
 
     def add_description(self, first_page_content, description):
-        description_style = ParagraphStyle(name='Description', fontSize=12,fontName='Rubik-Regular',  leading=16.5, alignment=TA_CENTER, leftIndent=20, rightIndent=20)
+        description_style = ParagraphStyle(name='Description', fontSize=12, fontName='Rubik-Regular', leading=16.5, alignment=TA_CENTER, leftIndent=20, rightIndent=20)
         first_page_content.append(Paragraph(description, description_style))
+        line_char_count = 79
+        line_height = 16.5
+        num_lines = math.ceil(len(description) / line_char_count)
+        self.used_space += num_lines * line_height  
 
 
     def add_narrative(self, first_page_content, narrative):
         if narrative is not None:
             first_page_content.append(Spacer(1, 10)) 
-            narrative_style = ParagraphStyle(name='Narrative',fontName="Rubik-Italic",fontSize=12,textColor='#6B6B6B', leading=16.5, alignment=TA_CENTER, leftIndent=20, rightIndent=20)
+            self.used_space += 10 
+            
+            narrative_style = ParagraphStyle(name='Narrative', fontName="Rubik-Italic", fontSize=12, textColor='#6B6B6B', leading=16.5, alignment=TA_CENTER, leftIndent=20, rightIndent=20)
             narrative = narrative[:280] + '...' if len(narrative) > 280 else narrative
             first_page_content.append(Paragraph(narrative, narrative_style))
+            
+            line_char_count = 79
+            line_height = 16.5
+            num_lines = math.ceil(len(narrative) / line_char_count)
+            self.used_space += num_lines * line_height  
 
     def add_issued_by(self, first_page_content, issued_by, qrCodeImage=None):
-        # Style for the issued by paragraph
         issued_by_style = ParagraphStyle(
             name='IssuedBy', 
             fontSize=10, 
@@ -113,6 +130,7 @@ class BadgePDFCreator:
         # use document width to calculate the table and its size
         document_width, _ = A4
         
+        qr_code_height = 0
         if qrCodeImage:
             if qrCodeImage.startswith("data:image"):
                 qrCodeImage = qrCodeImage.split(",")[1]  # Entfernt das Präfix
@@ -121,7 +139,6 @@ class BadgePDFCreator:
             qrCodeImage = BytesIO(image)
             qrCodeImage = ImageReader(qrCodeImage)
             
-            # Create a RoundedImage instance
             rounded_img = RoundedImage(
                 img_path=qrCodeImage,
                 width=57,                
@@ -132,7 +149,6 @@ class BadgePDFCreator:
                 radius=2 * mm            
             )
 
-            # Add rounded image to a centered table
             img_table = Table([[rounded_img]], colWidths=[document_width])
             img_table.hAlign = 'CENTER'  
             img_table.setStyle(TableStyle([
@@ -144,6 +160,7 @@ class BadgePDFCreator:
                 ('TOPPADDING', (0, 0), (-1, -1), 20),  
             ]))
             first_page_content.append(img_table)
+            qr_code_height = 57 + 20  
 
         # Add the simple html
         content_html = """
@@ -157,23 +174,29 @@ class BadgePDFCreator:
         
         # Add content as a Paragraph to first_page_content
         first_page_content.append(Paragraph(content_html, issued_by_style))
-
+        
+        paragraph_height = 60  
+        self.used_space += qr_code_height + paragraph_height
         
     def add_issuer_image(self, first_page_content, issuerImage): 
         image_width = 60
         image_height = 60
         first_page_content.append(Image(issuerImage, width=image_width, height=image_height))
+        self.used_space += image_height 
 
     ## draw header with image of institution and a hr
     def header(self, canvas, doc, content, instituteName):
         canvas.saveState()
+        header_height = 0
+        
         if content is not None: 
             content.drawOn(canvas, doc.leftMargin, 740)
+            header_height += 80  
 
         canvas.setStrokeColor("#492E98") 
         canvas.setLineWidth(1)  
         canvas.line(doc.leftMargin + 100, 775, doc.leftMargin + doc.width, 775)
-
+        header_height += 1  
         ## name of institute barely above the hr that was just set
         canvas.setFont('Rubik-Medium', 12)
         max_length = 50  
@@ -187,53 +210,68 @@ class BadgePDFCreator:
             line1 = instituteName[:split_index]
             line2 = instituteName[split_index:].strip()  
 
-            # have line height of 12 points
             canvas.drawString(doc.leftMargin + 100, 778 + line_height, line1)
             canvas.drawString(doc.leftMargin + 100, 778, line2)
+            header_height += 2 * line_height  
         else:
             canvas.drawString(doc.leftMargin + 100, 778, instituteName)
+            header_height += line_height  
 
+        self.used_space += header_height
         canvas.restoreState()      
     
-    def add_competencies (self, Story, competencies, name, badge_name):
+    def add_competencies(self, Story, competencies, name, badge_name):
         num_competencies = len(competencies)
+        page_used_space = 0
+        
         if num_competencies > 0:
                 max_studyload = str(max(c['studyLoad'] for c in competencies))
                 competenciesPerPage = 9
 
                 Story.append(PageBreak())
                 Story.append(Spacer(1, 70))
+                page_used_space += 70
 
-                title_style = ParagraphStyle(name='Title', fontSize=20,fontName="Rubik-Medium", textColor='#492E98', alignment=TA_LEFT,  textTransform="uppercase" )
+                title_style = ParagraphStyle(name='Title', fontSize=20, fontName="Rubik-Medium", textColor='#492E98', alignment=TA_LEFT, textTransform="uppercase")
                 text_style = ParagraphStyle(name='Text', fontSize=18, leading=20, textColor='#323232', alignment=TA_LEFT)
 
                 Story.append(Paragraph("Kompetenzen", title_style))
                 Story.append(Spacer(1, 15))
+                page_used_space += 35  # Title height + spacing
                 
                 text = f"die <strong>{name}</strong> mit dem Badge <strong>{badge_name}</strong> erworben hat:"
                 Story.append(Paragraph(text, text_style))
                 Story.append(Spacer(1, 10))
+                page_used_space += 30  # Text height + spacer 
 
                 for i in range(num_competencies):
                     if i != 0 and i % competenciesPerPage == 0: 
                         Story.append(PageBreak())
+                        page_used_space = 0  
+                        
                         Story.append(Spacer(1, 70))
+                        page_used_space += 70
+                        
                         Story.append(Paragraph("<strong>Kompetenzen</strong>", title_style))
                         Story.append(Spacer(1, 15))
+                        page_used_space += 35  # Title height + spacer
 
                         text = f"die <strong>{name}</strong> mit dem Badge <strong>{badge_name}</strong> erworben hat:"
-
                         Story.append(Paragraph(text, text_style))
                         Story.append(Spacer(1, 20))
+                        page_used_space += 40  # Text height + spacer 
 
-                
-                    studyload = "%s:%s h" %  (math.floor(competencies[i]['studyLoad'] / 60), str(competencies[i]['studyLoad'] % 60).zfill(2))
+                    studyload = "%s:%s h" % (math.floor(competencies[i]['studyLoad'] / 60), str(competencies[i]['studyLoad'] % 60).zfill(2))
                     competency_name = competencies[i]['name']
                     competency = competency_name
-                    #   competency = (competency_name[:35] + '...') if len(competency_name) > 35 else competency_name
-                    rounded_rect = RoundedRectFlowable(0, -10, 515, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload= studyload, max_studyload=max_studyload, esco=competencies[i]['framework_identifier'])    
+                    if competencies[i] not in self.competencies:
+                        self.competencies.append(competencies[i]) 
+                    rounded_rect = RoundedRectFlowable(0, -10, 515, 45, 10, text=competency, strokecolor="#492E98", fillcolor="#F5F5F5", studyload=studyload, max_studyload=max_studyload, esco=competencies[i]['framework_identifier'])    
                     Story.append(rounded_rect)
-                    Story.append(Spacer(1, 10)) 
+                    Story.append(Spacer(1, 10))
+                    page_used_space += 55  # RoundedRectFlowable height 45 + spacing
+                
+                self.used_space += page_used_space                    
 
     def add_learningpath_badges(self, Story, badges, name, badge_name, competencies):
         num_badges = len(badges)
@@ -317,10 +355,89 @@ class BadgePDFCreator:
         qrCodeImageBase64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
         return qrCodeImageBase64
 
+    def add_criteria(self, Story, criteria):
+        if not criteria:
+            return
+        
+        title_style = ParagraphStyle(
+            name='Title', 
+            fontSize=20,
+            fontName="Rubik-Medium", 
+            textColor='#492E98', 
+            alignment=TA_LEFT,  
+            textTransform="uppercase"
+        )
+        
+        Story.append(Spacer(1, 30))
+        self.used_space += 30
+        
+        Story.append(Paragraph("Vergabe-Kriterien", title_style))
+        Story.append(Spacer(1, 15))
+        self.used_space += 35 
+        
+        name_style = ParagraphStyle(
+            name='Name', 
+            fontSize=16, 
+            leading=18, 
+            textColor='#323232', 
+            alignment=TA_LEFT
+        )
+
+        description_style = ParagraphStyle(
+            name='Description',
+            fontSize=14,
+            leading=16,
+            textColor='#777777',
+            alignment=TA_LEFT,
+            fontName='Rubik-Italic',
+        )
+        
+        for index, item in enumerate(criteria):
+            criteria_space = 15 + 18 # criteria name line height + spacing              
+            
+            # Check if adding criteria would exceed the page
+            if self.used_space + criteria_space > 750:
+                Story.append(PageBreak())
+                Story.append(Spacer(1, 70))
+                
+                Story.append(Paragraph("Vergabe-Kriterien", title_style))
+                Story.append(Spacer(1, 15))
+                
+                # Reset used space counter with the header space
+                self.used_space = 70 + 35  # Header spacer + title and spacing
+            
+            if 'name' in item and item['name']:
+                bullet_text = f"• {item['name']}"
+                Story.append(Spacer(1, 15))
+                Story.append(Paragraph(bullet_text, name_style))
+                self.used_space += criteria_space
+            
+            if 'description' in item and item['description']:
+                line_char_count = 79
+                line_height = 16.5
+                num_lines = math.ceil(len(item['description']) / line_char_count)
+                criteria_space += num_lines * line_height
+                if self.used_space + criteria_space > 750:
+                    Story.append(PageBreak())
+                    Story.append(Spacer(1, 70))
+                    Story.append(Paragraph("Vergabe-Kriterien", title_style))
+                    Story.append(Spacer(1, 15))
+                    self.used_space = 70 + 35 # Header spacer + title and spacing
+                    Story.append(Paragraph(item['description'], description_style))
+                    self.used_space += criteria_space
+
+                else:                     
+                    self.used_space += num_lines * line_height
+                    Story.append(Spacer(1, 5))
+                    Story.append(Paragraph(item['description'], description_style))
+        
+        Story.append(Spacer(1, 15))
+        self.used_space += 15
+
     def generate_pdf(self, badge_instance, badge_class, origin):
-        # Create PDF with badge data
         buffer = BytesIO()
         competencies = badge_class.json["extensions:CompetencyExtension"]
+        criteria = badge_class.criteria
         try:
             name = get_name(badge_instance)
         except BadgeUser.DoesNotExist:
@@ -329,7 +446,8 @@ class BadgePDFCreator:
             name = badge_instance.recipient_identifier
             # raise Http404
 
-        # build the first page
+        self.used_space = 0
+        
         first_page_content = []
 
         self.add_recipient_name(first_page_content, name, badge_instance.issued_on)
@@ -340,9 +458,8 @@ class BadgePDFCreator:
         narrative = badge_instance.narrative
         if narrative:
             narrative = narrative[:280] + '...' if len(narrative) > 280 else narrative
-        self.add_dynamic_spacer(first_page_content, (badge_class.description or "") +  (narrative or ""))
+        self.add_dynamic_spacer(first_page_content, (badge_class.description or "") + (narrative or ""))
         self.add_issued_by(first_page_content, badge_class.issuer.name, self.generate_qr_code(badge_instance, origin))
-
 
         # doc template with margins according to design doc
         doc = BaseDocTemplate(
@@ -378,11 +495,12 @@ class BadgePDFCreator:
             badgeinstances = BadgeInstance.objects.filter(id__in=badge_ids)
             self.add_learningpath_badges(Story, badgeinstances, name, badge_class.name, competencies=competencies)
         else: 
+            self.used_space = 0  # Reset used_space for competencies page
             self.add_competencies(Story, competencies, name, badge_class.name)
+            self.add_criteria(Story, criteria)
 
         frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='normal')
 
-        ## template for header
         try: 
             file_ext = badge_class.issuer.image.path.split('.')[-1].lower()
             if file_ext == 'svg':
@@ -395,13 +513,12 @@ class BadgePDFCreator:
                 bio.seek(0)
                 imageContent = Image(bio, width=80, height=80)
             elif file_ext in ['png', 'jpg', 'jpeg', 'gif']:
-                imageContent = Image(badge_class.issuer.image , width=80, height=80)
+                imageContent = Image(badge_class.issuer.image, width=80, height=80)
             else:
                 raise ValueError(f"Unsupported file type: {file_ext}")  
         except: 
             imageContent = None      
-        template = PageTemplate(id='header', frames=frame ,onPage=partial(self.header, content= imageContent, instituteName=badge_instance.issuer.name))
-        ## adding template to all pages 
+        template = PageTemplate(id='header', frames=frame, onPage=partial(self.header, content=imageContent, instituteName=badge_instance.issuer.name))
         doc.addPageTemplates([template])
         doc.build(Story, canvasmaker=partial(PageNumCanvas, self.competencies))   
         pdfContent = buffer.getvalue()
@@ -581,6 +698,9 @@ class PageNumCanvas(canvas.Canvas):
             
     # Draws ESCO competency information
     def draw_esco_info(self, page_width):
+            self.setStrokeColor("#777777")
+            self.setLineWidth(1)
+            self.line(10, 75, page_width, 75) 
             text_style = ParagraphStyle(name='Text_Style', fontName="Rubik-Italic", fontSize=10, leading=13, alignment=TA_CENTER, leftIndent=-35, rightIndent=-35)
             link_text = '<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations). <br/>' \
                         'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
