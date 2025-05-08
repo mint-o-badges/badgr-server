@@ -15,10 +15,6 @@ from django.urls import resolve, Resolver404
 from issuer.utils import sanitize_id
 from mainsite.utils import fetch_remote_file_to_storage, list_of, OriginSetting
 
-import logging 
-
-logger = logging.getLogger(__name__)
-
 def resolve_source_url_referencing_local_object(source_url):
     if source_url.startswith(OriginSetting.HTTP):
         try:
@@ -199,7 +195,7 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
     def update_from_ob2(self, badgeclass, assertion_obo, recipient_identifier,
             recipient_type='email', original_json=None):
         image = None
-        # image_url = assertion_obo.get('image', None)
+        image_url = assertion_obo.get('image', None)
         if isinstance(image_url, dict):
             image_url = image_url.get('id')
         if image_url:
@@ -316,9 +312,6 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
         badgeclass = kwargs.pop('badgeclass', None)
         issuer = kwargs.pop('issuer', badgeclass.issuer)
     
-        logger.error(f"before new instance")
-        logger.error(f"kwargs {kwargs}")
-
         # self.model would be a BadgeInstance
         new_instance = self.model(
             recipient_identifier=recipient_identifier,
@@ -326,8 +319,6 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
             issuer=issuer,
             **kwargs
         )
-
-        logger.error(f"new instance {new_instance}")
 
         with transaction.atomic():
             new_instance.save()

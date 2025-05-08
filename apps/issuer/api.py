@@ -446,11 +446,6 @@ def process_batch_assertions(assertions, user_id, badgeclass_id, create_notifica
             }
             
         new_instances = serializer.save(created_by=user)
-        
-        # Log creation of new instances
-        # for new_instance in new_instances:
-        #     log_assertion_creation(new_instance, user)
-            
         return {
             'success': True,
             'status': status.HTTP_201_CREATED,
