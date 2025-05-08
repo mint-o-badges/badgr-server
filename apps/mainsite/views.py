@@ -41,10 +41,10 @@ from rest_framework.authentication import (
 )
 
 from issuer.tasks import rebake_all_assertions, update_issuedon_all_assertions
-from issuer.models import BadgeClass, LearningPath, QrCode, RequestedBadge, RequestedLearningPath
-from issuer.serializers_v1 import RequestedBadgeSerializer, RequestedLearningPathSerializer
+from issuer.models import BadgeClass, Issuer, IssuerStaffRequest, LearningPath, QrCode, RequestedBadge, RequestedLearningPath
+from issuer.serializers_v1 import IssuerStaffRequestSerializer, RequestedBadgeSerializer, RequestedLearningPathSerializer
 from mainsite.admin_actions import clear_cache
-from mainsite.models import EmailBlacklist, BadgrApp
+from mainsite.models import EmailBlacklist, BadgrApp, AltchaChallenge
 from mainsite.serializers import LegacyVerifiedAuthTokenSerializer
 from mainsite.utils import OriginSetting, createHash, createHmac
 from random import randrange
@@ -127,30 +127,37 @@ def upload(req):
     return JsonResponse({"filename": final_filename})
 
 
-@api_view(["GET"])
-@authentication_classes(
-    [TokenAuthentication, SessionAuthentication, BasicAuthentication]
-)
-@permission_classes([IsAuthenticated])
-def aiskills(req, searchterm):
-    # The searchterm is encoded URL safe, meaning that + and / got replaced by - and _
-    searchterm = searchterm.replace("-", "+").replace("_", "/")
-    searchterm = base64.b64decode(searchterm).decode("utf-8")
-    if req.method != "GET":
-        return JsonResponse(
-            {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
-        )
+def call_aiskills_api(endpoint, method, payload: dict):
+    apiKey = getattr(settings, "AISKILLS_API_KEY")
+    params = {"api_key": apiKey}
+    headers = {"accept": "application/json"}
 
+    # FIXME: is retrying server-side the best option? especially with the 5 second delay
+    #        there might be no feedback to the user for more than 20 seconds if the API
+    #        throws an unexpected error
     attempt_num = 0  # keep track of how many times we've retried
     while attempt_num < 4:
-        apiKey = getattr(settings, "AISKILLS_API_KEY")
-        endpoint = getattr(settings, "AISKILLS_ENDPOINT")
-        params = {"api_key": apiKey}
-        payload = {"text_to_analyze": searchterm}
-        headers = {"Content-Type": "application/json", "accept": "application/json"}
-        response = requests.post(
-            endpoint, params=params, data=json.dumps(payload), headers=headers
-        )
+        # if POST, transfer payload in body
+        if method == 'POST':
+            headers = {
+                **headers,
+                "Content-Type": "application/json",
+            }
+            response = requests.post(
+                endpoint, params=params, data=json.dumps(payload), headers=headers
+            )
+        # for GET, add payload to query params
+        elif method == 'GET':
+            params = { **params, **payload }
+            response = requests.get(
+                endpoint, params=params, headers=headers
+            )
+        else:
+            return JsonResponse(
+                {"error": f"Internal function called using invalid request method"},
+                status=400,
+            )
+
         if response.status_code == 200:
             data = response.json()
             return JsonResponse(data, status=status.HTTP_200_OK)
@@ -167,6 +174,8 @@ def aiskills(req, searchterm):
             )
         elif response.status_code == 500:
             # This is, weirdly enough, typically also an indication of an invalid searchterm
+            # st: According to the developer of the API this should never happen as the API only returns 400,
+            # maybe this was a bug during development?
             return JsonResponse(
                 {"error": extractErrorMessage500(response)},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -183,6 +192,53 @@ def aiskills(req, searchterm):
 
 
 @api_view(["GET"])
+@authentication_classes(
+    [TokenAuthentication, SessionAuthentication, BasicAuthentication]
+)
+@permission_classes([IsAuthenticated])
+def aiskills(req, searchterm):
+
+    # The searchterm is encoded URL safe, meaning that + and / got replaced by - and _
+    searchterm = searchterm.replace("-", "+").replace("_", "/")
+    searchterm = base64.b64decode(searchterm).decode("utf-8")
+    if req.method != "GET":
+        return JsonResponse(
+            {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # fallback to previous setting name
+    endpoint = getattr(settings, "AISKILLS_ENDPOINT_CHATS", getattr(settings, "AISKILLS_ENDPOINT"))
+    payload = {
+        "text_to_analyze": searchterm
+    }
+
+    return call_aiskills_api(endpoint, 'POST', payload)
+
+@api_view(["GET"])
+@authentication_classes(
+    [TokenAuthentication, SessionAuthentication, BasicAuthentication]
+)
+@permission_classes([IsAuthenticated])
+def aiskills_keywords(req, searchterm):
+
+    searchterm = searchterm.replace("-", "+").replace("_", "/")
+    searchterm = base64.b64decode(searchterm).decode("utf-8")
+    lang = req.GET.get('lang', 'de')
+    if req.method != "GET":
+        return JsonResponse(
+            {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    endpoint = getattr(settings, "AISKILLS_ENDPOINT_KEYWORDS")
+    payload = {
+        "query": searchterm,
+        "lang": lang
+    }
+
+    return call_aiskills_api(endpoint, 'GET', payload)
+
+
+@api_view(["GET"])
 @permission_classes([AllowAny])
 def createCaptchaChallenge(req):
     if req.method != "GET":
@@ -191,17 +247,26 @@ def createCaptchaChallenge(req):
         )
 
     hmac_secret = getattr(settings, "ALTCHA_SECRET")
+    minnumber = getattr(settings, "ALTCHA_MINNUMBER", 10000)
+    maxnumber = getattr(settings, "ALTCHA_MAXNUMBER", 100000)
 
     salt = os.urandom(12).hex()
-    number = randrange(10000, 100000, 1)
+    number = randrange(minnumber, maxnumber, 1)
     challenge = createHash(salt, number)
     signature = createHmac(hmac_secret, challenge)
+
+    altcha_challenge = AltchaChallenge.objects.create(
+        salt=salt,
+        challenge=challenge,
+        signature=signature
+    )
 
     ch = {
         "algorithm": "SHA-256",
         "challenge": challenge,
         "salt": salt,
         "signature": signature,
+        "maxnumber": maxnumber,
     }
 
     return JsonResponse(ch)
@@ -249,7 +314,7 @@ def requestBadge(req, qrCodeId):
 
         badge.save()
 
-        return JsonResponse({"message": "Badge request received"}, status=status.HTTP_200_OK)
+        return JsonResponse({"message": "Badge request received"}, status=status.HTTP_200_OK)  
 
 @api_view(["GET"])
 @permission_classes([AllowAny])

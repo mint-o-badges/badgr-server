@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import datetime
 import json
 import re
@@ -6,6 +7,7 @@ import urllib.parse
 import urllib.error
 import urllib.parse
 
+from jsonschema import ValidationError
 import requests
 
 from allauth.account.adapter import get_adapter
@@ -30,8 +32,8 @@ from django.http import Http404, JsonResponse
 from django.utils import timezone
 from django.views.generic import RedirectView
 from django.conf import settings
-from issuer.models import LearningPath, LearningPathBadge, RequestedBadge
-from issuer.serializers_v1 import LearningPathSerializerV1
+from issuer.models import BadgeInstance, Issuer, IssuerStaff, IssuerStaffRequest, LearningPath, LearningPathBadge, RequestedBadge
+from issuer.serializers_v1 import IssuerStaffRequestSerializer, LearningPathSerializerV1
 from rest_framework import permissions, serializers, status
 from rest_framework.exceptions import ValidationError as RestframeworkValidationError
 from rest_framework.response import Response
@@ -62,7 +64,6 @@ from mainsite.utils import (
 from mainsite.serializers import ApplicationInfoSerializer
 RATE_LIMIT_DELTA = datetime.timedelta(minutes=5)
 from django.core.signing import TimestampSigner
-
 logger = badgrlog.BadgrLogger()
 
 class BadgeUserDetail(BaseEntityDetailView):
@@ -478,9 +479,55 @@ class BadgeUserForgotPassword(BaseUserRecoveryView):
         user.set_password(password)
         user.save()
         return self.get_response()
+    
+class BaseRedirectView:
+    """
+    A base view for handling conditional redirects with flexible configuration.
+    """
+    def _prepare_redirect(self, request, badgrapp, intended_redirect):
+        """
+        Prepare redirect URL and response based on authentication status.
+        
+        :param request: HTTP request object
+        :param badgrapp: BadgrApp instance
+        :param intended_redirect: The target redirect path
+        :return: Response object with appropriate redirect
+        """
+        # Prepare frontend base URL
+        frontend_base_url = badgrapp.cors.rstrip("/") if badgrapp.cors else ""
+        if frontend_base_url and not frontend_base_url.startswith(('http://', 'https://')):
+            frontend_base_url = f"https://{frontend_base_url}"
+
+        # If user is authenticated, redirect to the intended page
+        if request.user.is_authenticated:
+            detail_url = f"{frontend_base_url}{intended_redirect}"
+            return Response(
+                status=HTTP_302_FOUND,
+                headers={"Location": detail_url}
+            )
+
+        # If not authenticated, prepare redirect to login
+        redirect_url = badgrapp.ui_login_redirect.rstrip("/")
+        response = Response(
+            status=HTTP_302_FOUND,
+            headers={"Location": redirect_url}
+        )
+
+        # Set cookie for intended redirect
+        response.set_cookie(
+            'intended_redirect',
+            intended_redirect,
+            max_age=3600,  # 1 hour
+            httponly=True,
+            secure=settings.SECURE_SSL_REDIRECT,
+            samesite='Lax',
+            domain=badgrapp.cors.split('://')[-1] if badgrapp.cors else None
+        )
+
+        return response      
 
 
-class BadgeUserEmailConfirm(BaseUserRecoveryView):
+class BadgeUserEmailConfirm(BaseUserRecoveryView, BaseRedirectView):
     permission_classes = (permissions.AllowAny,)
     v1_serializer_class = BaseSerializer
     v2_serializer_class = BaseSerializerV2
@@ -605,27 +652,30 @@ class BadgeUserEmailConfirm(BaseUserRecoveryView):
         process_email_verification.delay(email_address.pk)
 
         # Create an OAuth AccessTokenProxy instance for this user
-        accesstoken = AccessTokenProxy.objects.generate_new_token_for_user(
-            user,
-            application=(
-                badgrapp.oauth_application if badgrapp.oauth_application_id else None
-            ),
-            scope="rw:backpack rw:profile rw:issuer",
+        # accesstoken = AccessTokenProxy.objects.generate_new_token_for_user(
+        #     user,
+        #     application=(
+        #         badgrapp.oauth_application if badgrapp.oauth_application_id else None
+        #     ),
+        #     scope="rw:backpack rw:profile rw:issuer",
+        # )
+
+        redirect_url = badgrapp.ui_login_redirect.rstrip("/")
+
+        response = Response(status=HTTP_302_FOUND, headers={"Location": redirect_url})
+
+        intended_redirect = f"/auth/welcome"
+
+        response.set_cookie(
+            'intended_redirect',
+            intended_redirect,
+            max_age=3600,
+            httponly=True,
+            secure=request.is_secure(),
+            samesite='Lax'
         )
 
-        redirect_url = get_adapter().get_email_confirmation_redirect_url(
-            request, badgr_app=badgrapp
-        )
-
-        if badgrapp.use_auth_code_exchange:
-            authcode = authcode_for_accesstoken(accesstoken)
-            redirect_url = set_url_query_params(redirect_url, authCode=authcode)
-        else:
-            redirect_url = set_url_query_params(
-                redirect_url, authToken=accesstoken.token
-            )
-
-        return Response(status=HTTP_302_FOUND, headers={"Location": redirect_url})
+        return response
 
 
 class BadgeUserAccountConfirm(RedirectView):
@@ -868,3 +918,274 @@ class LearningPathList(BaseEntityListView):
     )
     def post(self, request, **kwargs):
         return super(LearningPathList, self).post(request, **kwargs)
+    
+class BaseRedirectView:
+    """
+    A base view for handling conditional redirects with flexible configuration.
+    """
+    def _prepare_redirect(self, request, badgrapp, intended_redirect):
+        """
+        Prepare redirect URL and response based on authentication status.
+        
+        :param request: HTTP request object
+        :param badgrapp: BadgrApp instance
+        :param intended_redirect: The target redirect path
+        :return: Response object with appropriate redirect
+        """
+        # Prepare frontend base URL
+        frontend_base_url = badgrapp.cors.rstrip("/") if badgrapp.cors else ""
+        if frontend_base_url and not frontend_base_url.startswith(('http://', 'https://')):
+            frontend_base_url = f"https://{frontend_base_url}"
+
+        # If user is authenticated, redirect to the intended page
+        if request.user.is_authenticated:
+            detail_url = f"{frontend_base_url}{intended_redirect}"
+            return Response(
+                status=HTTP_302_FOUND,
+                headers={"Location": detail_url}
+            )
+
+        # If not authenticated, prepare redirect to login
+        redirect_url = badgrapp.ui_login_redirect.rstrip("/")
+        response = Response(
+            status=HTTP_302_FOUND,
+            headers={"Location": redirect_url}
+        )
+
+        # Set cookie for intended redirect
+        response.set_cookie(
+            'intended_redirect',
+            intended_redirect,
+            max_age=3600,  # 1 hour
+            httponly=True,
+            secure=settings.SECURE_SSL_REDIRECT,
+            samesite='Lax',
+            domain=badgrapp.cors.split('://')[-1] if badgrapp.cors else None
+        )
+
+        return response    
+ 
+class BadgeUserSaveMicroDegree(BaseEntityDetailView, BaseRedirectView):
+    permission_classes = (permissions.AllowAny,)
+    v1_serializer_class = BaseSerializer
+    v2_serializer_class = BaseSerializerV2
+    
+    def get(self, request, **kwargs):
+        """
+        Redirect to the micro degree detail page after the user logs in
+        """
+        badgrapp_id = request.query_params.get("a")
+        badgrapp = BadgrApp.objects.get_by_id_or_default(badgrapp_id)
+        
+        microdegree_id = kwargs.get("entity_id")
+        intended_redirect = f"/public/learningpaths/{microdegree_id}"
+        
+        return self._prepare_redirect(request, badgrapp, intended_redirect)
+
+
+class BadgeUserCollectBadgesInBackpack(BaseEntityDetailView, BaseRedirectView):
+    permission_classes = (permissions.AllowAny,)
+    v1_serializer_class = BaseSerializer
+    v2_serializer_class = BaseSerializerV2
+    
+    def get(self, request, **kwargs):
+        """
+        Redirect to the user's backpack page after the user logs in
+        """
+        badgrapp_id = request.query_params.get("a")
+        badgrapp = BadgrApp.objects.get_by_id_or_default(badgrapp_id)
+        
+        intended_redirect = "/recipient/badges/"
+        
+        return self._prepare_redirect(request, badgrapp, intended_redirect)  
+    
+class GetRedirectPath(BaseEntityDetailView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request, **kwargs):
+        redirect_path = request.COOKIES.get('intended_redirect')
+        
+        response = Response({
+            'success': True,
+            'redirectPath': redirect_path or '/issuer' 
+        })
+        
+        response.delete_cookie('intended_redirect')
+        
+        return response   
+    
+class IssuerStaffRequestDetail(BaseEntityDetailView):
+    model = IssuerStaffRequest
+    v1_serializer_class = IssuerStaffRequestSerializer
+    v2_serializer_class = IssuerStaffRequestSerializer
+    permission_classes = (permissions.IsAuthenticated, )
+    valid_scopes = {
+        "post": ["*"],
+        "get": ["r:profile", "rw:profile"],
+        "put": ["rw:profile"],
+        "delete": ["rw:profile"],
+    }
+
+    @apispec_post_operation('IssuerStaffRequest',
+        summary="Create a new issuer staff request",
+        tags=['IssuerStaffRequest'],
+        responses=OrderedDict([
+            ('201', {
+                'description': "Issuer staff request created successfully"
+            }),
+            ('400', {
+                'description': "Bad request or validation error"
+            })
+        ]),
+    )
+    def post(self, request, issuer_id, **kwargs):
+        try:
+            issuer = Issuer.objects.get(entity_id=issuer_id)
+        except Issuer.DoesNotExist:
+            return Response(
+                {"response": "Issuer not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        existing_request = IssuerStaffRequest.objects.filter(
+            issuer=issuer, 
+            user=request.user, 
+            status__in=[
+                IssuerStaffRequest.Status.PENDING, 
+            ]
+        ).first()
+
+        if existing_request:
+            return Response(
+                {"response": "Für diese Institution liegt noch eine offene Anfrage von dir vor!"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        for member in issuer.cached_issuerstaff():
+            if request.user == member.cached_user:
+                return Response(
+                    {"response": "Du bist bereits Teil dieser Institution!"},
+                     status=status.HTTP_400_BAD_REQUEST
+                ) 
+
+        try:
+            staff_request = IssuerStaffRequest.objects.create(
+                issuer=issuer,
+                user=request.user,
+                status=IssuerStaffRequest.Status.PENDING,
+                revoked=False
+            )
+        except Exception as e:
+            return Response(
+                {"response": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = self.get_serializer_class()(
+            staff_request, 
+            context={'request': request}
+        )
+
+
+
+        email_context = {
+            "site": get_current_site(request),
+            "user": request.user,
+            "issuer": issuer,
+            "activate_url": OriginSetting.HTTP + reverse("v1_api_user_confirm_staffrequest", kwargs={'entity_id': issuer.entity_id}),
+            "call_to_action_label": "Anfrage bestätigen"
+        }
+
+        for member in issuer.cached_issuerstaff():
+            if member.role == IssuerStaff.ROLE_OWNER:
+                email = member.cached_user.email
+                get_adapter().send_mail(
+                    "account/email/email_staff_request", email, email_context
+                )
+
+        return Response(
+            serializer.data, 
+            status=status.HTTP_201_CREATED
+        )
+        
+
+
+    @apispec_delete_operation('IssuerStaffRequest',
+        summary="Revoke a request for an issuer membership",
+        tags=['IssuerStaffRequest'],
+        responses=OrderedDict([
+            ('400', {
+                'description': "Issuer staff request is already revoked"
+            })
+        ]),
+    )
+    def delete(self, request, **kwargs):
+        staff_request = self.get_object(request, **kwargs)
+        if not self.has_object_permissions(request, staff_request):
+            return Response(status=HTTP_404_NOT_FOUND)
+
+        try:
+            staff_request.revoke()
+        except DjangoValidationError as e:
+            raise ValidationError(e.message)
+
+        serializer = self.get_serializer_class()(staff_request, context={'request': request})
+
+        return Response(status=HTTP_200_OK, data=serializer.data)
+    
+    def get_object(self, request, **kwargs):
+        try:
+            self.object = IssuerStaffRequest.objects.filter(
+                entity_id=kwargs.get("request_id"),
+            ).first()
+        except IssuerStaffRequest.DoesNotExist:
+            raise Http404
+
+        if not self.has_object_permissions(request, self.object):
+            raise Http404
+        return self.object
+
+class IssuerStaffRequestList(BaseEntityListView):
+    model = IssuerStaffRequest
+    v1_serializer_class = IssuerStaffRequestSerializer
+    v2_serializer_class = IssuerStaffRequestSerializer
+    permission_classes = (permissions.IsAuthenticated, )
+    valid_scopes = {
+        "post": ["*"],
+        "get": ["r:profile", "rw:profile"],
+        "put": ["rw:profile"],
+        "delete": ["rw:profile"],
+    }
+
+    @apispec_get_operation(
+        "IssuerStaffRequest",
+        summary="Get a list of issuer staff requests for the authenticated user",
+        description="Use the id of the authenticated user to get a list of issuer staff requests",
+        tags=["IssuerStaffRequest"],
+    )
+    def get_objects(self, request, **kwargs):
+        return IssuerStaffRequest.objects.filter(
+            user=request.user, revoked=False,
+             status__in=[
+                IssuerStaffRequest.Status.PENDING, 
+            ]
+        )
+    def get(self, request, **kwargs):
+        return super(IssuerStaffRequestList, self).get(request, **kwargs)
+    
+class BadgeUserConfirmStaffRequest(BaseEntityDetailView, BaseRedirectView):
+    permission_classes = (permissions.AllowAny,)
+    v1_serializer_class = BaseSerializer
+    v2_serializer_class = BaseSerializerV2
+
+    def get(self, request, **kwargs):
+        """
+        Redirect to the issuer staff member page after the user logs in
+        """
+        badgrapp_id = request.query_params.get("a")
+        badgrapp = BadgrApp.objects.get_by_id_or_default(badgrapp_id)
+
+        issuer_id = kwargs.get("entity_id")
+        intended_redirect = f"/issuer/issuers/{issuer_id}/staff"
+
+        return self._prepare_redirect(request, badgrapp, intended_redirect)

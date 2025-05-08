@@ -46,9 +46,13 @@ class LocalBadgeInstanceUploadSerializerV1(serializers.Serializer):
             self.fields.json = serializers.DictField(read_only=True)
         representation = super(LocalBadgeInstanceUploadSerializerV1, self).to_representation(obj)
 
-        representation['extensions']["extensions:CompetencyExtension"] = obj.badgeclass.json['extensions:CompetencyExtension']
-        representation['extensions']["extensions:CategoryExtension"] = obj.badgeclass.json['extensions:CategoryExtension']
-        representation['extensions']["extensions:StudyLoadExtension"] = obj.badgeclass.json['extensions:StudyLoadExtension']
+        # supress errors for badges without extensions (i.e. imported)
+        try:
+            representation['extensions']["extensions:CompetencyExtension"] = obj.badgeclass.json['extensions:CompetencyExtension']
+            representation['extensions']["extensions:CategoryExtension"] = obj.badgeclass.json['extensions:CategoryExtension']
+            representation['extensions']["extensions:StudyLoadExtension"] = obj.badgeclass.json['extensions:StudyLoadExtension']
+        except KeyError:
+            pass
 
         representation['id'] = obj.entity_id
         representation['json'] = V1BadgeInstanceSerializer(obj, context=self.context).data

@@ -1,0 +1,18 @@
+***************************************************
+Herzlichen Glückwunsch, Du hast einen Micro Degree erhalten! 
+***************************************************
+
+{{ badge_name }}
+
+
+{{ badge_description }}
+
+---------
+Dieses Micro Degree wurde erstellt von:
+---------
+
+{{ issuer_name }}
+{{ issuer_url }}
+
+{% if PRIVACY_POLICY_URL %}Privacy Policy: {{ PRIVACY_POLICY_URL }}{% endif %}
+{% if TERMS_OF_SERVICE_URL %}Terms of Service: {{ TERMS_OF_SERVICE_URL }}{% endif %}

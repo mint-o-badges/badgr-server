@@ -1,16 +1,31 @@
+from django.db import models
 from django.contrib.admin import ModelAdmin, StackedInline, TabularInline
 from django.urls import reverse
 from django.http import HttpResponseRedirect
 
 from django_object_actions import DjangoObjectActions
 from django.utils.safestring import mark_safe
+from django import forms
 
 from mainsite.admin import badgr_admin
 
 from .models import Issuer, BadgeClass, BadgeInstance, BadgeInstanceEvidence, BadgeClassAlignment, BadgeClassTag, \
     BadgeClassExtension, IssuerExtension, BadgeInstanceExtension, LearningPath, LearningPathBadge, \
-         LearningPathTag, RequestedBadge, QrCode, RequestedLearningPath
+         LearningPathTag, RequestedBadge, QrCode, RequestedLearningPath, IssuerStaffRequest
 from .tasks import resend_notifications
+
+class ReadOnlyInline(TabularInline):
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def get_readonly_fields(self, request, obj=None):
+        return list(super().get_fields(request, obj))
 
 
 class IssuerStaffInline(TabularInline):
@@ -24,11 +39,28 @@ class IssuerExtensionInline(TabularInline):
     extra = 0
     fields = ('name', 'original_json')
 
+class IssuerBadgeclasses(ReadOnlyInline):
+    model = BadgeClass
+    extra = 0
+    fields = ('name', 'assertion_count', 'qrcode_count')
+
+    def get_queryset(self, request):
+        qs = super(IssuerBadgeclasses, self).get_queryset(request)
+        qs = qs.annotate(number_of_assertions=models.Count('badgeinstances', filter=models.Q(badgeinstances__revoked=False)))
+        qs = qs.annotate(number_of_qrcodes=models.Count('qrcodes'))
+        return qs
+
+    def assertion_count(self, obj):
+        return obj.number_of_assertions
+
+    def qrcode_count(self, obj):
+        return obj.number_of_qrcodes
+
 
 class IssuerAdmin(DjangoObjectActions, ModelAdmin):
     readonly_fields = ('created_by', 'created_at', 'updated_at', 'old_json',
                        'source', 'source_url', 'entity_id', 'slug')
-    list_display = ('img', 'name', 'entity_id', 'created_by', 'created_at')
+    list_display = ('img', 'name', 'created_by', 'created_at', 'badge_count', 'zip')
     list_display_links = ('img', 'name')
     list_filter = ('created_at',)
     search_fields = ('name', 'entity_id')
@@ -48,9 +80,16 @@ class IssuerAdmin(DjangoObjectActions, ModelAdmin):
     )
     inlines = [
         IssuerStaffInline,
-        IssuerExtensionInline
+        IssuerExtensionInline,
+        IssuerBadgeclasses
     ]
     change_actions = ['redirect_badgeclasses']
+
+    def get_queryset(self, request):
+        qs = super(IssuerAdmin, self).get_queryset(request)
+        qs = qs.annotate(number_of_badges=models.Count('badgeclasses'))
+        return qs
+
 
     def save_model(self, request, obj, form, change):
         force_resize = False
@@ -65,6 +104,11 @@ class IssuerAdmin(DjangoObjectActions, ModelAdmin):
             return obj.image
     img.short_description = 'Image'
     img.allow_tags = True
+
+    def badge_count(self, obj):
+        return obj.number_of_badges
+
+    badge_count.admin_order_field = 'number_of_badges'
 
     def redirect_badgeclasses(self, request, obj):
         return HttpResponseRedirect(
@@ -95,10 +139,43 @@ class BadgeClassExtensionInline(TabularInline):
     fields = ('name', 'original_json')
 
 
+class BinaryMultipleChoiceField(forms.MultipleChoiceField):
+    widget=forms.CheckboxSelectMultiple
+
+    def to_python(self, value):
+        if not value:
+            return 0
+        else:
+            return sum(map(int, value))
+
+    def prepare_value(self, value):
+        binary = bin(value)[:1:-1]
+        ret = [pow(int(x) * 2, i) for i, x in enumerate(binary) if int(x)]
+        return ret
+
+    def validate(self, value):
+        return isinstance(value, int) 
+
+    def has_changed(self, initial, data):
+        return initial != data
+
+class BadgeModelForm(forms.ModelForm):
+    copy_permissions = BinaryMultipleChoiceField(
+        required=False,
+        choices=BadgeClass.COPY_PERMISSIONS_CHOICES,
+    )
+
+    class Meta:
+        exclude = []
+        model = BadgeClass
+
+
 class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
+    form = BadgeModelForm
+
     readonly_fields = ('created_by', 'created_at', 'updated_at', 'old_json',
                        'source', 'source_url', 'entity_id', 'slug')
-    list_display = ('badge_image', 'name', 'entity_id', 'issuer_link')
+    list_display = ('badge_image', 'name', 'issuer_link', 'assertion_count')
     list_display_links = ('badge_image', 'name',)
     list_filter = ('created_at',)
     search_fields = ('name', 'entity_id', 'issuer__name',)
@@ -112,7 +189,7 @@ class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
             'fields': ('issuer', 'image', 'imageFrame', 'name', 'description')
         }),
         ('Configuration', {
-            'fields': ('criteria_url', 'criteria_text', 'expires_duration', 'expires_amount',)
+            'fields': ('criteria_url', 'criteria_text', 'expires_duration', 'expires_amount', 'copy_permissions',)
         }),
         ('JSON', {
             'fields': ('old_json',)
@@ -124,6 +201,11 @@ class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
         BadgeClassExtensionInline,
     ]
     change_actions = ['redirect_issuer', 'redirect_instances']
+
+    def get_queryset(self, request):
+        qs = super(BadgeClassAdmin, self).get_queryset(request)
+        qs = qs.annotate(number_of_assertions=models.Count('badgeinstances', filter=models.Q(badgeinstances__revoked=False)))
+        return qs
 
     def save_model(self, request, obj, form, change):
         force_resize = False
@@ -140,6 +222,7 @@ class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
         return mark_safe('<a href="{}">{}</a>'.format(reverse("admin:issuer_issuer_change",
             args=(obj.issuer.id,)), obj.issuer.name))
     issuer_link.allow_tags = True
+    issuer_link.admin_order_field = 'issuer'
 
     def redirect_instances(self, request, obj):
         return HttpResponseRedirect(
@@ -154,6 +237,11 @@ class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
         )
     redirect_issuer.label = "Issuer"
     redirect_issuer.short_description = "See this Issuer"
+
+    def assertion_count(self, obj):
+        return obj.number_of_assertions
+
+    assertion_count.admin_order_field = 'number_of_assertions'
 
 
 badgr_admin.register(BadgeClass, BadgeClassAdmin)
@@ -263,6 +351,13 @@ class ReqeustedBadgeAdmin(ModelAdmin):
     readonly_fields = ('requestedOn', 'status')
 
 badgr_admin.register(RequestedBadge, ReqeustedBadgeAdmin)
+
+class IssuerStaffRequestAdmin(ModelAdmin):
+    list_display = ('issuer', 'user', 'requestedOn', 'status')
+    readonly_fields = ('requestedOn', 'status')
+
+badgr_admin.register(IssuerStaffRequest, IssuerStaffRequestAdmin)
+
 
 class QrCodeAdmin(ModelAdmin):
     list_display = ('title', 'createdBy', 'valid_from', 'expires_at')
