@@ -279,20 +279,7 @@ class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
                 )
             },
         ),
-        ("JSON", {"fields": ("old_json",)}),
-        ('Metadata', {
-            'fields': ('created_by', 'created_at', 'updated_at', 'source', 'source_url', 'entity_id', 'slug'),
-            'classes': ("collapse",)
-        }),
-        (None, {
-            'fields': ('issuer', 'image', 'imageFrame', 'name', 'description')
-        }),
-        ('Configuration', {
-            'fields': ('criteria_url', 'criteria_text', 'expires_duration', 'expires_amount', 'copy_permissions',)
-        }),
-        ('JSON', {
-            'fields': ('old_json', 'criteria')
-        }),
+        ("JSON", {"fields": ("old_json", "criteria")}),
     )
     inlines = [
         BadgeClassTagInline,
