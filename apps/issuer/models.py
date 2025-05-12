@@ -1319,6 +1319,86 @@ class BadgeClass(
             self.copy_permissions = sum(map(int, binary_map))
 
 
+class ImportedBadgeAssertion(BaseVersionedEntity, BaseAuditedModel, BaseOpenBadgeObjectModel):
+    """
+    Model for storing imported badges separately from the system's own badges.
+    This keeps external badge data isolated from internal data models.
+    """
+
+    user = models.ForeignKey(
+        "badgeuser.BadgeUser", blank=True, null=True, on_delete=models.SET_NULL
+    )
+
+    badge_name = models.CharField(max_length=255)
+    badge_description = models.TextField(blank=True, null=True)
+    badge_criteria_url = models.URLField(blank=True, null=True)
+    badge_image_url = models.URLField(blank=True, null=True)
+
+    image = models.FileField(upload_to="uploads/badges", blank=True)
+
+    issuer_name = models.CharField(max_length=255)
+    issuer_url = models.URLField()
+    issuer_email = models.EmailField(blank=True, null=True)
+    issuer_image_url = models.URLField(blank=True, null=True)
+
+    issued_on = models.DateTimeField()
+    expires_at = models.DateTimeField(blank=True, null=True)
+
+    RECIPIENT_TYPE_EMAIL = "email"
+    RECIPIENT_TYPE_ID = "openBadgeId"
+    RECIPIENT_TYPE_TELEPHONE = "telephone"
+    RECIPIENT_TYPE_URL = "url"
+
+    RECIPIENT_TYPE_CHOICES = (
+        (RECIPIENT_TYPE_EMAIL, "email"),
+        (RECIPIENT_TYPE_ID, "openBadgeId"),
+        (RECIPIENT_TYPE_TELEPHONE, "telephone"),
+        (RECIPIENT_TYPE_URL, "url"),
+    )
+
+    recipient_identifier = models.CharField(max_length=768, db_index=True)
+    recipient_type = models.CharField(
+        max_length=255, choices=RECIPIENT_TYPE_CHOICES, default=RECIPIENT_TYPE_EMAIL
+    )
+
+    ACCEPTANCE_UNACCEPTED = "Unaccepted"
+    ACCEPTANCE_ACCEPTED = "Accepted"
+    ACCEPTANCE_REJECTED = "Rejected"
+    ACCEPTANCE_CHOICES = (
+        (ACCEPTANCE_UNACCEPTED, "Unaccepted"),
+        (ACCEPTANCE_ACCEPTED, "Accepted"),
+        (ACCEPTANCE_REJECTED, "Rejected"),
+    )
+    acceptance = models.CharField(
+        max_length=254, choices=ACCEPTANCE_CHOICES, default=ACCEPTANCE_ACCEPTED
+    )
+
+    revoked = models.BooleanField(default=False)
+    revocation_reason = models.CharField(max_length=255, blank=True, null=True)
+
+    original_json = JSONField()
+
+    hashed = models.BooleanField(default=True)
+    salt = models.CharField(max_length=254, blank=True, null=True, default=None)
+
+    narrative = models.TextField(blank=True, null=True)
+
+    verification_url = models.URLField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = "Imported Badge Assertion"
+
+    def image_url(self):
+        if self.image:
+            return self.image.url
+        return self.badge_image_url
+    
+    def get_extensions_manager(self):
+        return self.importedbadgeassertionextension_set
+    
+
+
+
 class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectModel):
     entity_class_name = "Assertion"
     COMPARABLE_PROPERTIES = (
@@ -2224,8 +2304,18 @@ class BadgeInstanceExtension(BaseOpenBadgeExtension):
 
     def delete(self, *args, **kwargs):
         super(BadgeInstanceExtension, self).delete(*args, **kwargs)
-        self.badgeinstance.publish()
+        self.badgeinstance.publish()        
 
+class ImportedBadgeAssertionExtension(BaseOpenBadgeExtension):
+    importedBadge = models.ForeignKey("issuer.ImportedBadgeAssertion", on_delete=models.CASCADE)
+
+    def publish(self):
+        super(ImportedBadgeAssertionExtension, self).publish()
+        self.importedBadge.publish()
+
+    def delete(self, *args, **kwargs):
+        super(ImportedBadgeAssertionExtension, self).delete(*args, **kwargs)
+        self.importedBadge.publish()
 
 class QrCode(BaseVersionedEntity):
 
