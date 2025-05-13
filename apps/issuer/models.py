@@ -7,7 +7,7 @@ import re
 import urllib.parse
 import uuid
 from collections import OrderedDict
-from json import dumps as json_dumps, loads as json_loads
+from json import dumps as json_dumps, loads as json_loads, JSONDecodeError
 
 import badgrlog
 import cachemodel
@@ -874,7 +874,8 @@ class BadgeClass(
     image_preview = models.FileField(upload_to="uploads/badges", blank=True, null=True)
     description = models.TextField(blank=True, null=True, default=None)
 
-    criteria_url = models.CharField(max_length=254, blank=True, null=True, default=None)
+    # TODO: criteria_url and criteria_text are deprecated and should be removed once the migration to the criteria field was done
+    criteria_url = models.CharField(max_length=254, blank=True, null=True, default=None) 
     criteria_text = models.TextField(blank=True, null=True)
 
     expires_amount = models.IntegerField(blank=True, null=True, default=None)
@@ -900,6 +901,8 @@ class BadgeClass(
         "others",
     )
     copy_permissions = models.PositiveSmallIntegerField(default=COPY_PERMISSIONS_ISSUER)
+
+    criteria = models.JSONField(blank=True, null=True)
 
     old_json = JSONField()
 
@@ -1132,6 +1135,48 @@ class BadgeClass(
                 self.image.name
             )
 
+    def get_criteria(self):
+        categoryExtension = self.cached_extensions().get(name="extensions:CategoryExtension")
+        if not categoryExtension: 
+            return None
+        category = json_loads(categoryExtension.original_json)
+        if self.criteria:
+            return self.criteria
+        elif category['Category'] == "competency":
+            competencyExtensions = {}
+
+            if len(self.cached_extensions()) > 0:
+                for extension in self.cached_extensions():
+                    if extension.name == "extensions:CompetencyExtension":
+                        competencyExtensions[extension.name] = json_loads(
+                            extension.original_json
+                        )
+
+            competencies = []
+
+            for competency in competencyExtensions.get(
+                "extensions:CompetencyExtension", []
+            ):
+                competencies.append(competency.get("name"))
+
+            md =  f"""
+                    *Folgende Kriterien sind auf Basis deiner Eingaben als Metadaten im Badge hinterlegt*: 
+                    Du hast erfolgreich an **{self.name}** teilgenommen.
+                    Dabei hast du folgende Kompetenzen gestärkt:
+                    """
+            for comp in competencies:
+                md += f"- {comp}\n"
+
+            return md.strip()               
+        else: 
+            return f"""
+                    *Folgende Kriterien sind auf Basis deiner Eingaben als Metadaten im Badge hinterlegt*: 
+                    Du hast erfolgreich an **{self.name}** teilgenommen.  
+                   """
+
+
+
+
     def get_json(
         self,
         obi_version=CURRENT_OBI_VERSION,
@@ -1181,8 +1226,7 @@ class BadgeClass(
             json["criteria"] = {}
             if self.criteria_url:
                 json["criteria"]["id"] = self.criteria_url
-            if self.criteria_text:
-                json["criteria"]["narrative"] = self.criteria_text
+            json["criteria"]["narrative"] = self.get_criteria()
 
         # source_url
         if self.source_url:
@@ -1215,7 +1259,7 @@ class BadgeClass(
             if extra is not None:
                 for k, v in list(extra.items()):
                     if k not in json:
-                        json[k] = v
+                        json[k] = v                  
 
         return json
 
@@ -1273,6 +1317,86 @@ class BadgeClass(
             ]
             print(binary_map)
             self.copy_permissions = sum(map(int, binary_map))
+
+
+class ImportedBadgeAssertion(BaseVersionedEntity, BaseAuditedModel, BaseOpenBadgeObjectModel):
+    """
+    Model for storing imported badges separately from the system's own badges.
+    This keeps external badge data isolated from internal data models.
+    """
+
+    user = models.ForeignKey(
+        "badgeuser.BadgeUser", blank=True, null=True, on_delete=models.SET_NULL
+    )
+
+    badge_name = models.CharField(max_length=255)
+    badge_description = models.TextField(blank=True, null=True)
+    badge_criteria_url = models.URLField(blank=True, null=True)
+    badge_image_url = models.URLField(blank=True, null=True)
+
+    image = models.FileField(upload_to="uploads/badges", blank=True)
+
+    issuer_name = models.CharField(max_length=255)
+    issuer_url = models.URLField()
+    issuer_email = models.EmailField(blank=True, null=True)
+    issuer_image_url = models.URLField(blank=True, null=True)
+
+    issued_on = models.DateTimeField()
+    expires_at = models.DateTimeField(blank=True, null=True)
+
+    RECIPIENT_TYPE_EMAIL = "email"
+    RECIPIENT_TYPE_ID = "openBadgeId"
+    RECIPIENT_TYPE_TELEPHONE = "telephone"
+    RECIPIENT_TYPE_URL = "url"
+
+    RECIPIENT_TYPE_CHOICES = (
+        (RECIPIENT_TYPE_EMAIL, "email"),
+        (RECIPIENT_TYPE_ID, "openBadgeId"),
+        (RECIPIENT_TYPE_TELEPHONE, "telephone"),
+        (RECIPIENT_TYPE_URL, "url"),
+    )
+
+    recipient_identifier = models.CharField(max_length=768, db_index=True)
+    recipient_type = models.CharField(
+        max_length=255, choices=RECIPIENT_TYPE_CHOICES, default=RECIPIENT_TYPE_EMAIL
+    )
+
+    ACCEPTANCE_UNACCEPTED = "Unaccepted"
+    ACCEPTANCE_ACCEPTED = "Accepted"
+    ACCEPTANCE_REJECTED = "Rejected"
+    ACCEPTANCE_CHOICES = (
+        (ACCEPTANCE_UNACCEPTED, "Unaccepted"),
+        (ACCEPTANCE_ACCEPTED, "Accepted"),
+        (ACCEPTANCE_REJECTED, "Rejected"),
+    )
+    acceptance = models.CharField(
+        max_length=254, choices=ACCEPTANCE_CHOICES, default=ACCEPTANCE_ACCEPTED
+    )
+
+    revoked = models.BooleanField(default=False)
+    revocation_reason = models.CharField(max_length=255, blank=True, null=True)
+
+    original_json = JSONField()
+
+    hashed = models.BooleanField(default=True)
+    salt = models.CharField(max_length=254, blank=True, null=True, default=None)
+
+    narrative = models.TextField(blank=True, null=True)
+
+    verification_url = models.URLField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = "Imported Badge Assertion"
+
+    def image_url(self):
+        if self.image:
+            return self.image.url
+        return self.badge_image_url
+    
+    def get_extensions_manager(self):
+        return self.importedbadgeassertionextension_set
+    
+
 
 
 class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectModel):
@@ -2180,8 +2304,18 @@ class BadgeInstanceExtension(BaseOpenBadgeExtension):
 
     def delete(self, *args, **kwargs):
         super(BadgeInstanceExtension, self).delete(*args, **kwargs)
-        self.badgeinstance.publish()
+        self.badgeinstance.publish()        
 
+class ImportedBadgeAssertionExtension(BaseOpenBadgeExtension):
+    importedBadge = models.ForeignKey("issuer.ImportedBadgeAssertion", on_delete=models.CASCADE)
+
+    def publish(self):
+        super(ImportedBadgeAssertionExtension, self).publish()
+        self.importedBadge.publish()
+
+    def delete(self, *args, **kwargs):
+        super(ImportedBadgeAssertionExtension, self).delete(*args, **kwargs)
+        self.importedBadge.publish()
 
 class QrCode(BaseVersionedEntity):
 
