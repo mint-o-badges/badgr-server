@@ -123,8 +123,8 @@ class OpenBadgesContextCache(BaseCache):
             cache.set(
                 self.OPEN_BADGE_CONTEXT_CACHE_KEY,
                 {
-                    "keys_map": self.session.cache.keys_map.copy(),
-                    "response": self.session.cache.responses.copy(),
+                    'keys_map': self.session.cache.keys_map.copy(), # FIXME: breaks with requests-cache 0.6.0
+                    'response': self.session.cache.responses.copy() # FIXME: breaks with requests-cache 0.6.0
                 },
                 timeout=self.FORTY_EIGHT_HOURS_IN_SECONDS,
             )
