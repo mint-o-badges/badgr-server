@@ -1136,9 +1136,11 @@ class BadgeClass(
             )
 
     def get_criteria(self):
-        categoryExtension = self.cached_extensions().get(name="extensions:CategoryExtension")
-        if not categoryExtension: 
+        try:
+            categoryExtension = self.cached_extensions().get(name="extensions:CategoryExtension")
+        except:
             return None
+
         category = json_loads(categoryExtension.original_json)
         if self.criteria:
             return self.criteria
