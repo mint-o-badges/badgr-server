@@ -1,19 +1,20 @@
 # encoding: utf-8
 
 
-from django.http import Http404
-import badgrlog
 import datetime
 
-from django.utils import timezone
-from rest_framework import permissions
-from rest_framework.response import Response
-from rest_framework import serializers
-from rest_framework import status
-
+import badgrlog
+from apispec_drf.decorators import (
+    apispec_delete_operation,
+    apispec_get_operation,
+    apispec_list_operation,
+    apispec_operation,
+    apispec_post_operation,
+    apispec_put_operation,
+)
 from backpack.models import (
-    BackpackCollection,
     BackpackBadgeShare,
+    BackpackCollection,
     BackpackCollectionShare,
 )
 from backpack.serializers_v1 import (
@@ -22,30 +23,25 @@ from backpack.serializers_v1 import (
     LocalBadgeInstanceUploadSerializerV1,
 )
 from backpack.serializers_v2 import (
+    BackpackAssertionAcceptanceSerializerV2,
     BackpackAssertionSerializerV2,
     BackpackCollectionSerializerV2,
     BackpackImportSerializerV2,
-    BackpackAssertionAcceptanceSerializerV2,
 )
-from entity.api import BaseEntityListView, BaseEntityDetailView
+from badgeuser.models import BadgeUser
+from django.http import Http404
+from django.utils import timezone
+from entity.api import BaseEntityDetailView, BaseEntityListView
 from issuer.models import BadgeInstance, ImportedBadgeAssertion
 from issuer.permissions import (
     AuditedModelOwner,
-    VerifiedEmailMatchesRecipientIdentifier,
     BadgrOAuthTokenHasScope,
+    VerifiedEmailMatchesRecipientIdentifier,
 )
 from issuer.public_api import ImagePropertyDetailView
-from apispec_drf.decorators import (
-    apispec_list_operation,
-    apispec_post_operation,
-    apispec_get_operation,
-    apispec_delete_operation,
-    apispec_put_operation,
-    apispec_operation,
-)
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAdmin
-
-from badgeuser.models import BadgeUser
+from rest_framework import permissions, serializers, status
+from rest_framework.response import Response
 
 logger = badgrlog.BadgrLogger()
 
@@ -84,7 +80,7 @@ class ImportedBadgeInstanceList(BaseEntityListView):
         serializer = serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.validated_data["user"] = request.user
-            instance = serializer.save()
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -162,7 +158,7 @@ class BackpackAssertionList(BaseEntityListView):
             ):
                 return False
             return True
-        
+
         return list(filter(badge_filter, self.request.user.cached_badgeinstances()))
 
     @apispec_list_operation(

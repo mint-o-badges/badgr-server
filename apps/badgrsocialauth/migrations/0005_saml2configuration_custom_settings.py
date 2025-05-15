@@ -6,13 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('badgrsocialauth', '0004_auto_20200608_0452'),
+        ("badgrsocialauth", "0004_auto_20200608_0452"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='saml2configuration',
-            name='custom_settings',
-            field=models.TextField(blank=True, default='{}', help_text='Valid JSON for claim names accepted for local values like email, first_name, last_name'),
+            model_name="saml2configuration",
+            name="custom_settings",
+            field=models.TextField(
+                blank=True,
+                default="{}",
+                help_text="Valid JSON for claim names accepted for local values like email, first_name, last_name",
+            ),
         ),
     ]

@@ -8,13 +8,16 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('badgrsocialauth', '0002_saml2configuration_cached_metadata'),
+        ("badgrsocialauth", "0002_saml2configuration_cached_metadata"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='saml2configuration',
-            name='use_signed_authn_request',
-            field=models.BooleanField(default=False, help_text=b'triggers a user\'s browser to POST a signed Authn Request to the client\'s authorization URL'),
+            model_name="saml2configuration",
+            name="use_signed_authn_request",
+            field=models.BooleanField(
+                default=False,
+                help_text=b"triggers a user's browser to POST a signed Authn Request to the client's authorization URL",
+            ),
         ),
     ]

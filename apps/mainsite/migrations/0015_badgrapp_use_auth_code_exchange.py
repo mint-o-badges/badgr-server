@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mainsite', '0014_applicationinfo_trust_email_verification'),
+        ("mainsite", "0014_applicationinfo_trust_email_verification"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='badgrapp',
-            name='use_auth_code_exchange',
+            model_name="badgrapp",
+            name="use_auth_code_exchange",
             field=models.BooleanField(default=False),
         ),
     ]

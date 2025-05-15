@@ -8,18 +8,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('externaltools', '0002_externaltooluseractivation'),
+        ("externaltools", "0002_externaltooluseractivation"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='externaltool',
-            name='is_active',
+            model_name="externaltool",
+            name="is_active",
             field=models.BooleanField(default=True),
         ),
         migrations.AddField(
-            model_name='externaltool',
-            name='requires_user_activation',
+            model_name="externaltool",
+            name="requires_user_activation",
             field=models.BooleanField(default=True),
         ),
     ]

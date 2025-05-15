@@ -1,10 +1,9 @@
+from backpack.models import BackpackCollection, BackpackCollectionBadgeInstance
+from backpack.serializers_v1 import CollectionBadgeSerializerV1
+from issuer.models import BadgeInstance
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from backpack.models import BackpackCollectionBadgeInstance, BackpackCollection
-from backpack.serializers_v1 import CollectionBadgeSerializerV1
-from issuer.models import BadgeInstance
 
 
 class CollectionLocalBadgeInstanceList(APIView):
@@ -12,6 +11,7 @@ class CollectionLocalBadgeInstanceList(APIView):
     POST to add badges to collection, PUT to update collection to a new list of
     ids.
     """
+
     queryset = BackpackCollectionBadgeInstance.objects.all()
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -37,18 +37,22 @@ class CollectionLocalBadgeInstanceList(APIView):
         Returns resulting complete list of collection contents.
         """
         try:
-            collection = BackpackCollection.objects.get(created_by=request.user, entity_id=slug)
+            collection = BackpackCollection.objects.get(
+                created_by=request.user, entity_id=slug
+            )
         except BackpackCollection.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         add_many = isinstance(request.data, list)
         serializer = CollectionBadgeSerializerV1(
-            data=request.data, many=add_many,
+            data=request.data,
+            many=add_many,
             context={
-                'collection': collection,
-                'request': request, 'user': request.user,
-                'add_only': True
-            }
+                "collection": collection,
+                "request": request,
+                "user": request.user,
+                "add_only": True,
+            },
         )
         serializer.is_valid(raise_exception=True)
 
@@ -56,10 +60,13 @@ class CollectionLocalBadgeInstanceList(APIView):
 
         if new_records == []:
             return Response(
-                ("No new records could be added to collection. "
-                + "Check for missing/unknown badge references, unauthorized "
-                + "access, or badges already existing in collection."),
-                status=status.HTTP_400_BAD_REQUEST)
+                (
+                    "No new records could be added to collection. "
+                    + "Check for missing/unknown badge references, unauthorized "
+                    + "access, or badges already existing in collection."
+                ),
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def put(self, request, slug, **kwargs):
@@ -86,11 +93,15 @@ class CollectionLocalBadgeInstanceList(APIView):
         badges = request.data
 
         try:
-            collection = BackpackCollection.objects.get(created_by=request.user, entity_id=slug)
+            collection = BackpackCollection.objects.get(
+                created_by=request.user, entity_id=slug
+            )
         except BackpackCollection.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        serializer = CollectionBadgeSerializerV1(data=badges, many=True, context={'collection': collection})
+        serializer = CollectionBadgeSerializerV1(
+            data=badges, many=True, context={"collection": collection}
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
@@ -102,16 +113,19 @@ class CollectionLocalBadgeInstanceDetail(APIView):
     Update details on a single item in the collection or remove it from the
     collection.
     """
+
     queryset = BackpackCollectionBadgeInstance.objects.all()
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, **kwargs):
-        collection_slug = kwargs.get('collection_slug', None)
-        slug = kwargs.get('slug', None)
+        collection_slug = kwargs.get("collection_slug", None)
+        slug = kwargs.get("slug", None)
         if not collection_slug or not slug:
             return Response(status=status.HTTP_404_NOT_FOUND)
         try:
-            collection = BackpackCollection.cached.get_by_slug_or_entity_id(collection_slug)
+            collection = BackpackCollection.cached.get_by_slug_or_entity_id(
+                collection_slug
+            )
         except BackpackCollection.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
         if collection.created_by != request.user:
@@ -194,12 +208,14 @@ class CollectionLocalBadgeInstanceDetail(APIView):
               type: integer
               paramType: path
         """
-        collection_slug = kwargs.get('collection_slug')
-        slug = kwargs.get('slug')
+        collection_slug = kwargs.get("collection_slug")
+        slug = kwargs.get("slug")
         if not collection_slug or not slug:
             return Response(status=status.HTTP_404_NOT_FOUND)
         try:
-            collection = BackpackCollection.cached.get_by_slug_or_entity_id(collection_slug)
+            collection = BackpackCollection.cached.get_by_slug_or_entity_id(
+                collection_slug
+            )
         except BackpackCollection.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
         if collection.created_by != request.user:
@@ -231,6 +247,7 @@ class CollectionGenerateShare(APIView):
     """
     Allows a Collection to be public by generation of a shareable hash.
     """
+
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, slug, **kwargs):
@@ -254,7 +271,7 @@ class CollectionGenerateShare(APIView):
         if not request.user == collection.owner:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        collection.share_hash = ''
+        collection.share_hash = ""
         collection.save()
 
         return Response(status=status.HTTP_204_NO_CONTENT)

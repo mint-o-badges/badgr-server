@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0036_merge_20171101_0815'),
+        ("issuer", "0036_merge_20171101_0815"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='badgeinstance',
-            name='recipient_identifier',
+            model_name="badgeinstance",
+            name="recipient_identifier",
             field=models.EmailField(db_index=True, max_length=1024),
         ),
     ]

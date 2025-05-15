@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0050_auto_20190813_1945'),
+        ("issuer", "0050_auto_20190813_1945"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='badgeinstance',
-            name='recipient_identifier',
+            model_name="badgeinstance",
+            name="recipient_identifier",
             field=models.CharField(db_index=True, max_length=768),
         ),
     ]

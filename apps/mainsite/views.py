@@ -1,75 +1,69 @@
 import base64
-from io import BytesIO
-from datetime import datetime
 import json
-import time
-import re
 import os
+import re
+import time
+import uuid
+from io import BytesIO
+from random import randrange
 
+import badgrlog
+import mainsite
+import requests
 from django import forms
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
-from django.urls import reverse, reverse_lazy
+from django.core.files.storage import DefaultStorage
 from django.db import IntegrityError
 from django.http import (
-    HttpResponseServerError,
+    HttpResponse,
     HttpResponseNotFound,
     HttpResponseRedirect,
-    HttpResponse
+    HttpResponseServerError,
+    JsonResponse,
 )
 from django.shortcuts import redirect
 from django.template import loader
 from django.template.exceptions import TemplateDoesNotExist
+from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.decorators.clickjacking import xframe_options_exempt
+from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import FormView, RedirectView
+from issuer.models import BadgeClass, QrCode, RequestedBadge
+from issuer.permissions import is_badgeclass_staff
+from issuer.serializers_v1 import RequestedBadgeSerializer
+from issuer.tasks import rebake_all_assertions, update_issuedon_all_assertions
+from mainsite.admin_actions import clear_cache
+from mainsite.models import AltchaChallenge, BadgrApp, EmailBlacklist
+from mainsite.serializers import LegacyVerifiedAuthTokenSerializer
+from mainsite.utils import createHash, createHmac
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.utils import ImageReader
+from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table
+from requests_oauthlib import OAuth1
+from rest_framework import status
+from rest_framework.authentication import (
+    BasicAuthentication,
+    SessionAuthentication,
+    TokenAuthentication,
+)
 from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import status
-from rest_framework.decorators import (
-    permission_classes,
-    authentication_classes,
-    api_view,
-)
-from rest_framework.authentication import (
-    SessionAuthentication,
-    BasicAuthentication,
-    TokenAuthentication,
-)
-
-from issuer.tasks import rebake_all_assertions, update_issuedon_all_assertions
-from issuer.models import BadgeClass, Issuer, IssuerStaffRequest, LearningPath, QrCode, RequestedBadge, RequestedLearningPath
-from issuer.serializers_v1 import IssuerStaffRequestSerializer, RequestedBadgeSerializer, RequestedLearningPathSerializer
-from mainsite.admin_actions import clear_cache
-from mainsite.models import EmailBlacklist, BadgrApp, AltchaChallenge
-from mainsite.serializers import LegacyVerifiedAuthTokenSerializer
-from mainsite.utils import OriginSetting, createHash, createHmac
-from random import randrange
-import badgrlog
-import mainsite
-
-from django.views.decorators.csrf import csrf_exempt
-from django.core.files.storage import DefaultStorage
-
-
-import uuid
-from django.http import JsonResponse
-import requests
-from requests_oauthlib import OAuth1
-from issuer.permissions import is_badgeclass_staff, is_staff
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table
-from reportlab.lib.colors import PCMYKColor
-import math
-from reportlab.lib.utils import ImageReader
-from allauth.account.adapter import get_adapter
 
 logger = badgrlog.BadgrLogger()
+
 
 ##
 #
@@ -117,13 +111,15 @@ def info_view(request, *args, **kwargs):
 # TODO: It is possible to call this method without authentication, thus storing files on the server
 @csrf_exempt
 def upload(req):
-    if req.method == "POST":
-        uploaded_file = req.FILES["files"]
-        file_extension = uploaded_file.name.split(".")[-1]
-        random_filename = str(uuid.uuid4())
-        final_filename = random_filename + "." + file_extension
-        store = DefaultStorage()
-        store.save(final_filename, uploaded_file)
+    if req.method != "POST":
+        return Response(status=400)
+
+    uploaded_file = req.FILES["files"]
+    file_extension = uploaded_file.name.split(".")[-1]
+    random_filename = str(uuid.uuid4())
+    final_filename = random_filename + "." + file_extension
+    store = DefaultStorage()
+    store.save(final_filename, uploaded_file)
     return JsonResponse({"filename": final_filename})
 
 
@@ -136,9 +132,10 @@ def call_aiskills_api(endpoint, method, payload: dict):
     #        there might be no feedback to the user for more than 20 seconds if the API
     #        throws an unexpected error
     attempt_num = 0  # keep track of how many times we've retried
+    response = None
     while attempt_num < 4:
         # if POST, transfer payload in body
-        if method == 'POST':
+        if method == "POST":
             headers = {
                 **headers,
                 "Content-Type": "application/json",
@@ -147,14 +144,12 @@ def call_aiskills_api(endpoint, method, payload: dict):
                 endpoint, params=params, data=json.dumps(payload), headers=headers
             )
         # for GET, add payload to query params
-        elif method == 'GET':
-            params = { **params, **payload }
-            response = requests.get(
-                endpoint, params=params, headers=headers
-            )
+        elif method == "GET":
+            params = {**params, **payload}
+            response = requests.get(endpoint, params=params, headers=headers)
         else:
             return JsonResponse(
-                {"error": f"Internal function called using invalid request method"},
+                {"error": "Internal function called using invalid request method"},
                 status=400,
             )
 
@@ -186,8 +181,10 @@ def call_aiskills_api(endpoint, method, payload: dict):
             time.sleep(5)  # Wait for 5 seconds before re-trying
 
     return JsonResponse(
-        {"error": f"Request failed with status code {response.status_code}"},
-        status=response.status_code,
+        {
+            "error": f"Request failed with status code {response.status_code if response else 500}"
+        },
+        status=response.status_code if response else 500,
     )
 
 
@@ -207,12 +204,13 @@ def aiskills(req, searchterm):
         )
 
     # fallback to previous setting name
-    endpoint = getattr(settings, "AISKILLS_ENDPOINT_CHATS", getattr(settings, "AISKILLS_ENDPOINT"))
-    payload = {
-        "text_to_analyze": searchterm
-    }
+    endpoint = getattr(
+        settings, "AISKILLS_ENDPOINT_CHATS", getattr(settings, "AISKILLS_ENDPOINT")
+    )
+    payload = {"text_to_analyze": searchterm}
 
-    return call_aiskills_api(endpoint, 'POST', payload)
+    return call_aiskills_api(endpoint, "POST", payload)
+
 
 @api_view(["GET"])
 @authentication_classes(
@@ -223,19 +221,16 @@ def aiskills_keywords(req, searchterm):
 
     searchterm = searchterm.replace("-", "+").replace("_", "/")
     searchterm = base64.b64decode(searchterm).decode("utf-8")
-    lang = req.GET.get('lang', 'de')
+    lang = req.GET.get("lang", "de")
     if req.method != "GET":
         return JsonResponse(
             {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
         )
 
     endpoint = getattr(settings, "AISKILLS_ENDPOINT_KEYWORDS")
-    payload = {
-        "query": searchterm,
-        "lang": lang
-    }
+    payload = {"query": searchterm, "lang": lang}
 
-    return call_aiskills_api(endpoint, 'GET', payload)
+    return call_aiskills_api(endpoint, "GET", payload)
 
 
 @api_view(["GET"])
@@ -255,11 +250,7 @@ def createCaptchaChallenge(req):
     challenge = createHash(salt, number)
     signature = createHmac(hmac_secret, challenge)
 
-    altcha_challenge = AltchaChallenge.objects.create(
-        salt=salt,
-        challenge=challenge,
-        signature=signature
-    )
+    AltchaChallenge.objects.create(salt=salt, challenge=challenge, signature=signature)
 
     ch = {
         "algorithm": "SHA-256",
@@ -271,6 +262,7 @@ def createCaptchaChallenge(req):
 
     return JsonResponse(ch)
 
+
 @api_view(["POST", "GET"])
 @permission_classes([AllowAny])
 def requestBadge(req, qrCodeId):
@@ -278,43 +270,47 @@ def requestBadge(req, qrCodeId):
         return JsonResponse(
             {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
         )
-    qrCode = QrCode.objects.get(entity_id=qrCodeId) 
+    qrCode = QrCode.objects.get(entity_id=qrCodeId)
 
     if req.method == "GET":
         requestedBadges = RequestedBadge.objects.filter(qrcode=qrCode)
-        serializer = RequestedBadgeSerializer(requestedBadges, many=True)  
-        return JsonResponse({"requested_badges": serializer.data}, status=status.HTTP_200_OK)
-   
-    elif req.method == "POST": 
-        try:
-            data = json.loads(req.data) 
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON data'}, status=400)
-        
-        firstName = data.get('firstname')
-        lastName = data.get('lastname')
-        email = data.get('email')
-        qrCodeId = data.get('qrCodeId')
+        serializer = RequestedBadgeSerializer(requestedBadges, many=True)
+        return JsonResponse(
+            {"requested_badges": serializer.data}, status=status.HTTP_200_OK
+        )
 
-        try: 
+    elif req.method == "POST":
+        try:
+            data = json.loads(req.data)
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON data"}, status=400)
+
+        firstName = data.get("firstname")
+        lastName = data.get("lastname")
+        email = data.get("email")
+        qrCodeId = data.get("qrCodeId")
+
+        try:
             qrCode = QrCode.objects.get(entity_id=qrCodeId)
 
         except QrCode.DoesNotExist:
-            return JsonResponse({'error': 'Invalid qrCodeId'}, status=400)            
+            return JsonResponse({"error": "Invalid qrCodeId"}, status=400)
 
         badge = RequestedBadge(
-            firstName = firstName,
-            lastName = lastName,
-            email = email,
-        ) 
+            firstName=firstName,
+            lastName=lastName,
+            email=email,
+        )
 
         badge.badgeclass = qrCode.badgeclass
         badge.qrcode = qrCode
 
-
         badge.save()
 
-        return JsonResponse({"message": "Badge request received"}, status=status.HTTP_200_OK)  
+        return JsonResponse(
+            {"message": "Badge request received"}, status=status.HTTP_200_OK
+        )
+
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
@@ -334,30 +330,46 @@ def PageSetup(canvas, doc, badgeImage, issuerImage):
 
     # Header
     try:
-        if issuerImage is not None: 
+        if issuerImage is not None:
             institutionImage = ImageReader(issuerImage)
-            canvas.drawImage(institutionImage, 20, 705, width=80, height=80, mask="auto", preserveAspectRatio=True)
-    except:
-        oebLogo = ImageReader("{}images/Logo-Oeb.png".format(settings.STATIC_URL))  
-        canvas.drawImage(oebLogo, 20, 710, width=80, height=80, mask="auto", preserveAspectRatio=True)
+            canvas.drawImage(
+                institutionImage,
+                20,
+                705,
+                width=80,
+                height=80,
+                mask="auto",
+                preserveAspectRatio=True,
+            )
+    except Exception:
+        oebLogo = ImageReader("{}images/Logo-Oeb.png".format(settings.STATIC_URL))
+        canvas.drawImage(
+            oebLogo, 20, 710, width=80, height=80, mask="auto", preserveAspectRatio=True
+        )
 
     page_width = canvas._pagesize[0]
     page_height = canvas._pagesize[1]
     canvas.setStrokeColor("#492E98")
     canvas.line(page_width / 2 - 185, 750, page_width / 2 + 250, 750)
-    
-    badge = ImageReader(badgeImage)
-    canvas.drawImage(badge, 250, 200, width=100, height=100, mask="auto", preserveAspectRatio=True)
 
-    arrow = ImageReader("{}images/arrow-qrcode-download.png".format(settings.STATIC_URL))
-    canvas.drawImage(arrow, 100, 300, width=80, height=80, mask="auto", preserveAspectRatio=True)
+    badge = ImageReader(badgeImage)
+    canvas.drawImage(
+        badge, 250, 200, width=100, height=100, mask="auto", preserveAspectRatio=True
+    )
+
+    arrow = ImageReader(
+        "{}images/arrow-qrcode-download.png".format(settings.STATIC_URL)
+    )
+    canvas.drawImage(
+        arrow, 100, 300, width=80, height=80, mask="auto", preserveAspectRatio=True
+    )
     # TODO: change Font-family to rubik
     canvas.setFont("Rubik-Bold", 16)
     canvas.drawString(100, 275, "Hol' dir jetzt")
-    canvas.drawString(100, 250, "deinen Badge!") 
+    canvas.drawString(100, 250, "deinen Badge!")
 
     bottom_10_percent_height = page_height * 0.10
-    canvas.setFillColor('#F1F0FF')  
+    canvas.setFillColor("#F1F0FF")
     canvas.rect(0, 0, page_width, bottom_10_percent_height, stroke=0, fill=1)
 
     canvas.restoreState()
@@ -372,9 +384,16 @@ def PageSetup(canvas, doc, badgeImage, issuerImage):
     text_y = bottom_10_percent_height / 2
     canvas.drawCentredString(text_x, text_y, footer_text)
 
-
     text = '<a href="https://openbadges.education"><u><strong>OPENBADGES.EDUCATION</strong></u></a>'
-    p = Paragraph(text, ParagraphStyle(name='oeb', fontSize=12, textColor='#1400ff', alignment=TA_CENTER))
+    p = Paragraph(
+        text,
+        ParagraphStyle(
+            name="oeb",
+            fontSize=12,
+            textColor=colors.HexColor("#1400ff"),
+            alignment=TA_CENTER,
+        ),
+    )
     p.wrap(page_width, bottom_10_percent_height)
     p.drawOn(canvas, 0, text_y - 15)
 
@@ -386,19 +405,22 @@ def deleteBadgeRequest(req, requestId):
         return JsonResponse(
             {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
         )
-    
+
     try:
         badge = RequestedBadge.objects.get(entity_id=requestId)
 
-        if (not is_badgeclass_staff(req.user, badge.badgeclass)):
-            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+        if not is_badgeclass_staff(req.user, badge.badgeclass):
+            return Response(
+                {"detail": "Permission denied."}, status=status.HTTP_403_FORBIDDEN
+            )
 
     except RequestedBadge.DoesNotExist:
-        return JsonResponse({'error': 'Invalid requestId'}, status=400)            
+        return JsonResponse({"error": "Invalid requestId"}, status=400)
 
     badge.delete()
 
     return JsonResponse({"message": "Badge request deleted"}, status=status.HTTP_200_OK)
+
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -407,29 +429,38 @@ def badgeRequestsByBadgeClass(req, badgeSlug):
         return JsonResponse(
             {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
         )
-    
+
     requestedBadgesCount = 0
     try:
         badgeClass = BadgeClass.objects.get(entity_id=badgeSlug)
     except BadgeClass.DoesNotExist:
-        return JsonResponse({'error': 'Invalid badgeSlug'}, status=400)
+        return JsonResponse({"error": "Invalid badgeSlug"}, status=400)
 
-    if (not is_badgeclass_staff(req.user, badgeClass)):
-        return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
-    
+    if not is_badgeclass_staff(req.user, badgeClass):
+        return Response(
+            {"detail": "Permission denied."}, status=status.HTTP_403_FORBIDDEN
+        )
+
     requestedBadgesCount = RequestedBadge.objects.filter(badgeclass=badgeClass).count()
-    return JsonResponse({"request_count": requestedBadgesCount}, status=status.HTTP_200_OK)
+    return JsonResponse(
+        {"request_count": requestedBadgesCount}, status=status.HTTP_200_OK
+    )
+
 
 def create_page(response, page_content, badgeImage, issuerImage):
-    doc = SimpleDocTemplate(response,pagesize=A4)
-    
+    doc = SimpleDocTemplate(response, pagesize=A4)
+
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name='Justify', alignment=TA_JUSTIFY))
-    
+    styles.add(ParagraphStyle(name="Justify", alignment=TA_JUSTIFY))
+
     Story = []
     Story.extend(page_content)
 
-    doc.build(Story, onFirstPage=lambda canvas, doc: PageSetup(canvas, doc, badgeImage, issuerImage))
+    doc.build(
+        Story,
+        onFirstPage=lambda canvas, doc: PageSetup(canvas, doc, badgeImage, issuerImage),
+    )
+
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -440,19 +471,21 @@ def downloadQrCode(request, *args, **kwargs):
         )
     badgeSlug = kwargs.get("badgeSlug")
 
-    try: 
+    try:
         badge = BadgeClass.objects.get(entity_id=badgeSlug)
     except BadgeClass.DoesNotExist:
-        return JsonResponse({'error': 'Invalid badgeSlug'}, status=400)
-    
-    if (not is_badgeclass_staff(request.user, badge)):
-            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+        return JsonResponse({"error": "Invalid badgeSlug"}, status=400)
+
+    if not is_badgeclass_staff(request.user, badge):
+        return Response(
+            {"detail": "Permission denied."}, status=status.HTTP_403_FORBIDDEN
+        )
 
     image_data = request.data.get("image")
 
     image_data = image_data.split(",")[1]  # Remove the data URL prefix
     image_bytes = base64.b64decode(image_data)
-    
+
     image_stream = BytesIO(image_bytes)
 
     response = HttpResponse(content_type="application/pdf")
@@ -460,27 +493,36 @@ def downloadQrCode(request, *args, **kwargs):
     Story = []
 
     Story.append(Spacer(1, 100))
-    
-    badgeTitle_style = ParagraphStyle(name='BadgeTitle', fontSize=24, leading=30, textColor='#492E98', alignment=TA_CENTER)
 
+    badgeTitle_style = ParagraphStyle(
+        name="BadgeTitle",
+        fontSize=24,
+        leading=30,
+        textColor=colors.HexColor("#492E98"),
+        alignment=TA_CENTER,
+    )
 
     badgeTitle = f"<strong>{badge.name}</strong>"
     Story.append(Paragraph(badgeTitle, badgeTitle_style))
     Story.append(Spacer(1, 35))
 
-    image = Image(image_stream, width=250, height=250) 
+    image = Image(image_stream, width=250, height=250)
     table_data = [[image]]
-    table = Table(table_data, colWidths=250, rowHeights=250, cornerRadii=[15,15,15,15])
+    table = Table(
+        table_data, colWidths=250, rowHeights=250, cornerRadii=[15, 15, 15, 15]
+    )
 
-    table.setStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),  
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'), 
-        ('GRID', (0, 0), (-1, -1), 3, '#492E98'), 
-        ('TOPPADDING', (0, 0), (-1, -1), 0),  # Remove paddings
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),  
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),  
-        ('RIGHTPADDING', (0, 0), (-1, -1), 0)  
-    ])
+    table.setStyle(
+        [
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("GRID", (0, 0), (-1, -1), 3, "#492E98"),
+            ("TOPPADDING", (0, 0), (-1, -1), 0),  # Remove paddings
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ]
+    )
     Story.append(table)
     Story.append(Spacer(1, 125))
 
@@ -490,7 +532,7 @@ def downloadQrCode(request, *args, **kwargs):
 
     # issued_by_style = ParagraphStyle(name='Issued_By', fontSize=18, textColor='#492E98', alignment=TA_CENTER)
     # text = f"<strong>- Vergeben von: {badge.issuer.name}</strong> -"
-    # Story.append(Paragraph(text, issued_by_style))   
+    # Story.append(Paragraph(text, issued_by_style))
 
     create_page(response, Story, badgeImage, issuerImage)
 
@@ -511,6 +553,7 @@ def extractErrorMessage500(response: Response):
 def nounproject(req, searchterm, page):
     if req.method == "GET":
         attempt_num = 0  # keep track of how many times we've retried
+        response = None
         while attempt_num < 4:
             auth = OAuth1(
                 getattr(settings, "NOUNPROJECT_API_KEY"),
@@ -538,8 +581,10 @@ def nounproject(req, searchterm, page):
                 time.sleep(5)  # Wait for 5 seconds before re-trying
 
         return JsonResponse(
-            {"error": f"Request failed with status code {response.status_code}"},
-            status=response.status_code,
+            {
+                "error": f"Request failed with status code {response.status_code if response else 500}"
+            },
+            status=response.status_code if response else 500,
         )
     else:
         return JsonResponse(
@@ -620,6 +665,8 @@ class LegacyLoginAndObtainAuthToken(ObtainAuthToken):
         response = super(LegacyLoginAndObtainAuthToken, self).post(
             request, *args, **kwargs
         )
+        if not response.data:
+            response.data = {}
         response.data["warning"] = (
             "This method of obtaining a token is deprecated and will be removed. "
             "This request has been logged."

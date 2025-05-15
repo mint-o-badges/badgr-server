@@ -8,9 +8,8 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mainsite', '0021_applicationinfo_badge_connect'),
-        ('mainsite', '0022_badgrapp_is_default'),
+        ("mainsite", "0021_applicationinfo_badge_connect"),
+        ("mainsite", "0022_badgrapp_is_default"),
     ]
 
-    operations = [
-    ]
+    operations = []

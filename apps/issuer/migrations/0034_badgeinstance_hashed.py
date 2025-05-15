@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0033_auto_20171002_1413'),
+        ("issuer", "0033_auto_20171002_1413"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='badgeinstance',
-            name='hashed',
+            model_name="badgeinstance",
+            name="hashed",
             field=models.BooleanField(default=True),
         ),
     ]

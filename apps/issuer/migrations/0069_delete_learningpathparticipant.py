@@ -6,11 +6,11 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0068_issuer_intendeduseverified'),
+        ("issuer", "0068_issuer_intendeduseverified"),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='LearningPathParticipant',
+            name="LearningPathParticipant",
         ),
     ]

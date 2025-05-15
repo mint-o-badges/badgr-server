@@ -1,24 +1,22 @@
 # encoding: utf-8
 
 
+import json
+import logging
 import uuid
 from collections import MutableMapping
 
 import openbadges
+import requests_cache
 from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.db import transaction, IntegrityError
-
-import requests_cache
+from django.db import IntegrityError, transaction
+from issuer.models import BadgeClass, BadgeInstance, Issuer
+from issuer.utils import OBI_VERSION_CONTEXT_IRIS
 from requests_cache.backends import BaseCache
 
-import logging
-from issuer.models import Issuer, BadgeClass, BadgeInstance
-from issuer.utils import OBI_VERSION_CONTEXT_IRIS
-from mainsite.utils import first_node_match
-import json
-
+from .models import ImportedBadgeAssertion, ImportedBadgeAssertionExtension
 
 logger = logging.getLogger(__name__)
 
@@ -141,13 +139,6 @@ class DjangoCacheRequestsCacheBackend(BaseCache):
         self.keys_map = DjangoCacheDict(namespace, "urls")
 
 
-import json
-from django.core.exceptions import ValidationError as DjangoValidationError
-from rest_framework import serializers
-from rest_framework.exceptions import ValidationError as RestframeworkValidationError
-import openbadges
-from .models import ImportedBadgeAssertion, ImportedBadgeAssertionExtension
-
 def first_node_match(graph, criteria):
     """Find the first node in a graph that matches all criteria."""
     for node in graph:
@@ -230,7 +221,6 @@ class ImportedBadgeHelper:
             raise ValidationError("Must provide only 1 of: url, imagefile or assertion")
         query = query[0]
 
-
         # Prepare recipient profile for verification
         if user:
             emails = [d.email for d in user.email_items.all()]
@@ -311,14 +301,13 @@ class ImportedBadgeHelper:
                 ]
             )
 
-
         original_json = response.get("input").get("original_json", {})
 
         recipient_profile = report.get("recipientProfile", {})
-        if not recipient_profile and user: 
+        if not recipient_profile and user:
             recipient_type = "email"
             recipient_identifier = user.primary_email
-        else:    
+        else:
             recipient_type, recipient_identifier = list(recipient_profile.items())[0]
 
         existing_badge = ImportedBadgeAssertion.objects.filter(
@@ -363,12 +352,12 @@ class ImportedBadgeHelper:
 
             for extension_key, extension_data in badgeclass_data.items():
 
-                if extension_key.startswith('extensions:'):
-                    
+                if extension_key.startswith("extensions:"):
+
                     extension = ImportedBadgeAssertionExtension(
                         importedBadge=imported_badge,
                         name=extension_key,
-                        original_json=json.dumps(extension_data)
+                        original_json=json.dumps(extension_data),
                     )
                     extension.save()
 

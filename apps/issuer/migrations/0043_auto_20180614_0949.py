@@ -8,17 +8,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0042_auto_20180220_1150'),
+        ("issuer", "0042_auto_20180220_1150"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='badgeinstance',
-            name='recipient_identifier',
+            model_name="badgeinstance",
+            name="recipient_identifier",
             field=models.EmailField(db_index=True, max_length=768),
         ),
         migrations.AlterIndexTogether(
-            name='badgeinstance',
-            index_together=set([('recipient_identifier', 'badgeclass', 'revoked')]),
+            name="badgeinstance",
+            index_together=set([("recipient_identifier", "badgeclass", "revoked")]),
         ),
     ]

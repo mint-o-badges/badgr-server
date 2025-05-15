@@ -6,18 +6,34 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('backpack', '0012_auto_20200106_1621'),
+        ("backpack", "0012_auto_20200106_1621"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='backpackbadgeshare',
-            name='provider',
-            field=models.CharField(choices=[('facebook', 'Facebook'), ('linkedin', 'LinkedIn'), ('twitter', 'Twitter'), ('pinterest', 'Pinterest')], max_length=254),
+            model_name="backpackbadgeshare",
+            name="provider",
+            field=models.CharField(
+                choices=[
+                    ("facebook", "Facebook"),
+                    ("linkedin", "LinkedIn"),
+                    ("twitter", "Twitter"),
+                    ("pinterest", "Pinterest"),
+                ],
+                max_length=254,
+            ),
         ),
         migrations.AlterField(
-            model_name='backpackcollectionshare',
-            name='provider',
-            field=models.CharField(choices=[('facebook', 'Facebook'), ('linkedin', 'LinkedIn'), ('twitter', 'Twitter'), ('pinterest', 'Pinterest')], max_length=254),
+            model_name="backpackcollectionshare",
+            name="provider",
+            field=models.CharField(
+                choices=[
+                    ("facebook", "Facebook"),
+                    ("linkedin", "LinkedIn"),
+                    ("twitter", "Twitter"),
+                    ("pinterest", "Pinterest"),
+                ],
+                max_length=254,
+            ),
         ),
     ]

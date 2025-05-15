@@ -4,14 +4,16 @@
 
 from django.db import migrations
 
+
 def nullify_blanks(apps, schema_editor):
-    Issuer = apps.get_model('issuer', 'Issuer')
-    Issuer.objects.filter(source_url='').update(source_url=None)
+    Issuer = apps.get_model("issuer", "Issuer")
+    Issuer.objects.filter(source_url="").update(source_url=None)
+
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0047_badgeinstance_user'),
+        ("issuer", "0047_badgeinstance_user"),
     ]
 
     operations = [

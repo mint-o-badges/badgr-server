@@ -8,18 +8,17 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('oauth2_provider', '0001_initial'),
-        ('badgeuser', '0013_auto_20170725_1305'),
+        ("oauth2_provider", "0001_initial"),
+        ("badgeuser", "0013_auto_20170725_1305"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='BadgrAccessToken',
-            fields=[
-            ],
+            name="BadgrAccessToken",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('oauth2_provider.accesstoken',),
+            bases=("oauth2_provider.accesstoken",),
         ),
     ]

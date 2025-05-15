@@ -2,36 +2,31 @@
 Utility functions and constants that might be used across the project.
 """
 
-import hmac
-import io
 import base64
 import datetime
 import hashlib
+import hmac
+import io
 import json
-import puremagic
 import math
 import re
-import requests
-import urllib.request
-import urllib.parse
-import urllib.error
 import urllib.parse
 import uuid
+from xml.etree import cElementTree as ET
 
+import puremagic
+import requests
 from django.apps import apps
 from django.conf import settings
 from django.core.cache import cache
 from django.core.files.storage import DefaultStorage
-from rest_framework.exceptions import UnsupportedMediaType
-from django.urls import get_callable
 from django.http import HttpResponse
+from django.urls import get_callable
 from django.utils import timezone
-
 from PIL import Image
-
+from rest_framework.exceptions import UnsupportedMediaType
 from rest_framework.status import HTTP_429_TOO_MANY_REQUESTS
 
-from xml.etree import cElementTree as ET
 
 class ObjectView(object):
     """
@@ -517,7 +512,8 @@ def convert_svg_to_png(svg_string, height, width):
 
 
 """
-Captcha Utilities (Inspired by: https://github.com/wearetechnative/terraform-aws-html-form-action/blob/main/lambda_src/html_form_action.py)
+Captcha Utilities (Inspired by:
+https://github.com/wearetechnative/terraform-aws-html-form-action/blob/main/lambda_src/html_form_action.py)
 """
 
 
@@ -537,75 +533,81 @@ def createHmac(secret_key, challenge):
     )
     return hmac_object.hexdigest()
 
+
 def validate_altcha(captcha, request=None):
     from mainsite.models import AltchaChallenge
 
     hmac_secret = getattr(settings, "ALTCHA_SECRET")
     data = json.loads(base64.b64decode(captcha))
-    
+
     alg_ok = data["algorithm"] == "SHA-256"
     challenge_ok = data["challenge"] == createHash(data["salt"], data["number"])
     signature_ok = data["signature"] == createHmac(hmac_secret, data["challenge"])
-    
+
     if not (alg_ok and challenge_ok and signature_ok):
         return False
-    
+
     try:
         challenge = AltchaChallenge.objects.get(challenge=data["challenge"])
-        
+
         if challenge.used:
             # prevent replay attacks
             return False
-            
+
         challenge.used = True
         challenge.used_at = timezone.now()
-        
-        if request and hasattr(request, 'META'):
+
+        if request and hasattr(request, "META"):
             challenge.solved_by_ip = client_ip_from_request(request)
-        
+
         challenge.save()
         return True
-        
+
     except AltchaChallenge.DoesNotExist:
         return False
 
+
 def verifyIssuerAutomatically(url, email):
-    emailDomain = email.split('@')[1].lower()
+    emailDomain = email.split("@")[1].lower()
     urlDomain = extract_domain(url)
     return urlDomain == emailDomain
 
+
 def extract_domain(url):
-  # Define a regular expression pattern for extracting the domain
-  pattern = r"(https?://)?(www\d?\.)?(?P<domain>[\w\.-]+\.\w+)(/\S*)?"
-  # Use re.match to search for the pattern at the beginning of the URL
-  match = re.match(pattern, url)
-  # Check if a match is found
-  if match:
-  # Extract the domain from the named group "domain" and convert it to lowercase
-    domain = match.group("domain")
-    return domain.lower()
-  else:
-    return None
+    # Define a regular expression pattern for extracting the domain
+    pattern = r"(https?://)?(www\d?\.)?(?P<domain>[\w\.-]+\.\w+)(/\S*)?"
+    # Use re.match to search for the pattern at the beginning of the URL
+    match = re.match(pattern, url)
+    # Check if a match is found
+    if match:
+        # Extract the domain from the named group "domain" and convert it to lowercase
+        domain = match.group("domain")
+        return domain.lower()
+    else:
+        return None
+
 
 def get_name(badgeinstance):
     """Evaluates the name to be displayed for the recipient of the badge.
-    
+
     This is either the name that was specified in the award process of the badge
     (which is by now mandatory) or, if none was specified, the full profile of the
     recipient. If no name was specified and the profile can't be found, we return `None`.
     """
 
-    from issuer.models import BadgeInstance
     from badgeuser.models import BadgeUser
-    recipientProfile = badgeinstance.extension_items.get('extensions:recipientProfile', {})
-    name = recipientProfile.get('name', None)
+
+    recipientProfile = badgeinstance.extension_items.get(
+        "extensions:recipientProfile", {}
+    )
+    name = recipientProfile.get("name", None)
     if name:
         return name
-    
-    try: 
-        badgeuser = BadgeUser.objects.get(email=badgeinstance.recipient_identifier)  
+
+    try:
+        badgeuser = BadgeUser.objects.get(email=badgeinstance.recipient_identifier)
         first_name = badgeuser.first_name.capitalize()
         last_name = badgeuser.last_name.capitalize()
         return f"{first_name} {last_name}"
-    except BadgeUser.DoesNotExist: 
-        return None        
+    except BadgeUser.DoesNotExist:
+        return None

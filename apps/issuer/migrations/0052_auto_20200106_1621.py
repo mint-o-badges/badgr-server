@@ -8,23 +8,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0051_auto_20190826_1604'),
+        ("issuer", "0051_auto_20190826_1604"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='badgeclass',
-            name='updated_at',
+            model_name="badgeclass",
+            name="updated_at",
             field=models.DateTimeField(auto_now=True, db_index=True),
         ),
         migrations.AlterField(
-            model_name='badgeinstance',
-            name='updated_at',
+            model_name="badgeinstance",
+            name="updated_at",
             field=models.DateTimeField(auto_now=True, db_index=True),
         ),
         migrations.AlterField(
-            model_name='issuer',
-            name='updated_at',
+            model_name="issuer",
+            name="updated_at",
             field=models.DateTimeField(auto_now=True, db_index=True),
         ),
     ]

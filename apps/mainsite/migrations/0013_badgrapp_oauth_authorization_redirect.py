@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mainsite', '0012_badgrapp_public_pages_redirect'),
+        ("mainsite", "0012_badgrapp_public_pages_redirect"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='badgrapp',
-            name='oauth_authorization_redirect',
+            model_name="badgrapp",
+            name="oauth_authorization_redirect",
             field=models.URLField(null=True),
         ),
     ]

@@ -6,7 +6,9 @@ from django.db import migrations
 
 
 def populate_backpackcollectionbadgeinstance_user(apps, schema_editor):
-    BackpackCollectionBadgeInstance = apps.get_model('backpack', 'BackpackCollectionBadgeInstance')
+    BackpackCollectionBadgeInstance = apps.get_model(
+        "backpack", "BackpackCollectionBadgeInstance"
+    )
     for collect in BackpackCollectionBadgeInstance.objects.all():
         collect.badgeuser_id = collect.collection.created_by_id
         collect.save()
@@ -19,9 +21,11 @@ def noop(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('backpack', '0006_backpackcollectionbadgeinstance_badgeuser'),
+        ("backpack", "0006_backpackcollectionbadgeinstance_badgeuser"),
     ]
 
     operations = [
-        migrations.RunPython(populate_backpackcollectionbadgeinstance_user, reverse_code=noop)
+        migrations.RunPython(
+            populate_backpackcollectionbadgeinstance_user, reverse_code=noop
+        )
     ]

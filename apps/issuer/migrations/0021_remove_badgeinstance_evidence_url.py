@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 
 
-from django.db import models, migrations
+from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0020_auto_20170420_0811'),
+        ("issuer", "0020_auto_20170420_0811"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='badgeinstance',
-            name='evidence_url',
+            model_name="badgeinstance",
+            name="evidence_url",
         ),
     ]

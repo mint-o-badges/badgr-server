@@ -10,12 +10,12 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.OAUTH2_PROVIDER_ACCESS_TOKEN_MODEL),
-        ('mainsite', '0018_auto_20190723_1532'),
+        ("mainsite", "0018_auto_20190723_1532"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='accesstokenscope',
-            unique_together=set([('token', 'scope')]),
+            name="accesstokenscope",
+            unique_together=set([("token", "scope")]),
         ),
     ]

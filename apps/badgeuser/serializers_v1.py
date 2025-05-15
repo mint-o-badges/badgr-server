@@ -1,9 +1,11 @@
-from django.contrib.auth.hashers import is_password_usable
-from rest_framework import serializers
 from collections import OrderedDict
+
+from django.contrib.auth.hashers import is_password_usable
 from mainsite.serializers import StripTagsCharField
-from mainsite.validators import PasswordValidator
 from mainsite.utils import validate_altcha
+from mainsite.validators import PasswordValidator
+from rest_framework import serializers
+
 from .models import BadgeUser, CachedEmailAddress, TermsVersion
 from .utils import notify_on_password_change
 
@@ -127,7 +129,9 @@ class BadgeUserProfileSerializerV1(serializers.Serializer):
                 )
 
         if "agreed_terms_version" in validated_data:
-            user.termsagreement_set.get_or_create(terms_version=validated_data.get("agreed_terms_version"))
+            user.termsagreement_set.get_or_create(
+                terms_version=validated_data.get("agreed_terms_version")
+            )
 
         if "marketing_opt_in" in validated_data:
             user.marketing_opt_in = validated_data.get("marketing_opt_in")

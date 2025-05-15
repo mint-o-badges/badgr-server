@@ -8,18 +8,32 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('backpack', '0007_auto_20171027_0837'),
+        ("backpack", "0007_auto_20171027_0837"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='backpackbadgeshare',
-            name='provider',
-            field=models.CharField(choices=[(b'twitter', b'Twitter'), (b'facebook', b'Facebook'), (b'linkedin', b'LinkedIn')], max_length=254),
+            model_name="backpackbadgeshare",
+            name="provider",
+            field=models.CharField(
+                choices=[
+                    (b"twitter", b"Twitter"),
+                    (b"facebook", b"Facebook"),
+                    (b"linkedin", b"LinkedIn"),
+                ],
+                max_length=254,
+            ),
         ),
         migrations.AlterField(
-            model_name='backpackcollectionshare',
-            name='provider',
-            field=models.CharField(choices=[(b'twitter', b'Twitter'), (b'facebook', b'Facebook'), (b'linkedin', b'LinkedIn')], max_length=254),
+            model_name="backpackcollectionshare",
+            name="provider",
+            field=models.CharField(
+                choices=[
+                    (b"twitter", b"Twitter"),
+                    (b"facebook", b"Facebook"),
+                    (b"linkedin", b"LinkedIn"),
+                ],
+                max_length=254,
+            ),
         ),
     ]

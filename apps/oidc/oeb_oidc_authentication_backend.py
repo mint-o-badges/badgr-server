@@ -1,13 +1,13 @@
 import logging
+
+from badgeuser.utils import generate_badgr_username
+from django.core.exceptions import SuspiciousOperation
+from django.urls import reverse
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 from mozilla_django_oidc.utils import absolutify
 
-from django.core.exceptions import SuspiciousOperation
-from django.urls import reverse
-
-from badgeuser.utils import generate_badgr_username
-
 LOGGER = logging.getLogger(__name__)
+
 
 # Since we only get the subject identifier from meinBildungsraum,
 # we don't necessarily know the E-Mail address of the user.
@@ -16,15 +16,17 @@ LOGGER = logging.getLogger(__name__)
 # The username is however not updated when the E-Mail address is
 # updated.
 def convertSubToMail(sub: str) -> str:
-    return f'{sub}@unknown.unknown'
+    return f"{sub}@unknown.unknown"
+
 
 def convertSubToUsername(sub: str) -> str:
     mail = convertSubToMail(sub)
     return generate_badgr_username(mail)
 
+
 class OebOIDCAuthenticationBackend(OIDCAuthenticationBackend):
     def filter_users_by_claims(self, claims):
-        sub = claims.get('sub')
+        sub = claims.get("sub")
         if not sub:
             return self.UserModel.objects.none()
 
@@ -34,24 +36,29 @@ class OebOIDCAuthenticationBackend(OIDCAuthenticationBackend):
     def create_user(self, claims):
         user = super(OebOIDCAuthenticationBackend, self).create_user(claims)
 
-        user.first_name = 'unknown'
-        user.last_name = 'unknown'
-        user.email = convertSubToMail(claims.get('sub'))
-        user.set_email_items([{
-            'primary': True,
-            # Set this to verified since this is required for the user to be able to login.
-            # Note that this kinda breaches our idea of always having a verified mail;
-            # Since the mail actually only is a dummy mail. TODO: Handle this case
-            'verified': True,
-            'email': user.email,
-        }], allow_verify=True)
-        if user.username == 'unknown':
+        user.first_name = "unknown"
+        user.last_name = "unknown"
+        user.email = convertSubToMail(claims.get("sub"))
+        user.set_email_items(
+            [
+                {
+                    "primary": True,
+                    # Set this to verified since this is required for the user to be able to login.
+                    # Note that this kinda breaches our idea of always having a verified mail;
+                    # Since the mail actually only is a dummy mail. TODO: Handle this case
+                    "verified": True,
+                    "email": user.email,
+                }
+            ],
+            allow_verify=True,
+        )
+        if user.username == "unknown":
             # The username is set to unknown if the email was None
-            user.username = convertSubToUsername(claims.get('sub'))
+            user.username = convertSubToUsername(claims.get("sub"))
         user.save()
 
         return user
-    
+
     def update_user(self, user, claims):
         # Don't update based on data from OIDC
         return user
@@ -62,7 +69,6 @@ class OebOIDCAuthenticationBackend(OIDCAuthenticationBackend):
         if "openid" in scopes.split():
             return "sub" in claims
         return super().verify_claims(claims)
-
 
     def authenticate(self, request, **kwargs):
         """Authenticates a user based on the OIDC code flow.
@@ -128,6 +134,3 @@ class OebOIDCAuthenticationBackend(OIDCAuthenticationBackend):
         session = self.request.session
         if self.get_settings("OIDC_STORE_REFRESH_TOKEN", True):
             session["oidc_refresh_token"] = refresh_token
-
-
-

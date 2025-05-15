@@ -1,24 +1,24 @@
 # -*- coding: utf-8 -*-
 
 
-from django.db import models, migrations
+from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0002_auto_20150409_1200'),
+        ("issuer", "0002_auto_20150409_1200"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='badgeclass',
-            options={'verbose_name_plural': 'Badge classes'},
+            name="badgeclass",
+            options={"verbose_name_plural": "Badge classes"},
         ),
         migrations.AlterField(
-            model_name='badgeinstance',
-            name='image',
-            field=models.ImageField(upload_to=b'issued', blank=True),
+            model_name="badgeinstance",
+            name="image",
+            field=models.ImageField(upload_to=b"issued", blank=True),
             preserve_default=True,
         ),
     ]

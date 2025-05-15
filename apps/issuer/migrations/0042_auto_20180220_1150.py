@@ -8,13 +8,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0041_badgeinstancebakedimage'),
+        ("issuer", "0041_badgeinstancebakedimage"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='badgeinstanceevidence',
-            name='evidence_url',
-            field=models.CharField(blank=True, default=None, max_length=2083, null=True),
+            model_name="badgeinstanceevidence",
+            name="evidence_url",
+            field=models.CharField(
+                blank=True, default=None, max_length=2083, null=True
+            ),
         ),
     ]

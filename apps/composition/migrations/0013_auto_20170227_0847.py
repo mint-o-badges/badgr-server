@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-from django.db import models, migrations
+from django.db import migrations, models
 
 
 def noop(apps, schema_editor):
@@ -9,14 +9,17 @@ def noop(apps, schema_editor):
 
 
 def migrate_localbadgeinstance_to_use_issuer(apps, schema_editor):
-    LocalBadgeInstance = apps.get_model('composition', 'LocalBadgeInstance')
-    BadgeClass = apps.get_model('issuer', 'BadgeClass')
+    LocalBadgeInstance = apps.get_model("composition", "LocalBadgeInstance")
+    BadgeClass = apps.get_model("issuer", "BadgeClass")
     for local_badge_instance in LocalBadgeInstance.objects.all():
         try:
-            source_url = getattr(local_badge_instance.local_badgeclass, 'identifier', None)
+            source_url = getattr(
+                local_badge_instance.local_badgeclass, "identifier", None
+            )
 
-            badgeclass = BadgeClass.objects.get(source='legacy_local_badgeclass',
-                                                source_url=source_url)
+            badgeclass = BadgeClass.objects.get(
+                source="legacy_local_badgeclass", source_url=source_url
+            )
             local_badge_instance.issuer_badgeclass = badgeclass
             local_badge_instance.save()
         except BadgeClass.DoesNotExist:
@@ -28,10 +31,12 @@ def migrate_localbadgeinstance_to_use_issuer(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('composition', '0012_localbadgeinstance_badgeclass'),
-        ('issuer', '0017_auto_20170227_1334'),
+        ("composition", "0012_localbadgeinstance_badgeclass"),
+        ("issuer", "0017_auto_20170227_1334"),
     ]
 
     operations = [
-        migrations.RunPython(migrate_localbadgeinstance_to_use_issuer, reverse_code=noop),
+        migrations.RunPython(
+            migrate_localbadgeinstance_to_use_issuer, reverse_code=noop
+        ),
     ]

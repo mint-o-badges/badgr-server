@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0053_auto_20200608_0452'),
+        ("issuer", "0053_auto_20200608_0452"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='badgeinstance',
-            name='revoked',
+            model_name="badgeinstance",
+            name="revoked",
             field=models.BooleanField(db_index=True, default=False),
         ),
     ]

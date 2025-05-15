@@ -8,28 +8,44 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('backpack', '0008_auto_20171204_1236'),
+        ("backpack", "0008_auto_20171204_1236"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='backpackbadgeshare',
-            name='source',
-            field=models.CharField(default='unknown', max_length=254),
+            model_name="backpackbadgeshare",
+            name="source",
+            field=models.CharField(default="unknown", max_length=254),
         ),
         migrations.AddField(
-            model_name='backpackcollectionshare',
-            name='source',
-            field=models.CharField(default='unknown', max_length=254),
+            model_name="backpackcollectionshare",
+            name="source",
+            field=models.CharField(default="unknown", max_length=254),
         ),
         migrations.AlterField(
-            model_name='backpackbadgeshare',
-            name='provider',
-            field=models.CharField(choices=[(b'portfolium', b'Portfolium'), (b'twitter', b'Twitter'), (b'facebook', b'Facebook'), (b'linkedin', b'LinkedIn')], max_length=254),
+            model_name="backpackbadgeshare",
+            name="provider",
+            field=models.CharField(
+                choices=[
+                    (b"portfolium", b"Portfolium"),
+                    (b"twitter", b"Twitter"),
+                    (b"facebook", b"Facebook"),
+                    (b"linkedin", b"LinkedIn"),
+                ],
+                max_length=254,
+            ),
         ),
         migrations.AlterField(
-            model_name='backpackcollectionshare',
-            name='provider',
-            field=models.CharField(choices=[(b'portfolium', b'Portfolium'), (b'twitter', b'Twitter'), (b'facebook', b'Facebook'), (b'linkedin', b'LinkedIn')], max_length=254),
+            model_name="backpackcollectionshare",
+            name="provider",
+            field=models.CharField(
+                choices=[
+                    (b"portfolium", b"Portfolium"),
+                    (b"twitter", b"Twitter"),
+                    (b"facebook", b"Facebook"),
+                    (b"linkedin", b"LinkedIn"),
+                ],
+                max_length=254,
+            ),
         ),
     ]

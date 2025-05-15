@@ -4,8 +4,7 @@
 from collections import OrderedDict
 
 from django.core.management import BaseCommand
-
-from issuer.models import Issuer, BadgeClass, BadgeInstance
+from issuer.models import BadgeClass, BadgeInstance, Issuer
 
 
 def sorted_dict(d):
@@ -15,7 +14,7 @@ def sorted_dict(d):
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
-        self.verbosity = int(options.get('verbosity', 1))
+        self.verbosity = int(options.get("verbosity", 1))
         self.check_jsons(Issuer)
         self.check_jsons(BadgeClass)
         self.check_jsons(BadgeInstance)
@@ -28,12 +27,18 @@ class Command(BaseCommand):
             orig_json = obj.old_json
             if new_json != orig_json:
                 if self.verbosity > 1:
-                    self.stdout.write("  Jsons don't match! pk={}\n  old: {}\n  new: {}\n\n".format(
-                        obj.pk, sorted_dict(orig_json), sorted_dict(new_json)))
+                    self.stdout.write(
+                        "  Jsons don't match! pk={}\n  old: {}\n  new: {}\n\n".format(
+                            obj.pk, sorted_dict(orig_json), sorted_dict(new_json)
+                        )
+                    )
                 mismatch += 1
             else:
                 correct += 1
 
         if self.verbosity > 0:
-            self.stdout.write("Found {} {}s. {} correct. {} mismatch".format(
-                mismatch + correct, model_cls.__name__, correct, mismatch))
+            self.stdout.write(
+                "Found {} {}s. {} correct. {} mismatch".format(
+                    mismatch + correct, model_cls.__name__, correct, mismatch
+                )
+            )

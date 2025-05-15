@@ -1,15 +1,13 @@
 import io
 
-from PIL import Image
+from defusedxml.cElementTree import parse as safe_parse
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db import models
+from mainsite.utils import hash_for_image, scrubSvgElementTree, verify_svg
+from PIL import Image
 from resizeimage.resizeimage import resize_contain
-
-from defusedxml.cElementTree import parse as safe_parse
-
-from mainsite.utils import verify_svg, scrubSvgElementTree, hash_for_image
 
 
 def _decompression_bomb_check(image, max_pixels=Image.MAX_IMAGE_PIXELS):
@@ -19,7 +17,7 @@ def _decompression_bomb_check(image, max_pixels=Image.MAX_IMAGE_PIXELS):
 
 class HashUploadedImage(models.Model):
     # Adds new django field
-    image_hash = models.CharField(max_length=72, blank=True, default='')
+    image_hash = models.CharField(max_length=72, blank=True, default="")
 
     class Meta:
         abstract = True
@@ -53,7 +51,9 @@ class HashUploadedImage(models.Model):
 class PngImagePreview(object):
     def save(self, *args, **kwargs):
         # Check that conversions are enabled and that an image was uploaded.
-        if getattr(settings, 'SVG_HTTP_CONVERSION_ENABLED', False) and kwargs.get('force_resize'):
+        if getattr(settings, "SVG_HTTP_CONVERSION_ENABLED", False) and kwargs.get(
+            "force_resize"
+        ):
             # Set this to None to ensure that we make a updated preview image later in post_save.
             self.image_preview = None
 
@@ -71,25 +71,31 @@ class ResizeUploadedImage(object):
             except IOError:
                 return super(ResizeUploadedImage, self).save(*args, **kwargs)
 
-            if image.format == 'PNG':
-                max_square = getattr(settings, 'IMAGE_FIELD_MAX_PX', 400)
+            if image.format == "PNG":
+                max_square = getattr(settings, "IMAGE_FIELD_MAX_PX", 400)
 
-                smaller_than_canvas = \
-                    (image.width < max_square and image.height < max_square)
+                smaller_than_canvas = (
+                    image.width < max_square and image.height < max_square
+                )
 
                 if smaller_than_canvas:
-                    max_square = (image.width
-                                  if image.width > image.height
-                                  else image.height)
+                    max_square = (
+                        image.width if image.width > image.height else image.height
+                    )
 
                 new_image = resize_contain(image, (max_square, max_square))
 
                 byte_string = io.BytesIO()
-                new_image.save(byte_string, 'PNG')
+                new_image.save(byte_string, "PNG")
 
-                self.image = InMemoryUploadedFile(byte_string, None,
-                                                  self.image.name, 'image/png',
-                                                  byte_string.tell(), None)
+                self.image = InMemoryUploadedFile(
+                    byte_string,
+                    None,
+                    self.image.name,
+                    "image/png",
+                    byte_string.tell(),
+                    None,
+                )
 
         return super(ResizeUploadedImage, self).save(*args, **kwargs)
 
@@ -106,5 +112,7 @@ class ScrubUploadedSvgImage(object):
             buf = io.BytesIO()
             tree.write(buf)
 
-            self.image = InMemoryUploadedFile(buf, 'image', self.image.name, 'image/svg+xml', buf.tell(), 'utf8')
+            self.image = InMemoryUploadedFile(
+                buf, "image", self.image.name, "image/svg+xml", buf.tell(), "utf8"
+            )
         return super(ScrubUploadedSvgImage, self).save(*args, **kwargs)

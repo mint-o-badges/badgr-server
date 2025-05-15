@@ -6,28 +6,39 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('badgrsocialauth', '0003_saml2configuration_use_signed_authn_request'),
+        ("badgrsocialauth", "0003_saml2configuration_use_signed_authn_request"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='saml2configuration',
-            name='cached_metadata',
-            field=models.TextField(blank=True, default='', help_text='If the XML is provided here we avoid making a network request to the metadata_conf_url.'),
+            model_name="saml2configuration",
+            name="cached_metadata",
+            field=models.TextField(
+                blank=True,
+                default="",
+                help_text="If the XML is provided here we avoid making a network request to the metadata_conf_url.",
+            ),
         ),
         migrations.AlterField(
-            model_name='saml2configuration',
-            name='metadata_conf_url',
-            field=models.URLField(help_text='The URL for the XML configuration for SAML2 flows. Get this from the Identity Provider Application.', verbose_name='Metadata Configuration URL'),
+            model_name="saml2configuration",
+            name="metadata_conf_url",
+            field=models.URLField(
+                help_text="The URL for the XML configuration for SAML2 flows. Get this from the Identity Provider Application.",
+                verbose_name="Metadata Configuration URL",
+            ),
         ),
         migrations.AlterField(
-            model_name='saml2configuration',
-            name='slug',
-            field=models.CharField(help_text='This slug must be prefixed with saml2.', max_length=32, unique=True),
+            model_name="saml2configuration",
+            name="slug",
+            field=models.CharField(
+                help_text="This slug must be prefixed with saml2.",
+                max_length=32,
+                unique=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='saml2configuration',
-            name='use_signed_authn_request',
+            model_name="saml2configuration",
+            name="use_signed_authn_request",
             field=models.BooleanField(default=False),
         ),
     ]

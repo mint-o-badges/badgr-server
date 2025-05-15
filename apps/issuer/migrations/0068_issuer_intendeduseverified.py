@@ -6,13 +6,16 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0067_learningpath_learningpathbadge_learningpathparticipant_learningpathtag_requestedlearningpath'),
+        (
+            "issuer",
+            "0067_learningpath_learningpathbadge_learningpathparticipant_learningpathtag_requestedlearningpath",
+        ),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='issuer',
-            name='intendedUseVerified',
+            model_name="issuer",
+            name="intendedUseVerified",
             field=models.BooleanField(default=False),
         ),
     ]

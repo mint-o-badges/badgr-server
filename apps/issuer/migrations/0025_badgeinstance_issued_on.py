@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0024_auto_20170609_0845'),
+        ("issuer", "0024_auto_20170609_0845"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='badgeinstance',
-            name='issued_on',
+            model_name="badgeinstance",
+            name="issued_on",
             field=models.DateTimeField(null=True),
         ),
     ]

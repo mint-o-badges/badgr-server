@@ -6,9 +6,8 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0071_issuerstaffrequest'),
-        ('issuer', '0071_qrcode_notifications'),
+        ("issuer", "0071_issuerstaffrequest"),
+        ("issuer", "0071_qrcode_notifications"),
     ]
 
-    operations = [
-    ]
+    operations = []

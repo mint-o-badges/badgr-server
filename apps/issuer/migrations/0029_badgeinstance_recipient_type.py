@@ -8,13 +8,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0028_auto_20170802_1035'),
+        ("issuer", "0028_auto_20170802_1035"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='badgeinstance',
-            name='recipient_type',
-            field=models.CharField(choices=[('email', 'email')], default='email', max_length=255),
+            model_name="badgeinstance",
+            name="recipient_type",
+            field=models.CharField(
+                choices=[("email", "email")], default="email", max_length=255
+            ),
         ),
     ]

@@ -4,18 +4,17 @@ import urllib
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect
-from rest_framework.authentication import TokenAuthentication
-
 from mainsite.models import BadgrApp
 from mainsite.utils import list_of
+from rest_framework.authentication import TokenAuthentication
 
 
 def get_session_verification_email(request):
-    return request.session.get('verification_email', None)
+    return request.session.get("verification_email", None)
 
 
 def set_session_verification_email(request, verification_email):
-    request.session['verification_email'] = verification_email
+    request.session["verification_email"] = verification_email
 
 
 def get_session_badgr_app(request):
@@ -25,23 +24,23 @@ def get_session_badgr_app(request):
     All usages should expressly handle None return case.
     """
     try:
-        if request and hasattr(request, 'session'):
-            return BadgrApp.objects.get(pk=request.session.get('badgr_app_pk', -1))
+        if request and hasattr(request, "session"):
+            return BadgrApp.objects.get(pk=request.session.get("badgr_app_pk", -1))
     except BadgrApp.DoesNotExist:
         return None
 
 
 def set_session_badgr_app(request, badgr_app):
-    request.session['badgr_app_pk'] = badgr_app.pk
+    request.session["badgr_app_pk"] = badgr_app.pk
 
 
 def get_session_authcode(request):
     if request is not None:
-        return request.session.get('badgr_authcode', None)
+        return request.session.get("badgr_authcode", None)
 
 
 def set_session_authcode(request, authcode):
-    request.session['badgr_authcode'] = authcode
+    request.session["badgr_authcode"] = authcode
 
 
 def get_verified_user(auth_token):
@@ -53,19 +52,21 @@ def get_verified_user(auth_token):
 def redirect_to_frontend_error_toast(request, message):
     badgr_app = BadgrApp.objects.get_current(request)
     redirect_url = "{url}?authError={message}".format(
-        url=badgr_app.ui_login_redirect,
-        message=urllib.parse.quote(message))
+        url=badgr_app.ui_login_redirect, message=urllib.parse.quote(message)
+    )
     return HttpResponseRedirect(redirect_to=redirect_url)
 
 
 def generate_provider_identifier(sociallogin=None, socialaccount=None):
     if socialaccount is None:
         socialaccount = sociallogin.account
-    if socialaccount.provider == 'twitter':
-        return 'https://twitter.com/{}'.format(socialaccount.extra_data['screen_name'].lower())
+    if socialaccount.provider == "twitter":
+        return "https://twitter.com/{}".format(
+            socialaccount.extra_data["screen_name"].lower()
+        )
 
 
-def userdata_from_saml_assertion(claims, data_field='email', config=None, many=False):
+def userdata_from_saml_assertion(claims, data_field="email", config=None, many=False):
     """
     From a set of SAML claims processed into a dict, extract a claim for the desired property based
     on system settings and the specific Saml2Config, if that claim exists. Raise ValidationError if missing
@@ -76,23 +77,37 @@ def userdata_from_saml_assertion(claims, data_field='email', config=None, many=F
     """
     config_settings = config.custom_settings_data
     configured_keys = {
-        'email': set(settings.SAML_EMAIL_KEYS) | set(config_settings.get('email', [])),
-        'first_name': set(settings.SAML_FIRST_NAME_KEYS) | set(config_settings.get('first_name', [])),
-        'last_name': set(settings.SAML_LAST_NAME_KEYS) | set(config_settings.get('last_name', []))
+        "email": set(settings.SAML_EMAIL_KEYS) | set(config_settings.get("email", [])),
+        "first_name": set(settings.SAML_FIRST_NAME_KEYS)
+        | set(config_settings.get("first_name", [])),
+        "last_name": set(settings.SAML_LAST_NAME_KEYS)
+        | set(config_settings.get("last_name", [])),
     }
 
     if len(configured_keys[data_field] & set(claims.keys())) == 0:
-        raise ValidationError('Missing {} in SAML assertions, received {}'.format(data_field, list(claims.keys())))
+        raise ValidationError(
+            "Missing {} in SAML assertions, received {}".format(
+                data_field, list(claims.keys())
+            )
+        )
 
-    found = [list_of(claims.get(key)) for key in configured_keys[data_field] if key in claims]
+    found = [
+        list_of(claims.get(key)) for key in configured_keys[data_field] if key in claims
+    ]
     found = [claim for sublist in found for claim in sublist]
     return found if many else found[0]
 
 
-DEFAULT_VALID_CUSTOM_SETTINGS_KEYS = ('email', 'first_name', 'last_name',)
+DEFAULT_VALID_CUSTOM_SETTINGS_KEYS = (
+    "email",
+    "first_name",
+    "last_name",
+)
 
 
-def custom_settings_filtered_values(input_data, valid_keys=DEFAULT_VALID_CUSTOM_SETTINGS_KEYS):
+def custom_settings_filtered_values(
+    input_data, valid_keys=DEFAULT_VALID_CUSTOM_SETTINGS_KEYS
+):
     def filter_value(value):
         if len([v for v in list_of(value) if not isinstance(v, str)]):
             return list()
@@ -102,10 +117,14 @@ def custom_settings_filtered_values(input_data, valid_keys=DEFAULT_VALID_CUSTOM_
         try:
             data = json.loads(input_data)
             filtered_data = {
-                'email': filter_value(data.get('email')),
-                'first_name': filter_value(data.get('first_name')),
-                'last_name': filter_value(data.get('last_name'))
+                "email": filter_value(data.get("email")),
+                "first_name": filter_value(data.get("first_name")),
+                "last_name": filter_value(data.get("last_name")),
             }
             return json.dumps(filtered_data, indent=2)
-        except (TypeError, ValueError, AttributeError,):
-            return '{}'
+        except (
+            TypeError,
+            ValueError,
+            AttributeError,
+        ):
+            return "{}"

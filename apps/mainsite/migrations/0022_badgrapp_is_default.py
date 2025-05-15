@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mainsite', '0021_auto_20191230_1752'),
+        ("mainsite", "0021_auto_20191230_1752"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='badgrapp',
-            name='is_default',
+            model_name="badgrapp",
+            name="is_default",
             field=models.BooleanField(default=False),
         ),
     ]

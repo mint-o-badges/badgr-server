@@ -8,9 +8,8 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0034_badgeinstance_hashed'),
-        ('issuer', '0035_issuer_badgrapp'),
+        ("issuer", "0034_badgeinstance_hashed"),
+        ("issuer", "0035_issuer_badgrapp"),
     ]
 
-    operations = [
-    ]
+    operations = []

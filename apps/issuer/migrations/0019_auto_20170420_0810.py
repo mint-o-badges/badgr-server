@@ -1,33 +1,47 @@
 # -*- coding: utf-8 -*-
 
 
-from django.db import models, migrations
 import django.db.models.deletion
+from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0018_auto_20170413_1054'),
+        ("issuer", "0018_auto_20170413_1054"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='BadgeInstanceEvidence',
+            name="BadgeInstanceEvidence",
             fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('evidence_url', models.CharField(max_length=2083)),
-                ('narrative', models.TextField(default=None, null=True, blank=True)),
-                ('badgeinstance', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='issuer.BadgeInstance')),
+                (
+                    "id",
+                    models.AutoField(
+                        verbose_name="ID",
+                        serialize=False,
+                        auto_created=True,
+                        primary_key=True,
+                    ),
+                ),
+                ("evidence_url", models.CharField(max_length=2083)),
+                ("narrative", models.TextField(default=None, null=True, blank=True)),
+                (
+                    "badgeinstance",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="issuer.BadgeInstance",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
             bases=(models.Model,),
         ),
         migrations.AddField(
-            model_name='badgeinstance',
-            name='narrative',
+            model_name="badgeinstance",
+            name="narrative",
             field=models.TextField(default=None, null=True, blank=True),
             preserve_default=True,
         ),

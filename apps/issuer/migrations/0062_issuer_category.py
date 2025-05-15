@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0061_auto_20211118_0923'),
+        ("issuer", "0061_auto_20211118_0923"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='issuer',
-            name='category',
-            field=models.CharField(default='n/a', max_length=255),
+            model_name="issuer",
+            name="category",
+            field=models.CharField(default="n/a", max_length=255),
         ),
     ]

@@ -4,7 +4,6 @@ import os
 import uuid
 from functools import reduce
 
-from rest_framework.fields import JSONField
 import pytz
 from badgeuser.models import TermsVersion
 from badgeuser.serializers_v1 import (
@@ -35,8 +34,8 @@ from mainsite.validators import (
     TelephoneValidator,
 )
 from rest_framework import serializers
+from rest_framework.fields import JSONField
 
-from . import utils
 from .models import (
     RECIPIENT_TYPE_EMAIL,
     RECIPIENT_TYPE_ID,
@@ -383,7 +382,6 @@ class BadgeClassSerializerV1(
 
     copy_permissions = serializers.ListField(source="copy_permissions_list")
 
-
     class Meta:
         apispec_definition = ("BadgeClass", {})
 
@@ -411,8 +409,8 @@ class BadgeClassSerializerV1(
         representation["json"] = instance.get_json(
             obi_version="1_1", use_canonical_id=True
         )
-        if representation['criteria_text'] is None:
-            representation['criteria_text'] = instance.get_criteria()
+        if representation["criteria_text"] is None:
+            representation["criteria_text"] = instance.get_criteria()
         return representation
 
     def validate_image(self, image):
@@ -516,7 +514,7 @@ class BadgeClassSerializerV1(
         if "issuer" in self.context:
             validated_data["issuer"] = self.context.get("issuer")
 
-        #criteria_text is now created at runtime
+        # criteria_text is now created at runtime
         # if (
         #     validated_data.get("criteria_text", None) is None
         #     and validated_data.get("criteria_url", None) is None
@@ -524,7 +522,7 @@ class BadgeClassSerializerV1(
         #     raise serializers.ValidationError(
         #         "One or both of the criteria_text and criteria_url fields must be provided"
         #     )
-        
+
         new_badgeclass = BadgeClass.objects.create(**validated_data)
         return new_badgeclass
 

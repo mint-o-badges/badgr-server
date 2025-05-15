@@ -8,18 +8,22 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issuer', '0049_auto_20190812_1232'),
+        ("issuer", "0049_auto_20190812_1232"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='badgeclass',
-            name='source_url',
-            field=models.CharField(blank=True, default=None, max_length=254, null=True, unique=True),
+            model_name="badgeclass",
+            name="source_url",
+            field=models.CharField(
+                blank=True, default=None, max_length=254, null=True, unique=True
+            ),
         ),
         migrations.AlterField(
-            model_name='badgeinstance',
-            name='source_url',
-            field=models.CharField(blank=True, default=None, max_length=254, null=True, unique=True),
+            model_name="badgeinstance",
+            name="source_url",
+            field=models.CharField(
+                blank=True, default=None, max_length=254, null=True, unique=True
+            ),
         ),
     ]

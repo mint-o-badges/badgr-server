@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mainsite', '0017_accesstokenscope'),
+        ("mainsite", "0017_accesstokenscope"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='accesstokenscope',
-            name='scope',
+            model_name="accesstokenscope",
+            name="scope",
             field=models.CharField(max_length=255),
         ),
     ]
