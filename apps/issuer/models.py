@@ -7,7 +7,7 @@ import re
 import urllib.parse
 import uuid
 from collections import OrderedDict
-from json import dumps as json_dumps, loads as json_loads, JSONDecodeError
+from json import dumps as json_dumps, loads as json_loads
 
 import badgrlog
 import cachemodel
@@ -875,7 +875,7 @@ class BadgeClass(
     description = models.TextField(blank=True, null=True, default=None)
 
     # TODO: criteria_url and criteria_text are deprecated and should be removed once the migration to the criteria field was done
-    criteria_url = models.CharField(max_length=254, blank=True, null=True, default=None) 
+    criteria_url = models.CharField(max_length=254, blank=True, null=True, default=None)
     criteria_text = models.TextField(blank=True, null=True)
 
     expires_amount = models.IntegerField(blank=True, null=True, default=None)
@@ -1137,14 +1137,16 @@ class BadgeClass(
 
     def get_criteria(self):
         try:
-            categoryExtension = self.cached_extensions().get(name="extensions:CategoryExtension")
-        except:
+            categoryExtension = self.cached_extensions().get(
+                name="extensions:CategoryExtension"
+            )
+        except Exception:
             return None
 
         category = json_loads(categoryExtension.original_json)
         if self.criteria:
             return self.criteria
-        elif category['Category'] == "competency":
+        elif category["Category"] == "competency":
             competencyExtensions = {}
 
             if len(self.cached_extensions()) > 0:
@@ -1161,23 +1163,20 @@ class BadgeClass(
             ):
                 competencies.append(competency.get("name"))
 
-            md =  f"""
-                    *Folgende Kriterien sind auf Basis deiner Eingaben als Metadaten im Badge hinterlegt*: 
+            md = f"""
+                    *Folgende Kriterien sind auf Basis deiner Eingaben als Metadaten im Badge hinterlegt*:
                     Du hast erfolgreich an **{self.name}** teilgenommen.
                     Dabei hast du folgende Kompetenzen gestärkt:
                     """
             for comp in competencies:
                 md += f"- {comp}\n"
 
-            return md.strip()               
-        else: 
+            return md.strip()
+        else:
             return f"""
-                    *Folgende Kriterien sind auf Basis deiner Eingaben als Metadaten im Badge hinterlegt*: 
-                    Du hast erfolgreich an **{self.name}** teilgenommen.  
+                    *Folgende Kriterien sind auf Basis deiner Eingaben als Metadaten im Badge hinterlegt*:
+                    Du hast erfolgreich an **{self.name}** teilgenommen.
                    """
-
-
-
 
     def get_json(
         self,
@@ -1198,7 +1197,7 @@ class BadgeClass(
                 ),
                 name=self.name,
                 description=self.description_nonnull,
-                copy_permissions = self.copy_permissions_list,
+                copy_permissions=self.copy_permissions_list,
                 issuer=(
                     self.cached_issuer.jsonld_id
                     if use_canonical_id
@@ -1261,7 +1260,7 @@ class BadgeClass(
             if extra is not None:
                 for k, v in list(extra.items()):
                     if k not in json:
-                        json[k] = v                  
+                        json[k] = v
 
         return json
 
@@ -1321,7 +1320,9 @@ class BadgeClass(
             self.copy_permissions = sum(map(int, binary_map))
 
 
-class ImportedBadgeAssertion(BaseVersionedEntity, BaseAuditedModel, BaseOpenBadgeObjectModel):
+class ImportedBadgeAssertion(
+    BaseVersionedEntity, BaseAuditedModel, BaseOpenBadgeObjectModel
+):
     """
     Model for storing imported badges separately from the system's own badges.
     This keeps external badge data isolated from internal data models.
@@ -1394,11 +1395,9 @@ class ImportedBadgeAssertion(BaseVersionedEntity, BaseAuditedModel, BaseOpenBadg
         if self.image:
             return self.image.url
         return self.badge_image_url
-    
+
     def get_extensions_manager(self):
         return self.importedbadgeassertionextension_set
-    
-
 
 
 class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectModel):
@@ -1730,7 +1729,10 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             "extensions:CompetencyExtension", []
         ):
             studyload = competency.get("studyLoad")
-            studyloadFmt = "%s:%s h" %  (math.floor(studyload / 60), str(studyload % 60).zfill(2))
+            studyloadFmt = "%s:%s h" % (
+                math.floor(studyload / 60),
+                str(studyload % 60).zfill(2),
+            )
 
             competency_entry = {
                 "name": competency.get("name"),
@@ -1890,19 +1892,17 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
         expand_issuer=False,
         include_extra=True,
         use_canonical_id=False,
-        force_recreate=False
+        force_recreate=False,
     ):
-
         # FIXME: 'support' 1_1 for v1 serializer classes
-        if obi_version == '1_1':
-            obi_version = '2_0'
+        if obi_version == "1_1":
+            obi_version = "2_0"
 
-        if obi_version == '2_0':
-
+        if obi_version == "2_0":
             if not self.ob_json_2_0 or force_recreate:
                 self.ob_json_2_0 = json_dumps(self.get_json_2_0())
                 if self.pk:
-                    self.save(update_fields=['ob_json_2_0'])
+                    self.save(update_fields=["ob_json_2_0"])
 
             json = json_loads(self.ob_json_2_0, object_pairs_hook=OrderedDict)
 
@@ -1913,15 +1913,16 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
                 json["badge"] = self.cached_badgeclass.get_json(obi_version=obi_version)
                 json["badge"]["slug"] = self.cached_badgeclass.entity_id
                 if expand_issuer:
-                    json["badge"]["issuer"] = self.cached_issuer.get_json(obi_version=obi_version)
+                    json["badge"]["issuer"] = self.cached_issuer.get_json(
+                        obi_version=obi_version
+                    )
 
             return json
 
         raise NotImplementedError("Unsupported OB Version")
 
     def get_json_2_0(self):
-
-        obi_version, context_iri = get_obi_context('2_0')
+        obi_version, context_iri = get_obi_context("2_0")
 
         json = OrderedDict(
             [
@@ -1953,9 +1954,7 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
                     ("type", "Assertion"),
                     (
                         "id",
-                        (
-                            add_obi_version_ifneeded(self.jsonld_id, obi_version)
-                        ),
+                        (add_obi_version_ifneeded(self.jsonld_id, obi_version)),
                     ),
                     ("revoked", self.revoked),
                     (
@@ -1975,9 +1974,7 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
         # evidence
         if self.evidence_url:
             # obi v2 multiple evidence
-            json["evidence"] = [
-                e.get_json(obi_version) for e in self.cached_evidence()
-            ]
+            json["evidence"] = [e.get_json(obi_version) for e in self.cached_evidence()]
 
         # narrative
         if self.narrative:
@@ -2133,7 +2130,7 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
                 expand_issuer=True,
                 expand_badgeclass=True,
                 include_extra=True,
-                force_recreate=True
+                force_recreate=True,
             )
             badgeclass_name, ext = os.path.splitext(self.badgeclass.image.file.name)
             new_image = io.BytesIO()
@@ -2306,10 +2303,13 @@ class BadgeInstanceExtension(BaseOpenBadgeExtension):
 
     def delete(self, *args, **kwargs):
         super(BadgeInstanceExtension, self).delete(*args, **kwargs)
-        self.badgeinstance.publish()        
+        self.badgeinstance.publish()
+
 
 class ImportedBadgeAssertionExtension(BaseOpenBadgeExtension):
-    importedBadge = models.ForeignKey("issuer.ImportedBadgeAssertion", on_delete=models.CASCADE)
+    importedBadge = models.ForeignKey(
+        "issuer.ImportedBadgeAssertion", on_delete=models.CASCADE
+    )
 
     def publish(self):
         super(ImportedBadgeAssertionExtension, self).publish()
@@ -2319,8 +2319,8 @@ class ImportedBadgeAssertionExtension(BaseOpenBadgeExtension):
         super(ImportedBadgeAssertionExtension, self).delete(*args, **kwargs)
         self.importedBadge.publish()
 
-class QrCode(BaseVersionedEntity):
 
+class QrCode(BaseVersionedEntity):
     badgeclass = models.ForeignKey(
         BadgeClass,
         blank=False,
@@ -2350,7 +2350,6 @@ class QrCode(BaseVersionedEntity):
 
 
 class RequestedBadge(BaseVersionedEntity):
-
     badgeclass = models.ForeignKey(
         BadgeClass,
         blank=False,
@@ -2385,7 +2384,6 @@ class RequestedBadge(BaseVersionedEntity):
 
 
 class LearningPath(BaseVersionedEntity, BaseAuditedModel):
-
     name = models.CharField(max_length=254, blank=False, null=False)
     description = models.TextField(blank=True, null=True, default=None)
     issuer = models.ForeignKey(
@@ -2485,7 +2483,6 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
         self,
         obi_version=CURRENT_OBI_VERSION,
     ):
-
         json = OrderedDict({})
         json.update(
             OrderedDict(
@@ -2534,7 +2531,6 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
         return user_progress >= max_progress
 
     def user_should_have_badge(self, recipient_identifier):
-
         if self.user_has_completed(recipient_identifier):
             # check to only award the participationBadge once
             badgeinstances = BadgeInstance.objects.filter(
@@ -2582,7 +2578,6 @@ class LearningPathBadge(cachemodel.CacheModel):
 
 
 class RequestedLearningPath(BaseVersionedEntity):
-
     learningpath = models.ForeignKey(
         LearningPath,
         blank=False,

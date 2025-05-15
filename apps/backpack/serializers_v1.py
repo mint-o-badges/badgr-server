@@ -20,10 +20,12 @@ from mainsite.utils import OriginSetting
 
 logger = badgrlog.BadgrLogger()
 
+
 class ImportedBadgeAssertionSerializer(serializers.Serializer):
     """
     Serializer for importing and retrieving imported badge assertions.
     """
+
     image = Base64FileField(required=False, write_only=True)
     url = serializers.URLField(required=False, write_only=True)
     assertion = serializers.CharField(required=False, write_only=True)
@@ -35,15 +37,13 @@ class ImportedBadgeAssertionSerializer(serializers.Serializer):
     issued_on = serializers.DateTimeField(read_only=True)
     recipient_identifier = serializers.CharField(read_only=True)
     recipient_type = serializers.CharField(read_only=True)
-    acceptance = serializers.CharField(default='Accepted')
+    acceptance = serializers.CharField(default="Accepted")
     narrative = MarkdownCharField(read_only=True)
 
     original_json = serializers.JSONField(read_only=True)
     extensions = serializers.DictField(source="extension_items", read_only=True)
 
     def to_representation(self, obj):
-        from django.conf import settings
-
         representation = super().to_representation(obj)
 
         if obj.image:
@@ -161,9 +161,15 @@ class LocalBadgeInstanceUploadSerializerV1(serializers.Serializer):
 
         # supress errors for badges without extensions (i.e. imported)
         try:
-            representation['extensions']["extensions:CompetencyExtension"] = obj.badgeclass.json['extensions:CompetencyExtension']
-            representation['extensions']["extensions:CategoryExtension"] = obj.badgeclass.json['extensions:CategoryExtension']
-            representation['extensions']["extensions:StudyLoadExtension"] = obj.badgeclass.json['extensions:StudyLoadExtension']
+            representation["extensions"]["extensions:CompetencyExtension"] = (
+                obj.badgeclass.json["extensions:CompetencyExtension"]
+            )
+            representation["extensions"]["extensions:CategoryExtension"] = (
+                obj.badgeclass.json["extensions:CategoryExtension"]
+            )
+            representation["extensions"]["extensions:StudyLoadExtension"] = (
+                obj.badgeclass.json["extensions:StudyLoadExtension"]
+            )
         except KeyError:
             pass
 
@@ -260,7 +266,6 @@ class LocalBadgeInstanceUploadSerializerV1(serializers.Serializer):
 
 
 class CollectionBadgesSerializerV1(serializers.ListSerializer):
-
     def to_representation(self, data):
         filtered_data = [
             b
@@ -409,7 +414,6 @@ class CollectionSerializerV1(serializers.Serializer):
             "cached_collects" in validated_data
             and validated_data["cached_collects"] is not None
         ):
-
             existing_entries = list(instance.cached_collects())
             updated_ids = set()
 
@@ -462,7 +466,6 @@ class BadgePotentiallyEmptyField(serializers.Field):
 
 
 class VerifierBadgeDateTimeField(BadgePotentiallyEmptyField, serializers.Field):
-
     default_error_messages = {
         "not_int_or_str": "Invalid format. Expected an int or str.",
         "bad_str": "Invalid format. String is not ISO 8601 or unix timestamp.",
@@ -599,16 +602,17 @@ class V1BadgeInstanceSerializer(V1InstanceSerializer):
 
     pending = serializers.ReadOnlyField()
 
-
     def to_representation(self, instance):
         localbadgeinstance_json = instance.json
-        if 'evidence' in localbadgeinstance_json:
-            localbadgeinstance_json['evidence'] = instance.evidence_url
-        localbadgeinstance_json['uid'] = instance.entity_id
-        localbadgeinstance_json['badge'] = instance.cached_badgeclass.json
-        localbadgeinstance_json['badge']['slug'] = instance.cached_badgeclass.entity_id
-        localbadgeinstance_json['badge']['criteria'] = instance.cached_badgeclass.get_criteria()    
-        localbadgeinstance_json['badge']['issuer'] = instance.cached_issuer.json
+        if "evidence" in localbadgeinstance_json:
+            localbadgeinstance_json["evidence"] = instance.evidence_url
+        localbadgeinstance_json["uid"] = instance.entity_id
+        localbadgeinstance_json["badge"] = instance.cached_badgeclass.json
+        localbadgeinstance_json["badge"]["slug"] = instance.cached_badgeclass.entity_id
+        localbadgeinstance_json["badge"]["criteria"] = (
+            instance.cached_badgeclass.get_criteria()
+        )
+        localbadgeinstance_json["badge"]["issuer"] = instance.cached_issuer.json
 
         # clean up recipient to match V1InstanceSerializer
         localbadgeinstance_json["recipient"] = {

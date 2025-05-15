@@ -11,7 +11,6 @@ class Command(BaseCommand):
     help = "Send mail to issuer staff when badges were requested via qr code that day"
 
     def handle(self, *args, **kwargs):
-
         # qr codes that have been created prior to implementation of the notification feature
         # do not have the created_by_user field set and are therefore skipped
         qr_codes = QrCode.objects.filter(

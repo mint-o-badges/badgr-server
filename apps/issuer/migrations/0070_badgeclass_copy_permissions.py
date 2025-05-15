@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('issuer', '0069_delete_learningpathparticipant'),
+        ("issuer", "0069_delete_learningpathparticipant"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='badgeclass',
-            name='copy_permissions',
+            model_name="badgeclass",
+            name="copy_permissions",
             field=models.PositiveSmallIntegerField(default=1),
         ),
     ]

@@ -7,16 +7,15 @@ import django.db.models.manager
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('backpack', '0003_backpackcollection_assertions'),
+        ("backpack", "0003_backpackcollection_assertions"),
     ]
 
     operations = [
         migrations.AlterModelManagers(
-            name='backpackcollection',
+            name="backpackcollection",
             managers=[
-                ('cached', django.db.models.manager.Manager()),
+                ("cached", django.db.models.manager.Manager()),
             ],
         ),
     ]

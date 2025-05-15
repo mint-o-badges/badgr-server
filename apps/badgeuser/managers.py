@@ -16,19 +16,20 @@ from mainsite.utils import set_url_query_params
 
 
 class BadgeUserManager(UserManager):
-    duplicate_email_error = 'Account could not be created. An account with this email address may already exist.'
+    duplicate_email_error = "Account could not be created. An account with this email address may already exist."
 
-    def create(self,
-               email,
-               first_name,
-               last_name,
-               request=None,
-               plaintext_password=None,
-               send_confirmation=True,
-               create_email_address=True,
-               marketing_opt_in=False,
-               source=''
-               ):
+    def create(
+        self,
+        email,
+        first_name,
+        last_name,
+        request=None,
+        plaintext_password=None,
+        send_confirmation=True,
+        create_email_address=True,
+        marketing_opt_in=False,
+        source="",
+    ):
         from badgeuser.models import CachedEmailAddress, TermsVersion
 
         user = None
@@ -41,7 +42,11 @@ class BadgeUserManager(UserManager):
             # nope
             pass
         else:
-            if plaintext_password and not existing_email.user.password and not existing_email.verified:
+            if (
+                plaintext_password
+                and not existing_email.user.password
+                and not existing_email.verified
+            ):
                 # yes, it's owned by an auto-created user trying to set a password
                 user = existing_email.user
             elif plaintext_password and not existing_email.user.password:
@@ -56,15 +61,17 @@ class BadgeUserManager(UserManager):
                     badgrapp_id=badgrapp.id,
                     marketing_opt_in=marketing_opt_in,
                     plaintext_password=plaintext_password,
-                    source=source
+                    source=source,
                 )
                 return self.model(email=email)
             elif existing_email.verified:
                 raise ValidationError(self.duplicate_email_error)
             # Only if at least the email or the user *really* exists, delete it.
             # Otherwise it was likely deleted via the staff interface.
-            elif (CachedEmailAddress.objects.filter(pk=existing_email.pk).exists() or
-                  self.model.objects.filter(pk=existing_email.user.pk).exists()):
+            elif (
+                CachedEmailAddress.objects.filter(pk=existing_email.pk).exists()
+                or self.model.objects.filter(pk=existing_email.user.pk).exists()
+            ):
                 # yes, it's an unverified email address owned by a claimed user
                 # remove the email
                 existing_email.delete()
@@ -85,36 +92,45 @@ class BadgeUserManager(UserManager):
         user.save()
 
         if create_email_address:
-            CachedEmailAddress.objects.add_email(user, email, request=request, signup=True, confirm=send_confirmation)
+            CachedEmailAddress.objects.add_email(
+                user, email, request=request, signup=True, confirm=send_confirmation
+            )
         return user
 
     @staticmethod
     def send_account_confirmation(**kwargs):
-        if not kwargs.get('email'):
+        if not kwargs.get("email"):
             return
 
-        email = kwargs['email']
-        source = kwargs['source']
-        expires_seconds = getattr(settings, 'AUTH_TIMEOUT_SECONDS', 7 * 86400)
+        email = kwargs["email"]
+        source = kwargs["source"]
+        expires_seconds = getattr(settings, "AUTH_TIMEOUT_SECONDS", 7 * 86400)
         payload = kwargs.copy()
-        payload['nonce'] = ''.join(random.choice(string.ascii_uppercase) for _ in range(random.randint(20, 30)))
+        payload["nonce"] = "".join(
+            random.choice(string.ascii_uppercase) for _ in range(random.randint(20, 30))
+        )
         payload = json.dumps(payload)
 
         authcode = encrypt_authcode(payload, expires_seconds=expires_seconds)
         confirmation_url = "{origin}{path}".format(
             origin=OriginSetting.HTTP,
-            path=reverse('v2_api_account_confirm', kwargs=dict(authcode=authcode)),
+            path=reverse("v2_api_account_confirm", kwargs=dict(authcode=authcode)),
         )
         if source:
             confirmation_url = set_url_query_params(confirmation_url, source=source)
 
-        get_adapter().send_mail('account/email/email_confirmation_signup', email, {
-            'HTTP_ORIGIN': settings.HTTP_ORIGIN,
-            'STATIC_URL': settings.STATIC_URL,
-            'MEDIA_URL': settings.MEDIA_URL,
-            'activate_url': confirmation_url,
-            'email': email,
-        })
+        get_adapter().send_mail(
+            "account/email/email_confirmation_signup",
+            email,
+            {
+                "HTTP_ORIGIN": settings.HTTP_ORIGIN,
+                "STATIC_URL": settings.STATIC_URL,
+                "MEDIA_URL": settings.MEDIA_URL,
+                "activate_url": confirmation_url,
+                "email": email,
+            },
+        )
+
 
 class CachedEmailAddressManager(EmailAddressManager):
     def add_email(self, user, email, request=None, confirm=False, signup=False):
@@ -127,7 +143,10 @@ class CachedEmailAddressManager(EmailAddressManager):
             email_address.send_confirmation(request=request, signup=signup)
 
         # Add variant if it does not exist
-        if email_address.email.lower() == email.lower() and email_address.email != email:
+        if (
+            email_address.email.lower() == email.lower()
+            and email_address.email != email
+        ):
             self.model.add_variant(email)
 
         return email_address

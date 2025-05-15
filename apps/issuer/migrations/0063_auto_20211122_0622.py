@@ -4,35 +4,34 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('issuer', '0062_issuer_category'),
+        ("issuer", "0062_issuer_category"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='issuer',
-            name='city',
+            model_name="issuer",
+            name="city",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AlterField(
-            model_name='issuer',
-            name='country',
+            model_name="issuer",
+            name="country",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AlterField(
-            model_name='issuer',
-            name='street',
+            model_name="issuer",
+            name="street",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AlterField(
-            model_name='issuer',
-            name='streetnumber',
+            model_name="issuer",
+            name="streetnumber",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AlterField(
-            model_name='issuer',
-            name='zip',
+            model_name="issuer",
+            name="zip",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
     ]

@@ -6,13 +6,12 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('badgeuser', '0022_auto_20190405_1344'),
+        ("badgeuser", "0022_auto_20190405_1344"),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='BadgrAccessToken',
+            name="BadgrAccessToken",
         ),
     ]

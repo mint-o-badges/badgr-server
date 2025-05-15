@@ -6,15 +6,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('mainsite', '0020_auto_20191114_1056'),
+        ("mainsite", "0020_auto_20191114_1056"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='badgrapp',
-            name='ui_login_redirect',
+            model_name="badgrapp",
+            name="ui_login_redirect",
             field=models.URLField(null=True),
         ),
     ]

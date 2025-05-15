@@ -1,1 +1,1 @@
-default_app_config = 'badgeuser.apps.BadgeUserConfig'
+default_app_config = "badgeuser.apps.BadgeUserConfig"

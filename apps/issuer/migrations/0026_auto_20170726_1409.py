@@ -6,23 +6,22 @@ from django.db import migrations, models
 
 
 def created_at_to_issued_on(apps, schema_editor):
-    BadgeInstance = apps.get_model('issuer', 'BadgeInstance')
+    BadgeInstance = apps.get_model("issuer", "BadgeInstance")
     for badge in BadgeInstance.objects.all():
         badge.issued_on = badge.created_at
         badge.save()
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('issuer', '0025_badgeinstance_issued_on'),
+        ("issuer", "0025_badgeinstance_issued_on"),
     ]
 
     operations = [
         migrations.RunPython(created_at_to_issued_on),
         migrations.AlterField(
-            model_name='badgeinstance',
-            name='issued_on',
+            model_name="badgeinstance",
+            name="issued_on",
             field=models.DateTimeField(),
         ),
     ]

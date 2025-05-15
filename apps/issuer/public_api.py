@@ -246,7 +246,6 @@ class ImagePropertyDetailView(APIView, SlugToEntityIdRedirectMixin):
             return current_object
 
     def get(self, request, **kwargs):
-
         entity_id = kwargs.get("entity_id")
         current_object = self.get_object(entity_id)
         if (

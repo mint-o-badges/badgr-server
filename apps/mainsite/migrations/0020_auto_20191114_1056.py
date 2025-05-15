@@ -6,20 +6,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('mainsite', '0019_auto_20190710_0805'),
+        ("mainsite", "0019_auto_20190710_0805"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='badgrapp',
-            name='ui_signup_failure_redirect',
+            model_name="badgrapp",
+            name="ui_signup_failure_redirect",
             field=models.URLField(null=True),
         ),
         migrations.AlterField(
-            model_name='badgrapp',
-            name='ui_login_redirect',
-            field=models.URLField(default=b'default_redirect', null=True),
+            model_name="badgrapp",
+            name="ui_login_redirect",
+            field=models.URLField(default=b"default_redirect", null=True),
         ),
     ]
