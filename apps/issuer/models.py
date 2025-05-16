@@ -2368,7 +2368,8 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
     def cached_badgrapp(self):
         return self.cached_issuer.cached_badgrapp
 
-    def get_baked_image_url(self, obi_version=CURRENT_OBI_VERSION):
+    def get_baked_image_url(self, obi_version):
+
         if obi_version == UNVERSIONED_BAKED_VERSION:
             # requested version is the one referenced in assertion.image
             return self.image.url
