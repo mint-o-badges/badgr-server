@@ -20,9 +20,7 @@ OBI_VERSION_CONTEXT_IRIS = {
     '1_1': 'https://w3id.org/openbadges/v1',
     '2_0': 'https://w3id.org/openbadges/v2',
     '3_0': [
-        "https://www.w3.org/ns/credentials/v2",
-        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
-        "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json"
+        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
     ],
 }
 
@@ -191,3 +189,4 @@ def assertion_is_v3(assertion_json):
         return False
     # search for vc context IRIs
     return reduce(lambda x, y: x or '/credentials/' in y, context, False)
+

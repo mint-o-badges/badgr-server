@@ -230,7 +230,7 @@ class JSONComponentView(VersionedObjectMixin, APIView, SlugToEntityIdRedirectMix
 
     @staticmethod
     def _get_request_obi_version(request):
-        return request.query_params.get("v", utils.CURRENT_OBI_VERSION)
+        return request.query_params.get("v")
 
 
 class ImagePropertyDetailView(APIView, SlugToEntityIdRedirectMixin):

@@ -579,7 +579,9 @@ class Issuer(
 
         id = self.jsonld_id if use_canonical_id else add_obi_version_ifneeded(self.jsonld_id, obi_version)
 
-        json = OrderedDict({"@context": context_iri})
+        # spread context_iri to create a copy because we might modify it later on
+        json = OrderedDict({"@context": [ *context_iri ]})
+
         json.update(
             OrderedDict(
                 type="Issuer",
@@ -623,8 +625,24 @@ class Issuer(
                     if k not in json:
                         json[k] = v
 
+        if obi_version == '2_0':
+            # link to v3 version of profile
+            json["related"] = [{
+                "type": [
+                    "https://purl.imsglobal.org/spec/vc/ob/vocab.html#Profile"
+                ],
+                "id": add_obi_version_ifneeded(self.jsonld_id, '3_0'),
+                "version": "Open Badges v3p0"
+            }]
+
         # add verificationMethod
         if obi_version == '3_0':
+
+            json["@context"].append('https://www.w3.org/ns/did/v1')
+
+            # link to v2 version of profile
+            # https://www.imsglobal.org/spec/ob/v3p0/impl#example-issuer-profile-relation-between-open-badges-3-0-and-open-badges-2-0
+            json["alsoKnownAs"] = [ add_obi_version_ifneeded(self.jsonld_id, '2_0') ]
 
             private_key = serialization.load_pem_private_key(
                 self.private_key.encode(),
@@ -647,7 +665,11 @@ class Issuer(
             # z prefix for multibase 58
             public_key_multibase = f'z{public_key_base58}'
 
-            json['verificationMethod'] = OrderedDict({
+            # FIXME: needed for current version of https://github.com/1EdTech/digital-credentials-public-validator/ to work..
+            json["controller"] = ""
+
+            # FIXME: this should be a list of dicts according to the spec, but the verificator only supports it this way for now
+            json["verificationMethod"] = OrderedDict({
                 "id": f"{id}#key-0",
                 "type": "DataIntegrityProof",
                 "cryptosuite": "eddsa-rdf-2022",
@@ -1183,7 +1205,7 @@ class BadgeClass(
         category = json_loads(categoryExtension.original_json)
         if self.criteria:
             return self.criteria
-        elif category['Category'] == "competency":
+        elif category["Category"] == "competency":
             competencyExtensions = {}
 
             if len(self.cached_extensions()) > 0:
@@ -1226,7 +1248,7 @@ class BadgeClass(
         include_orgImg=False,
     ):
         obi_version, context_iri = get_obi_context(obi_version)
-        json = OrderedDict({"@context": context_iri})
+        json = OrderedDict({"@context": [ *context_iri ]})
         json.update(
             OrderedDict(
                 type="BadgeClass",
@@ -1300,7 +1322,36 @@ class BadgeClass(
             if extra is not None:
                 for k, v in list(extra.items()):
                     if k not in json:
-                        json[k] = v                  
+                        json[k] = v
+
+        if obi_version == '2_0':
+            # add relation to version 3.0
+            json["related"] = [{
+                'type': [
+                    "https://purl.imsglobal.org/spec/vc/ob/vocab.html#Achievement"
+                ],
+                "id": add_obi_version_ifneeded(self.jsonld_id, '3_0'),
+                "version": "Open Badges v3p0"
+            }]
+
+        if obi_version == '3_0':
+
+            json["type"] = [
+                "Achievement",
+                "https://w3id.org/openbadges#BadgeClass"
+            ]
+
+            # link to version v2
+            # https://www.imsglobal.org/spec/ob/v3p0/impl#example-openbadges-3-0-achievement-with-linked-openbadges-2-0-badgeclass-via-related-association
+            json["related"] = [{
+                'type': [
+                    "Related",
+                    "https://w3id.org/openbadges#BadgeClass"
+                ],
+                "id": add_obi_version_ifneeded(self.jsonld_id, '2_0'),
+                "version": "Open Badges v2p0"
+            }]
+
 
         return json
 
@@ -1687,7 +1738,7 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
 
         super(BadgeInstance, self).save(*args, **kwargs)
 
-    def rebake(self, obi_version=CURRENT_OBI_VERSION, save=True):
+    def rebake(self, obi_version=UNVERSIONED_BAKED_VERSION, save=True):
         new_image = io.BytesIO()
         bake(
             image_file=self.cached_badgeclass.image.file,
@@ -1925,13 +1976,17 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
 
     def get_json(
         self,
-        obi_version=CURRENT_OBI_VERSION,
+        obi_version=None,
         expand_badgeclass=False,
         expand_issuer=False,
         include_extra=True,
         use_canonical_id=False,
         force_recreate=False
     ):
+
+        # choose obi version
+        if not obi_version:
+            obi_version = '3_0' if self.ob_json_3_0 or not self.ob_json_2_0 else '2_0'
 
         # FIXME: 'support' 1_1 for v1 serializer classes
         if obi_version == '1_1':
@@ -1942,7 +1997,7 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             if not self.ob_json_2_0 or force_recreate:
                 self.ob_json_2_0 = json_dumps(self.get_json_2_0())
                 if self.pk:
-                    self.save(update_fields=['ob_json_2_0'])
+                    self.save(update_fields=["ob_json_2_0"])
 
             json = json_loads(self.ob_json_2_0, object_pairs_hook=OrderedDict)
 
@@ -1961,11 +2016,11 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             if not self.ob_json_3_0 or force_recreate:
                 self.ob_json_3_0 = json_dumps(self.get_json_3_0())
                 if self.pk:
-                    self.save(update_fields=['ob_json_3_0'])
+                    self.save(update_fields=["ob_json_3_0"])
 
             json = json_loads(self.ob_json_3_0, object_pairs_hook=OrderedDict)
 
-            return json
+            return self.get_json_3_0()
 
         raise NotImplementedError("Unsupported OB Version")
 
@@ -2061,17 +2116,22 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             for extension in self.cached_extensions():
                 json[extension.name] = json_loads(extension.original_json)
 
+
+
         return json
 
-    def get_json_3_0(self, obi_version=CURRENT_OBI_VERSION, expand_badgeclass=False,
-            expand_issuer=False, include_extra=True, use_canonical_id=False):
+    def get_json_3_0(self):
 
-        obi_version, context_iri = get_obi_context(obi_version)
+        obi_version, context_iri = get_obi_context('3_0')
 
         hashed_recipient = generate_sha256_hashstring(self.recipient_identifier, self.salt)
 
         json = OrderedDict([
-            ('@context', context_iri),
+            ('@context', [
+                "https://www.w3.org/ns/credentials/v2",
+                *context_iri,
+                "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json"
+            ]),
             ('type', 'Assertion'),
             ('id', add_obi_version_ifneeded(self.jsonld_id, obi_version)),
             ('type', ["VerifiableCredential", "OpenBadgeCredential"]),
@@ -2096,7 +2156,7 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
                 }],
                 'achievement': {
                     'id': add_obi_version_ifneeded(self.cached_badgeclass.jsonld_id, obi_version),
-                    'type': ['Achievement'],
+                    'type': ["Achievement"],
                     'name': self.cached_badgeclass.name,
                     'description': self.cached_badgeclass.description,
                     'achievementType': 'Badge',
@@ -2112,58 +2172,39 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
         ])
 
         if self.expires_at:
-            # json['expirationDate'] = self.expires_at.isoformat()
-            json['validUntil'] = self.expires_at.isoformat()
+            # json["expirationDate"] = self.expires_at.isoformat()
+            json["validUntil"] = self.expires_at.isoformat()
 
 
-        if self.revoked:
-            # FIXME: https://www.imsglobal.org/spec/ob/v3p0/cert#verification-and-status
-            # id as url to list of revokations?
-            # example(?) https://github.com/openwallet-foundation-labs/learner-credential-wallet/issues/656
-            json['credentialStatus'] = {
-                'id': add_obi_version_ifneeded(self.jsonld_id, obi_version),
-                'type': "1EdTechRevocationList"
-            }
+        # json["credentialStatus"] = {
+        #     'id': f'{self.jsonld_id}/revocation_list',
+        #     'type': "1EdTechRevocationList"
+        # }
 
-        # FIXME extensions
-        # if len(self.cached_extensions()) > 0:
-        #     extension_contexts = [
-        #         # "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json"
-        #     ]
-        #     for extension in self.cached_extensions():
-        #         extension_json = json_loads(extension.original_json)
-        #         extension_name = extension.name
-        #         # if extension_name.find('extensions:') == 0:
-        #         #     extension_name = extension_name[11:]
+        if len(self.cached_extensions()) > 0:
+            extension_contexts = [
+            ]
+            for extension in self.cached_extensions():
+                extension_json = json_loads(extension.original_json)
+                extension_name = extension.name
 
-        #         try:
-        #             extension_context = extension_json['@context']
-        #             if isinstance(extension_context, list):
-        #                 extension_contexts += extension_context
-        #             else:
-        #                 extension_contexts.append(extension_context)
+                try:
+                    extension_context = extension_json["@context"]
+                    if isinstance(extension_context, list):
+                        extension_contexts += extension_context
+                    else:
+                        extension_contexts.append(extension_context)
 
-        #             # del extension_json['@context']
+                    # del extension_json["@context"]
 
-        #         except KeyError:
-        #             pass
+                except KeyError:
+                    pass
 
-        #         json[extension_name] = extension_json
+                json[extension_name] = extension_json
 
-        #     # unique
-        #     extension_contexts = list(set(extension_contexts))
-        #     # json['@context'] += extension_contexts
-
-
-        # TODO link to v2 version? is this correct?
-            # json['related'] = [{
-            #     'type': [
-            #         "Related",
-            #         "https://w3id.org/openbadges#BadgeClass"
-            #     ],
-            #     "id": add_obi_version_ifneeded(self.jsonld_id, '2_0'),
-            #     "version": "Open Badges v2p0"
-            # }]
+            # unique
+            extension_contexts = list(set(extension_contexts))
+            json["@context"] += extension_contexts
 
 
         ##### proof / signing #####
@@ -2180,12 +2221,13 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             ("type", "DataIntegrityProof"),
             ("cryptosuite", "eddsa-rdfc-2022"),
             ("created", self.issued_on.isoformat()),
-            ("verificationMethod", f'{add_obi_version_ifneeded(self.cached_issuer.jsonld_id, obi_version)}#key-0'),
+            ("verificationMethod", f'{add_obi_version_ifneeded(self.cached_issuer.jsonld_id + ".json", obi_version)}#key-0'),
             ("proofPurpose", "assertionMethod"),
         ])
 
         # transform https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-rdfc-2022
-        # FIXME: this is pretty slow
+
+        # this is pretty slow
         canonicalized_proof = jsonld.normalize(proof, {'algorithm': 'URDNA2015', 'format': 'application/n-quads'})
         canonicalized_json = jsonld.normalize(json, {'algorithm': 'URDNA2015', 'format': 'application/n-quads'})
 
@@ -2202,21 +2244,13 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
         signature = private_key.sign(hashed_proof + hashed_json)
 
         # base58 encode with multibase prefix z
-        proof['proofValue'] = f"z{base58.b58encode(signature).decode()}"
+        proof["proofValue"] = f"z{base58.b58encode(signature).decode()}"
 
         # remove proof @context
-        del proof['@context']
+        del proof["@context"]
 
         # add proof to json
-        json['proof'] = [proof]
-
-        # # FIXME add badge object for badgr-ui frontend assertion handling, not a valid ob3 vc key
-        # if expand_badgeclass:
-        #     json['badge'] = self.cached_badgeclass.get_json(obi_version=obi_version, include_extra=include_extra)
-
-        #     # FIXME add issuer object for badgr-ui frontend assertion handling, not a valid ob3 vc key
-        #     if expand_issuer:
-        #         json['badge']['issuer'] = self.cached_issuer.get_json(obi_version=obi_version, include_extra=include_extra)
+        json["proof"] = [proof]
 
         return json
 
@@ -2408,11 +2442,17 @@ class BadgeInstanceEvidence(OriginalJsonMixin, cachemodel.CacheModel):
             obi_version, context_iri = get_obi_context(obi_version)
             json["@context"] = context_iri
 
-        json["type"] = "Evidence"
+        if obi_version == '2_0':
+            json["type"] = "Evidence"
+
+        if obi_version == '3_0':
+            json["type"] = [ "Evidence" ]
+
         if self.evidence_url:
             json["id"] = self.evidence_url
         if self.narrative:
             json["narrative"] = self.narrative
+            
         return json
 
 
