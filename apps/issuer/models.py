@@ -2172,14 +2172,13 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
         ])
 
         if self.expires_at:
-            # json["expirationDate"] = self.expires_at.isoformat()
             json["validUntil"] = self.expires_at.isoformat()
 
 
-        # json["credentialStatus"] = {
-        #     'id': f'{self.jsonld_id}/revocation_list',
-        #     'type': "1EdTechRevocationList"
-        # }
+        json["credentialStatus"] = {
+            "id": f'{self.jsonld_id}/revocations',
+            "type": "1EdTechRevocationList"
+        }
 
         if len(self.cached_extensions()) > 0:
             extension_contexts = [
@@ -2221,7 +2220,7 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             ("type", "DataIntegrityProof"),
             ("cryptosuite", "eddsa-rdfc-2022"),
             ("created", self.issued_on.isoformat()),
-            ("verificationMethod", f'{add_obi_version_ifneeded(self.cached_issuer.jsonld_id + ".json", obi_version)}#key-0'),
+            ("verificationMethod", f'{add_obi_version_ifneeded(self.cached_issuer.jsonld_id, obi_version)}#key-0'),
             ("proofPurpose", "assertionMethod"),
         ])
 
@@ -2253,6 +2252,21 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
         json["proof"] = [proof]
 
         return json
+
+    def get_revocation_json(self):
+        revocation_list = {
+            "id": f'{self.jsonld_id}/revocations',
+            "issuer": add_obi_version_ifneeded(self.cached_issuer.jsonld_id, '3_0'),
+            "revokedCredential":[]
+        }
+        if self.revoked:
+            revocation_list["revokedCredential"].append({
+                "id": add_obi_version_ifneeded(self.jsonld_id, '3_0'),
+                "revoked": True,
+                "revocationReason": self.revocation_reason if self.revocation_reason else ""
+            })
+
+        return revocation_list
 
     @property
     def json(self):

@@ -583,6 +583,12 @@ class BadgeInstanceImage(ImagePropertyDetailView):
             return None
         return obj
 
+class BadgeInstanceRevocations(JSONComponentView):
+    model = BadgeInstance
+
+    def get_json(self, request):
+        return self.current_object.get_revocation_json()
+
 
 class BackpackCollectionJson(JSONComponentView):
     permission_classes = (permissions.AllowAny,)

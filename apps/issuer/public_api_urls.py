@@ -9,6 +9,7 @@ from .public_api import (
     BadgeClassJson,
     BadgeClassList,
     BadgeInstanceImage,
+    BadgeInstanceRevocations,
     BadgeInstanceJson,
     BadgeLearningPathList,
     BakedBadgeInstanceImage,
@@ -81,6 +82,11 @@ json_patterns = [
         r"^assertions/(?P<entity_id>[^/.]+)$",
         xframe_options_exempt(BadgeInstanceJson.as_view(slugToEntityIdRedirect=True)),
         name="badgeinstance_json",
+    ),
+    url(
+        r"^assertions/(?P<entity_id>[^/.]+)/revocations$",
+        xframe_options_exempt(BadgeInstanceRevocations.as_view(slugToEntityIdRedirect=False)),
+        name="badgeinstance_revocations",
     ),
     url(
         r"^collections/(?P<entity_id>[^/.]+)$",
