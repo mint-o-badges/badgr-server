@@ -422,42 +422,47 @@ class BadgeClassDetail(BaseEntityDetailView):
     def put(self, request, **kwargs):
         return super(BadgeClassDetail, self).put(request, **kwargs)
 
+
 @shared_task
-def process_batch_assertions(assertions, user_id, badgeclass_id, create_notification=False):
+def process_batch_assertions(
+    assertions, user_id, badgeclass_id, create_notification=False
+):
     try:
         User = get_user_model()
         user = User.objects.get(id=user_id)
         badgeclass = BadgeClass.objects.get(id=badgeclass_id)
-        
+
         # Update assertions with create_notification
         assertions = [
-            {**assertion, 'create_notification': create_notification}
+            {**assertion, "create_notification": create_notification}
             for assertion in assertions
         ]
-        
-            
-        context = {'badgeclass': badgeclass}
-        serializer = BadgeInstanceSerializerV1(many=True, data=assertions, context=context)
+
+        context = {"badgeclass": badgeclass}
+        serializer = BadgeInstanceSerializerV1(
+            many=True, data=assertions, context=context
+        )
         if not serializer.is_valid():
             return {
-                'success': False,
-                'status': status.HTTP_400_BAD_REQUEST,
-                'errors': serializer.errors
+                "success": False,
+                "status": status.HTTP_400_BAD_REQUEST,
+                "errors": serializer.errors,
             }
-            
-        new_instances = serializer.save(created_by=user)
+
+        serializer.save(created_by=user)
         return {
-            'success': True,
-            'status': status.HTTP_201_CREATED,
-            'data': serializer.data
+            "success": True,
+            "status": status.HTTP_201_CREATED,
+            "data": serializer.data,
         }
-        
+
     except Exception as e:
         return {
-            'success': False,
-            'status': status.HTTP_500_INTERNAL_SERVER_ERROR,
-            'error': str(e)
+            "success": False,
+            "status": status.HTTP_500_INTERNAL_SERVER_ERROR,
+            "error": str(e),
         }
+
 
 class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
     model = BadgeClass  # used by .get_object()
@@ -479,6 +484,9 @@ class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
         context["badgeclass"] = self.get_object(self.request, **kwargs)
         return context
 
+    def get(self, request, **kwargs):
+        return
+
     @apispec_post_operation(
         "Assertion",
         summary="Issue multiple copies of the same BadgeClass to multiple recipients",
@@ -495,23 +503,10 @@ class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
             }
         ],
     )
-
-    def get(self, request, task_id, **kwargs):
-        task_result = AsyncResult(task_id)
-        result = task_result.result if task_result.ready() else None
-        
-        if result and not result.get('success'):
-            return Response(result, status=result.get('status', status.HTTP_400_BAD_REQUEST))
-            
-        return Response({
-            'task_id': task_id,
-            'status': task_result.status,
-            'result': result
-        })
     def post(self, request, **kwargs):
         # verify the user has permission to the badgeclass
         badgeclass = self.get_object(request, **kwargs)
-        assertions = request.data.get('assertions', [])
+        assertions = request.data.get("assertions", [])
         if not self.has_object_permissions(request, badgeclass):
             return Response(status=HTTP_404_NOT_FOUND)
 
@@ -519,7 +514,7 @@ class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
             create_notification = request.data.get("create_notification", False)
         except AttributeError:
             return Response(status=HTTP_400_BAD_REQUEST)
-                
+
         # Start async task
         task = process_batch_assertions.delay(
             assertions=assertions,
@@ -528,11 +523,44 @@ class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
             create_notification=create_notification,
         )
 
-        return Response({
-            'task_id': str(task.id),
-            'status': 'processing'
-        }, status=status.HTTP_202_ACCEPTED)
+        return Response(
+            {"task_id": str(task.id), "status": "processing"},
+            status=status.HTTP_202_ACCEPTED,
+        )
 
+
+class BatchAssertionsTaskStatus(VersionedObjectMixin, BaseEntityView):
+    model = BadgeClass  # used by .get_object()
+    permission_classes = [
+        IsServerAdmin
+        | (
+            AuthenticatedWithVerifiedIdentifier
+            & MayIssueBadgeClass
+            & BadgrOAuthTokenHasScope
+        )
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    v1_serializer_class = BadgeInstanceSerializerV1
+    v2_serializer_class = BadgeInstanceSerializerV2
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    def get_context_data(self, **kwargs):
+        context = super(BatchAssertionsIssue, self).get_context_data(**kwargs)
+        context["badgeclass"] = self.get_object(self.request, **kwargs)
+        return context
+
+    def get(self, request, task_id, **kwargs):
+        task_result = AsyncResult(task_id)
+        result = task_result.result if task_result.ready() else None
+
+        if result and not result.get("success"):
+            return Response(
+                result, status=result.get("status", status.HTTP_400_BAD_REQUEST)
+            )
+
+        return Response(
+            {"task_id": task_id, "status": task_result.status, "result": result}
+        )
 
 
 class BatchAssertionsRevoke(VersionedObjectMixin, BaseEntityView):
@@ -1411,10 +1439,13 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
             )
 
             if staff_request.status != IssuerStaffRequest.Status.PENDING:
-                if staff_request.status == IssuerStaffRequest.Status.REVOKED: 
-                    return Response({
-                        "detail": "Request has already been revoked.",
-                    }, status=status.HTTP_200_OK)
+                if staff_request.status == IssuerStaffRequest.Status.REVOKED:
+                    return Response(
+                        {
+                            "detail": "Request has already been revoked.",
+                        },
+                        status=status.HTTP_200_OK,
+                    )
                 return Response(
                     {"detail": "Only pending requests can be deleted"},
                     status=status.HTTP_400_BAD_REQUEST,
