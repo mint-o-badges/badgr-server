@@ -29,8 +29,8 @@ services:
     ports:
       - "8000:8000"
     environment:
-    - CELERY_BROKER_URL=redis://redis:6379/0
-    - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
 
   # this container runs memcached
   memcached:
@@ -68,7 +68,7 @@ services:
     build:
       context: .
       dockerfile: .docker/Dockerfile.dev.api
-    entrypoint: [] # Override the entrypoint from Dockerfile  
+    entrypoint: [] # Override the entrypoint from Dockerfile
     command: >
       bash -c "PYTHONPATH=/badgr_server/apps celery -A mainsite worker --loglevel=info"
     volumes:
@@ -82,15 +82,15 @@ services:
       - "MYSQL_PASSWORD=password"
       - "MYSQL_HOST=db"
       - "MYSQL_ROOT_PASSWORD=password"
-    networks:   
-      - badgr      
+    networks:
+      - badgr
     depends_on:
       - redis
 
   redis:
-    image: redis:latest  
+    image: redis:latest
     networks:
-       - badgr       
+       - badgr
 
 networks:
   badgr:
