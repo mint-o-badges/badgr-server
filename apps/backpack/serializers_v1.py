@@ -601,7 +601,8 @@ class V1BadgeInstanceSerializer(V1InstanceSerializer):
 
 
     def to_representation(self, instance):
-        localbadgeinstance_json = instance.json
+        # FIXME: force 2_0 for API because badgr-ui depends on it
+        localbadgeinstance_json = instance.get_json('2_0')
         if 'evidence' in localbadgeinstance_json:
             localbadgeinstance_json['evidence'] = instance.evidence_url
         localbadgeinstance_json['uid'] = instance.entity_id
