@@ -55,6 +55,30 @@ def pdf(request, *args, **kwargs):
     pdf_creator = BadgePDFCreator()
     pdf_content = pdf_creator.generate_pdf(badgeinstance, badgeclass, origin=request.META.get("HTTP_ORIGIN"))
     return HttpResponse(pdf_content, content_type="application/pdf")
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
+@permission_classes([IsAuthenticated])
+def collectionPdf(request, *args, **kwargs):
+    import logging 
+    logger = logging.getLogger(__name__)
+    slug = kwargs["slug"]
+    try:
+        collection = BackpackCollection.objects.get(entity_id=slug)
+        logger.error(f"collection {collection.name}")
+
+    except BackpackCollection.DoesNotExist:
+        raise Http404
+    
+    
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = 'inline; filename="badge.pdf"'
+
+    pdf_creator = BadgePDFCreator()
+    pdf_content = None
+    # pdf_content = pdf_creator.generate_pdf(badgeinstance, badgeclass, origin=request.META.get("HTTP_ORIGIN"))
+    return HttpResponse(pdf_content, content_type="application/pdf")
    
 
 
