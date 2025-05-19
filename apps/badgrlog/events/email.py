@@ -7,7 +7,7 @@ class EmailRendered(BaseBadgrEvent):
 
     def to_representation(self):
         return {
-            'subject': self.email.subject,
-            'fromAddress': self.email.from_email,
-            'toAddress': self.email.to
+            "subject": self.email.subject,
+            "fromAddress": self.email.from_email,
+            "toAddress": self.email.to,
         }

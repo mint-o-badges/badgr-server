@@ -84,7 +84,7 @@ class ImportedBadgeInstanceList(BaseEntityListView):
         serializer = serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.validated_data["user"] = request.user
-            instance = serializer.save()
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -162,7 +162,7 @@ class BackpackAssertionList(BaseEntityListView):
             ):
                 return False
             return True
-        
+
         return list(filter(badge_filter, self.request.user.cached_badgeinstances()))
 
     @apispec_list_operation(

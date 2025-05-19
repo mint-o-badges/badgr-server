@@ -6,15 +6,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('issuer', '0037_auto_20171113_1015'),
+        ("issuer", "0037_auto_20171113_1015"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='badgeinstance',
-            name='expires_at',
+            model_name="badgeinstance",
+            name="expires_at",
             field=models.DateTimeField(blank=True, default=None, null=True),
         ),
     ]

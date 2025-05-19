@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('issuer', '0059_remove_issuer_image_preview'),
+        ("issuer", "0059_remove_issuer_image_preview"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='issuer',
-            name='verified',
+            model_name="issuer",
+            name="verified",
             field=models.BooleanField(default=False),
         ),
     ]

@@ -6,15 +6,23 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('issuer', '0032_badgeclasstag'),
+        ("issuer", "0032_badgeclasstag"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='badgeinstance',
-            name='recipient_type',
-            field=models.CharField(choices=[('email', 'email'), ('openBadgeId', 'openBadgeId'), ('telephone', 'telephone'), ('url', 'url')], default='email', max_length=255),
+            model_name="badgeinstance",
+            name="recipient_type",
+            field=models.CharField(
+                choices=[
+                    ("email", "email"),
+                    ("openBadgeId", "openBadgeId"),
+                    ("telephone", "telephone"),
+                    ("url", "url"),
+                ],
+                default="email",
+                max_length=255,
+            ),
         ),
     ]

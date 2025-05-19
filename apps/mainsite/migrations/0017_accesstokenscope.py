@@ -8,19 +8,32 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.OAUTH2_PROVIDER_ACCESS_TOKEN_MODEL),
-        ('mainsite', '0016_auto_20181003_0903'),
+        ("mainsite", "0016_auto_20181003_0903"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='AccessTokenScope',
+            name="AccessTokenScope",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('scope', models.CharField(max_length=256)),
-                ('token', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.OAUTH2_PROVIDER_ACCESS_TOKEN_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("scope", models.CharField(max_length=256)),
+                (
+                    "token",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.OAUTH2_PROVIDER_ACCESS_TOKEN_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

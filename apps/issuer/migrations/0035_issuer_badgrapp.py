@@ -7,16 +7,21 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('mainsite', '0012_badgrapp_public_pages_redirect'),
-        ('issuer', '0034_auto_20171025_1020'),
+        ("mainsite", "0012_badgrapp_public_pages_redirect"),
+        ("issuer", "0034_auto_20171025_1020"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='issuer',
-            name='badgrapp',
-            field=models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='mainsite.BadgrApp'),
+            model_name="issuer",
+            name="badgrapp",
+            field=models.ForeignKey(
+                blank=True,
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="mainsite.BadgrApp",
+            ),
         ),
     ]

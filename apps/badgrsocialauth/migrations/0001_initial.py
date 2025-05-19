@@ -8,7 +8,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -17,28 +16,62 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Saml2Account',
+            name="Saml2Account",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('uuid', models.CharField(max_length=255, unique=True)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("uuid", models.CharField(max_length=255, unique=True)),
             ],
         ),
         migrations.CreateModel(
-            name='Saml2Configuration',
+            name="Saml2Configuration",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('metadata_conf_url', models.URLField(help_text=b'The URL for the XML configuration for SAML2 flows. Get this from the Identity Provider Application.', verbose_name=b'Metadata Configuration URL')),
-                ('slug', models.CharField(help_text=b'This slug must be prefixed with saml2.', max_length=32, unique=True)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "metadata_conf_url",
+                    models.URLField(
+                        help_text=b"The URL for the XML configuration for SAML2 flows. Get this from the Identity Provider Application.",
+                        verbose_name=b"Metadata Configuration URL",
+                    ),
+                ),
+                (
+                    "slug",
+                    models.CharField(
+                        help_text=b"This slug must be prefixed with saml2.",
+                        max_length=32,
+                        unique=True,
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
-            model_name='saml2account',
-            name='config',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='badgrsocialauth.Saml2Configuration'),
+            model_name="saml2account",
+            name="config",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                to="badgrsocialauth.Saml2Configuration",
+            ),
         ),
         migrations.AddField(
-            model_name='saml2account',
-            name='user',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
+            model_name="saml2account",
+            name="user",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL
+            ),
         ),
     ]

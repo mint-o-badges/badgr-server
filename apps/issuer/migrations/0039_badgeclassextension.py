@@ -7,22 +7,38 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('issuer', '0038_badgeinstance_expires_at'),
+        ("issuer", "0038_badgeinstance_expires_at"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='BadgeClassExtension',
+            name="BadgeClassExtension",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=254)),
-                ('original_json', models.TextField(blank=True, default=None, null=True)),
-                ('badgeclass', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='issuer.BadgeClass')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=254)),
+                (
+                    "original_json",
+                    models.TextField(blank=True, default=None, null=True),
+                ),
+                (
+                    "badgeclass",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="issuer.BadgeClass",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
     ]

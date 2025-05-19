@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('issuer', '0075_importedbadgeassertion_importedbadgeassertionextension'),
+        ("issuer", "0075_importedbadgeassertion_importedbadgeassertionextension"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='badgeclass',
-            name='criteria',
+            model_name="badgeclass",
+            name="criteria",
             field=models.JSONField(blank=True, null=True),
         ),
     ]

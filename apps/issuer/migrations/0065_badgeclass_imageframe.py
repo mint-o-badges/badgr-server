@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('issuer', '0064_auto_20211122_0929'),
+        ("issuer", "0064_auto_20211122_0929"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='badgeclass',
-            name='imageFrame',
+            model_name="badgeclass",
+            name="imageFrame",
             field=models.BooleanField(default=True),
         ),
     ]

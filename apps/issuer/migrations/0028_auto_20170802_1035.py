@@ -7,15 +7,14 @@ import django.utils.timezone
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('issuer', '0027_auto_20170801_1636'),
+        ("issuer", "0027_auto_20170801_1636"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='badgeinstance',
-            name='issued_on',
+            model_name="badgeinstance",
+            name="issued_on",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
     ]

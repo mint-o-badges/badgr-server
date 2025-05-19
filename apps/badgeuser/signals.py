@@ -18,4 +18,4 @@ def handle_email_created(sender, instance=None, created=False, **kwargs):
     leaves user.cached_emails() empty.
     """
     if created:
-        instance.user.publish_method('cached_emails')
+        instance.user.publish_method("cached_emails")

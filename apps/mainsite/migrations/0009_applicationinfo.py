@@ -8,24 +8,37 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.OAUTH2_PROVIDER_APPLICATION_MODEL),
-        ('mainsite', '0008_auto_20170711_1326'),
-        ('oauth2_provider', '0001_initial'),
+        ("mainsite", "0008_auto_20170711_1326"),
+        ("oauth2_provider", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ApplicationInfo',
+            name="ApplicationInfo",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('icon', models.ImageField(blank=True, null=True, upload_to=b'')),
-                ('name', models.CharField(blank=True, max_length=254, null=True)),
-                ('application', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to=settings.OAUTH2_PROVIDER_APPLICATION_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("icon", models.ImageField(blank=True, null=True, upload_to=b"")),
+                ("name", models.CharField(blank=True, max_length=254, null=True)),
+                (
+                    "application",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.OAUTH2_PROVIDER_APPLICATION_MODEL,
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
     ]

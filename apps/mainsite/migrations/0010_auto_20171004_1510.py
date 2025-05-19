@@ -6,30 +6,29 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('mainsite', '0009_applicationinfo'),
+        ("mainsite", "0009_applicationinfo"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='applicationinfo',
-            name='allowed_scopes',
+            model_name="applicationinfo",
+            name="allowed_scopes",
             field=models.TextField(blank=True),
         ),
         migrations.AddField(
-            model_name='applicationinfo',
-            name='website_url',
+            model_name="applicationinfo",
+            name="website_url",
             field=models.URLField(blank=True, default=None, null=True),
         ),
         migrations.AlterField(
-            model_name='applicationinfo',
-            name='icon',
-            field=models.FileField(blank=True, null=True, upload_to=b''),
+            model_name="applicationinfo",
+            name="icon",
+            field=models.FileField(blank=True, null=True, upload_to=b""),
         ),
         migrations.AlterField(
-            model_name='applicationinfo',
-            name='name',
+            model_name="applicationinfo",
+            name="name",
             field=models.CharField(blank=True, default=None, max_length=254, null=True),
         ),
     ]

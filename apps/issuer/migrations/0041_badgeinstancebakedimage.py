@@ -8,22 +8,41 @@ import issuer.models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('issuer', '0040_badgeinstanceextension_issuerextension'),
+        ("issuer", "0040_badgeinstanceextension_issuerextension"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='BadgeInstanceBakedImage',
+            name="BadgeInstanceBakedImage",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('obi_version', models.CharField(max_length=254)),
-                ('image', models.FileField(blank=True, upload_to=issuer.models._baked_badge_instance_filename_generator)),
-                ('badgeinstance', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='issuer.BadgeInstance')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("obi_version", models.CharField(max_length=254)),
+                (
+                    "image",
+                    models.FileField(
+                        blank=True,
+                        upload_to=issuer.models._baked_badge_instance_filename_generator,
+                    ),
+                ),
+                (
+                    "badgeinstance",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="issuer.BadgeInstance",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
     ]

@@ -8,24 +8,42 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('badgeuser', '0019_auto_20181102_1438'),
+        ("badgeuser", "0019_auto_20181102_1438"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='UserRecipientIdentifier',
+            name="UserRecipientIdentifier",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('format', models.CharField(choices=[('url', 'URL')], default='url', max_length=3)),
-                ('identifier', models.CharField(max_length=255)),
-                ('verified', models.BooleanField(default=False)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "format",
+                    models.CharField(
+                        choices=[("url", "URL")], default="url", max_length=3
+                    ),
+                ),
+                ("identifier", models.CharField(max_length=255)),
+                ("verified", models.BooleanField(default=False)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.AlterUniqueTogether(
-            name='userrecipientidentifier',
-            unique_together=set([('user', 'format', 'identifier')]),
+            name="userrecipientidentifier",
+            unique_together=set([("user", "format", "identifier")]),
         ),
     ]

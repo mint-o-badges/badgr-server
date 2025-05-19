@@ -1,13 +1,10 @@
 from django.urls import reverse
-from django.conf import settings
 from django.http import Http404
 from django.views.generic import RedirectView
 
-from django.core.exceptions import PermissionDenied
 
 from backpack.models import BackpackCollection
-from issuer.models import BadgeInstance, BadgeClass, Issuer, IssuerStaff
-from badgeuser.models import BadgeUser
+from issuer.models import BadgeInstance, BadgeClass
 
 from rest_framework.decorators import (
     permission_classes,
@@ -16,14 +13,19 @@ from rest_framework.decorators import (
 )
 
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
+from rest_framework.authentication import (
+    SessionAuthentication,
+    BasicAuthentication,
+    TokenAuthentication,
+)
 from django.http import HttpResponse
-from mainsite.utils import get_name
 from mainsite.badge_pdf import BadgePDFCreator
 
 
 @api_view(["GET"])
-@authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
+@authentication_classes(
+    [TokenAuthentication, SessionAuthentication, BasicAuthentication]
+)
 @permission_classes([IsAuthenticated])
 def pdf(request, *args, **kwargs):
     slug = kwargs["slug"]
@@ -36,7 +38,7 @@ def pdf(request, *args, **kwargs):
         issuer_owners_emails = list(map(attrgetter('primary_email'), issuer_owners)) """
 
         # User must be the recipient or an issuer staff with OWNER role
-        # TODO: Check other recipient types 
+        # TODO: Check other recipient types
         # Temporary commented out
         """ if request.user.email != badgeinstance.recipient_identifier and request.user.email not in issuer_owners_emails:
             raise PermissionDenied """
@@ -53,10 +55,10 @@ def pdf(request, *args, **kwargs):
     response["Content-Disposition"] = 'inline; filename="badge.pdf"'
 
     pdf_creator = BadgePDFCreator()
-    pdf_content = pdf_creator.generate_pdf(badgeinstance, badgeclass, origin=request.META.get("HTTP_ORIGIN"))
+    pdf_content = pdf_creator.generate_pdf(
+        badgeinstance, badgeclass, origin=request.META.get("HTTP_ORIGIN")
+    )
     return HttpResponse(pdf_content, content_type="application/pdf")
-   
-
 
 
 class RedirectSharedCollectionView(RedirectView):
