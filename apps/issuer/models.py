@@ -579,8 +579,8 @@ class Issuer(
 
         id = self.jsonld_id if use_canonical_id else add_obi_version_ifneeded(self.jsonld_id, obi_version)
 
-        # spread context_iri to create a copy because we might modify it later on
-        json = OrderedDict({"@context": [ *context_iri ]})
+        # spread 3_0 context_iri to create a copy because we might modify it later on
+        json = OrderedDict({"@context": [ *context_iri ] if obi_version == '3_0' else context_iri })
 
         json.update(
             OrderedDict(
@@ -1248,7 +1248,7 @@ class BadgeClass(
         include_orgImg=False,
     ):
         obi_version, context_iri = get_obi_context(obi_version)
-        json = OrderedDict({"@context": [ *context_iri ]})
+        json = OrderedDict({"@context": [ *context_iri ] if obi_version == '3_0' else context_iri })
         json.update(
             OrderedDict(
                 type="BadgeClass",
@@ -1986,7 +1986,9 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
 
         # choose obi version
         if not obi_version:
-            obi_version = '3_0' if self.ob_json_3_0 or not self.ob_json_2_0 else '2_0'
+            # expand parameters mean json is accessed from badgr-ui, fall back to 2_0
+            # else return 3_0 if available, else 2_0
+            obi_version = '3_0' if self.ob_json_3_0 and not expand_badgeclass and not expand_issuer else '2_0'
 
         # FIXME: 'support' 1_1 for v1 serializer classes
         if obi_version == '1_1':
