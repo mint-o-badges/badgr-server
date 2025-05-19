@@ -84,6 +84,7 @@ services:
       context: .
       dockerfile: .docker/Dockerfile.prod.api
     entrypoint: [] # Override the entrypoint from Dockerfile
+    user: "999:999"
     command: >
       bash -c "PYTHONPATH=/badgr_server/apps celery -A mainsite worker --loglevel=info"
     volumes:
