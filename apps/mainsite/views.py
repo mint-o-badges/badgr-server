@@ -5,12 +5,14 @@ import json
 import time
 import re
 import os
+from hashlib import md5
 
 from django import forms
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.urls import reverse, reverse_lazy
 from django.db import IntegrityError
+from django.core.cache import cache
 from django.http import (
     HttpResponseServerError,
     HttpResponseNotFound,
@@ -598,6 +600,107 @@ def email_unsubscribe(request, *args, **kwargs):
         "You will no longer receive email notifications for earned"
         " badges from this domain.",
     )
+
+
+# CMS contents
+
+def call_cms_api(request, path, params = {}):
+    params = {"api_key": settings.CMS_API_KEY, **params}
+    try:
+        params['lang'] = request.GET.get('lang')
+    except:
+        pass
+
+    headers = {"accept": "application/json"}
+    url = settings.CMS_API_BASE_URL + settings.CMS_API_BASE_PATH + path
+
+    cache_key = md5(url.encode()+json.dumps(params).encode()).digest()
+
+    data = cache.get(cache_key)
+    if not data:
+        try:
+            response = requests.get(
+                url, params=params, headers=headers
+            )
+            data = response.json()
+            cache.set(cache_key, data, 60)
+        except:
+            data = ""
+    return JsonResponse(data, safe=False)
+
+def cms_transform_urls(text):
+    # remove api base url
+    text = text.replace(f'{settings.CMS_API_BASE_URL}/wp-content', 'asset://')
+    text = text.replace(settings.CMS_API_BASE_URL, '/page')
+    text = text.replace('/page/post', '/post')
+    text = text.replace('asset://', f'{settings.CMS_API_BASE_URL}/wp-content')
+    return text
+
+def cms_api_menu_list(request):
+    api_response = call_cms_api(request, 'menu/list')
+    api_data = json.loads(api_response.content.decode())
+
+    # transform menu response
+    menus = {
+        'header': {
+            'de': [],
+            'en': []
+        },
+        'footer': {
+            'de': [],
+            'en': []
+        }
+    }
+    for i, menu in api_data.items():
+        items = [{
+            'id': x['object_id'],
+            'title': x['title'],
+            'url': cms_transform_urls(x['url']),
+        } for x in menu['items']]
+        if menu['menu']['slug'] == 'footer': menus['footer']['de'] = items
+        elif menu['menu']['slug'] == 'footer-eng': menus['footer']['en'] = items
+        elif menu['menu']['slug'] == 'header': menus['header']['de'] = items
+        elif menu['menu']['slug'] == 'header-eng': menus['header']['en'] = items
+
+    return JsonResponse(menus)
+
+def cms_api_page_details(request):
+    slug = request.GET.get('slug')
+    api_response = call_cms_api(request, 'page/slug', { 'slug': slug })
+    api_data = json.loads(api_response.content.decode())
+
+    api_data['post_content'] = cms_transform_urls(api_data['post_content'])
+
+    return JsonResponse(api_data)
+
+def cms_api_post_details(request):
+    slug = request.GET.get('slug')
+    api_response = call_cms_api(request, 'post/slug', { 'slug': 'post/' + slug })
+    api_data = json.loads(api_response.content.decode())
+
+    api_data['post_content'] = cms_transform_urls(api_data['post_content'])
+
+    return JsonResponse(api_data)
+
+def cms_api_post_list(request):
+    api_response = call_cms_api(request, 'post/list', {})
+    api_data = json.loads(api_response.content.decode())
+    for post in api_data:
+        post['post_content'] = cms_transform_urls(post['post_content'])
+        post['slug'] = cms_transform_urls(post['slug'])
+
+    return JsonResponse(api_data, safe=False)
+
+def cms_api_styles(request):
+    api_response = call_cms_api(request, 'style', {})
+    api_response_content = api_response.content.decode()
+    api_response_content = api_response_content.replace('body.', '.body.')
+    api_response_content = api_response_content.replace('body ', ':host ')
+    api_response_content = api_response_content.replace('body{', ':host{')
+    api_response_content = api_response_content.replace(':root', ':host')
+    api_data = json.loads(api_response_content)
+
+    return HttpResponse(api_data, content_type="text/css")
 
 
 class AppleAppSiteAssociation(APIView):
