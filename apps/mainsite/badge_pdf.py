@@ -112,7 +112,6 @@ class BadgePDFCreator:
             return text
 
     def add_dynamic_spacer(self, first_page_content, text):
-        print(text)
         line_char_count = 79
         line_height = 16.5
         num_lines = math.ceil(len(text) / line_char_count)
