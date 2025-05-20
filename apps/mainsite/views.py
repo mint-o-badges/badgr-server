@@ -633,6 +633,7 @@ def cms_transform_urls(text):
     text = text.replace(f'{settings.CMS_API_BASE_URL}/wp-content', 'asset://')
     text = text.replace(settings.CMS_API_BASE_URL, '/page')
     text = text.replace('/page/post', '/post')
+    text = text.replace('/page/en/post', '/post')
     text = text.replace('asset://', f'{settings.CMS_API_BASE_URL}/wp-content')
     return text
 
@@ -691,7 +692,7 @@ def cms_api_post_list(request):
 
     return JsonResponse(api_data, safe=False)
 
-def cms_api_styles(request):
+def cms_api_style(request):
     api_response = call_cms_api(request, 'style', {})
     api_response_content = api_response.content.decode()
     api_response_content = api_response_content.replace('body.', '.body.')
@@ -701,6 +702,12 @@ def cms_api_styles(request):
     api_data = json.loads(api_response_content)
 
     return HttpResponse(api_data, content_type="text/css")
+
+def cms_api_script(request):
+    api_response = call_cms_api(request, 'script', {})
+    api_data = json.loads(api_response.content.decode())
+
+    return HttpResponse(api_data, content_type="text/javascript")
 
 
 class AppleAppSiteAssociation(APIView):
