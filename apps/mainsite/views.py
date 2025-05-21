@@ -6,6 +6,7 @@ import time
 import re
 import os
 from hashlib import md5
+import html
 
 from django import forms
 from django.conf import settings
@@ -699,13 +700,16 @@ def cms_api_style(request):
     api_response_content = api_response_content.replace('body ', ':host ')
     api_response_content = api_response_content.replace('body{', ':host{')
     api_response_content = api_response_content.replace(':root', ':host')
+    api_response_content = html.unescape(api_response_content)
     api_data = json.loads(api_response_content)
 
     return HttpResponse(api_data, content_type="text/css")
 
 def cms_api_script(request):
     api_response = call_cms_api(request, 'script', {})
-    api_data = json.loads(api_response.content.decode())
+    api_response_content = api_response.content.decode()
+    api_response_content = api_response_content.replace('document.querySelector', 'document.querySelector(\'cms-content shadow-dom\').shadowRoot.querySelector')
+    api_data = json.loads(api_response_content)
 
     return HttpResponse(api_data, content_type="text/javascript")
 
