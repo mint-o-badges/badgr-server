@@ -61,21 +61,16 @@ def pdf(request, *args, **kwargs):
 @authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
 @permission_classes([IsAuthenticated])
 def collectionPdf(request, *args, **kwargs):
-    import logging 
-    logger = logging.getLogger(__name__)
     slug = kwargs["slug"]
     try:
         collection = BackpackCollection.objects.get(entity_id=slug)
     except BackpackCollection.DoesNotExist:
         raise Http404
     
-    
-
     response = HttpResponse(content_type="application/pdf")
     response["Content-Disposition"] = 'inline; filename="badge.pdf"'
 
     pdf_creator = CollectionPDFCreator()
-    pdf_content = None
     pdf_content = pdf_creator.generate_pdf(collection, origin=request.META.get("HTTP_ORIGIN"))
     return HttpResponse(pdf_content, content_type="application/pdf")
    
