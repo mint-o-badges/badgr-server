@@ -1,15 +1,12 @@
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-from reportlab.lib.units import cm, inch
-from reportlab.lib.colors import PCMYKColor
+from reportlab.lib.units import inch
 from reportlab.lib.utils import ImageReader
-from reportlab.platypus import SimpleDocTemplate, Flowable, Paragraph, Spacer, Image, PageBreak,BaseDocTemplate,Table, TableStyle, Frame, PageTemplate
+from reportlab.platypus import Flowable, Paragraph, Spacer, Image, PageBreak,BaseDocTemplate,Table, TableStyle, Frame, PageTemplate
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT
-from svglib.svglib import svg2rlg
+from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
 from reportlab.lib.units import mm
 from reportlab.lib import colors
-from reportlab.graphics import renderPDF, renderPM
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
 from functools import partial
@@ -18,12 +15,7 @@ from io import BytesIO
 import os
 import qrcode
 import math
-from issuer.models import BadgeInstance, BadgeClass, Issuer, IssuerStaff, LearningPath
-from badgeuser.models import BadgeUser
-from mainsite.utils import get_name
 from django.conf import settings
-from django.db.models import Max
-from json import loads as json_loads
 
 font_path_rubik_regular = os.path.join(os.path.dirname(__file__), 'Rubik-Regular.ttf')
 font_path_rubik_medium = os.path.join(os.path.dirname(__file__), 'Rubik-Medium.ttf')
@@ -38,7 +30,6 @@ pdfmetrics.registerFont(TTFont('Rubik-Italic', font_path_rubik_italic))
 
 class CollectionPDFCreator:
     def __init__(self):
-        self.competencies = []
         self.used_space = 0
 
     def add_title(self, first_page_content, title):
@@ -59,6 +50,8 @@ class CollectionPDFCreator:
         self.used_space += num_lines * line_height  
 
     def add_badges(self, first_page_content, badges):
+        import logging 
+        logger = logging.getLogger(__name__)
         PAGE_WIDTH, PAGE_HEIGHT = A4
         CONTENT_WIDTH = PAGE_WIDTH - 40  # Accounting for margins
         ITEM_WIDTH = CONTENT_WIDTH / 3  # 3 items per row
@@ -68,7 +61,10 @@ class CollectionPDFCreator:
         rows = []
         current_row = []
 
-        for i, badge in enumerate(badges):                
+        rowsPerPage = 6 # 18 badges
+
+        for i, badge in enumerate(badges): 
+
             b = BadgeCard(
                 badge.image,
                 badge.badgeclass.name,
@@ -90,7 +86,11 @@ class CollectionPDFCreator:
             rows.append(current_row)                
     
         
-        for row in rows:
+        for i, row in enumerate(rows):
+            if i != 0 and i % rowsPerPage == 0:
+                first_page_content.append(PageBreak())
+                first_page_content.append(Spacer(1, 70))
+                self.used_space = 0 
             table = Table([row], colWidths=[ITEM_WIDTH - ITEM_MARGIN/2] * 3)
             table.setStyle(TableStyle([
                 ('VALIGN', (0, 0), (-1, -1), 'TOP'),
@@ -99,9 +99,10 @@ class CollectionPDFCreator:
             ]))
             
             first_page_content.append(table)
-            first_page_content.append(Spacer(1, 0.3*inch))
+            first_page_content.append(Spacer(1, 10))
+            self.used_space += ITEM_HEIGHT + 10
 
-    def add_qrcode_section(self, first_page_content, qrCodeImage=None):
+    def add_qrcode_section(self, first_page_content, share_hash, qrCodeImage=None):
         issued_by_style = ParagraphStyle(
             name='IssuedBy', 
             fontSize=10, 
@@ -146,12 +147,13 @@ class CollectionPDFCreator:
             first_page_content.append(img_table)
             qr_code_height = 57 + 20  
 
-        content_html = """
-            <br/><p fontName="Rubik-Bold">
-            Detaillierte Infos zu den <strong>einzelnen Badges und <br /> den damit gestärkten Kompetenzen</strong> erhalten Sie <br/> über den QR-Code oder diesen Link: 
-            <a href="https://openbadges.education" 
+        content_html = f"""
+            <br/><p><font name="Rubik-Regular">
+            Detaillierte Infos zu den <font name="Rubik-Bold">einzelnen Badges <br/> 
+            und den damit gestärkten Kompetenzen</font> erhalten Sie <br/> über den QR-Code oder diesen Link: 
+            <a href="https://openbadges.education/public/collections/{share_hash}" 
             color="#1400FF" 
-            underline="true">Digitale Badge-Sammlung</a></p>
+            underline="true">Digitale Badge-Sammlung</a></font></p>
             <br/>
             <br/><br/>
         """
@@ -229,7 +231,12 @@ class CollectionPDFCreator:
         first_page_content.append(Spacer(1, 20 if collection.description else 50))
         self.add_badges(first_page_content, collection.assertions.all())
         if collection.published: 
-            self.add_qrcode_section(first_page_content, self.generate_qr_code(collection, origin))
+            # not enough space for qrcode on this page
+            if self.used_space > 550:
+              first_page_content.append(PageBreak())
+              first_page_content.append(Spacer(1, 70))
+              self.used_space = 0
+            self.add_qrcode_section(first_page_content, collection.share_hash, self.generate_qr_code(collection, origin))
 
 
         # doc template with margins according to design doc
@@ -301,7 +308,6 @@ class BadgeCard(Flowable):
             leading=10,
             fontName='Rubik-Bold',
             textColor=colors.HexColor('#333333'),
-            wordWrap='CJK',
             splitLongWords=1,
             spaceAfter=1,
         )
@@ -311,8 +317,7 @@ class BadgeCard(Flowable):
             fontSize=6.5,
             leading=8,
             fontName='Rubik-Regular',
-            textColor=colors.HexColor('#666666'),
-            wordWrap='CJK',
+            textColor=colors.HexColor('#323232'),
             splitLongWords=1,
             spaceAfter=1,
         )
@@ -322,8 +327,7 @@ class BadgeCard(Flowable):
             fontSize=6,
             leading=7,
             fontName='Rubik-Regular',
-            textColor=colors.HexColor('#888888'),
-            wordWrap='CJK',
+            textColor=colors.HexColor('#323232'),
         )
 
         title_text = self.truncate_text(self.title, 60)
