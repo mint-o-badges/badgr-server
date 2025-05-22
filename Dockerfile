@@ -60,6 +60,10 @@ RUN touch /var/log/cron_cleartokens.log && \
     chown python:python /var/log/cron_cleartokens.log && \
     chmod 644 /var/log/cron_cleartokens.log
 
+RUN touch /var/log/cron_qr_badgerequests.log && \
+    chown python:python /var/log/cron_qr_badgerequests.log && \
+    chmod 644 /var/log/cron_qr_badgerequests.log    
+
 
 # Latest releases available at https://github.com/aptible/supercronic/releases
 ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.2.30/supercronic-linux-amd64 \
