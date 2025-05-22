@@ -6,7 +6,7 @@ import semver
 
 default_app_config = 'mainsite.apps.BadgrConfig'
 
-__all__ = ['APPS_DIR', 'TOP_DIR', 'get_version']
+__all__ = ['APPS_DIR', 'TOP_DIR', 'get_version', 'celery_app']
 
 
 def get_version(version=None):
