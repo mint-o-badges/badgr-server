@@ -587,9 +587,18 @@ class V1InstanceSerializer(serializers.Serializer):
     recipient = BadgeEmailField()  # TODO: improve for richer types
     badge = V1BadgeClassSerializer()
     issuedOn = BadgeDateTimeField(required=False)  # missing in some translated v0.5.0
+    validFrom = BadgeDateTimeField(required=False)  # missing in some translated v0.5.0
     expires = BadgeDateTimeField(required=False)
     image = BadgeImageURLField(required=False)
     evidence = BadgeURLField(required=False)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+
+        # add context for checking of ob version
+        data["@context"] = instance['@context']
+
+        return data
 
 
 class V1BadgeInstanceSerializer(V1InstanceSerializer):
@@ -601,8 +610,7 @@ class V1BadgeInstanceSerializer(V1InstanceSerializer):
 
 
     def to_representation(self, instance):
-        # FIXME: force 2_0 for API because badgr-ui depends on it
-        localbadgeinstance_json = instance.get_json('2_0')
+        localbadgeinstance_json = instance.json
         if 'evidence' in localbadgeinstance_json:
             localbadgeinstance_json['evidence'] = instance.evidence_url
         localbadgeinstance_json['uid'] = instance.entity_id

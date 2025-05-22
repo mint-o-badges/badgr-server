@@ -1285,7 +1285,7 @@ class BadgeClass(
         # criteria
         if obi_version == "1_1":
             json["criteria"] = self.get_criteria_url()
-        elif obi_version == "2_0":
+        elif obi_version == "2_0" or obi_version == "3_0":
             json["criteria"] = {}
             if self.criteria_url:
                 json["criteria"]["id"] = self.criteria_url
@@ -1301,7 +1301,7 @@ class BadgeClass(
                 json["hostedUrl"] = OriginSetting.HTTP + self.get_absolute_url()
 
         # alignment / tags
-        if obi_version == "2_0":
+        if obi_version == "2_0" or obi_version == "3_0":
             json["alignment"] = [
                 a.get_json(obi_version=obi_version) for a in self.cached_alignments()
             ]
@@ -1988,7 +1988,8 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
         if not obi_version:
             # expand parameters mean json is accessed from badgr-ui, fall back to 2_0
             # else return 3_0 if available, else 2_0
-            obi_version = '3_0' if self.ob_json_3_0 and not expand_badgeclass and not expand_issuer else '2_0'
+            # obi_version = '3_0' if self.ob_json_3_0 and not expand_badgeclass and not expand_issuer else '2_0'
+            obi_version = '3_0' if self.ob_json_3_0 else '2_0'
 
         # FIXME: 'support' 1_1 for v1 serializer classes
         if obi_version == '1_1':
@@ -2022,7 +2023,14 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
 
             json = json_loads(self.ob_json_3_0, object_pairs_hook=OrderedDict)
 
-            return self.get_json_3_0()
+            if expand_badgeclass:
+                json["badge"] = self.cached_badgeclass.get_json(obi_version=obi_version)
+                json["badge"]["slug"] = self.cached_badgeclass.entity_id
+                if expand_issuer:
+                    json["badge"]["issuer"] = self.cached_issuer.get_json(obi_version=obi_version)
+
+
+            return json
 
         raise NotImplementedError("Unsupported OB Version")
 
