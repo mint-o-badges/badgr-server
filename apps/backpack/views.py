@@ -8,6 +8,7 @@ from django.core.exceptions import PermissionDenied
 from backpack.models import BackpackCollection
 from issuer.models import BadgeInstance, BadgeClass, Issuer, IssuerStaff
 from badgeuser.models import BadgeUser
+from mainsite.collection_pdf import CollectionPDFCreator
 
 from rest_framework.decorators import (
     permission_classes,
@@ -65,8 +66,6 @@ def collectionPdf(request, *args, **kwargs):
     slug = kwargs["slug"]
     try:
         collection = BackpackCollection.objects.get(entity_id=slug)
-        logger.error(f"collection {collection.name}")
-
     except BackpackCollection.DoesNotExist:
         raise Http404
     
@@ -75,9 +74,9 @@ def collectionPdf(request, *args, **kwargs):
     response = HttpResponse(content_type="application/pdf")
     response["Content-Disposition"] = 'inline; filename="badge.pdf"'
 
-    pdf_creator = BadgePDFCreator()
+    pdf_creator = CollectionPDFCreator()
     pdf_content = None
-    # pdf_content = pdf_creator.generate_pdf(badgeinstance, badgeclass, origin=request.META.get("HTTP_ORIGIN"))
+    pdf_content = pdf_creator.generate_pdf(collection, origin=request.META.get("HTTP_ORIGIN"))
     return HttpResponse(pdf_content, content_type="application/pdf")
    
 
