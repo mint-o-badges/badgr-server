@@ -1986,10 +1986,18 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
 
         # choose obi version
         if not obi_version:
-            # expand parameters mean json is accessed from badgr-ui, fall back to 2_0
-            # else return 3_0 if available, else 2_0
-            # obi_version = '3_0' if self.ob_json_3_0 and not expand_badgeclass and not expand_issuer else '2_0'
             obi_version = '3_0' if self.ob_json_3_0 else '2_0'
+
+
+        # FIXME: special case
+        # badgr-ui frontend uses this to display the public/assertions/ endpoint
+        # also maybe social media sharing / widget.ts to display badge name
+        def expand_json_ifneeded(json):
+            if expand_badgeclass:
+                json["badge"] = self.cached_badgeclass.get_json(obi_version=obi_version)
+                json["badge"]["slug"] = self.cached_badgeclass.entity_id
+                if expand_issuer:
+                    json["badge"]["issuer"] = self.cached_issuer.get_json(obi_version=obi_version)
 
         # FIXME: 'support' 1_1 for v1 serializer classes
         if obi_version == '1_1':
@@ -2004,14 +2012,7 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
 
             json = json_loads(self.ob_json_2_0, object_pairs_hook=OrderedDict)
 
-            # FIXME: special case
-            # badgr-ui frontend uses this to display the public/assertions/ endpoint
-            # also maybe social media sharing / widget.ts to display badge name
-            if expand_badgeclass:
-                json["badge"] = self.cached_badgeclass.get_json(obi_version=obi_version)
-                json["badge"]["slug"] = self.cached_badgeclass.entity_id
-                if expand_issuer:
-                    json["badge"]["issuer"] = self.cached_issuer.get_json(obi_version=obi_version)
+            expand_json_ifneeded(json)
 
             return json
 
@@ -2023,14 +2024,10 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
 
             json = json_loads(self.ob_json_3_0, object_pairs_hook=OrderedDict)
 
-            if expand_badgeclass:
-                json["badge"] = self.cached_badgeclass.get_json(obi_version=obi_version)
-                json["badge"]["slug"] = self.cached_badgeclass.entity_id
-                if expand_issuer:
-                    json["badge"]["issuer"] = self.cached_issuer.get_json(obi_version=obi_version)
-
+            expand_json_ifneeded(json)
 
             return json
+
 
         raise NotImplementedError("Unsupported OB Version")
 
