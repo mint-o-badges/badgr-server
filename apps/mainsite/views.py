@@ -654,11 +654,25 @@ def cms_api_menu_list(request):
         }
     }
     for i, menu in api_data.items():
-        items = [{
-            'id': x['object_id'],
+        all_items = [{
+            'id': x['ID'],
+            'page_id': int(x['object_id']),
             'title': x['title'],
             'url': cms_transform_urls(x['url']),
+            'parent': int(x['menu_item_parent']),
+            'children': []
         } for x in menu['items']]
+
+        # turn into tree
+        items = []
+        for x in all_items:
+            if x['parent'] == 0:
+                items.append(x)
+            else:
+                parent = next(filter(lambda y: y['id'] == x['parent'], items), None)
+                if parent:
+                    parent["children"].append(x)
+
         if menu['menu']['slug'] == 'footer': menus['footer']['de'] = items
         elif menu['menu']['slug'] == 'footer-eng': menus['footer']['en'] = items
         elif menu['menu']['slug'] == 'header': menus['header']['de'] = items
