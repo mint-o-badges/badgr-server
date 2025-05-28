@@ -435,8 +435,7 @@ def process_batch_assertions(assertions, user_id, badgeclass_id, create_notifica
             for assertion in assertions
         ]
         
-            
-        context = {'badgeclass': badgeclass}
+        context = {'badgeclass': badgeclass, 'user': user}
         serializer = BadgeInstanceSerializerV1(many=True, data=assertions, context=context)
         if not serializer.is_valid():
             return {
