@@ -661,7 +661,7 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
 
         return representation
 
-    def create(self, validated_data):
+    def create(self, validated_data, **kwargs):
         """
         Requires self.context to include request (with authenticated request.user)
         and badgeclass: issuer.models.BadgeClass.
@@ -676,14 +676,14 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
         # ob2 evidence items
         submitted_items = validated_data.get("evidence_items")
         if submitted_items:
-            evidence_items.extend(submitted_items)
+            evidence_items.extend(submitted_items)         
         try:
             return self.context.get("badgeclass").issue(
                 recipient_id=validated_data.get("recipient_identifier"),
                 narrative=validated_data.get("narrative"),
                 evidence=evidence_items,
                 notify=validated_data.get("create_notification"),
-                created_by=self.context.get("request").user,
+                created_by = self.context.get("user") or getattr(self.context.get("request"), "user", None),
                 allow_uppercase=validated_data.get("allow_uppercase"),
                 recipient_type=validated_data.get(
                     "recipient_type", RECIPIENT_TYPE_EMAIL
