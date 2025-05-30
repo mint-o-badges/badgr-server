@@ -39,7 +39,7 @@ services:
       - "11211"
     networks:
       - badgr
-    command: ["memcached", "-m", "64", "-I", "10m"]
+    command: ["memcached", "-m", "512", "-I", "10m"]
   # this container runs mysql (database)
   db:
     image: mysql:5.7.31
@@ -90,7 +90,7 @@ services:
   redis:
     image: redis:latest
     networks:
-       - badgr
+      - badgr
 
 networks:
   badgr:
