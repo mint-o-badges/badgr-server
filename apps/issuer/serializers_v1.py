@@ -348,7 +348,7 @@ class BadgeClassSerializerV1(
     image = ValidImageField(required=False)
     imageFrame = serializers.BooleanField(default=True, required=False)
     slug = StripTagsCharField(max_length=255, read_only=True, source="entity_id")
-    criteria = JSONField(required=False)
+    criteria = JSONField(required=False, allow_null=True)
     criteria_text = MarkdownCharField(required=False, allow_null=True, allow_blank=True)
     criteria_url = StripTagsCharField(
         required=False, allow_blank=True, allow_null=True, validators=[URLValidator()]
@@ -411,8 +411,6 @@ class BadgeClassSerializerV1(
         representation["json"] = instance.get_json(
             obi_version="1_1", use_canonical_id=True
         )
-        if representation['criteria_text'] is None:
-            representation['criteria_text'] = instance.get_criteria()
         return representation
 
     def validate_image(self, image):
