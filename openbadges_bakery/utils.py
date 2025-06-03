@@ -1,9 +1,8 @@
+
+
 import re
 
-try:
-    import png_bakery, svg_bakery
-except ImportError:
-    from . import png_bakery, svg_bakery
+from . import png_bakery, svg_bakery
 
 
 def check_image_type(image_file):
@@ -11,13 +10,8 @@ def check_image_type(image_file):
         return 'PNG'
     image_file.seek(0)
     # TODO: Use xml library to more accurately detect SVG documents
-    try:
-        if re.search(b'<svg', image_file.read(256)):
-            return 'SVG'
-    except TypeError:
-        image_file.seek(0)
-        if re.search('<svg', image_file.read(256)):
-            return 'SVG'
+    if re.search(b'<svg', image_file.read(256)):
+        return 'SVG'
 
 
 def unbake(image_file):

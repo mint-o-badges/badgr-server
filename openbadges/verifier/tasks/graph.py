@@ -40,8 +40,10 @@ def fetch_http_node(state, task_meta, **options):
         url, headers={'Accept': 'application/ld+json, application/json, image/png, image/svg+xml'}
     )
 
+    result_text = result.content.decode()
+
     try:
-        json.loads(result.text)
+        json.loads(result_text)
     except ValueError:
         content_type = result.headers.get('Content-Type', 'UNKNOWN')
 
@@ -65,8 +67,8 @@ def fetch_http_node(state, task_meta, **options):
             True, 'Successfully fetched image from {}'.format(url), actions)
 
     actions = [
-        store_original_resource(node_id=url, data=result.text),
-        add_task(INTAKE_JSON, data=result.text, node_id=url,
+        store_original_resource(node_id=url, data=result_text),
+        add_task(INTAKE_JSON, data=result_text, node_id=url,
                  expected_class=task_meta.get('expected_class'),
                  source_node_path=task_meta.get('source_node_path'))]
     return task_result(message="Successfully fetched JSON data from {}".format(url), actions=actions)

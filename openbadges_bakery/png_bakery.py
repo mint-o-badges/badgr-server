@@ -1,5 +1,10 @@
+
+
 import codecs
+import hashlib
+from io import BytesIO, StringIO
 import itertools
+import os.path
 import png
 import re
 from tempfile import NamedTemporaryFile
@@ -16,12 +21,10 @@ def unbake(imageFile):
 
     reader = png.Reader(file=imageFile)
     for chunktype, content in reader.chunks():
-        bchunktype = bytes(chunktype)
-        bcontent = bytes(content)
-        if bchunktype == b'iTXt' and bcontent.startswith(b'openbadges\x00'):
+        if chunktype == b'iTXt' and content.startswith(b'openbadges\x00'):
             return re.sub(b'openbadges[\x00]+', b'', content).decode('utf8')
-        elif bchunktype == b'tEXt' and bcontent.startswith(b'openbadges\x00'):
-            return bcontent.split(b'\x00')[1].decode('utf8')
+        elif chunktype == b'tEXt' and content.startswith(b'openbadges\x00'):
+            return content.split(b'\x00')[1].decode('utf8')
 
 
 def bake(imageFile, assertion_string, newfile=None):

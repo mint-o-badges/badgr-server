@@ -1,3 +1,5 @@
+
+
 import json
 import os
 import os.path
@@ -5,13 +7,8 @@ import os.path
 from unittest import TestCase
 from xml.dom.minidom import parseString
 
-try:
-    import png_bakery
-    import utils
-except ImportError:
-    from . import png_bakery
-    from . import utils
-
+from . import png_bakery
+from . import utils
 
 png_assertion = {
     "uid": "123",
@@ -54,7 +51,7 @@ class TypeDetectionTests(TestCase):
     def test_detect_png_type(self):
         with open(os.path.join(os.path.dirname(__file__),
                                'testfiles', 'public_domain_heart.png'
-                               ), 'rb') as image:
+                               )) as image:
             self.assertEqual(utils.check_image_type(image), 'PNG')
 
 
@@ -62,7 +59,7 @@ class PNGBakingTests(TestCase):
     def test_bake_png(self):
         with open(os.path.join(os.path.dirname(__file__),
                                'testfiles', 'public_domain_heart.png'
-                               ), 'rb') as image:
+                               )) as image:
 
             return_file = png_bakery.bake(image, json.dumps(png_assertion))
             self.assertEqual(utils.check_image_type(return_file), 'PNG')
@@ -73,7 +70,7 @@ class PNGBakingTests(TestCase):
     def test_unbake_png(self):
         with open(os.path.join(os.path.dirname(__file__),
                                'testfiles', 'baked_heart.png'
-                               ), 'rb') as image:
+                               )) as image:
             assertion = png_bakery.unbake(image)
             self.assertEqual(json.loads(assertion), png_assertion)
 
@@ -82,7 +79,7 @@ class SVGBakingTests(TestCase):
     def test_bake_svg(self):
         with open(os.path.join(os.path.dirname(__file__),
                                'testfiles', 'unbaked_example.svg'
-                               ), 'rb') as image:
+                               )) as image:
 
             return_file = utils.bake(image, json.dumps(svg_assertion))
             self.assertEqual(utils.check_image_type(return_file), 'SVG')

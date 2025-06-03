@@ -33,7 +33,7 @@ class CachableDocumentLoader(object):
         else:
             self.session = requests.Session()
 
-    def __call__(self, url):
+    def __call__(self, url, *kwargs):
         try:
             # validate URLs
             pieces = urlparse(url)
@@ -49,7 +49,9 @@ class CachableDocumentLoader(object):
             response = self.session.get(
                 url, headers={'Accept': 'application/ld+json, application/json'})
 
-            doc = {'contextUrl': None, 'documentUrl': url, 'document': response.text}
+            content_type = response.headers.get('content-type')
+
+            doc = {'contextUrl': None, 'documentUrl': url, 'document': response.text, 'contentType': content_type}
 
             if self.use_cache:
                 doc['from_cache'] = response.from_cache
