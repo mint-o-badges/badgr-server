@@ -1,1 +1,1 @@
-from .verifier import validate_extensions, verify
+from .verifier import validate_extensions, verify, load_store

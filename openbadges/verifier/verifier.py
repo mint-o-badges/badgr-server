@@ -86,7 +86,7 @@ def call_task(task_func, task_meta, store, options=DEFAULT_OPTIONS):
         store.dispatch(action)
 
 
-def verification_store(badge_input, recipient_profile=None, store=None, options=DEFAULT_OPTIONS):
+def verification_store(badge_input, recipient_profile=None, store=None, options=DEFAULT_OPTIONS, run_tasks=True):
     if store is None:
         store = create_store(main_reducer, INITIAL_STATE)
     try:
@@ -119,17 +119,18 @@ def verification_store(badge_input, recipient_profile=None, store=None, options=
             task['node_id'] = profile_id
         store.dispatch(task)
 
-    last_task_id = 0
-    while len(filter_active_tasks(store.get_state())):
-        active_tasks = filter_active_tasks(store.get_state())
-        task_meta = active_tasks[0]
-        task_func = tasks.task_named(task_meta['name'])
+    if run_tasks:
+        last_task_id = 0
+        while len(filter_active_tasks(store.get_state())):
+            active_tasks = filter_active_tasks(store.get_state())
+            task_meta = active_tasks[0]
+            task_func = tasks.task_named(task_meta['name'])
 
-        if task_meta['task_id'] == last_task_id:
-            break
+            if task_meta['task_id'] == last_task_id:
+                break
 
-        last_task_id = task_meta['task_id']
-        call_task(task_func, task_meta, store, options)
+            last_task_id = task_meta['task_id']
+            call_task(task_func, task_meta, store, options)
 
     return store
 
@@ -168,6 +169,10 @@ def generate_report(store, options=DEFAULT_OPTIONS):
     }
     return ret
 
+def load_store(badge_input, recipient_profile=None, **options):
+    selected_options = _get_options(options)
+    store = verification_store(badge_input, recipient_profile, options=selected_options, run_tasks=False)
+    return store
 
 def verify(badge_input, recipient_profile=None, **options):
     """
