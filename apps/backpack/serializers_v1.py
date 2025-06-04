@@ -587,7 +587,7 @@ class V1InstanceSerializer(serializers.Serializer):
     recipient = BadgeEmailField()  # TODO: improve for richer types
     badge = V1BadgeClassSerializer()
     issuedOn = BadgeDateTimeField(required=False)  # missing in some translated v0.5.0
-    validFrom = BadgeDateTimeField(required=False)  # missing in some translated v0.5.0
+    validFrom = BadgeDateTimeField(required=False) # for ob3.0
     expires = BadgeDateTimeField(required=False)
     image = BadgeImageURLField(required=False)
     evidence = BadgeURLField(required=False)
