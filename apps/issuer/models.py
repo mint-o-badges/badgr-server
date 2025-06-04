@@ -2139,7 +2139,6 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
                 *context_iri,
                 "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json"
             ]),
-            ('type', 'Assertion'),
             ('id', add_obi_version_ifneeded(self.jsonld_id, obi_version)),
             ('type', ["VerifiableCredential", "OpenBadgeCredential"]),
             ('name', self.cached_badgeclass.name),
