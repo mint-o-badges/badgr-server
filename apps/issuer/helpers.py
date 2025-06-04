@@ -244,21 +244,6 @@ class ImportedBadgeHelper:
         else:
             badgecheck_recipient_profile = None
 
-        # try:
-        #     if isinstance(query, dict):
-        #         try:
-        #             query = json.dumps(query)
-        #         except (TypeError, ValueError):
-        #             raise ValidationError("Could not parse dict to json")
-
-        #     response = openbadges.verify(
-        #         query,
-        #         recipient_profile=badgecheck_recipient_profile,
-        #         **cls.badgecheck_options(),
-        #     )
-        # except ValueError as e:
-        #     raise ValidationError([{"name": "INVALID_BADGE", "description": str(e)}])
-
         try:
             if type(query) is dict:
                 try:
@@ -273,20 +258,10 @@ class ImportedBadgeHelper:
             verifier_input = json.loads(query_json)
 
             # TODO: ob3 as JWT
-            # # jwt
             # try:
             #     verifier_input = verifier_input['vc']
             # except:
             #     pass
-
-            # fix for mangling of ob30 @context by openbadges
-            # print(verifier_input["badge"]["@context"])
-            # if isinstance(verifier_input["badge"]["@context"], list):
-            #     print ("list!")
-            #     verifier_input["badge"]["@context"] = [ ''.join(verifier_input["badge"]["@context"]) ]
-
-            # print(verifier_input["badge"]["@context"])
-            # print ("-------")
 
             is_v3 = assertion_is_v3(verifier_input)
 
