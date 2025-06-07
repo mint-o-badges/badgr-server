@@ -364,9 +364,8 @@ class Issuer(
         ensureOwner = kwargs.pop("ensureOwner", True)
         ret = super(Issuer, self).save(*args, **kwargs)
 
-        # notify the owner of the Issuer on verification
-        if original_verified is False and self.verified:
-            self.notify_issuer_owner(self)
+        # notify the owner of the Issuer about the verification status
+        self.notify_issuer_owner(original_verified)
         # The user who created the issuer should always be an owner
         if ensureOwner:
             self.ensure_owner()
@@ -683,12 +682,10 @@ class Issuer(
             adapter.send_mail(template_name, user.email, context=email_context)
 
     # Notify Issuer owner when issuer gets verified
-    def notify_issuer_owner(self, badgr_app=None, renotify=False):
+    def notify_issuer_owner(self, original_verified, badgr_app=None):
         """
         Sends an email notification to the Issuer owner.
         """
-        if badgr_app is None:
-            badgr_app = self.cached_issuer.cached_badgrapp
         if badgr_app is None:
             badgr_app = BadgrApp.objects.get_current(None)
 
@@ -699,15 +696,18 @@ class Issuer(
                 "issuer_name": self.name,
                 "issuer_url": self.url,
                 "issuer_email": self.email,
-                "site_name": re.sub(r"@", "", badgr_app.name),
                 "badgr_app": badgr_app,
             }
         except KeyError as e:
             # A property isn't stored right in json
             raise e
 
-        template_name = "issuer/email/notify_issuer_verified"
-
+        if self.verified and not original_verified:
+            template_name = "issuer/email/notify_issuer_verified"
+        elif not self.verified: 
+            template_name = "issuer/email/notify_issuer_unverified"
+        else: 
+            return
         adapter = get_adapter()
         adapter.send_mail(template_name, self.email, context=email_context)
 
