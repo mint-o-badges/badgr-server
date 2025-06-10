@@ -331,9 +331,11 @@ class Issuer(
 
     def save(self, *args, **kwargs):
         original_verified = None
+        should_geocode = False
+
         if not self.pk:
             self.notify_admins(self)
-        # geocoding if address in model changed
+            should_geocode = True
         else:
             original_object = Issuer.objects.get(pk=self.pk)
             original_verified = original_object.verified
@@ -345,21 +347,25 @@ class Issuer(
                 or self.zip != original_object.zip
                 or self.country != original_object.country
             ):
-                addr_string = (
-                    (self.street if self.street is not None else "")
-                    + " "
-                    + (str(self.streetnumber) if self.streetnumber is not None else "")
-                    + " "
-                    + (str(self.zip) if self.zip is not None else "")
-                    + " "
-                    + (str(self.city) if self.city is not None else "")
-                    + " Deutschland"
-                )
-                nom = Nominatim(user_agent="OpenEducationalBadges")
-                geoloc = nom.geocode(addr_string)
-                if geoloc:
-                    self.lon = geoloc.longitude
-                    self.lat = geoloc.latitude
+                should_geocode = True
+
+        # geocoding if issuer is newly created or address in model changed
+        if should_geocode:
+            addr_string = (
+                (self.street if self.street is not None else "")
+                + " "
+                + (str(self.streetnumber) if self.streetnumber is not None else "")
+                + " "
+                + (str(self.zip) if self.zip is not None else "")
+                + " "
+                + (str(self.city) if self.city is not None else "")
+                + " Deutschland"
+            )
+            nom = Nominatim(user_agent="...")
+            geoloc = nom.geocode(addr_string)
+            if geoloc:
+                self.lon = geoloc.longitude
+                self.lat = geoloc.latitude                
 
         ensureOwner = kwargs.pop("ensureOwner", True)
         ret = super(Issuer, self).save(*args, **kwargs)
