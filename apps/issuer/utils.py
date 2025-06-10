@@ -39,8 +39,8 @@ def get_obi_context(obi_version):
     return (obi_version, context_iri)
 
 
-def add_obi_version_ifneeded(url, obi_version):
-    if obi_version == CURRENT_OBI_VERSION:
+def add_obi_version_ifneeded(url, obi_version, force_add = False):
+    if obi_version == CURRENT_OBI_VERSION and not force_add:
         return url
     if not url.startswith(OriginSetting.HTTP):
         return url

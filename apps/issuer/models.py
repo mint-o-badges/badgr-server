@@ -2039,11 +2039,11 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             [
                 ("@context", context_iri),
                 ("type", "Assertion"),
-                ("id", add_obi_version_ifneeded(self.jsonld_id, obi_version)),
+                ("id", add_obi_version_ifneeded(self.jsonld_id, obi_version, True)),
                 (
                     "badge",
                     add_obi_version_ifneeded(
-                        self.cached_badgeclass.jsonld_id, obi_version
+                        self.cached_badgeclass.jsonld_id, obi_version, True
                     ),
                 ),
                 ("slug", self.entity_id),
@@ -2066,7 +2066,7 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
                     (
                         "id",
                         (
-                            add_obi_version_ifneeded(self.jsonld_id, obi_version)
+                            add_obi_version_ifneeded(self.jsonld_id, obi_version, True)
                         ),
                     ),
                     ("revoked", self.revoked),
