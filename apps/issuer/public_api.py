@@ -1,19 +1,16 @@
 import io
 import os
 import re
-import urllib.error
 import urllib.parse
-import urllib.request
 
 import badgrlog
 import cairosvg
-import openbadges
 from backpack.models import BackpackCollection
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.storage import DefaultStorage
 from django.db.models import Q
-from django.http import Http404, HttpResponseRedirect
+from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import NoReverseMatch, Resolver404, resolve, reverse
 from django.views.generic import RedirectView
@@ -37,6 +34,8 @@ from rest_framework import permissions, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+import openbadges
 
 from . import utils
 from .models import BadgeClass, BadgeInstance, Issuer, LearningPath, LearningPathBadge
@@ -246,7 +245,6 @@ class ImagePropertyDetailView(APIView, SlugToEntityIdRedirectMixin):
             return current_object
 
     def get(self, request, **kwargs):
-
         entity_id = kwargs.get("entity_id")
         current_object = self.get_object(entity_id)
         if (
@@ -612,10 +610,46 @@ class BackpackCollectionJson(JSONComponentView):
             image_url=image_url,
         )
 
+    def get(self, request, **kwargs):
+        try:
+            return super().get(request, **kwargs)
+        except Http404:
+            if self.is_requesting_html():
+                return HttpResponseRedirect(
+                    redirect_to=self.get_default_badgrapp_redirect()
+                )
+            else:
+                return HttpResponse(status=204)
+
+    def get_default_badgrapp_redirect(self):
+        badgrapp = BadgrApp.objects.get_current(
+            request=None
+        )  # use the default badgrapp
+
+        redirect = badgrapp.public_pages_redirect
+        if not redirect:
+            redirect = "https://{}/public/".format(badgrapp.cors)
+        else:
+            if not redirect.endswith("/"):
+                redirect += "/"
+
+        path = self.request.path
+        stripped_path = re.sub(r"^/public/", "", path)
+
+        if self.kwargs.get("entity_id", None):
+            stripped_path = re.sub(
+                self.kwargs.get("entity_id", ""), "not-found", stripped_path
+            )
+        ret = "{redirect}{path}".format(
+            redirect=redirect,
+            path=stripped_path,
+        )
+        return ret
+
     def get_json(self, request):
         expands = request.GET.getlist("expand", [])
         if not self.current_object.published:
-            raise Http404
+            return HttpResponse(status=204)
 
         json = self.current_object.get_json(
             obi_version=self._get_request_obi_version(request),
