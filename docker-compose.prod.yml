@@ -1,7 +1,6 @@
 # A dockerized badgr-server stack to emulate a production build
 version: "3.9"
 services:
-
   change-ownership:
     image: alpine
     user: root
@@ -102,6 +101,7 @@ services:
 
   redis:
     image: redis:latest
+    restart: unless-stopped
     networks:
       - badgr
 
