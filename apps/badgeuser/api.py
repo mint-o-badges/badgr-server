@@ -653,13 +653,10 @@ class BadgeUserEmailConfirm(BaseUserRecoveryView, BaseRedirectView):
         
         # check whether the user has unverified institutions that should be verified with the new email
         for issuer in user.cached_issuers():
-            if not issuer.verified: 
-                 if not issuer.verified: 
-                    if verifyIssuerAutomatically(
-                    issuer.url, str(email_address)
-                ):
-                        issuer.verified = True
-                        issuer.save()
+            if not issuer.verified:
+                if verifyIssuerAutomatically(issuer.url, str(email_address)):
+                    issuer.verified = True
+                    issuer.save()
 
         process_email_verification.delay(email_address.pk)
 
