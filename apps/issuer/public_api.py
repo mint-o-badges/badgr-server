@@ -229,7 +229,7 @@ class JSONComponentView(VersionedObjectMixin, APIView, SlugToEntityIdRedirectMix
 
     @staticmethod
     def _get_request_obi_version(request):
-        return request.query_params.get("v", utils.CURRENT_OBI_VERSION)
+        return request.query_params.get("v")
 
 
 class ImagePropertyDetailView(APIView, SlugToEntityIdRedirectMixin):
@@ -582,6 +582,13 @@ class BadgeInstanceImage(ImagePropertyDetailView):
         return obj
 
 
+class BadgeInstanceRevocations(JSONComponentView):
+    model = BadgeInstance
+
+    def get_json(self, request):
+        return self.current_object.get_revocation_json()
+
+
 class BackpackCollectionJson(JSONComponentView):
     permission_classes = (permissions.AllowAny,)
     model = BackpackCollection
@@ -677,11 +684,13 @@ class BakedBadgeInstanceImage(
             else:
                 raise
 
-        requested_version = request.query_params.get("v", utils.CURRENT_OBI_VERSION)
+        requested_version = request.query_params.get("v")
+
+        if not requested_version:
+            requested_version = "3_0" if assertion.ob_json_3_0 else "2_0"
+
         if requested_version not in list(utils.OBI_VERSION_CONTEXT_IRIS.keys()):
             raise ValidationError("Invalid OpenBadges version")
-
-        # self.log(assertion)
 
         redirect_url = assertion.get_baked_image_url(obi_version=requested_version)
 

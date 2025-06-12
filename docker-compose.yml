@@ -13,6 +13,8 @@ services:
       - "celery_worker"
     volumes:
       - ./apps:/badgr_server/apps
+      - ./openbadges:/badgr_server/openbadges
+      - ./openbadges_bakery:/badgr_server/openbadges_bakery
       - ./manage.py:/badgr_server/manage.py
       - ./.docker/etc/settings_local.dev.py:/badgr_server/apps/mainsite/settings_local.py
       - ./.git:/badgr_server/.git
