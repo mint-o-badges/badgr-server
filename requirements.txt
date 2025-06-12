@@ -15,8 +15,8 @@ botocore==1.17.63
 cachetools==5.5.2
 cairocffi==0.9.0
 cairosvg==1.0.22
-celery==4.1.1
-certifi==2025.4.26
+celery==4.4.0
+certifi==2025.1.31
 cffi==1.14.5
 chardet==3.0.4
 click==6.7
@@ -95,6 +95,7 @@ python3-openid==3.2.0
 pytz==2017.2
 pyyaml==6.0.2
 qrcode==7.4.2
+redis==4.5.0
 reportlab==3.6.9
 requests==2.25.0
 requests-cache==0.5.2
