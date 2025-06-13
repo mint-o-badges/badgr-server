@@ -130,3 +130,6 @@ ALTER TABLE 'oauth2_provider_application' MODIFY client_secret VARCHAR(255);
 ALTER TABLE 'oauth2_provider_grant' MODIFY code VARCHAR(255);
 ALTER TABLE 'oauth2_provider_refreshtoken' MODIFY token VARCHAR(255);
 ALTER TABLE 'users' MODIFY entity_id VARCHAR(255);
+
+-- modify the database itself
+ALTER DATABASE badgr CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
