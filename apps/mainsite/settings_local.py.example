@@ -29,7 +29,8 @@ DATABASES = {
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
         'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
         'OPTIONS': {
-#            "SET character_set_connection=utf8mb4, collation_connection=utf8_general_ci",  # Uncomment when using MySQL to ensure consistency across servers
+             'charset': 'utf8mb4',
+             'init_command': "SET NAMES 'utf8mb4' COLLATE 'utf8mb4_general_ci'"
         },
     }
 }
