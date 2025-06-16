@@ -1,7 +1,6 @@
 # A dockerized badgr-server stack to emulate a production build
 version: "3.9"
 services:
-
   change-ownership:
     image: alpine
     user: root
@@ -24,12 +23,19 @@ services:
         condition: service_started
       memcached:
         condition: service_started
+      redis:
+        condition: service_started
+      celery_worker:
+        condition: service_started
     volumes:
       - badgr_server_api_sock:/badgr_server/sock
       - badgr_server_mediafiles:/badgr_server/mediafiles
       - badgr_server_staticfiles:/badgr_server/staticfiles
     networks:
       - badgr
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
 
   # this container runs memcached
   memcached:
@@ -45,6 +51,8 @@ services:
     volumes:
       - badgr_server_prod_db:/var/lib/mysql:rw
       - ./.docker/etc/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./my.cnf:/etc/mysql/conf.d/mysql.cnf
+
     environment:
       - "MYSQL_PASSWORD=password"
       - "MYSQL_HOST=db"
@@ -71,6 +79,33 @@ services:
       - badgr
     ports:
       - "8080:80"
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile.prod.api
+    entrypoint: [] # Override the entrypoint from Dockerfile
+    user: "999:999"
+    command: >
+      bash -c "PYTHONPATH=/badgr_server/apps celery -A mainsite worker --loglevel=info"
+    volumes:
+      - badgr_server_mediafiles:/badgr_server/mediafiles
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - "MYSQL_PASSWORD=password"
+      - "MYSQL_HOST=db"
+      - "MYSQL_ROOT_PASSWORD=password"
+    networks:
+      - badgr
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:latest
+    restart: unless-stopped
+    networks:
+      - badgr
 
 networks:
   badgr:

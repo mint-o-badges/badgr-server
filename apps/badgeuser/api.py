@@ -60,6 +60,7 @@ from mainsite.utils import (
     OriginSetting,
     set_url_query_params,
     throttleable,
+    verifyIssuerAutomatically
 )
 from mainsite.serializers import ApplicationInfoSerializer
 RATE_LIMIT_DELTA = datetime.timedelta(minutes=5)
@@ -648,6 +649,14 @@ class BadgeUserEmailConfirm(BaseUserRecoveryView, BaseRedirectView):
             email_address.primary = True
         email_address.verified = True
         email_address.save()
+
+        
+        # check whether the user has unverified institutions that should be verified with the new email
+        for issuer in user.cached_issuers():
+            if not issuer.verified:
+                if verifyIssuerAutomatically(issuer.url, str(email_address)):
+                    issuer.verified = True
+                    issuer.save()
 
         process_email_verification.delay(email_address.pk)
 

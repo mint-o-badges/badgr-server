@@ -16,10 +16,12 @@ The image on the servers is set to the `develop` or `main` build from the github
 
 For [release](https://openbadges.education/) this is a bit more complicated.
 This is for two reasons:
+
 - watchtower is not meant for production use
 - we have more control over what happens / which version is deployed that way.
 
-To deploy, follow these steps (note that you have to do them for both `badgr-server` *and* `badgr-ui`, if you want to deploy both):
+To deploy, follow these steps (note that you have to do them for both `badgr-server` _and_ `badgr-ui`, if you want to deploy both):
+
 - Checkout your desired commit. Ideally this is the last commit on `main` (run `git checkout main && git pull`), but it can also be any other commit
 - Tag a version in the format `v*.*.*`, e.g. `v1.2.34`. To do this, run `git tag -a v1.2.34` in your local terminal and enter a description
 - Push the tag, e.g. with `git push origin tag v1.2.34` or push all tags with `git push origin --tags`
@@ -28,9 +30,9 @@ To deploy, follow these steps (note that you have to do them for both `badgr-ser
 - Navigate to the `badgr-server` directory (`cd docker/badgr-server/`)
 - Open the `docker-compose.yml` (`vim docker-compose.yml`)
 - Search for the api image version (`/image: ghcr.io/mint-o-badges/badgr-server`)
-- Change the version (the part after the last `:`) to the name you gave your tag (e.g. `v1.2.34`). Save the file (`:wq`)
+- Change the version (the part after the last `:`) to the name you gave your tag (e.g. `v1.2.34`) for the `api` **and** the `celery_worker` container. Save the file (`:wq`)
 - Commit the changes on the server (`git commit -a`) and enter a description
-- Load the new version by running `docker compose up -d`. *Sometimes* a restart, sometimes of all containers seems to be necessary. Run `docker compose down` on all containers for that first and then `docker compose up -d` for all
+- Load the new version by running `docker compose up -d`. _Sometimes_ a restart, sometimes of all containers seems to be necessary. Run `docker compose down` on all containers for that first and then `docker compose up -d` for all
 - Validate that the correct version is deployed by checking the [imprint](https://openbadges.education/public/impressum)
 
 ## Pre-Release
@@ -44,9 +46,11 @@ Remember to change the version back to `main` (or `develop`) after you're done!
 ## SemVer
 
 You are unsure how to name your tag? Checkout [SemVer](https://semver.org/)! In short:
+
 > Given a version number MAJOR.MINOR.PATCH, increment the:
+>
 > 1. MAJOR version when you make incompatible API changes
 > 2. MINOR version when you add functionality in a backward compatible manner
 > 3. PATCH version when you make backward compatible bug fixes
 
-Note that we do *not* support pre-release extensions (yet).
+Note that we do _not_ support pre-release extensions (yet).

@@ -15,7 +15,6 @@ from django.urls import resolve, Resolver404
 from issuer.utils import sanitize_id
 from mainsite.utils import fetch_remote_file_to_storage, list_of, OriginSetting
 
-
 def resolve_source_url_referencing_local_object(source_url):
     if source_url.startswith(OriginSetting.HTTP):
         try:
@@ -312,7 +311,7 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
 
         badgeclass = kwargs.pop('badgeclass', None)
         issuer = kwargs.pop('issuer', badgeclass.issuer)
-
+    
         # self.model would be a BadgeInstance
         new_instance = self.model(
             recipient_identifier=recipient_identifier,
