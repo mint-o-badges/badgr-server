@@ -168,8 +168,8 @@ urlpatterns = [
     url(r'^nounproject/(?P<searchterm>[^/]+)/(?P<page>[^/]+)$', nounproject,
         name="nounproject"),
 
-    url(r'^aiskills/(?P<searchterm>[^/]+)$', aiskills, name="aiskills"),
-    url(r'^aiskills-keywords/(?P<searchterm>[^/]+)$', aiskills_keywords, name="aiskills_keywords"),
+    url(r'^aiskills/$', aiskills, name="aiskills"),
+    url(r'^aiskills-keywords/$', aiskills_keywords, name="aiskills_keywords"),
 
     url(r'^request-badge/(?P<qrCodeId>[^/]+)$', requestBadge, name="request-badge"),
 
