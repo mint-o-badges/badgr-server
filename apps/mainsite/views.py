@@ -43,6 +43,7 @@ from rest_framework.authentication import (
     TokenAuthentication,
 )
 
+from apps.mainsite.authentication import ValidAltcha
 from issuer.tasks import rebake_all_assertions, update_issuedon_all_assertions
 from issuer.models import BadgeClass, Issuer, IssuerStaffRequest, LearningPath, QrCode, RequestedBadge, RequestedLearningPath
 from issuer.serializers_v1 import IssuerStaffRequestSerializer, RequestedBadgeSerializer, RequestedLearningPathSerializer
@@ -198,7 +199,8 @@ def call_aiskills_api(endpoint, method, payload: dict):
 @authentication_classes(
     [TokenAuthentication, SessionAuthentication, BasicAuthentication]
 )
-@permission_classes([IsAuthenticated])
+# require valid Login OR valid altcha challenge for demo on start page
+@permission_classes([IsAuthenticated|ValidAltcha])
 def aiskills(req):
 
     searchterm = req.data['text']

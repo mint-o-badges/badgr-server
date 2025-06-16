@@ -235,7 +235,8 @@ CORS_EXPOSE_HEADERS = (
 
 CORS_ALLOW_HEADERS = [
     *default_headers,
-    'x-altcha-spam-filter'
+    'x-altcha-spam-filter',
+    'x-oeb-altcha'
 ]
 
 ##
