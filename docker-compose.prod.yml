@@ -51,6 +51,8 @@ services:
     volumes:
       - badgr_server_prod_db:/var/lib/mysql:rw
       - ./.docker/etc/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./my.cnf:/etc/mysql/conf.d/mysql.cnf
+
     environment:
       - "MYSQL_PASSWORD=password"
       - "MYSQL_HOST=db"
