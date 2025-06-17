@@ -87,6 +87,8 @@ CORS_ORIGIN_WHITELIST = (
     'http://localhost:4200',
 )
 
+CSRF_COOKIE_DOMAIN = ''
+
 # Optionally restrict issuer creation to accounts that have the 'issuer.add_issuer' permission
 BADGR_APPROVED_ISSUERS_ONLY = False
 
