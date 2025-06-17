@@ -2,7 +2,7 @@ from django.conf.urls import url
 
 from backpack.api import BackpackAssertionList, BackpackAssertionDetail, \
         BackpackAssertionDetailImage, BackpackCollectionList, \
-        BackpackCollectionDetail, ImportedBadgeInstanceDetail, ImportedBadgeInstanceList, ShareBackpackAssertion, ShareBackpackCollection
+        BackpackCollectionDetail, BackpackSkillList, ImportedBadgeInstanceDetail, ImportedBadgeInstanceList, ShareBackpackAssertion, ShareBackpackCollection
 from backpack.api_v1 import CollectionLocalBadgeInstanceList, \
         CollectionLocalBadgeInstanceDetail, CollectionGenerateShare
 
@@ -15,6 +15,8 @@ urlpatterns = [
         name='v1_api_localbadgeinstance_detail'),
     url(r'^badges/(?P<slug>[^/]+)/image$', BackpackAssertionDetailImage.as_view(),
         name='v1_api_localbadgeinstance_image'),
+
+    url(r'^skills$', BackpackSkillList.as_view(), name='v1_api_skills_list'),
 
     url(r'^collections$', BackpackCollectionList.as_view(), name='v1_api_collection_list'),
     url(r'^collections/(?P<slug>[-\w]+)$', BackpackCollectionDetail.as_view(),
