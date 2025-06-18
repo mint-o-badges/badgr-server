@@ -1,3 +1,4 @@
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic.base import RedirectView, TemplateView
 from django.conf.urls.static import static
 from mainsite.views import badgeRequestsByBadgeClass, downloadQrCode, upload, nounproject, aiskills, aiskills_keywords, requestBadge, deleteBadgeRequest, createCaptchaChallenge, getVersion
@@ -78,7 +79,7 @@ urlpatterns = [
     url(
         r"^o/authorize/?$", AuthorizationApiView.as_view(), name="oauth2_api_authorize"
     ),
-    url(r"^o/token/?$", TokenView.as_view(), name="oauth2_provider_token"),
+    url(r"^o/token/?$", ensure_csrf_cookie(TokenView.as_view()), name="oauth2_provider_token"),
     url(r"^o/revoke_token/?$", RevokeTokenView.as_view(), name="oauth2_provider_revoke_token"),
     url(r"^o/code/?$", AuthCodeExchange.as_view(), name="oauth2_code_exchange"),
     url(
@@ -168,8 +169,8 @@ urlpatterns = [
     url(r'^nounproject/(?P<searchterm>[^/]+)/(?P<page>[^/]+)$', nounproject,
         name="nounproject"),
 
-    url(r'^aiskills/(?P<searchterm>[^/]+)$', aiskills, name="aiskills"),
-    url(r'^aiskills-keywords/(?P<searchterm>[^/]+)$', aiskills_keywords, name="aiskills_keywords"),
+    url(r'^aiskills/$', aiskills, name="aiskills"),
+    url(r'^aiskills-keywords/$', aiskills_keywords, name="aiskills_keywords"),
 
     url(r'^request-badge/(?P<qrCodeId>[^/]+)$', requestBadge, name="request-badge"),
 

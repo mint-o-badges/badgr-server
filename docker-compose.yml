@@ -13,6 +13,8 @@ services:
       - "celery_worker"
     volumes:
       - ./apps:/badgr_server/apps
+      - ./openbadges:/badgr_server/openbadges
+      - ./openbadges_bakery:/badgr_server/openbadges_bakery
       - ./manage.py:/badgr_server/manage.py
       - ./.docker/etc/settings_local.dev.py:/badgr_server/apps/mainsite/settings_local.py
       - ./.git:/badgr_server/.git
@@ -47,6 +49,7 @@ services:
     volumes:
       - badgr_server_dev_db:/var/lib/mysql:rw
       - ./.docker/etc/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./my.cnf:/etc/mysql/conf.d/mysql.cnf
     environment:
       - "MYSQL_PASSWORD=password"
       - "MYSQL_HOST=db"
@@ -89,6 +92,7 @@ services:
 
   redis:
     image: redis:latest
+    restart: unless-stopped
     networks:
       - badgr
 

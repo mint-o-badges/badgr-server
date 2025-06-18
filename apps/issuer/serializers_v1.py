@@ -250,6 +250,12 @@ class IssuerSerializerV1(
                 self.context.get("request", None)
             )
 
+        if not instance.verified: 
+            if verifyIssuerAutomatically(
+            validated_data.get("url"), validated_data.get("email")
+        ):
+                instance.verified = True
+
         instance.save(force_resize=force_image_resize)
         return instance
 

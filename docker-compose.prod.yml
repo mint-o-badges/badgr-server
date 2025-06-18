@@ -1,7 +1,6 @@
 # A dockerized badgr-server stack to emulate a production build
 version: "3.9"
 services:
-
   change-ownership:
     image: alpine
     user: root
@@ -52,6 +51,8 @@ services:
     volumes:
       - badgr_server_prod_db:/var/lib/mysql:rw
       - ./.docker/etc/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./my.cnf:/etc/mysql/conf.d/mysql.cnf
+
     environment:
       - "MYSQL_PASSWORD=password"
       - "MYSQL_HOST=db"
@@ -102,6 +103,7 @@ services:
 
   redis:
     image: redis:latest
+    restart: unless-stopped
     networks:
       - badgr
 

@@ -587,9 +587,18 @@ class V1InstanceSerializer(serializers.Serializer):
     recipient = BadgeEmailField()  # TODO: improve for richer types
     badge = V1BadgeClassSerializer()
     issuedOn = BadgeDateTimeField(required=False)  # missing in some translated v0.5.0
+    validFrom = BadgeDateTimeField(required=False) # for ob3.0
     expires = BadgeDateTimeField(required=False)
     image = BadgeImageURLField(required=False)
     evidence = BadgeURLField(required=False)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+
+        # add context for checking of ob version
+        data["@context"] = instance['@context']
+
+        return data
 
 
 class V1BadgeInstanceSerializer(V1InstanceSerializer):
