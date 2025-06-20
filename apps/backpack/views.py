@@ -1,25 +1,21 @@
-from django.urls import reverse
-from django.http import Http404
-from django.views.generic import RedirectView
-
-
 from backpack.models import BackpackCollection
-from issuer.models import BadgeInstance, BadgeClass
-
-from rest_framework.decorators import (
-    permission_classes,
-    authentication_classes,
-    api_view,
-)
-
-from rest_framework.permissions import IsAuthenticated
+from django.http import Http404, HttpResponse
+from django.urls import reverse
+from django.views.generic import RedirectView
+from issuer.models import BadgeClass, BadgeInstance
+from mainsite.badge_pdf import BadgePDFCreator
+from mainsite.collection_pdf import CollectionPDFCreator
 from rest_framework.authentication import (
-    SessionAuthentication,
     BasicAuthentication,
+    SessionAuthentication,
     TokenAuthentication,
 )
-from django.http import HttpResponse
-from mainsite.badge_pdf import BadgePDFCreator
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
+from rest_framework.permissions import IsAuthenticated
 
 
 @api_view(["GET"])
@@ -40,7 +36,8 @@ def pdf(request, *args, **kwargs):
         # User must be the recipient or an issuer staff with OWNER role
         # TODO: Check other recipient types
         # Temporary commented out
-        """ if request.user.email != badgeinstance.recipient_identifier and request.user.email not in issuer_owners_emails:
+        """ if request.user.email != badgeinstance.recipient_identifier and
+        request.user.email not in issuer_owners_emails:
             raise PermissionDenied """
     except BadgeInstance.DoesNotExist:
         raise Http404
@@ -51,12 +48,28 @@ def pdf(request, *args, **kwargs):
     except BadgeClass.DoesNotExist:
         raise Http404
 
-    response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = 'inline; filename="badge.pdf"'
-
     pdf_creator = BadgePDFCreator()
     pdf_content = pdf_creator.generate_pdf(
         badgeinstance, badgeclass, origin=request.META.get("HTTP_ORIGIN")
+    )
+    return HttpResponse(pdf_content, content_type="application/pdf")
+
+
+@api_view(["GET"])
+@authentication_classes(
+    [TokenAuthentication, SessionAuthentication, BasicAuthentication]
+)
+@permission_classes([IsAuthenticated])
+def collectionPdf(request, *args, **kwargs):
+    slug = kwargs["slug"]
+    try:
+        collection = BackpackCollection.objects.get(entity_id=slug)
+    except BackpackCollection.DoesNotExist:
+        raise Http404
+
+    pdf_creator = CollectionPDFCreator()
+    pdf_content = pdf_creator.generate_pdf(
+        collection, origin=request.META.get("HTTP_ORIGIN")
     )
     return HttpResponse(pdf_content, content_type="application/pdf")
 

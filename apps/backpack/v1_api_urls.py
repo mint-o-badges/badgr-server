@@ -17,7 +17,7 @@ from backpack.api_v1 import (
     CollectionGenerateShare,
 )
 
-from backpack.views import pdf
+from backpack.views import collectionPdf, pdf
 
 urlpatterns = [
     url(
@@ -72,6 +72,11 @@ urlpatterns = [
         name="v1_api_analytics_share_collection",
     ),
     url(r"^badges/pdf/(?P<slug>[^/]+)$", pdf, name="generate-pdf"),
+    url(
+        r"^collections/pdf/(?P<slug>[^/]+)$",
+        collectionPdf,
+        name="generate-collection-pdf",
+    ),
     url(
         r"^imported-badges$",
         ImportedBadgeInstanceList.as_view(),

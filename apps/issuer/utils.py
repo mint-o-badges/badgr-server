@@ -3,9 +3,14 @@ import hashlib
 import pytz
 import re
 from urllib.parse import urlparse, urlunparse
+from functools import reduce
 
 from django.urls import resolve, Resolver404
 from django.utils import timezone
+from django.conf import settings
+
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ed25519
 
 from mainsite.utils import OriginSetting
 
@@ -13,13 +18,14 @@ from mainsite.utils import OriginSetting
 OBI_VERSION_CONTEXT_IRIS = {
     "1_1": "https://w3id.org/openbadges/v1",
     "2_0": "https://w3id.org/openbadges/v2",
+    "3_0": ["https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"],
 }
 
 CURRENT_OBI_VERSION = "2_0"
 CURRENT_OBI_CONTEXT_IRI = OBI_VERSION_CONTEXT_IRIS.get(CURRENT_OBI_VERSION)
 
 # assertions that were baked and saved to BadgeInstance.image used this version
-UNVERSIONED_BAKED_VERSION = "2_0"
+UNVERSIONED_BAKED_VERSION = "3_0"
 
 
 def get_obi_context(obi_version):
@@ -30,8 +36,8 @@ def get_obi_context(obi_version):
     return (obi_version, context_iri)
 
 
-def add_obi_version_ifneeded(url, obi_version):
-    if obi_version == CURRENT_OBI_VERSION:
+def add_obi_version_ifneeded(url, obi_version, force_add=False):
+    if obi_version == CURRENT_OBI_VERSION and not force_add:
         return url
     if not url.startswith(OriginSetting.HTTP):
         return url
@@ -175,3 +181,24 @@ def sanitize_id(recipient_identifier, identifier_type, allow_uppercase=False):
             )
         )
     return recipient_identifier
+
+
+def generate_private_key_pem():
+    private_key = ed25519.Ed25519PrivateKey.generate()
+    encrypted_key = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.BestAvailableEncryption(
+            settings.SECRET_KEY.encode()
+        ),
+    ).decode()
+    return encrypted_key
+
+
+def assertion_is_v3(assertion_json):
+    context = assertion_json["@context"]
+    # if @context is string it's probably v2
+    if isinstance(context, str):
+        return False
+    # search for vc context IRIs
+    return reduce(lambda x, y: x or "/credentials/" in y, context, False)

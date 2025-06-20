@@ -249,6 +249,12 @@ class IssuerSerializerV1(
                 self.context.get("request", None)
             )
 
+        if not instance.verified:
+            if verifyIssuerAutomatically(
+                validated_data.get("url"), validated_data.get("email")
+            ):
+                instance.verified = True
+
         instance.save(force_resize=force_image_resize)
         return instance
 
@@ -347,7 +353,7 @@ class BadgeClassSerializerV1(
     image = ValidImageField(required=False)
     imageFrame = serializers.BooleanField(default=True, required=False)
     slug = StripTagsCharField(max_length=255, read_only=True, source="entity_id")
-    criteria = JSONField(required=False)
+    criteria = JSONField(required=False, allow_null=True)
     criteria_text = MarkdownCharField(required=False, allow_null=True, allow_blank=True)
     criteria_url = StripTagsCharField(
         required=False, allow_blank=True, allow_null=True, validators=[URLValidator()]
@@ -409,8 +415,6 @@ class BadgeClassSerializerV1(
         representation["json"] = instance.get_json(
             obi_version="1_1", use_canonical_id=True
         )
-        if representation["criteria_text"] is None:
-            representation["criteria_text"] = instance.get_criteria()
         return representation
 
     def validate_image(self, image):
@@ -658,7 +662,7 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
 
         return representation
 
-    def create(self, validated_data):
+    def create(self, validated_data, **kwargs):
         """
         Requires self.context to include request (with authenticated request.user)
         and badgeclass: issuer.models.BadgeClass.
@@ -680,7 +684,8 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
                 narrative=validated_data.get("narrative"),
                 evidence=evidence_items,
                 notify=validated_data.get("create_notification"),
-                created_by=self.context.get("request").user,
+                created_by=self.context.get("user")
+                or getattr(self.context.get("request"), "user", None),
                 allow_uppercase=validated_data.get("allow_uppercase"),
                 recipient_type=validated_data.get(
                     "recipient_type", RECIPIENT_TYPE_EMAIL

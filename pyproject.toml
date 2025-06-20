@@ -30,6 +30,7 @@ dependencies = [
     "apispec-djangorestframework==1.1.1",
     "backports-csv==1.0.4",
     "badgecheck==1.1.8",
+    "base58>=2.1.1",
     "bleach==3.3.0",
     "boto==2.49.0",
     "boto3==1.14.35",
@@ -74,7 +75,7 @@ dependencies = [
     "pyasn1==0.1.9",
     "pycparser==2.14",
     "pyjwt>=2.9.0",
-    "pyld==0.7.1",
+    "pyld==2",
     "pymemcache==4.0.0",
     "pyopenssl==24.2.1",
     "pypng==0.20220715.0",
@@ -109,5 +110,7 @@ dependencies = [
 [tool.uv]
 override-dependencies = [
     # pycryptodome 3.6.6 is required in outdated library badgecheck but has problems in newer environments
-    'pycryptodome==3.22.0'
+    'pycryptodome==3.22.0',
+    # pyld 0.7.1 is required in outdated library badgecheck, but pyld > 2 is required for OB3.0,
+    'pyld>=2'
 ]

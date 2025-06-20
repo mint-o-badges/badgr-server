@@ -1,38 +1,39 @@
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.lib.utils import ImageReader
-from reportlab.platypus import (
-    Flowable,
-    Paragraph,
-    Spacer,
-    Image,
-    PageBreak,
-    BaseDocTemplate,
-    Table,
-    TableStyle,
-    Frame,
-    PageTemplate,
-)
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT
-from svglib.svglib import svg2rlg
-from reportlab.lib.units import mm
-from reportlab.lib import colors
-from reportlab.graphics import renderPM
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase import pdfmetrics
-from functools import partial
 import base64
-from io import BytesIO
-import os
-import qrcode
 import math
-from issuer.models import BadgeInstance, LearningPath
+import os
+from functools import partial
+from io import BytesIO
+from json import loads as json_loads
+
+import qrcode
 from badgeuser.models import BadgeUser
-from mainsite.utils import get_name
 from django.conf import settings
 from django.db.models import Max
-from json import loads as json_loads
+from issuer.models import BadgeInstance, LearningPath
+from mainsite.utils import get_name
+from reportlab.graphics import renderPM
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas
+from reportlab.platypus import (
+    BaseDocTemplate,
+    Flowable,
+    Frame,
+    Image,
+    PageBreak,
+    PageTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle,
+)
+from svglib.svglib import svg2rlg
 
 font_path_rubik_regular = os.path.join(os.path.dirname(__file__), "Rubik-Regular.ttf")
 font_path_rubik_medium = os.path.join(os.path.dirname(__file__), "Rubik-Medium.ttf")
@@ -111,7 +112,6 @@ class BadgePDFCreator:
             return text
 
     def add_dynamic_spacer(self, first_page_content, text):
-        print(text)
         line_char_count = 79
         line_height = 16.5
         num_lines = math.ceil(len(text) / line_char_count)
@@ -238,20 +238,23 @@ class BadgePDFCreator:
         )
         self.used_space += image_height
 
-    ## draw header with image of institution and a hr
+    # draw header with image of institution and a hr
     def header(self, canvas, doc, content, instituteName):
         canvas.saveState()
         header_height = 0
 
         if content is not None:
-            content.drawOn(canvas, doc.leftMargin, 740)
-            header_height += 80
+            # for non-square images move them into the center of the 80x80 reserved space
+            # by going up 40 and then down half the height of the image.
+            # If the image is 80 the offset will be 0 and thus the picture is placed at 740
+            content.drawOn(canvas, doc.leftMargin, 740 + (40 - content.drawHeight / 2))
+            header_height += content.drawHeight
 
         canvas.setStrokeColor("#492E98")
         canvas.setLineWidth(1)
         canvas.line(doc.leftMargin + 100, 775, doc.leftMargin + doc.width, 775)
         header_height += 1
-        ## name of institute barely above the hr that was just set
+        # name of institute barely above the hr that was just set
         canvas.setFont("Rubik-Medium", 12)
         max_length = 50
         line_height = 12
@@ -405,7 +408,10 @@ class BadgePDFCreator:
                     Story.append(Paragraph("<strong>Badges</strong>", title_style))
                     Story.append(Spacer(1, 15))
 
-                    text = f"die <strong>{name}</strong> mit dem Micro Degree <strong>{badge_name}</strong> erworben hat:"
+                    text = (
+                        f"die <strong>{name}</strong> mit dem Micro Degree"
+                        f"<strong>{badge_name}</strong> erworben hat:"
+                    )
 
                     Story.append(Paragraph(text, text_style))
                     Story.append(Spacer(1, 30))
@@ -450,7 +456,7 @@ class BadgePDFCreator:
             self.add_competencies(Story, self.competencies, name, badge_name)
 
     def generate_qr_code(self, badge_instance, origin):
-        ## build the qr code in the backend
+        # build the qr code in the backend
 
         qrCodeImageUrl = f"{origin}/public/assertions/{badge_instance.entity_id}"
         qr = qrcode.QRCode(
@@ -550,7 +556,8 @@ class BadgePDFCreator:
         try:
             name = get_name(badge_instance)
         except BadgeUser.DoesNotExist:
-            # To resolve the issue with old awarded badges that doesn't include recipient-name and only have recipient-email
+            # To resolve the issue with old awarded badges that doesn't
+            # include recipient-name and only have recipient-email
             # We use email as this is the only identifier we have
             name = badge_instance.recipient_identifier
             # raise Http404
@@ -635,9 +642,16 @@ class BadgePDFCreator:
                 bio = BytesIO()
                 renderPM.drawToFile(drawing, bio, fmt="PNG")
                 bio.seek(0)
-                imageContent = Image(bio, width=80, height=80)
+
+                dummy = Image(bio)
+                aspect = dummy.imageHeight / dummy.imageWidth
+                imageContent = Image(bio, width=80, height=80 * aspect)
             elif file_ext in ["png", "jpg", "jpeg", "gif"]:
-                imageContent = Image(badge_class.issuer.image, width=80, height=80)
+                dummy = Image(badge_class.issuer.image)
+                aspect = dummy.imageHeight / dummy.imageWidth
+                imageContent = Image(
+                    badge_class.issuer.image, width=80, height=80 * aspect
+                )
             else:
                 raise ValueError(f"Unsupported file type: {file_ext}")
         except Exception:
@@ -658,8 +672,8 @@ class BadgePDFCreator:
         return pdfContent
 
 
-## Class for rounded image as reportlabs table cell don't support rounded corners
-## taken from AI
+# Class for rounded image as reportlabs table cell don't support rounded corners
+# taken from AI
 class RoundedImage(Flowable):
     def __init__(
         self, img_path, width, height, border_color, border_width, padding, radius
@@ -878,7 +892,8 @@ class PageNumCanvas(canvas.Canvas):
         )
         link_text = (
             "<span><i>(E) = Kompetenz nach ESCO (European Skills, Competences, Qualifications and Occupations). <br/>"
-            'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über <a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
+            'Die Kompetenzbeschreibungen gemäß ESCO sind abrufbar über "'
+            '<a color="blue" href="https://esco.ec.europa.eu/de">https://esco.ec.europa.eu/de</a>.</i></span>'
         )
         paragraph_with_link = Paragraph(link_text, text_style)
         story = [paragraph_with_link]

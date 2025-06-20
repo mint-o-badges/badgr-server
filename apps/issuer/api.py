@@ -11,6 +11,9 @@ from apispec_drf.decorators import (
     apispec_post_operation,
     apispec_put_operation,
 )
+from celery import shared_task
+from celery.result import AsyncResult
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.db.models import Q
@@ -420,6 +423,47 @@ class BadgeClassDetail(BaseEntityDetailView):
         return super(BadgeClassDetail, self).put(request, **kwargs)
 
 
+@shared_task
+def process_batch_assertions(
+    assertions, user_id, badgeclass_id, create_notification=False
+):
+    try:
+        User = get_user_model()
+        user = User.objects.get(id=user_id)
+        badgeclass = BadgeClass.objects.get(id=badgeclass_id)
+
+        # Update assertions with create_notification
+        assertions = [
+            {**assertion, "create_notification": create_notification}
+            for assertion in assertions
+        ]
+
+        context = {"badgeclass": badgeclass, "user": user}
+        serializer = BadgeInstanceSerializerV1(
+            many=True, data=assertions, context=context
+        )
+        if not serializer.is_valid():
+            return {
+                "success": False,
+                "status": status.HTTP_400_BAD_REQUEST,
+                "errors": serializer.errors,
+            }
+
+        serializer.save(created_by=user)
+        return {
+            "success": True,
+            "status": status.HTTP_201_CREATED,
+            "data": serializer.data,
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "status": status.HTTP_500_INTERNAL_SERVER_ERROR,
+            "error": str(e),
+        }
+
+
 class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
     model = BadgeClass  # used by .get_object()
     permission_classes = [
@@ -456,9 +500,23 @@ class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
             }
         ],
     )
+    def get(self, request, task_id, **kwargs):
+        task_result = AsyncResult(task_id)
+        result = task_result.result if task_result.ready() else None
+
+        if result and not result.get("success"):
+            return Response(
+                result, status=result.get("status", status.HTTP_400_BAD_REQUEST)
+            )
+
+        return Response(
+            {"task_id": task_id, "status": task_result.status, "result": result}
+        )
+
     def post(self, request, **kwargs):
         # verify the user has permission to the badgeclass
         badgeclass = self.get_object(request, **kwargs)
+        assertions = request.data.get("assertions", [])
         if not self.has_object_permissions(request, badgeclass):
             return Response(status=HTTP_404_NOT_FOUND)
 
@@ -467,33 +525,18 @@ class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
         except AttributeError:
             return Response(status=HTTP_400_BAD_REQUEST)
 
-        # update passed in assertions to include create_notification
-        def _include_create_notification(a):
-            a["create_notification"] = create_notification
-            return a
-
-        assertions = list(
-            map(_include_create_notification, request.data.get("assertions"))
+        # Start async task
+        task = process_batch_assertions.delay(
+            assertions=assertions,
+            user_id=request.user.id,
+            badgeclass_id=badgeclass.id,
+            create_notification=create_notification,
         )
 
-        # save serializers
-        context = self.get_context_data(**kwargs)
-        serializer_class = self.get_serializer_class()
-        serializer = serializer_class(many=True, data=assertions, context=context)
-        if not serializer.is_valid(raise_exception=False):
-            serializer = V2ErrorSerializer(
-                instance={},
-                success=False,
-                description="bad request",
-                field_errors=serializer._errors,
-                validation_errors=[],
-            )
-            return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
-        new_instances = serializer.save(created_by=request.user)
-        for new_instance in new_instances:
-            self.log_create(new_instance)
-
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(
+            {"task_id": str(task.id), "status": "processing"},
+            status=status.HTTP_202_ACCEPTED,
+        )
 
 
 class BatchAssertionsRevoke(VersionedObjectMixin, BaseEntityView):

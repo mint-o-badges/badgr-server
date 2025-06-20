@@ -59,7 +59,7 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
 
     EMAIL_FROM_STRING = ""
 
-    def send_mail(self, template_prefix, email, context):
+    def send_mail(self, template_prefix, email, context, from_email=None):
         context["STATIC_URL"] = getattr(settings, "STATIC_URL")
         context["HTTP_ORIGIN"] = getattr(settings, "HTTP_ORIGIN")
         context["PRIVACY_POLICY_URL"] = getattr(settings, "PRIVACY_POLICY_URL", None)
@@ -82,7 +82,10 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                 settings, "HTTP_ORIGIN"
             ) + EmailBlacklist.generate_email_signature(email, badgrapp_pk)
 
-        self.EMAIL_FROM_STRING = self.set_email_string(context)
+        if from_email:
+            self.EMAIL_FROM_STRING = from_email
+        else:
+            self.EMAIL_FROM_STRING = self.set_email_string(context)
 
         msg = self.render_mail(template_prefix, email, context)
         # badge_id is equal to the badge instance slug

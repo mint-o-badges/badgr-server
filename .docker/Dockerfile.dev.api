@@ -23,6 +23,10 @@ COPY entrypoint.dev.sh             /badgr_server
 
 COPY crontab                       /etc/cron.d/crontab
 
+COPY openbadges                    /badgr_server
+
+COPY openbadges_bakery             /badgr_server
+
 RUN chmod +x entrypoint.dev.sh
 
 RUN touch /var/log/cron_cleartokens.log && chmod 644 /var/log/cron_cleartokens.log
