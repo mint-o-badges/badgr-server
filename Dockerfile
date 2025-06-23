@@ -18,7 +18,7 @@ RUN python -m venv /badgr_server/venv
 ENV PATH="/badgr_server/venv/bin:$PATH"
 
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-dependencies -r requirements.txt
 
 # ------------------------------> Final image
 FROM python:3.8.14-slim-buster
@@ -49,6 +49,8 @@ COPY --chown=python:python  manage.py                          .
 COPY --chown=python:python  .docker/etc/uwsgi.ini              .
 COPY --chown=python:python  .docker/etc/wsgi.py                .
 COPY --chown=python:python  apps                               ./apps
+COPY --chown=python:python  openbadges                         ./openbadges
+COPY --chown=python:python  openbadges_bakery                  ./openbadges_bakery
 COPY --chown=python:python  .git                               ./.git
 COPY --chown=python:python  .docker/etc/settings_local.py      ./apps/mainsite/settings_local.py
 COPY --chown=python:python  entrypoint.sh                      .
@@ -59,6 +61,10 @@ RUN chmod +x entrypoint.sh
 RUN touch /var/log/cron_cleartokens.log && \
     chown python:python /var/log/cron_cleartokens.log && \
     chmod 644 /var/log/cron_cleartokens.log
+
+RUN touch /var/log/cron_qr_badgerequests.log && \
+    chown python:python /var/log/cron_qr_badgerequests.log && \
+    chmod 644 /var/log/cron_qr_badgerequests.log    
 
 
 # Latest releases available at https://github.com/aptible/supercronic/releases

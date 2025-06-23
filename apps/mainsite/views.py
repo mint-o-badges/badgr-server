@@ -41,8 +41,8 @@ from rest_framework.authentication import (
 )
 
 from issuer.tasks import rebake_all_assertions, update_issuedon_all_assertions
-from issuer.models import BadgeClass, LearningPath, QrCode, RequestedBadge, RequestedLearningPath
-from issuer.serializers_v1 import RequestedBadgeSerializer, RequestedLearningPathSerializer
+from issuer.models import BadgeClass, Issuer, IssuerStaffRequest, LearningPath, QrCode, RequestedBadge, RequestedLearningPath
+from issuer.serializers_v1 import IssuerStaffRequestSerializer, RequestedBadgeSerializer, RequestedLearningPathSerializer
 from mainsite.admin_actions import clear_cache
 from mainsite.models import EmailBlacklist, BadgrApp, AltchaChallenge
 from mainsite.serializers import LegacyVerifiedAuthTokenSerializer
@@ -191,20 +191,14 @@ def call_aiskills_api(endpoint, method, payload: dict):
     )
 
 
-@api_view(["GET"])
+@api_view(["POST"])
 @authentication_classes(
     [TokenAuthentication, SessionAuthentication, BasicAuthentication]
 )
 @permission_classes([IsAuthenticated])
-def aiskills(req, searchterm):
+def aiskills(req):
 
-    # The searchterm is encoded URL safe, meaning that + and / got replaced by - and _
-    searchterm = searchterm.replace("-", "+").replace("_", "/")
-    searchterm = base64.b64decode(searchterm).decode("utf-8")
-    if req.method != "GET":
-        return JsonResponse(
-            {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
-        )
+    searchterm = req.data['text']
 
     # fallback to previous setting name
     endpoint = getattr(settings, "AISKILLS_ENDPOINT_CHATS", getattr(settings, "AISKILLS_ENDPOINT"))
@@ -214,20 +208,15 @@ def aiskills(req, searchterm):
 
     return call_aiskills_api(endpoint, 'POST', payload)
 
-@api_view(["GET"])
+@api_view(["POST"])
 @authentication_classes(
     [TokenAuthentication, SessionAuthentication, BasicAuthentication]
 )
 @permission_classes([IsAuthenticated])
-def aiskills_keywords(req, searchterm):
+def aiskills_keywords(req):
 
-    searchterm = searchterm.replace("-", "+").replace("_", "/")
-    searchterm = base64.b64decode(searchterm).decode("utf-8")
-    lang = req.GET.get('lang', 'de')
-    if req.method != "GET":
-        return JsonResponse(
-            {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
-        )
+    searchterm = req.data['keyword']
+    lang = req.data['lang']
 
     endpoint = getattr(settings, "AISKILLS_ENDPOINT_KEYWORDS")
     payload = {
@@ -314,7 +303,7 @@ def requestBadge(req, qrCodeId):
 
         badge.save()
 
-        return JsonResponse({"message": "Badge request received"}, status=status.HTTP_200_OK)
+        return JsonResponse({"message": "Badge request received"}, status=status.HTTP_200_OK)  
 
 @api_view(["GET"])
 @permission_classes([AllowAny])

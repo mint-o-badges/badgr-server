@@ -5,15 +5,15 @@ WORKDIR /badgr_server
 
 RUN apt-get clean all && apt-get update && apt-get upgrade -y
 RUN apt-get install -y default-libmysqlclient-dev \
-                       python3-dev \
-                       python3-cairo \
-                       build-essential \
-                       xmlsec1 \
-                       libxmlsec1-dev \
-                       pkg-config \ 
-                       default-mysql-client \
-                       git \
-                       curl
+    python3-dev \
+    python3-cairo \
+    build-essential \
+    xmlsec1 \
+    libxmlsec1-dev \
+    pkg-config \
+    default-mysql-client \
+    git \
+    curl
 
 RUN pip install uwsgi
 
@@ -23,22 +23,27 @@ COPY entrypoint.dev.sh             /badgr_server
 
 COPY crontab                       /etc/cron.d/crontab
 
+COPY openbadges                    /badgr_server
+
+COPY openbadges_bakery             /badgr_server
+
 RUN chmod +x entrypoint.dev.sh
 
 RUN touch /var/log/cron_cleartokens.log && chmod 644 /var/log/cron_cleartokens.log
+RUN touch /var/log/cron_qr_badgerequests.log && chmod 644 /var/log/cron_qr_badgerequests.log
 
 ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.2.30/supercronic-linux-amd64 \
     SUPERCRONIC=supercronic-linux-amd64 \
     SUPERCRONIC_SHA1SUM=9f27ad28c5c57cd133325b2a66bba69ba2235799
 
 RUN curl -fsSLO "$SUPERCRONIC_URL" \
- && echo "${SUPERCRONIC_SHA1SUM}  ${SUPERCRONIC}" | sha1sum -c - \
- && chmod +x "$SUPERCRONIC" \
- && mv "$SUPERCRONIC" "/usr/local/bin/${SUPERCRONIC}" \
- && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
+    && echo "${SUPERCRONIC_SHA1SUM}  ${SUPERCRONIC}" | sha1sum -c - \
+    && chmod +x "$SUPERCRONIC" \
+    && mv "$SUPERCRONIC" "/usr/local/bin/${SUPERCRONIC}" \
+    && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
 
 
-RUN pip --timeout=1000 install -r requirements.txt
+RUN pip --timeout=1000 install --no-dependencies -r requirements.txt
 RUN pip --timeout=1000 install debugpy
 
 ENTRYPOINT ["/badgr_server/entrypoint.dev.sh"]

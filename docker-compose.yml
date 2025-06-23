@@ -9,8 +9,12 @@ services:
     depends_on:
       - "db"
       - "memcached"
+      - "redis"
+      - "celery_worker"
     volumes:
       - ./apps:/badgr_server/apps
+      - ./openbadges:/badgr_server/openbadges
+      - ./openbadges_bakery:/badgr_server/openbadges_bakery
       - ./manage.py:/badgr_server/manage.py
       - ./.docker/etc/settings_local.dev.py:/badgr_server/apps/mainsite/settings_local.py
       - ./.git:/badgr_server/.git
@@ -21,10 +25,14 @@ services:
       - ./backups:/backups
       - ./user_emails.csv:/badgr_server/user_emails.csv
       - ./esco_issuers.txt:/badgr_server/esco_issuers.txt
+      - badgr_server_mediafiles:/badgr_server/mediafiles
     networks:
       - badgr
     ports:
       - "8000:8000"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
 
   # this container runs memcached
   memcached:
@@ -33,7 +41,7 @@ services:
       - "11211"
     networks:
       - badgr
-    command: ["memcached", "-m", "64", "-I", "10m"]
+    command: ["memcached", "-m", "512", "-I", "10m"]
   # this container runs mysql (database)
   db:
     image: mysql:5.7.31
@@ -41,6 +49,7 @@ services:
     volumes:
       - badgr_server_dev_db:/var/lib/mysql:rw
       - ./.docker/etc/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./my.cnf:/etc/mysql/conf.d/mysql.cnf
     environment:
       - "MYSQL_PASSWORD=password"
       - "MYSQL_HOST=db"
@@ -65,6 +74,34 @@ services:
       - "8025:8025"
     networks:
       - badgr
+  celery_worker:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile.dev.api
+    entrypoint: [] # Override the entrypoint from Dockerfile
+    command: >
+      bash -c "PYTHONPATH=/badgr_server/apps celery -A mainsite worker --loglevel=info"
+    volumes:
+      - ./apps:/badgr_server/apps
+      - ./manage.py:/badgr_server/manage.py
+      - ./.docker/etc/settings_local.dev.py:/badgr_server/apps/mainsite/settings_local.py
+      - badgr_server_mediafiles:/badgr_server/mediafiles
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - "MYSQL_PASSWORD=password"
+      - "MYSQL_HOST=db"
+      - "MYSQL_ROOT_PASSWORD=password"
+    networks:
+      - badgr
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:latest
+    restart: unless-stopped
+    networks:
+      - badgr
 
 networks:
   badgr:
@@ -72,3 +109,4 @@ networks:
 
 volumes:
   badgr_server_dev_db:
+  badgr_server_mediafiles:

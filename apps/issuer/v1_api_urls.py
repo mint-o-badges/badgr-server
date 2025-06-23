@@ -1,7 +1,7 @@
 from django.conf.urls import url
 
 from issuer.api import (BadgeRequestList, IssuerLearningPathList, IssuerList, IssuerDetail, IssuerBadgeClassList, BadgeClassDetail, BadgeInstanceList,
-                        BadgeInstanceDetail, IssuerBadgeInstanceList, AllBadgeClassesList, BatchAssertionsIssue, LearningPathDetail, LearningPathParticipantsList,
+                        BadgeInstanceDetail, IssuerBadgeInstanceList, AllBadgeClassesList, BatchAssertionsIssue, IssuerStaffRequestDetail, IssuerStaffRequestList, LearningPathDetail, LearningPathParticipantsList,
                         QRCodeDetail)
 from issuer.api_v1 import FindBadgeClassDetail, IssuerStaffList
 
@@ -28,7 +28,7 @@ urlpatterns = [
 
     url(r'^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<slug>[^/]+)/batchAssertions$',
         BatchAssertionsIssue.as_view(), name='v1_api_badgeclass_batchissue'),
-
+    url(r'^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<slug>[^/]+)/batch-assertions/status/(?P<task_id>[^/]+)$', BatchAssertionsIssue.as_view(), name='batch-assertions-status'),
     url(r'^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<slug>[^/]+)/assertions$',
         BadgeInstanceList.as_view(), name='v1_api_badgeinstance_list'),
     url(r'^issuers/(?P<slug>[^/]+)/assertions$', IssuerBadgeInstanceList.as_view(), name='v1_api_issuer_instance_list'),
@@ -41,4 +41,10 @@ urlpatterns = [
         LearningPathDetail.as_view(), name='v1_api_learningpath_detail'),
     url(r'^learningpath/(?P<slug>[^/]+)/participants$',
         LearningPathParticipantsList.as_view(), name='v1_api_learningpath_participant_list'), 
+    url(r'^issuers/(?P<issuerSlug>[^/]+)/staffRequests$',
+        IssuerStaffRequestList.as_view(), name='v1_api_staffrequest_list'), 
+    url(r'^issuers/(?P<issuerSlug>[^/]+)/staffRequests/(?P<requestId>[^/]+)$',
+        IssuerStaffRequestDetail.as_view(), name='v1_api_staffrequest_detail'), 
+    url(r'^issuers/(?P<issuerSlug>[^/]+)/staffRequests/(?P<requestId>[^/]+)/confirm$',
+        IssuerStaffRequestDetail.as_view(), name='v1_api_staffrequest_detail'),           
 ]
