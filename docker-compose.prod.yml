@@ -57,6 +57,13 @@ services:
       - "MYSQL_PASSWORD=password"
       - "MYSQL_HOST=db"
       - "MYSQL_ROOT_PASSWORD=password"
+    ulimits:
+      # Needs to be set e.g. on Fedora, Arch, etc.
+      # https://github.com/docker-library/mysql/issues/873#issuecomment-1909948195
+      # https://github.com/ddev/ddev/issues/4862#issuecomment-1533141193
+      nofile: # Fix memory leak issue on some systems when LimitCORE=infinity or LimitNOFILE=infinity (containerd)
+        soft: 1048576
+        hard: 1048576
     expose:
       - "3306"
     networks:
