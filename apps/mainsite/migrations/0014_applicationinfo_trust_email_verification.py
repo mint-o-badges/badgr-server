@@ -6,15 +6,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('mainsite', '0013_badgrapp_oauth_authorization_redirect'),
+        ("mainsite", "0013_badgrapp_oauth_authorization_redirect"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='applicationinfo',
-            name='trust_email_verification',
+            model_name="applicationinfo",
+            name="trust_email_verification",
             field=models.BooleanField(default=False),
         ),
     ]

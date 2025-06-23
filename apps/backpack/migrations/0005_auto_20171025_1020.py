@@ -8,21 +8,26 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('backpack', '0004_auto_20170711_1326'),
+        ("backpack", "0004_auto_20170711_1326"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='backpackcollection',
-            name='updated_at',
+            model_name="backpackcollection",
+            name="updated_at",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='backpackcollection',
-            name='updated_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='+', to=settings.AUTH_USER_MODEL),
+            model_name="backpackcollection",
+            name="updated_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="+",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
     ]

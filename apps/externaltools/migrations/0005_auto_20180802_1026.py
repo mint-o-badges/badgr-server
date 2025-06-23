@@ -7,16 +7,15 @@ import django.db.models.manager
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('externaltools', '0004_auto_20180411_0653'),
+        ("externaltools", "0004_auto_20180411_0653"),
     ]
 
     operations = [
         migrations.AlterModelManagers(
-            name='externaltool',
+            name="externaltool",
             managers=[
-                ('cached', django.db.models.manager.Manager()),
+                ("cached", django.db.models.manager.Manager()),
             ],
         ),
     ]

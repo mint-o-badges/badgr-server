@@ -7,21 +7,20 @@ import django.db.models.manager
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('badgeuser', '0016_auto_20180611_0802'),
+        ("badgeuser", "0016_auto_20180611_0802"),
     ]
 
     operations = [
         migrations.AlterModelManagers(
-            name='termsversion',
+            name="termsversion",
             managers=[
-                ('cached', django.db.models.manager.Manager()),
+                ("cached", django.db.models.manager.Manager()),
             ],
         ),
         migrations.AddField(
-            model_name='termsversion',
-            name='is_active',
+            model_name="termsversion",
+            name="is_active",
             field=models.BooleanField(default=True),
         ),
     ]

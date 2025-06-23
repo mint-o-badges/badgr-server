@@ -6,15 +6,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('badgeuser', '0017_auto_20180611_0819'),
+        ("badgeuser", "0017_auto_20180611_0819"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='termsversion',
-            name='short_description',
+            model_name="termsversion",
+            name="short_description",
             field=models.TextField(blank=True),
         ),
     ]

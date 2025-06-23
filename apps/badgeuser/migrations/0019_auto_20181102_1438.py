@@ -6,20 +6,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('badgeuser', '0018_termsversion_short_description'),
+        ("badgeuser", "0018_termsversion_short_description"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='termsagreement',
-            name='created_at',
+            model_name="termsagreement",
+            name="created_at",
             field=models.DateTimeField(auto_now_add=True, db_index=True),
         ),
         migrations.AlterField(
-            model_name='termsversion',
-            name='created_at',
+            model_name="termsversion",
+            name="created_at",
             field=models.DateTimeField(auto_now_add=True, db_index=True),
         ),
     ]

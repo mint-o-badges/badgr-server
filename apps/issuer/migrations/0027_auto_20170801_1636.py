@@ -7,15 +7,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('issuer', '0026_auto_20170726_1409'),
+        ("issuer", "0026_auto_20170726_1409"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='badgeinstance',
-            name='issued_on',
+            model_name="badgeinstance",
+            name="issued_on",
             field=models.DateTimeField(default=datetime.datetime.now),
         ),
     ]

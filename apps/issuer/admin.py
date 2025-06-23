@@ -31,6 +31,7 @@ from .models import (
 )
 from .tasks import resend_notifications
 
+
 class ReadOnlyInline(TabularInline):
     def has_change_permission(self, request, obj=None):
         return False
@@ -54,34 +55,22 @@ class IssuerStaffInline(TabularInline):
 class IssuerExtensionInline(TabularInline):
     model = IssuerExtension
     extra = 0
-    fields = ('name', 'original_json')
+    fields = ("name", "original_json")
+
 
 class IssuerBadgeclasses(ReadOnlyInline):
     model = BadgeClass
     extra = 0
-    fields = ('name', 'assertion_count', 'qrcode_count')
+    fields = ("name", "assertion_count", "qrcode_count")
 
     def get_queryset(self, request):
         qs = super(IssuerBadgeclasses, self).get_queryset(request)
-        qs = qs.annotate(number_of_assertions=models.Count('badgeinstances', filter=models.Q(badgeinstances__revoked=False)))
-        qs = qs.annotate(number_of_qrcodes=models.Count('qrcodes'))
-        return qs
-
-    def assertion_count(self, obj):
-        return obj.number_of_assertions
-
-    def qrcode_count(self, obj):
-        return obj.number_of_qrcodes
-
-class IssuerBadgeclasses(ReadOnlyInline):
-    model = BadgeClass
-    extra = 0
-    fields = ('name', 'assertion_count', 'qrcode_count')
-
-    def get_queryset(self, request):
-        qs = super(IssuerBadgeclasses, self).get_queryset(request)
-        qs = qs.annotate(number_of_assertions=models.Count('badgeinstances', filter=models.Q(badgeinstances__revoked=False)))
-        qs = qs.annotate(number_of_qrcodes=models.Count('qrcodes'))
+        qs = qs.annotate(
+            number_of_assertions=models.Count(
+                "badgeinstances", filter=models.Q(badgeinstances__revoked=False)
+            )
+        )
+        qs = qs.annotate(number_of_qrcodes=models.Count("qrcodes"))
         return qs
 
     def assertion_count(self, obj):
@@ -92,12 +81,20 @@ class IssuerBadgeclasses(ReadOnlyInline):
 
 
 class IssuerAdmin(DjangoObjectActions, ModelAdmin):
-    readonly_fields = ('created_by', 'created_at', 'updated_at', 'old_json',
-                       'source', 'source_url', 'entity_id', 'slug')
-    list_display = ('img', 'name', 'created_by', 'created_at', 'badge_count', 'zip')
-    list_display_links = ('img', 'name')
-    list_filter = ('created_at',)
-    search_fields = ('name', 'entity_id')
+    readonly_fields = (
+        "created_by",
+        "created_at",
+        "updated_at",
+        "old_json",
+        "source",
+        "source_url",
+        "entity_id",
+        "slug",
+    )
+    list_display = ("img", "name", "created_by", "created_at", "badge_count", "zip")
+    list_display_links = ("img", "name")
+    list_filter = ("created_at",)
+    search_fields = ("name", "entity_id")
     fieldsets = (
         (
             "Metadata",
@@ -138,18 +135,13 @@ class IssuerAdmin(DjangoObjectActions, ModelAdmin):
         ),
         ("JSON", {"fields": ("old_json",)}),
     )
-    inlines = [
-        IssuerStaffInline,
-        IssuerExtensionInline,
-        IssuerBadgeclasses
-    ]
-    change_actions = ['redirect_badgeclasses']
+    inlines = [IssuerStaffInline, IssuerExtensionInline, IssuerBadgeclasses]
+    change_actions = ["redirect_badgeclasses"]
 
     def get_queryset(self, request):
         qs = super(IssuerAdmin, self).get_queryset(request)
-        qs = qs.annotate(number_of_badges=models.Count('badgeclasses'))
+        qs = qs.annotate(number_of_badges=models.Count("badgeclasses"))
         return qs
-
 
     def save_model(self, request, obj, form, change):
         force_resize = False
@@ -169,7 +161,7 @@ class IssuerAdmin(DjangoObjectActions, ModelAdmin):
     def badge_count(self, obj):
         return obj.number_of_badges
 
-    badge_count.admin_order_field = 'number_of_badges'
+    badge_count.admin_order_field = "number_of_badges"
 
     def redirect_badgeclasses(self, request, obj):
         return HttpResponseRedirect(
@@ -243,13 +235,29 @@ class BadgeModelForm(forms.ModelForm):
 class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
     form = BadgeModelForm
 
-    readonly_fields = ('created_by', 'created_at', 'updated_at', 'old_json',
-                       'source', 'source_url', 'entity_id', 'slug', 'criteria')
-    list_display = ('badge_image', 'name', 'issuer_link', 'assertion_count')
-    list_display_links = ('badge_image', 'name',)
-    list_filter = ('created_at',)
-    search_fields = ('name', 'entity_id', 'issuer__name',)
-    raw_id_fields = ('issuer', )
+    readonly_fields = (
+        "created_by",
+        "created_at",
+        "updated_at",
+        "old_json",
+        "source",
+        "source_url",
+        "entity_id",
+        "slug",
+        "criteria",
+    )
+    list_display = ("badge_image", "name", "issuer_link", "assertion_count")
+    list_display_links = (
+        "badge_image",
+        "name",
+    )
+    list_filter = ("created_at",)
+    search_fields = (
+        "name",
+        "entity_id",
+        "issuer__name",
+    )
+    raw_id_fields = ("issuer",)
     fieldsets = (
         (
             "Metadata",
@@ -286,16 +294,15 @@ class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
         BadgeClassAlignmentInline,
         BadgeClassExtensionInline,
     ]
-    change_actions = ['redirect_issuer', 'redirect_instances']
+    change_actions = ["redirect_issuer", "redirect_instances"]
 
     def get_queryset(self, request):
         qs = super(BadgeClassAdmin, self).get_queryset(request)
-        qs = qs.annotate(number_of_assertions=models.Count('badgeinstances', filter=models.Q(badgeinstances__revoked=False)))
-        return qs
-
-    def get_queryset(self, request):
-        qs = super(BadgeClassAdmin, self).get_queryset(request)
-        qs = qs.annotate(number_of_assertions=models.Count('badgeinstances', filter=models.Q(badgeinstances__revoked=False)))
+        qs = qs.annotate(
+            number_of_assertions=models.Count(
+                "badgeinstances", filter=models.Q(badgeinstances__revoked=False)
+            )
+        )
         return qs
 
     def save_model(self, request, obj, form, change):
@@ -323,7 +330,7 @@ class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
         )
 
     issuer_link.allow_tags = True
-    issuer_link.admin_order_field = 'issuer'
+    issuer_link.admin_order_field = "issuer"
 
     def redirect_instances(self, request, obj):
         return HttpResponseRedirect(
@@ -345,7 +352,7 @@ class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
     def assertion_count(self, obj):
         return obj.number_of_assertions
 
-    assertion_count.admin_order_field = 'number_of_assertions'
+    assertion_count.admin_order_field = "number_of_assertions"
 
 
 badgr_admin.register(BadgeClass, BadgeClassAdmin)
@@ -492,18 +499,23 @@ class ImportedBadgeAssertionExtensionInline(TabularInline):
 
 
 class ImportedBadgeAssertionAdmin(ModelAdmin):
-    readonly_fields = ("created_at", "created_by", "updated_at", "entity_id", "issuer_image_url", "badge_image_url")
+    readonly_fields = (
+        "created_at",
+        "created_by",
+        "updated_at",
+        "entity_id",
+        "issuer_image_url",
+        "badge_image_url",
+    )
     list_display = (
         "recipient_identifier",
         "entity_id",
         "badge_name",
         "badge_description",
     )
-    list_display_links = (
-        "recipient_identifier",
-    )
+    list_display_links = ("recipient_identifier",)
     list_filter = ("created_at",)
-    inlines=[ImportedBadgeAssertionExtensionInline]
+    inlines = [ImportedBadgeAssertionExtensionInline]
     fieldsets = (
         (
             "Metadata",
@@ -531,13 +543,14 @@ class ImportedBadgeAssertionAdmin(ModelAdmin):
                     "expires_at",
                     "narrative",
                     "badge_image_url",
-                    "issuer_image_url"
+                    "issuer_image_url",
                 )
             },
         ),
         ("Revocation", {"fields": ("revoked", "revocation_reason")}),
         ("JSON", {"fields": ("original_json",)}),
     )
+
 
 badgr_admin.register(ImportedBadgeAssertion, ImportedBadgeAssertionAdmin)
 
@@ -551,7 +564,6 @@ badgr_admin.register(IssuerExtension, ExtensionAdmin)
 badgr_admin.register(BadgeClassExtension, ExtensionAdmin)
 badgr_admin.register(BadgeInstanceExtension, ExtensionAdmin)
 badgr_admin.register(ImportedBadgeAssertionExtension, ExtensionAdmin)
-
 
 
 class ReqeustedBadgeAdmin(ModelAdmin):

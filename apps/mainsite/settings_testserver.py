@@ -3,10 +3,10 @@
 from mainsite.settings import *  # noqa: F403
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'badgr',
-        'OPTIONS': {
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": "badgr",
+        "OPTIONS": {
             # Uncomment when using MySQL to ensure consistency across servers
             # "init_command": "SET storage_engine=InnoDB",
         },
@@ -14,19 +14,17 @@ DATABASES = {
 }
 
 CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
-        'LOCATION': '127.0.0.1:11211',
-        'KEY_PREFIX': 'test_badgr_',
-        'VERSION': 1,
+    "default": {
+        "BACKEND": "django.core.cache.backends.memcached.MemcachedCache",
+        "LOCATION": "127.0.0.1:11211",
+        "KEY_PREFIX": "test_badgr_",
+        "VERSION": 1,
     }
 }
 
 
 # django test speedups
-PASSWORD_HASHERS = (
-    'django.contrib.auth.hashers.MD5PasswordHasher',
-)
+PASSWORD_HASHERS = ("django.contrib.auth.hashers.MD5PasswordHasher",)
 DEBUG = False
 try:
     logging.disable(logging.CRITICAL)  # noqa: F405
@@ -37,4 +35,4 @@ except NameError:
 
 CELERY_ALWAYS_EAGER = True
 CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
-BROKER_BACKEND = 'memory'
+BROKER_BACKEND = "memory"
