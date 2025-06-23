@@ -94,6 +94,7 @@ services:
       - "MYSQL_ROOT_PASSWORD=password"
     networks:
       - badgr
+    restart: unless-stopped
     depends_on:
       - redis
 
