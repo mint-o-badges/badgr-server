@@ -165,7 +165,7 @@ class BackpackAssertionList(BaseEntityListView):
             ):
                 return False
             return True
-        
+
         return list(filter(badge_filter, self.request.user.cached_badgeinstances()))
 
     @apispec_list_operation(
@@ -327,6 +327,7 @@ class BackpackAssertionDetailImage(ImagePropertyDetailView, BadgrOAuthTokenHasSc
     prop = "image"
     valid_scopes = ["r:backpack", "rw:backpack"]
 
+
 class BackpackSkillList(BackpackAssertionList):
 
     def get(self, request, **kwargs):
@@ -335,9 +336,9 @@ class BackpackSkillList(BackpackAssertionList):
             return JsonResponse({"skills": []})
 
         try:
-            lang = request.data['lang']
+            lang = request.data["lang"]
         except:
-            lang = 'de'
+            lang = "de"
 
         # sum up studyloads by esco uri, removing esco uri host part
         # because the ai skills api does not use it
@@ -346,31 +347,27 @@ class BackpackSkillList(BackpackAssertionList):
             if len(instance.badgeclass.cached_extensions()) > 0:
                 for extension in instance.badgeclass.cached_extensions():
                     if extension.name == "extensions:CompetencyExtension":
-                        extension_json = json.loads(
-                            extension.original_json
-                        )
+                        extension_json = json.loads(extension.original_json)
                         for competency in extension_json:
-                            esco_uri = competency['framework_identifier']
-                            parsed_uri = urlparse(esco_uri)
-                            uri_path = parsed_uri.path
-                            studyload = competency['studyLoad']
-                            try:
-                                skill_studyloads[uri_path] += studyload
-                            except KeyError:
-                                skill_studyloads[uri_path] = studyload
+                            if competency["framework_identifier"]:
+                                esco_uri = competency["framework_identifier"]
+                                parsed_uri = urlparse(esco_uri)
+                                uri_path = parsed_uri.path
+                                studyload = competency["studyLoad"]
+                                try:
+                                    skill_studyloads[uri_path] += studyload
+                                except KeyError:
+                                    skill_studyloads[uri_path] = studyload
 
         # get esco trees from ai skills api
         endpoint = getattr(settings, "AISKILLS_ENDPOINT_TREE")
-        payload = {
-            "concept_uris": list(skill_studyloads.keys()),
-            "lang": lang
-        }
-        tree_json = call_aiskills_api(endpoint, 'POST', payload)
+        payload = {"concept_uris": list(skill_studyloads.keys()), "lang": lang}
+        tree_json = call_aiskills_api(endpoint, "POST", payload)
         tree = json.loads(tree_json.content.decode())
 
         # extend with our studyloads
-        for skill in tree['skills']:
-            skill['studyLoad'] = skill_studyloads[skill['concept_uri']]
+        for skill in tree["skills"]:
+            skill["studyLoad"] = skill_studyloads[skill["concept_uri"]]
 
         return JsonResponse(tree)
 
