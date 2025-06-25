@@ -336,7 +336,8 @@ class BackpackSkillList(BackpackAssertionList):
             return JsonResponse({"skills": []})
 
         try:
-            lang = request.data["lang"]
+            lang = request.query_params.get("lang")
+            assert lang == "de" or lang == "en"
         except:
             lang = "de"
 
