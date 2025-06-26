@@ -20,7 +20,6 @@ class HumanReadableBooleanField(serializers.BooleanField):
 
 
 class ReadOnlyJSONField(serializers.CharField):
-
     def to_representation(self, value):
         if isinstance(value, (dict, list)):
             return value

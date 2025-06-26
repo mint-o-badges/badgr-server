@@ -10,9 +10,11 @@ class PopulateEntityIdsMigration(RunPython):
     def __init__(self, app_label, model_name, entity_class_name=None, **kwargs):
         self.app_label = app_label
         self.model_name = model_name
-        self.entity_class_name = entity_class_name if entity_class_name is not None else model_name
-        if 'reverse_code' not in kwargs:
-            kwargs['reverse_code'] = self.noop
+        self.entity_class_name = (
+            entity_class_name if entity_class_name is not None else model_name
+        )
+        if "reverse_code" not in kwargs:
+            kwargs["reverse_code"] = self.noop
         super(PopulateEntityIdsMigration, self).__init__(self.generate_ids, **kwargs)
 
     def noop(self, apps, schema_editor):

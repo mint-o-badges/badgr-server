@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-from django.db import models, migrations, IntegrityError, transaction
-from allauth.account.adapter import get_adapter
-from allauth.account.models import EmailConfirmation
-
-from badgeuser.models import CachedEmailAddress, BadgeUser, EmailConfirmation
+from django.db import migrations
 
 
 def do_nothing(apps, schema_editor):
@@ -16,11 +12,8 @@ def do_nothing(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('badgeuser', '0005_auto_20160901_1537'),
+        ("badgeuser", "0005_auto_20160901_1537"),
     ]
 
-    operations = [
-        migrations.RunPython(do_nothing)
-    ]
+    operations = [migrations.RunPython(do_nothing)]

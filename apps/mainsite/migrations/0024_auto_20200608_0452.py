@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('mainsite', '0023_merge_20200211_0702'),
+        ("mainsite", "0023_merge_20200211_0702"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='applicationinfo',
-            name='icon',
-            field=models.FileField(blank=True, null=True, upload_to=''),
+            model_name="applicationinfo",
+            name="icon",
+            field=models.FileField(blank=True, null=True, upload_to=""),
         ),
     ]
