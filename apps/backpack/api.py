@@ -359,6 +359,9 @@ class BackpackSkillList(BackpackAssertionList):
                                 except KeyError:
                                     skill_studyloads[uri_path] = studyload
 
+        if not len(skill_studyloads.keys()) > 0:
+            return JsonResponse({"skills": []})
+
         # get esco trees from ai skills api
         endpoint = getattr(settings, "AISKILLS_ENDPOINT_TREE")
         payload = {"concept_uris": list(skill_studyloads.keys()), "lang": lang}
