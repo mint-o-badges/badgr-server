@@ -196,7 +196,9 @@ def aiskills(req):
 
     # fallback to previous setting name
     endpoint = getattr(
-        settings, "AISKILLS_ENDPOINT_CHATS", getattr(settings, "AISKILLS_ENDPOINT")
+        settings,
+        "AISKILLS_ENDPOINT_CHATS",
+        getattr(settings, "AISKILLS_ENDPOINT", None),
     )
     payload = {"text_to_analyze": searchterm}
 
