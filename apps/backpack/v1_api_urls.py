@@ -6,6 +6,7 @@ from backpack.api import (
     BackpackAssertionDetailImage,
     BackpackCollectionList,
     BackpackCollectionDetail,
+    BackpackSkillList,
     ImportedBadgeInstanceDetail,
     ImportedBadgeInstanceList,
     ShareBackpackAssertion,
@@ -35,6 +36,7 @@ urlpatterns = [
         BackpackAssertionDetailImage.as_view(),
         name="v1_api_localbadgeinstance_image",
     ),
+    url(r"^skills$", BackpackSkillList.as_view(), name="v1_api_skills_list"),
     url(
         r"^collections$",
         BackpackCollectionList.as_view(),
