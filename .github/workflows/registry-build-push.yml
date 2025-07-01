@@ -40,9 +40,9 @@ jobs:
               generate_release_notes: true,
               draft: true,
               prerelease: false
-          })
+            })
 
-          return data.id
+            return data.id
 
   build-and-push-image:
     runs-on: ubuntu-latest
