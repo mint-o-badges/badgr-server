@@ -5,7 +5,7 @@ from .events.base import BaseBadgrEvent
 
 
 class BadgrLogger(object):
-    def __init__(self, name='Badgr.Events'):
+    def __init__(self, name="Badgr.Events"):
         self.logger = logging.getLogger(name)
 
     def event(self, event):

@@ -1,23 +1,22 @@
 # -*- coding: utf-8 -*-
 
 
-from django.db import models, migrations
+from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('issuer', '0001_initial'),
+        ("issuer", "0001_initial"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='issuerstaff',
-            old_name='badgeuser',
-            new_name='user',
+            model_name="issuerstaff",
+            old_name="badgeuser",
+            new_name="user",
         ),
         migrations.AlterUniqueTogether(
-            name='issuerstaff',
-            unique_together=set([('issuer', 'user')]),
+            name="issuerstaff",
+            unique_together=set([("issuer", "user")]),
         ),
     ]

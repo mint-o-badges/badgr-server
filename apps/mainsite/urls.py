@@ -1,7 +1,19 @@
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic.base import RedirectView, TemplateView
 from django.conf.urls.static import static
-from mainsite.views import badgeRequestsByBadgeClass, downloadQrCode, upload, nounproject, aiskills, aiskills_keywords, requestBadge, deleteBadgeRequest, createCaptchaChallenge, getTimestamp
+from mainsite.views import (
+    badgeRequestsByBadgeClass,
+    downloadQrCode,
+    upload,
+    nounproject,
+    aiskills,
+    aiskills_keywords,
+    requestBadge,
+    deleteBadgeRequest,
+    createCaptchaChallenge,
+    getVersion,
+    getTimestamp
+)
 from mainsite.views import (
     info_view,
     email_unsubscribe,
@@ -79,8 +91,16 @@ urlpatterns = [
     url(
         r"^o/authorize/?$", AuthorizationApiView.as_view(), name="oauth2_api_authorize"
     ),
-    url(r"^o/token/?$", ensure_csrf_cookie(TokenView.as_view()), name="oauth2_provider_token"),
-    url(r"^o/revoke_token/?$", RevokeTokenView.as_view(), name="oauth2_provider_revoke_token"),
+    url(
+        r"^o/token/?$",
+        ensure_csrf_cookie(TokenView.as_view()),
+        name="oauth2_provider_token",
+    ),
+    url(
+        r"^o/revoke_token/?$",
+        RevokeTokenView.as_view(),
+        name="oauth2_provider_revoke_token",
+    ),
     url(r"^o/code/?$", AuthCodeExchange.as_view(), name="oauth2_code_exchange"),
     url(
         r"^o/register/?$",
@@ -160,37 +180,51 @@ urlpatterns = [
     url(r"^v2/", include("badgrsocialauth.v2_api_urls"), kwargs={"version": "v2"}),
     url(r"^v2/backpack/", include("backpack.v2_api_urls"), kwargs={"version": "v2"}),
     # External Tools
-    url(r'^v1/externaltools/', include('externaltools.v1_api_urls'),
-        kwargs={'version': 'v1'}),
-    url(r'^v2/externaltools/', include('externaltools.v2_api_urls'),
-        kwargs={'version': 'v2'}),
-
-    url(r'^upload', upload, name="image_upload"),
-    url(r'^nounproject/(?P<searchterm>[^/]+)/(?P<page>[^/]+)$', nounproject,
-        name="nounproject"),
-
-    url(r'^aiskills/$', aiskills, name="aiskills"),
-    url(r'^aiskills-keywords/$', aiskills_keywords, name="aiskills_keywords"),
-
-    url(r'^request-badge/(?P<qrCodeId>[^/]+)$', requestBadge, name="request-badge"),
-
+    url(
+        r"^v1/externaltools/",
+        include("externaltools.v1_api_urls"),
+        kwargs={"version": "v1"},
+    ),
+    url(
+        r"^v2/externaltools/",
+        include("externaltools.v2_api_urls"),
+        kwargs={"version": "v2"},
+    ),
+    url(r"^upload", upload, name="image_upload"),
+    url(
+        r"^nounproject/(?P<searchterm>[^/]+)/(?P<page>[^/]+)$",
+        nounproject,
+        name="nounproject",
+    ),
+    url(r"^aiskills/$", aiskills, name="aiskills"),
+    url(r"^aiskills-keywords/$", aiskills_keywords, name="aiskills_keywords"),
+    url(r"^request-badge/(?P<qrCodeId>[^/]+)$", requestBadge, name="request-badge"),
     url(r'^get-server-timestamp', getTimestamp, name="get-server-timestamp"),
-
-    url(r'^deleteBadgeRequest/(?P<requestId>[^/]+)$', deleteBadgeRequest, name="delete-badge-request"),
-
-    url(r'^download-qrcode/(?P<qrCodeId>[^/]+)/(?P<badgeSlug>[^/]+)$', downloadQrCode, name="download-qrcode"),
-  
-    url(r'^badgeRequests/(?P<badgeSlug>[^/]+)$', badgeRequestsByBadgeClass, name="badge-requests-by-badgeclass"),
-
-
+    url(
+        r"^deleteBadgeRequest/(?P<requestId>[^/]+)$",
+        deleteBadgeRequest,
+        name="delete-badge-request",
+    ),
+    url(
+        r"^download-qrcode/(?P<qrCodeId>[^/]+)/(?P<badgeSlug>[^/]+)$",
+        downloadQrCode,
+        name="download-qrcode",
+    ),
+    url(
+        r"^badgeRequests/(?P<badgeSlug>[^/]+)$",
+        badgeRequestsByBadgeClass,
+        name="badge-requests-by-badgeclass",
+    ),
     # meinBildungsraum OIDC connection
-    path('oidc/', include('mozilla_django_oidc.urls')),
-    url(r'^oidcview/logoutRedirect/', OidcView.oidcLogoutRedirect, name="oidcLogoutRedirect"),
-
+    path("oidc/", include("mozilla_django_oidc.urls")),
+    url(
+        r"^oidcview/logoutRedirect/",
+        OidcView.oidcLogoutRedirect,
+        name="oidcLogoutRedirect",
+    ),
     url(r"^altcha", createCaptchaChallenge, name="create_captcha_challenge"),
-
     # Prometheus endpoint
-    path('', include('django_prometheus.urls')),
+    path("", include("django_prometheus.urls")),
 ]
 # add to serve files
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
