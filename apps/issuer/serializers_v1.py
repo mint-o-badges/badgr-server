@@ -36,7 +36,6 @@ from mainsite.validators import (
 )
 from rest_framework import serializers
 
-from . import utils
 from .models import (
     RECIPIENT_TYPE_EMAIL,
     RECIPIENT_TYPE_ID,
@@ -250,10 +249,10 @@ class IssuerSerializerV1(
                 self.context.get("request", None)
             )
 
-        if not instance.verified: 
+        if not instance.verified:
             if verifyIssuerAutomatically(
-            validated_data.get("url"), validated_data.get("email")
-        ):
+                validated_data.get("url"), validated_data.get("email")
+            ):
                 instance.verified = True
 
         instance.save(force_resize=force_image_resize)
@@ -389,7 +388,6 @@ class BadgeClassSerializerV1(
 
     copy_permissions = serializers.ListField(source="copy_permissions_list")
 
-
     class Meta:
         apispec_definition = ("BadgeClass", {})
 
@@ -510,7 +508,6 @@ class BadgeClassSerializerV1(
         return instance
 
     def create(self, validated_data, **kwargs):
-
         logger.info("CREATE NEW BADGECLASS")
         logger.debug(validated_data)
 
@@ -520,7 +517,7 @@ class BadgeClassSerializerV1(
         if "issuer" in self.context:
             validated_data["issuer"] = self.context.get("issuer")
 
-        #criteria_text is now created at runtime
+        # criteria_text is now created at runtime
         # if (
         #     validated_data.get("criteria_text", None) is None
         #     and validated_data.get("criteria_url", None) is None
@@ -528,7 +525,7 @@ class BadgeClassSerializerV1(
         #     raise serializers.ValidationError(
         #         "One or both of the criteria_text and criteria_url fields must be provided"
         #     )
-        
+
         new_badgeclass = BadgeClass.objects.create(**validated_data)
         return new_badgeclass
 
@@ -680,14 +677,15 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
         # ob2 evidence items
         submitted_items = validated_data.get("evidence_items")
         if submitted_items:
-            evidence_items.extend(submitted_items)         
+            evidence_items.extend(submitted_items)
         try:
             return self.context.get("badgeclass").issue(
                 recipient_id=validated_data.get("recipient_identifier"),
                 narrative=validated_data.get("narrative"),
                 evidence=evidence_items,
                 notify=validated_data.get("create_notification"),
-                created_by = self.context.get("user") or getattr(self.context.get("request"), "user", None),
+                created_by=self.context.get("user")
+                or getattr(self.context.get("request"), "user", None),
                 allow_uppercase=validated_data.get("allow_uppercase"),
                 recipient_type=validated_data.get(
                     "recipient_type", RECIPIENT_TYPE_EMAIL
@@ -957,7 +955,6 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
         return representation
 
     def create(self, validated_data, **kwargs):
-
         name = validated_data.get("name")
         description = validated_data.get("description")
         tags = validated_data.get("tag_items")
