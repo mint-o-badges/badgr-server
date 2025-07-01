@@ -310,8 +310,8 @@ def requestBadge(req, qrCodeId):
 def getTimestamp(req):
     if req.method != "GET":
         return JsonResponse(
-                {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
-                )
+            {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
+        )
     timestamp = mainsite.__timestamp__
 
     return JsonResponse({"message": timestamp}, status=status.HTTP_200_OK)
