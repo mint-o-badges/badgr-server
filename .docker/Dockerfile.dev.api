@@ -3,7 +3,7 @@ FROM python:3.8.14-slim-buster
 RUN mkdir /badgr_server
 WORKDIR /badgr_server
 
-RUN apt-get update && apt-get upgrade -y
+RUN apt-get clean all && apt-get update && apt-get upgrade -y
 RUN apt-get install -y default-libmysqlclient-dev \
     python3-dev \
     python3-cairo \
@@ -41,6 +41,8 @@ RUN curl -fsSLO "$SUPERCRONIC_URL" \
     && mv "$SUPERCRONIC" "/usr/local/bin/${SUPERCRONIC}" \
     && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
 
+# Add timestamp
+RUN date +"%d.%m.%y %T" > timestamp
 
 RUN pip --timeout=1000 install --no-dependencies -r requirements.txt
 RUN pip --timeout=1000 install debugpy
