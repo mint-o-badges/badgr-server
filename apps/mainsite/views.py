@@ -49,6 +49,7 @@ from mainsite.serializers import LegacyVerifiedAuthTokenSerializer
 from mainsite.utils import OriginSetting, createHash, createHmac
 from random import randrange
 import badgrlog
+import mainsite
 
 from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import DefaultStorage
@@ -303,6 +304,18 @@ def requestBadge(req, qrCodeId):
         badge.save()
 
         return JsonResponse({"message": "Badge request received"}, status=status.HTTP_200_OK)  
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def getTimestamp(req):
+    if req.method != "GET":
+        return JsonResponse(
+                {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
+                )
+    timestamp = mainsite.__timestamp__
+
+    return JsonResponse({"message": timestamp}, status=status.HTTP_200_OK)
+
 
 def PageSetup(canvas, doc, badgeImage, issuerImage):
 
