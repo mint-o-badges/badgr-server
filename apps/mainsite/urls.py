@@ -1,7 +1,7 @@
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic.base import RedirectView, TemplateView
 from django.conf.urls.static import static
-from mainsite.views import badgeRequestsByBadgeClass, downloadQrCode, upload, nounproject, aiskills, aiskills_keywords, requestBadge, deleteBadgeRequest, createCaptchaChallenge, getVersion
+from mainsite.views import badgeRequestsByBadgeClass, downloadQrCode, upload, nounproject, aiskills, aiskills_keywords, requestBadge, deleteBadgeRequest, createCaptchaChallenge
 from mainsite.views import (
     info_view,
     email_unsubscribe,
@@ -173,8 +173,6 @@ urlpatterns = [
     url(r'^aiskills-keywords/$', aiskills_keywords, name="aiskills_keywords"),
 
     url(r'^request-badge/(?P<qrCodeId>[^/]+)$', requestBadge, name="request-badge"),
-
-    url(r'^get-server-version', getVersion, name="get-server-version"),
 
     url(r'^deleteBadgeRequest/(?P<requestId>[^/]+)$', deleteBadgeRequest, name="delete-badge-request"),
 

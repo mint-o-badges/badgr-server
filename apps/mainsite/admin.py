@@ -21,14 +21,13 @@ import badgrlog
 from badgeuser.models import CachedEmailAddress, ProxyEmailConfirmation
 from mainsite.models import AltchaChallenge, BadgrApp, EmailBlacklist, ApplicationInfo, AccessTokenProxy, LegacyTokenProxy
 from mainsite.utils import backoff_cache_key, set_url_query_params
-import mainsite
 
 badgrlogger = badgrlog.BadgrLogger()
 
 
 class BadgrAdminSite(AdminSite):
     site_header = ugettext_lazy('Badgr')
-    index_title = f"{ugettext_lazy('Staff Dashboard')} - Version: {mainsite.__build__}"
+    index_title = f"{ugettext_lazy('Staff Dashboard')}"
     site_title = 'Badgr'
 
     def autodiscover(self):
