@@ -77,7 +77,11 @@ RUN curl -fsSLO "$SUPERCRONIC_URL" \
  && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
 
 # Add timestamp
+<<<<<<< HEAD
 RUN TZ=Europe/Berlin date +"%d.%m.%y %T" > timestamp && chown python:python timestamp
+=======
+RUN date +"%d.%m.%y %T" > timestamp && chown python:python timestamp
+>>>>>>> develop
 
 USER 999
 
