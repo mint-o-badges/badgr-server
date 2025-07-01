@@ -367,7 +367,7 @@ class BadgeClassSerializerV1(
         many=True, source="alignment_items", required=False
     )
     tags = serializers.ListField(
-        child=StripTagsCharField(max_length=1024), source="tag_items", required=False
+        child=StripTagsCharField(max_length=254), source="tag_items", required=False
     )
 
     extensions = serializers.DictField(
@@ -841,7 +841,7 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
     description = StripTagsCharField(max_length=16384, required=True, convert_null=True)
 
     tags = serializers.ListField(
-        child=StripTagsCharField(max_length=1024), source="tag_items", required=False
+        child=StripTagsCharField(max_length=254), source="tag_items", required=False
     )
     badges = BadgeOrderSerializer(many=True, required=False)
 
