@@ -11,7 +11,6 @@ from mainsite.views import (
     requestBadge,
     deleteBadgeRequest,
     createCaptchaChallenge,
-    getVersion,
     getTimestamp
 )
 from mainsite.views import (
