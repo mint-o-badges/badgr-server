@@ -42,7 +42,7 @@ RUN curl -fsSLO "$SUPERCRONIC_URL" \
     && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
 
 # Add timestamp
-RUN date +"%d.%m.%y %T" > timestamp
+RUN TZ=Europe/Berlin date +"%d.%m.%y %T" > timestamp
 
 RUN pip --timeout=1000 install --no-dependencies -r requirements.txt
 RUN pip --timeout=1000 install debugpy
