@@ -1,6 +1,9 @@
 from cryptography.fernet import Fernet
 import sys
 import os
+from datetime import datetime
+import pytz
+import mainsite
 from corsheaders.defaults import default_headers
 
 from mainsite import TOP_DIR
@@ -407,6 +410,22 @@ USE_I18N = False
 USE_L10N = False
 USE_TZ = True
 
+
+##
+#
+#  Deployment timestamp
+#
+##
+try:
+    file = open("timestamp", "r")
+    mainsite.__timestamp__ = file.read()
+    print("Deployment timestamp:")
+    print(mainsite.__timestamp__)
+except Exception as e:
+    print(e)
+    mainsite.__timestamp__ = datetime.now(pytz.timezone('Europe/Berlin')).strftime("%d.%m.%y %T (last restart)")
+    print("ERROR in determining deployment timestamp; used current timestamp:")
+    print(mainsite.__timestamp__)
 
 
 ##

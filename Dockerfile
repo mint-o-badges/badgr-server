@@ -76,6 +76,9 @@ RUN curl -fsSLO "$SUPERCRONIC_URL" \
  && mv "$SUPERCRONIC" "/usr/local/bin/${SUPERCRONIC}" \
  && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
 
+# Add timestamp
+RUN date +"%d.%m.%y %T" > timestamp && chown python:python timestamp
+
 USER 999
 
 ENV PATH="/badgr_server/venv/bin:$PATH"
