@@ -1,7 +1,8 @@
 from cryptography.fernet import Fernet
 import sys
 import os
-import subprocess
+from datetime import datetime
+import pytz
 import mainsite
 from corsheaders.defaults import default_headers
 
@@ -379,34 +380,19 @@ USE_TZ = True
 
 ##
 #
-#  Version
+#  Deployment timestamp
 #
 ##
 try:
-    subprocess.run(
-        ["git", "config", "--global", "--add", "safe.directory", "/badgr_server"],
-        cwd=TOP_DIR,
-    )
-    build_tag = (
-        subprocess.check_output(
-            ["git", "describe", "--tags", "--abbrev=0"], cwd=TOP_DIR
-        )
-        .decode("utf-8")
-        .strip()
-    )
-    build_hash = (
-        subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=TOP_DIR)
-        .decode("utf-8")
-        .strip()
-    )
-    mainsite.__build__ = f"{build_tag}-{build_hash}"
-    print("Build:")
-    print(mainsite.__build__)
+    file = open("timestamp", "r")
+    mainsite.__timestamp__ = file.read()
+    print("Deployment timestamp:")
+    print(mainsite.__timestamp__)
 except Exception as e:
     print(e)
-    mainsite.__build__ = mainsite.get_version() + " ?"
-    print("ERROR in determinig build number")
-
+    mainsite.__timestamp__ = datetime.now(pytz.timezone('Europe/Berlin')).strftime("%d.%m.%y %T (last restart)")
+    print("ERROR in determining deployment timestamp; used current timestamp:")
+    print(mainsite.__timestamp__)
 
 ##
 #

@@ -2,7 +2,7 @@
 
 # ------------------------------> Build image
 FROM python:3.8.14-slim-buster as build
-RUN apt-get clean all && apt-get update
+RUN apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
     python3-dev \
     python3-cairo \
@@ -22,10 +22,9 @@ RUN pip install --no-dependencies -r requirements.txt
 
 # ------------------------------> Final image
 FROM python:3.8.14-slim-buster
-RUN apt-get update
+RUN apt-get clean all && apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
     python3-cairo \
-    git \
     libxml2 \
     default-mysql-client \
     cron \
@@ -64,6 +63,9 @@ RUN curl -fsSLO "$SUPERCRONIC_URL" \
     && chmod +x "$SUPERCRONIC" \
     && mv "$SUPERCRONIC" "/usr/local/bin/${SUPERCRONIC}" \
     && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
+
+# Add timestamp
+RUN date +"%d.%m.%y %T" > timestamp && chown python:python timestamp
 
 USER 999
 
