@@ -196,7 +196,9 @@ def aiskills(req):
 
     # fallback to previous setting name
     endpoint = getattr(
-        settings, "AISKILLS_ENDPOINT_CHATS", getattr(settings, "AISKILLS_ENDPOINT")
+        settings,
+        "AISKILLS_ENDPOINT_CHATS",
+        getattr(settings, "AISKILLS_ENDPOINT", None),
     )
     payload = {"text_to_analyze": searchterm}
 
@@ -299,14 +301,14 @@ def requestBadge(req, qrCodeId):
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-def getVersion(req):
+def getTimestamp(req):
     if req.method != "GET":
         return JsonResponse(
             {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
         )
-    version = mainsite.__build__
+    timestamp = mainsite.__timestamp__
 
-    return JsonResponse({"message": version}, status=status.HTTP_200_OK)
+    return JsonResponse({"message": timestamp}, status=status.HTTP_200_OK)
 
 
 def PageSetup(canvas, doc, badgeImage, issuerImage):

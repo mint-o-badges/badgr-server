@@ -11,7 +11,7 @@ from mainsite.views import (
     requestBadge,
     deleteBadgeRequest,
     createCaptchaChallenge,
-    getVersion,
+    getTimestamp
 )
 from mainsite.views import (
     info_view,
@@ -198,7 +198,7 @@ urlpatterns = [
     url(r"^aiskills/$", aiskills, name="aiskills"),
     url(r"^aiskills-keywords/$", aiskills_keywords, name="aiskills_keywords"),
     url(r"^request-badge/(?P<qrCodeId>[^/]+)$", requestBadge, name="request-badge"),
-    url(r"^get-server-version", getVersion, name="get-server-version"),
+    url(r'^get-server-timestamp', getTimestamp, name="get-server-timestamp"),
     url(
         r"^deleteBadgeRequest/(?P<requestId>[^/]+)$",
         deleteBadgeRequest,
