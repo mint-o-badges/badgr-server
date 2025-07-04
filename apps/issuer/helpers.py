@@ -14,9 +14,18 @@ import requests_cache
 from requests_cache.backends import BaseCache
 
 import logging
-from issuer.models import Issuer, BadgeClass, BadgeInstance
-from issuer.utils import OBI_VERSION_CONTEXT_IRIS, assertion_is_v3, generate_sha256_hashstring
-from mainsite.utils import first_node_match
+from issuer.models import (
+    ImportedBadgeAssertion,
+    ImportedBadgeAssertionExtension,
+    Issuer,
+    BadgeClass,
+    BadgeInstance,
+)
+from issuer.utils import (
+    OBI_VERSION_CONTEXT_IRIS,
+    assertion_is_v3,
+    generate_sha256_hashstring,
+)
 import json
 
 import requests
@@ -125,8 +134,8 @@ class OpenBadgesContextCache(BaseCache):
             cache.set(
                 self.OPEN_BADGE_CONTEXT_CACHE_KEY,
                 {
-                    'keys_map': self.session.cache.keys_map.copy(), # FIXME: breaks with requests-cache 0.6.0
-                    'response': self.session.cache.responses.copy() # FIXME: breaks with requests-cache 0.6.0
+                    "keys_map": self.session.cache.keys_map.copy(),  # FIXME: breaks with requests-cache 0.6.0
+                    "response": self.session.cache.responses.copy(),  # FIXME: breaks with requests-cache 0.6.0
                 },
                 timeout=self.FORTY_EIGHT_HOURS_IN_SECONDS,
             )
@@ -142,13 +151,6 @@ class DjangoCacheRequestsCacheBackend(BaseCache):
         self.responses = DjangoCacheDict(namespace, "responses")
         self.keys_map = DjangoCacheDict(namespace, "urls")
 
-
-import json
-from django.core.exceptions import ValidationError as DjangoValidationError
-from rest_framework import serializers
-from rest_framework.exceptions import ValidationError as RestframeworkValidationError
-import openbadges
-from .models import ImportedBadgeAssertion, ImportedBadgeAssertionExtension
 
 def first_node_match(graph, criteria):
     """Find the first node in a graph that matches all criteria."""
@@ -232,7 +234,6 @@ class ImportedBadgeHelper:
             raise ValidationError("Must provide only 1 of: url, imagefile or assertion")
         query = query[0]
 
-
         # Prepare recipient profile for verification
         if user:
             emails = [d.email for d in user.email_items.all()]
@@ -251,10 +252,13 @@ class ImportedBadgeHelper:
                 except (TypeError, ValueError):
                     raise ValidationError("Could not parse dict to json")
 
-
             # use openbadges library to parse json from images
-            verifier_store = openbadges.load_store(query, recipient_profile=badgecheck_recipient_profile, **cls.badgecheck_options())
-            query_json = verifier_store.get_state()['input']['value']
+            verifier_store = openbadges.load_store(
+                query,
+                recipient_profile=badgecheck_recipient_profile,
+                **cls.badgecheck_options(),
+            )
+            query_json = verifier_store.get_state()["input"]["value"]
             verifier_input = json.loads(query_json)
 
             # TODO: ob3 as JWT
@@ -272,11 +276,13 @@ class ImportedBadgeHelper:
             else:
                 # ob2 validation through openbadges library
                 response = openbadges.verify(
-                    query, recipient_profile=badgecheck_recipient_profile, **cls.badgecheck_options()
+                    query,
+                    recipient_profile=badgecheck_recipient_profile,
+                    **cls.badgecheck_options(),
                 )
 
         except ValueError as e:
-            raise ValidationError([{'name': "INVALID_BADGE", 'description': str(e)}])
+            raise ValidationError([{"name": "INVALID_BADGE", "description": str(e)}])
 
         report = response.get("report", {})
         is_valid = report.get("valid")
@@ -336,17 +342,17 @@ class ImportedBadgeHelper:
             original_json = response.get("input").get("original_json", {})
 
         else:
-            assertion_data = response['assertion_obo']
-            badgeclass_data = response['badgeclass_obo']
-            issuer_data = response['issuer_obo']
+            assertion_data = response["assertion_obo"]
+            badgeclass_data = response["badgeclass_obo"]
+            issuer_data = response["issuer_obo"]
 
-            original_json = response.get('input')
+            original_json = response.get("input")
 
         recipient_profile = report.get("recipientProfile", {})
-        if not recipient_profile and user: 
+        if not recipient_profile and user:
             recipient_type = "email"
             recipient_identifier = user.primary_email
-        else:    
+        else:
             recipient_type, recipient_identifier = list(recipient_profile.items())[0]
 
         existing_badge = ImportedBadgeAssertion.objects.filter(
@@ -373,8 +379,12 @@ class ImportedBadgeHelper:
                 issuer_url=issuer_data.get("url", ""),
                 issuer_email=issuer_data.get("email", ""),
                 issuer_image_url=issuer_data.get("image", ""),
-                issued_on=assertion_data.get("issuedOn", assertion_data.get("validFrom", None)),
-                expires_at=assertion_data.get("expires", assertion_data.get("validUntil", None)),
+                issued_on=assertion_data.get(
+                    "issuedOn", assertion_data.get("validFrom", None)
+                ),
+                expires_at=assertion_data.get(
+                    "expires", assertion_data.get("validUntil", None)
+                ),
                 recipient_identifier=recipient_identifier,
                 recipient_type=recipient_type,
                 original_json=original_json
@@ -390,55 +400,58 @@ class ImportedBadgeHelper:
             imported_badge.save()
 
             for extension_key, extension_data in badgeclass_data.items():
-
-                if extension_key.startswith('extensions:'):
-                    
+                if extension_key.startswith("extensions:"):
                     extension = ImportedBadgeAssertionExtension(
                         importedBadge=imported_badge,
                         name=extension_key,
-                        original_json=json.dumps(extension_data)
+                        original_json=json.dumps(extension_data),
                     )
                     extension.save()
 
         return imported_badge, True
 
-    @classmethod 
+    @classmethod
     def validate_v3(cls, input, recipient_profile_in):
-
         session = requests.Session()
 
         recipient_profile_out = {}
 
         # validate hashed email
         try:
-            credential_subject = input.get('credentialSubject')
-            credential_identifiers = credential_subject.get('identifier')
+            credential_subject = input.get("credentialSubject")
+            credential_identifiers = credential_subject.get("identifier")
             for credential_identifier in credential_identifiers:
-                if credential_identifier.get('identityType') == 'emailAddress':
-                    identity_hash = credential_identifier.get('identityHash')
-                    identity_salt = credential_identifier.get('salt')
-                    for email in recipient_profile_in['email']:
+                if credential_identifier.get("identityType") == "emailAddress":
+                    identity_hash = credential_identifier.get("identityHash")
+                    identity_salt = credential_identifier.get("salt")
+                    for email in recipient_profile_in["email"]:
                         hashed_mail = generate_sha256_hashstring(email, identity_salt)
                         if hashed_mail == identity_hash:
-                            recipient_profile_out['email'] = email
+                            recipient_profile_out["email"] = email
 
         except KeyError:
             pass
 
         if not recipient_profile_out:
-            raise ValidationError([{'name': "RECIPIENT_VERIFICATION", 'description': "Recipients do not match"}])
+            raise ValidationError(
+                [
+                    {
+                        "name": "RECIPIENT_VERIFICATION",
+                        "description": "Recipients do not match",
+                    }
+                ]
+            )
 
-        assertion_id = input.get('id')
         assertion_obo = input
-        issuer_id = input.get('issuer').get('id')
+        issuer_id = input.get("issuer").get("id")
         issuer_obo = {}
-        badgeclass_id = input.get('credentialSubject').get('achievement').get('id')
+        badgeclass_id = input.get("credentialSubject").get("achievement").get("id")
         badgeclass_obo = {}
 
         # load json if ids are urls
         try:
             result = session.get(
-                issuer_id, headers={'Accept': 'application/ld+json, application/json'}
+                issuer_id, headers={"Accept": "application/ld+json, application/json"}
             )
             result_text = result.content.decode()
             issuer_obo = json.loads(result_text)
@@ -447,7 +460,8 @@ class ImportedBadgeHelper:
 
         try:
             result = session.get(
-                badgeclass_id, headers={'Accept': 'application/ld+json, application/json'}
+                badgeclass_id,
+                headers={"Accept": "application/ld+json, application/json"},
             )
             result_text = result.content.decode()
             badgeclass_obo = json.loads(result_text)
@@ -455,19 +469,19 @@ class ImportedBadgeHelper:
             pass
 
         return {
-            'report': {
-                'validationSubject': '',
-                'errorCount': 0,
-                'warningCount': 0,
-                'messages': [],
-                'recipientProfile': recipient_profile_out,
-                'valid': True,
+            "report": {
+                "validationSubject": "",
+                "errorCount": 0,
+                "warningCount": 0,
+                "messages": [],
+                "recipientProfile": recipient_profile_out,
+                "valid": True,
             },
-            'graph': [],
-            'input': input,
-            'assertion_obo': assertion_obo,
-            'issuer_obo': issuer_obo,
-            'badgeclass_obo': badgeclass_obo,
+            "graph": [],
+            "input": input,
+            "assertion_obo": assertion_obo,
+            "issuer_obo": issuer_obo,
+            "badgeclass_obo": badgeclass_obo,
         }
 
 
@@ -538,7 +552,6 @@ class BadgeCheckHelper(object):
     def get_or_create_assertion(
         cls, url=None, imagefile=None, assertion=None, created_by=None
     ):
-
         # distill 3 optional arguments into one query argument
         query = (url, imagefile, assertion)
         query = [v for v in query if v is not None]

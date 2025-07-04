@@ -6,15 +6,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('issuer', '0043_auto_20180614_0949'),
+        ("issuer", "0043_auto_20180614_0949"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='badgeinstance',
-            name='recipient_identifier',
+            model_name="badgeinstance",
+            name="recipient_identifier",
             field=models.EmailField(db_index=True, max_length=768),
         ),
     ]

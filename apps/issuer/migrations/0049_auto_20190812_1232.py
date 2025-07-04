@@ -6,15 +6,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('issuer', '0048_auto_20190812_1229'),
+        ("issuer", "0048_auto_20190812_1229"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='issuer',
-            name='source_url',
-            field=models.CharField(blank=True, default=None, max_length=254, null=True, unique=True),
+            model_name="issuer",
+            name="source_url",
+            field=models.CharField(
+                blank=True, default=None, max_length=254, null=True, unique=True
+            ),
         ),
     ]

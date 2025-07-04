@@ -7,34 +7,66 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('issuer', '0039_badgeclassextension'),
+        ("issuer", "0039_badgeclassextension"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='BadgeInstanceExtension',
+            name="BadgeInstanceExtension",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=254)),
-                ('original_json', models.TextField(blank=True, default=None, null=True)),
-                ('badgeinstance', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='issuer.BadgeInstance')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=254)),
+                (
+                    "original_json",
+                    models.TextField(blank=True, default=None, null=True),
+                ),
+                (
+                    "badgeinstance",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="issuer.BadgeInstance",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='IssuerExtension',
+            name="IssuerExtension",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=254)),
-                ('original_json', models.TextField(blank=True, default=None, null=True)),
-                ('issuer', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='issuer.Issuer')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=254)),
+                (
+                    "original_json",
+                    models.TextField(blank=True, default=None, null=True),
+                ),
+                (
+                    "issuer",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="issuer.Issuer"
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
     ]
