@@ -836,6 +836,9 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
         required=False, read_only=True, source="v1_api_participant_count"
     )
 
+    required_badges_count = serializers.IntegerField(required=True)
+    activated = serializers.BooleanField(required=True)
+
     name = StripTagsCharField(max_length=255)
     slug = StripTagsCharField(max_length=255, read_only=True, source="entity_id")
     description = StripTagsCharField(max_length=16384, required=True, convert_null=True)
@@ -957,6 +960,8 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
     def create(self, validated_data, **kwargs):
         name = validated_data.get("name")
         description = validated_data.get("description")
+        required_badges_count = validated_data.get("required_badges_count")
+        activated = validated_data.get("activated")
         tags = validated_data.get("tag_items")
         issuer_id = validated_data.get("issuer_id")
         participationBadge_id = validated_data.get("participationBadge_id")
@@ -993,6 +998,8 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
         new_learningpath = LearningPath.objects.create(
             name=name,
             description=description,
+            required_badges_count=required_badges_count,
+            activated=activated,
             issuer=issuer,
             participationBadge=participationBadge,
         )
@@ -1004,6 +1011,10 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
     def update(self, instance, validated_data):
         instance.name = validated_data.get("name", instance.name)
         instance.description = validated_data.get("description", instance.description)
+        instance.required_badges_count = validated_data.get(
+            "required_badges_count", instance.required_badges_count
+        )
+        instance.activated = validated_data.get("activated", instance.activated)
 
         tags = validated_data.get("tag_items", None)
         if tags is not None:
