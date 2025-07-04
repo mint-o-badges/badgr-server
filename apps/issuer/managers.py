@@ -399,7 +399,9 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
         )
         for learningpath in learningpathes:
             # all learningpath badges collected but participationBadge not yet issued
-            if learningpath.user_should_have_badge(recipient_identifier):
+            if learningpath.activated and learningpath.user_should_have_badge(
+                recipient_identifier
+            ):
                 # issue learningpath badge
                 learningpath.participationBadge.issue(
                     recipient_id=recipient_identifier,

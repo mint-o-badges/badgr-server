@@ -2715,6 +2715,9 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
         max_length=255, db_index=True, blank=True, null=True, default=None
     )
 
+    required_badges_count = models.PositiveIntegerField()
+    activated = models.BooleanField(null=False, default=False)
+
     @property
     def public_url(self):
         return OriginSetting.HTTP + self.get_absolute_url()
@@ -2786,6 +2789,25 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
             for tag in self.tag_items:
                 if tag.name not in new_idx:
                     tag.delete()
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            from badgeuser.models import BadgeUser
+
+            original = LearningPath.objects.get(pk=self.pk)
+            if not original.activated and self.activated:
+                super().save(*args, **kwargs)
+                for user in BadgeUser.objects.all():
+                    for identifier in user.all_verified_recipient_identifiers:
+                        if self.user_should_have_badge(identifier):
+                            self.participationBadge.issue(
+                                recipient_id=identifier,
+                                notify=True,
+                                microdegree_id=self.entity_id,
+                            )
+                return
+
+        super().save(*args, **kwargs)
 
     def get_json(
         self,
