@@ -345,7 +345,7 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
     "DEFAULT_VERSION": "v1",
-    "ALLOWED_VERSIONS": ["v1", "v2", "bcv1", "rfc7591"],
+    "ALLOWED_VERSIONS": ["v1", "v2", "v3", "bcv1", "rfc7591"],
     "EXCEPTION_HANDLER": "entity.views.exception_handler",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 100,
