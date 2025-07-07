@@ -2855,10 +2855,7 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
             {badgeinstance.badgeclass for badgeinstance in badgeinstances}
         )
 
-        max_progress = self.calculate_progress(badgeclasses)
-        user_progress = self.calculate_progress(completed_badges)
-
-        return user_progress >= max_progress
+        return len(completed_badges) >= self.required_badges_count
 
     def user_should_have_badge(self, recipient_identifier):
         if self.user_has_completed(recipient_identifier):
