@@ -820,8 +820,20 @@ class RequestedLearningPathSerializer(serializers.ModelSerializer):
 
 
 class BadgeOrderSerializer(serializers.Serializer):
-    slug = StripTagsCharField(max_length=255)
+    slug = StripTagsCharField(max_length=255, required=False)
+    badge = JSONField(required=False)
     order = serializers.IntegerField()
+
+    def validate(self, data):
+        if "slug" in data and "badge" in data:
+            raise serializers.ValidationError(
+                "Provide either 'slug' or 'badge', not both"
+            )
+        if "slug" not in data and "badge" not in data:
+            raise serializers.ValidationError(
+                "Either 'slug' or 'badge' must be provided"
+            )
+        return data
 
     class Meta:
         apispec_definition = ("LearningPathBadge", {})
@@ -1024,14 +1036,14 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
         if badges_data is not None:
             badges_with_order = []
             for badge_data in badges_data:
-                slug = badge_data.get("slug")
+                badge = badge_data.get("badge")
                 order = badge_data.get("order")
 
                 try:
-                    badge = BadgeClass.objects.get(entity_id=slug)
+                    badge = BadgeClass.objects.get(entity_id=badge.get("slug"))
                 except BadgeClass.DoesNotExist:
                     raise serializers.ValidationError(
-                        f"Badge with slug '{slug}' does not exist."
+                        f"Badge with slug '{badge.slug}' does not exist."
                     )
 
                 badges_with_order.append((badge, order))
