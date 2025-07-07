@@ -22,6 +22,7 @@ class Badges(EntityViewSet):
     queryset = BadgeClass.objects.all()
     serializer_class = BadgeClassSerializerV1
     filterset_class = BadgeFilter
+    ordering_fields = ["name", "created_at"]
 
     # only for apispec, get() does nothing on viewset
     @apispec_list_operation(
