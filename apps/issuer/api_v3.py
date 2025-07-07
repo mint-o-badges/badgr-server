@@ -1,19 +1,22 @@
-from rest_framework import viewsets, mixins
-from rest_framework.pagination import LimitOffsetPagination
-from rest_framework.filters import OrderingFilter
 from django_filters import rest_framework as filters
 
-from apispec_drf.decorators import apispec_list_operation, apispec_post_operation, apispec_get_operation, \
-    apispec_delete_operation, apispec_put_operation, apispec_operation
+from apispec_drf.decorators import (
+    apispec_list_operation,
+)
 
 from entity.api_v3 import EntityFilter, EntityViewSet
 
-from .serializers_v1 import BadgeClassSerializerV1, IssuerSerializerV1, LearningPathSerializerV1
+from .serializers_v1 import (
+    BadgeClassSerializerV1,
+    IssuerSerializerV1,
+    LearningPathSerializerV1,
+)
 from .models import BadgeClass, Issuer, LearningPath
 
 
 class BadgeFilter(EntityFilter):
-    tags = filters.CharFilter(field_name='badgeclasstag__name', lookup_expr='icontains')
+    tags = filters.CharFilter(field_name="badgeclasstag__name", lookup_expr="icontains")
+
 
 class Badges(EntityViewSet):
     queryset = BadgeClass.objects.all()
@@ -21,9 +24,8 @@ class Badges(EntityViewSet):
     filterset_class = BadgeFilter
 
     # only for apispec, get() does nothing on viewset
-    @apispec_list_operation('BadgeClass',
-        summary="Get a list of Badges",
-        tags=['BadgeClasses']
+    @apispec_list_operation(
+        "BadgeClass", summary="Get a list of Badges", tags=["BadgeClasses"]
     )
     def get(self, request, **kwargs):
         pass
@@ -35,7 +37,10 @@ class Issuers(EntityViewSet):
 
 
 class LearningPathFilter(EntityFilter):
-    tags = filters.CharFilter(field_name='learningpathtag__name', lookup_expr='icontains')
+    tags = filters.CharFilter(
+        field_name="learningpathtag__name", lookup_expr="icontains"
+    )
+
 
 class LearningPaths(EntityViewSet):
     queryset = LearningPath.objects.all()
