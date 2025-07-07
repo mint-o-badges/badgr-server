@@ -4,7 +4,7 @@ from apispec_drf.decorators import (
     apispec_list_operation,
 )
 
-from entity.api_v3 import EntityFilter, EntityViewSet
+from entity.api_v3 import EntityFilter, EntityViewSet, TagFilter
 
 from .serializers_v1 import (
     BadgeClassSerializerV1,
@@ -15,7 +15,7 @@ from .models import BadgeClass, Issuer, LearningPath
 
 
 class BadgeFilter(EntityFilter):
-    tags = filters.CharFilter(field_name="badgeclasstag__name", lookup_expr="icontains")
+    tags = TagFilter(field_name="badgeclasstag__name", lookup_expr="icontains")
 
 
 class Badges(EntityViewSet):
@@ -30,6 +30,10 @@ class Badges(EntityViewSet):
     )
     def get(self, request, **kwargs):
         pass
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        return queryset.distinct()
 
 
 class Issuers(EntityViewSet):
