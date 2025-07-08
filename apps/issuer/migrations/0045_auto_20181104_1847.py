@@ -6,20 +6,30 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('issuer', '0044_auto_20180713_0658'),
+        ("issuer", "0044_auto_20180713_0658"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='badgeclass',
-            name='expires_amount',
+            model_name="badgeclass",
+            name="expires_amount",
             field=models.IntegerField(blank=True, default=None, null=True),
         ),
         migrations.AddField(
-            model_name='badgeclass',
-            name='expires_duration',
-            field=models.CharField(blank=True, choices=[('days', 'Days'), ('weeks', 'Weeks'), ('months', 'Months'), ('years', 'Years')], default=None, max_length=254, null=True),
+            model_name="badgeclass",
+            name="expires_duration",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("days", "Days"),
+                    ("weeks", "Weeks"),
+                    ("months", "Months"),
+                    ("years", "Years"),
+                ],
+                default=None,
+                max_length=254,
+                null=True,
+            ),
         ),
     ]

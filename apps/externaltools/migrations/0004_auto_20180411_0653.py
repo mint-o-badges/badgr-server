@@ -6,15 +6,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('externaltools', '0003_auto_20180411_0650'),
+        ("externaltools", "0003_auto_20180411_0650"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='externaltool',
-            name='xml_config',
+            model_name="externaltool",
+            name="xml_config",
             field=models.TextField(blank=True, null=True),
         ),
     ]

@@ -146,6 +146,7 @@ ALLOWED_HOSTS = ['<your badgr server domain>', ]
 SECRET_KEY = 'QKQ9NKGJLXE8UVS3TXIB0DE7Q9W41J578C5FCRJL'  # ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(40))
 UNSUBSCRIBE_KEY = '8GGGDKOT4H4O7QU4GPGZ7ERY9GPE2FKALAO81WYP'  # ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(40))
 
+CSRF_COOKIE_DOMAIN = 'localhost'
 
 ###
 #

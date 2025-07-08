@@ -78,6 +78,9 @@ HTTP_ORIGIN = 'http://localhost:8080'
 ALLOWED_HOSTS = ['*']
 STATIC_URL = HTTP_ORIGIN + '/static/'
 
+CSRF_COOKIE_DOMAIN = ''
+
+
 # Optionally restrict issuer creation to accounts that have the 'issuer.add_issuer' permission
 BADGR_APPROVED_ISSUERS_ONLY = False
 
@@ -149,6 +152,7 @@ NOUNPROJECT_SECRET = ''
 AISKILLS_API_KEY = ''
 AISKILLS_ENDPOINT_CHATS = ''
 AISKILLS_ENDPOINT_KEYWORDS = ''
+AISKILLS_ENDPOINT_TREE = ''
 
 OIDC_RP_CLIENT_ID = ''
 OIDC_RP_CLIENT_SECRET = ''

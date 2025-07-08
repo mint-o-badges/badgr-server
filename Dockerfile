@@ -26,7 +26,6 @@ RUN apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-cairo \
                        libxml2 \
-                       git \
                        curl \ 
                        default-mysql-client
 
@@ -51,7 +50,6 @@ COPY --chown=python:python  .docker/etc/wsgi.py                .
 COPY --chown=python:python  apps                               ./apps
 COPY --chown=python:python  openbadges                         ./openbadges
 COPY --chown=python:python  openbadges_bakery                  ./openbadges_bakery
-COPY --chown=python:python  .git                               ./.git
 COPY --chown=python:python  .docker/etc/settings_local.py      ./apps/mainsite/settings_local.py
 COPY --chown=python:python  entrypoint.sh                      .
 COPY --chown=python:python  crontab                             /etc/cron.d/crontab
@@ -77,6 +75,9 @@ RUN curl -fsSLO "$SUPERCRONIC_URL" \
  && chmod +x "$SUPERCRONIC" \
  && mv "$SUPERCRONIC" "/usr/local/bin/${SUPERCRONIC}" \
  && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
+
+# Add timestamp
+RUN TZ=Europe/Berlin date +"%d.%m.%y %T" > timestamp && chown python:python timestamp
 
 USER 999
 

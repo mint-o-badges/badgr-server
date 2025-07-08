@@ -6,20 +6,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('externaltools', '0005_auto_20180802_1026'),
+        ("externaltools", "0005_auto_20180802_1026"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='externaltool',
-            name='created_at',
+            model_name="externaltool",
+            name="created_at",
             field=models.DateTimeField(auto_now_add=True, db_index=True),
         ),
         migrations.AlterField(
-            model_name='externaltooluseractivation',
-            name='created_at',
+            model_name="externaltooluseractivation",
+            name="created_at",
             field=models.DateTimeField(auto_now_add=True, db_index=True),
         ),
     ]

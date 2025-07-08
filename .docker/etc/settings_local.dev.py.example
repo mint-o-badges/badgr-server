@@ -87,6 +87,8 @@ CORS_ORIGIN_WHITELIST = (
     'http://localhost:4200',
 )
 
+CSRF_COOKIE_DOMAIN = ''
+
 # Optionally restrict issuer creation to accounts that have the 'issuer.add_issuer' permission
 BADGR_APPROVED_ISSUERS_ONLY = False
 
@@ -158,6 +160,7 @@ NOUNPROJECT_SECRET = ''
 AISKILLS_API_KEY = ''
 AISKILLS_ENDPOINT_CHATS = ''
 AISKILLS_ENDPOINT_KEYWORDS = ''
+AISKILLS_ENDPOINT_TREE = ''
 
 OIDC_RP_CLIENT_ID = ''
 OIDC_RP_CLIENT_SECRET = ''

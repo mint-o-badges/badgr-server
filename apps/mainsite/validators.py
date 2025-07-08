@@ -21,14 +21,15 @@ class ValidImageValidator(object):
         if image:
             try:
                 from PIL import Image
+
                 img = Image.open(image)
                 img.verify()
             except Exception:
                 if not verify_svg(image):
-                    raise ValidationError('Invalid image.')
+                    raise ValidationError("Invalid image.")
             else:
                 if img.format != "PNG":
-                    raise ValidationError('Invalid PNG')
+                    raise ValidationError("Invalid PNG")
 
 
 class ChoicesValidator(object):
@@ -47,13 +48,17 @@ class ChoicesValidator(object):
         if self.case_sensitive:
             value = value.lower()
         if value not in self.choices:
-            raise ValidationError("'{}' is not supported. Only {} is available".format(value, self.choices))
+            raise ValidationError(
+                "'{}' is not supported. Only {} is available".format(
+                    value, self.choices
+                )
+            )
 
 
 class TelephoneValidator(RegexValidator):
-    message = 'Telephone number does not conform to E.164'
-    code = 'invalid'
-    regex = r'^\+?[1-9]\d{1,14}$'
+    message = "Telephone number does not conform to E.164"
+    code = "invalid"
+    regex = r"^\+?[1-9]\d{1,14}$"
 
     def __init__(self, *args, **kwargs):
         super(TelephoneValidator, self).__init__(self.regex, *args, **kwargs)
@@ -64,12 +69,14 @@ class BadgeExtensionValidator(object):
 
     def __call__(self, value):
         if len(value) > 0:
-            result = openbadges.verifier.validate_extensions(value.copy(), cache_backend=OpenBadgesContextCache())
-            report = result.get('report', {})
-            if not report.get('valid', False):
-                messages = report.get('messages', [])
+            result = openbadges.verifier.validate_extensions(
+                value.copy(), cache_backend=OpenBadgesContextCache()
+            )
+            report = result.get("report", {})
+            if not report.get("valid", False):
+                messages = report.get("messages", [])
                 if len(messages) > 0:
-                    msg = messages[0].get('result', self.message)
+                    msg = messages[0].get("result", self.message)
                 else:
                     msg = self.message
                 raise ValidationError(msg)

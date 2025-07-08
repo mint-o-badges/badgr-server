@@ -1,7 +1,10 @@
 # encoding: utf-8
+import json
+from urllib.parse import urlparse
 
-
-from django.http import Http404
+from django.conf import settings
+from django.http import Http404, JsonResponse
+from apps.mainsite.views import call_aiskills_api
 import badgrlog
 import datetime
 
@@ -84,7 +87,7 @@ class ImportedBadgeInstanceList(BaseEntityListView):
         serializer = serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.validated_data["user"] = request.user
-            instance = serializer.save()
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -162,7 +165,7 @@ class BackpackAssertionList(BaseEntityListView):
             ):
                 return False
             return True
-        
+
         return list(filter(badge_filter, self.request.user.cached_badgeinstances()))
 
     @apispec_list_operation(
@@ -323,6 +326,53 @@ class BackpackAssertionDetailImage(ImagePropertyDetailView, BadgrOAuthTokenHasSc
     model = BadgeInstance
     prop = "image"
     valid_scopes = ["r:backpack", "rw:backpack"]
+
+
+class BackpackSkillList(BackpackAssertionList):
+    def get(self, request, **kwargs):
+        instances = self.get_objects(request)
+        if not instances:
+            return JsonResponse({"skills": []})
+
+        try:
+            lang = request.query_params.get("lang")
+            assert lang == "de" or lang == "en"
+        except Exception:
+            lang = "de"
+
+        # sum up studyloads by esco uri, removing esco uri host part
+        # because the ai skills api does not use it
+        skill_studyloads = {}
+        for instance in instances:
+            if len(instance.badgeclass.cached_extensions()) > 0:
+                for extension in instance.badgeclass.cached_extensions():
+                    if extension.name == "extensions:CompetencyExtension":
+                        extension_json = json.loads(extension.original_json)
+                        for competency in extension_json:
+                            if competency["framework_identifier"]:
+                                esco_uri = competency["framework_identifier"]
+                                parsed_uri = urlparse(esco_uri)
+                                uri_path = parsed_uri.path
+                                studyload = competency["studyLoad"]
+                                try:
+                                    skill_studyloads[uri_path] += studyload
+                                except KeyError:
+                                    skill_studyloads[uri_path] = studyload
+
+        if not len(skill_studyloads.keys()) > 0:
+            return JsonResponse({"skills": []})
+
+        # get esco trees from ai skills api
+        endpoint = getattr(settings, "AISKILLS_ENDPOINT_TREE")
+        payload = {"concept_uris": list(skill_studyloads.keys()), "lang": lang}
+        tree_json = call_aiskills_api(endpoint, "POST", payload)
+        tree = json.loads(tree_json.content.decode())
+
+        # extend with our studyloads
+        for skill in tree["skills"]:
+            skill["studyLoad"] = skill_studyloads[skill["concept_uri"]]
+
+        return JsonResponse(tree)
 
 
 class BadgesFromUser(BaseEntityListView):
