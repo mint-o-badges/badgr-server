@@ -2797,6 +2797,9 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
             original = LearningPath.objects.get(pk=self.pk)
             if not original.activated and self.activated:
                 activated = True
+        else:
+            if self.activated:
+                activated = True
 
         super().save(*args, **kwargs)
 
