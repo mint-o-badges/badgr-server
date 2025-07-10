@@ -36,6 +36,7 @@ class CollectionAdmin(ModelAdmin):
                     "entity_id",
                     "description",
                     "share_hash",
+                    "permanent_hash",
                 )
             },
         ),
