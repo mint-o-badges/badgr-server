@@ -1292,6 +1292,8 @@ class BadgeClass(
             )
         )
 
+        json["slug"] = self.entity_id
+
         # image
         if self.image:
             image_url = self.image_url(public=True)
