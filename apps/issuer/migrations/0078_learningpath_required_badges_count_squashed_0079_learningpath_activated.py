@@ -2,33 +2,37 @@
 
 from django.db import migrations, models
 
+from apps.issuer.models import LearningPath, LearningPathBadge
 
-# Functions from the following migrations need manual copying.
-# Move them and any dependencies into this file, then update the
-# RunPython operations to refer to the local versions:
-# issuer.migrations.0078_learningpath_required_badges_count
+
+def set_required_badges_count(apps, schema_editor):
+    for lp in LearningPath.objects.all():
+        badge_count = LearningPathBadge.objects.filter(learning_path=lp).count()
+        lp.required_badges_count = badge_count
+        lp.save()
+
 
 class Migration(migrations.Migration):
-
-    replaces = [('issuer', '0078_learningpath_required_badges_count'), ('issuer', '0079_learningpath_activated')]
+    replaces = [
+        ("issuer", "0078_learningpath_required_badges_count"),
+        ("issuer", "0079_learningpath_activated"),
+    ]
 
     dependencies = [
-        ('issuer', '0077_auto_20250513_1031'),
+        ("issuer", "0077_auto_20250513_1031"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='learningpath',
-            name='required_badges_count',
+            model_name="learningpath",
+            name="required_badges_count",
             field=models.PositiveIntegerField(default=3),
             preserve_default=False,
         ),
-        migrations.RunPython(
-            code=issuer.migrations.0078_learningpath_required_badges_count.set_required_badges_count,
-        ),
+        migrations.RunPython(set_required_badges_count),
         migrations.AddField(
-            model_name='learningpath',
-            name='activated',
+            model_name="learningpath",
+            name="activated",
             field=models.BooleanField(default=True),
         ),
     ]
