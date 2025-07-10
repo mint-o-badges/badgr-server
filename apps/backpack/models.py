@@ -26,7 +26,11 @@ class BackpackCollection(BaseAuditedModelDeletedWithUser, BaseVersionedEntity):
     share_hash = models.CharField(max_length=255, null=False, blank=True)
 
     permanent_hash = models.CharField(
-        max_length=254, null=False, blank=True, unique=True
+        max_length=254,
+        null=False,
+        blank=True,
+        unique=True,
+        default=str(binascii.hexlify(os.urandom(16)), "utf-8"),
     )
 
     # slug has been deprecated, but keep for legacy collections redirects
