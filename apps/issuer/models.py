@@ -2692,6 +2692,10 @@ class RequestedBadge(BaseVersionedEntity):
 
 
 class LearningPath(BaseVersionedEntity, BaseAuditedModel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._original_activated = self.activated
+
     name = models.CharField(max_length=254, blank=False, null=False)
     description = models.TextField(blank=True, null=True, default=None)
     issuer = models.ForeignKey(
@@ -2794,14 +2798,14 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
         activated = False
 
         if self.pk:
-            original = LearningPath.objects.get(pk=self.pk)
-            if not original.activated and self.activated:
+            if not self._original_activated and self.activated:
                 activated = True
         else:
             if self.activated:
                 activated = True
 
         super().save(*args, **kwargs)
+        self._original_activated = self.activated
 
         if activated:
             from mainsite.tasks import process_learning_path_activation
