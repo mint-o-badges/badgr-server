@@ -2,7 +2,7 @@
 
 from django.db import migrations, models
 
-from apps.issuer.models import LearningPath, LearningPathBadge
+from issuer.models import LearningPath, LearningPathBadge
 
 
 def set_required_badges_count(apps, schema_editor):
