@@ -25,14 +25,6 @@ class BackpackCollection(BaseAuditedModelDeletedWithUser, BaseVersionedEntity):
     description = models.CharField(max_length=255, blank=True)
     share_hash = models.CharField(max_length=255, null=False, blank=True)
 
-    permanent_hash = models.CharField(
-        max_length=254,
-        null=False,
-        blank=True,
-        unique=True,
-        default=str(binascii.hexlify(os.urandom(16)), "utf-8"),
-    )
-
     # slug has been deprecated, but keep for legacy collections redirects
     slug = models.CharField(max_length=254, blank=True, null=True, default=None)
 
@@ -62,9 +54,6 @@ class BackpackCollection(BaseAuditedModelDeletedWithUser, BaseVersionedEntity):
                 Q(badgeinstance__acceptance=BadgeInstance.ACCEPTANCE_REJECTED)
                 | Q(badgeinstance__revoked=True)
             ).delete()
-        else:
-            if not self.permanent_hash:
-                self.permanent_hash = str(binascii.hexlify(os.urandom(16)), "utf-8")
         super(BackpackCollection, self).save(**kwargs)
 
     @cachemodel.cached_method(auto_publish=True)
@@ -96,7 +85,7 @@ class BackpackCollection(BaseAuditedModelDeletedWithUser, BaseVersionedEntity):
     @property
     def permanent_url(self):
         return OriginSetting.HTTP + reverse(
-            "collection_json", kwargs={"entity_id": self.permanent_hash}
+            "collection_json", kwargs={"entity_id": self.entity_id}
         )
 
     # Convenience methods for toggling published state

@@ -592,7 +592,6 @@ class BadgeInstanceRevocations(JSONComponentView):
 class BackpackCollectionJson(JSONComponentView):
     permission_classes = (permissions.AllowAny,)
     model = BackpackCollection
-    entity_id_field_name = "permanent_hash"
 
     def get_context_data(self, **kwargs):
         image_url = ""
