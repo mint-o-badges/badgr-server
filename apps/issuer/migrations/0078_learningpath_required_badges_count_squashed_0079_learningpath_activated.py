@@ -29,10 +29,10 @@ class Migration(migrations.Migration):
             field=models.PositiveIntegerField(default=3),
             preserve_default=False,
         ),
-        migrations.RunPython(set_required_badges_count),
         migrations.AddField(
             model_name="learningpath",
             name="activated",
             field=models.BooleanField(default=True),
         ),
+        migrations.RunPython(set_required_badges_count),
     ]
