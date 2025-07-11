@@ -90,6 +90,9 @@ class JSONListView(BaseEntityListView, UncachedPaginatedViewMixin):
     def log(self, obj):
         pass
 
+    def get_queryset(self, request, **kwargs):
+        return self.model.objects.all()
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
@@ -103,7 +106,7 @@ class JSONListView(BaseEntityListView, UncachedPaginatedViewMixin):
         return context
 
     def get(self, request, **kwargs):
-        objects = self.model.objects
+        objects = UncachedPaginatedViewMixin.get_objects(self, request, **kwargs)
         context = self.get_context_data(**kwargs)
         serializer_class = self.serializer_class
         serializer = serializer_class(objects, many=True, context=context)
@@ -950,6 +953,10 @@ class LearningPathList(JSONListView):
     permission_classes = (permissions.AllowAny,)
     model = LearningPath
     serializer_class = LearningPathSerializerV1
+
+    def get_queryset(self, request, **kwargs):
+        queryset = LearningPath.objects.filter(activated=True)
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

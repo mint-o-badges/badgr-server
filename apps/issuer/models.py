@@ -2693,6 +2693,10 @@ class RequestedBadge(BaseVersionedEntity):
 
 
 class LearningPath(BaseVersionedEntity, BaseAuditedModel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._original_activated = self.activated
+
     name = models.CharField(max_length=254, blank=False, null=False)
     description = models.TextField(blank=True, null=True, default=None)
     issuer = models.ForeignKey(
@@ -2715,6 +2719,9 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
     slug = models.CharField(
         max_length=255, db_index=True, blank=True, null=True, default=None
     )
+
+    required_badges_count = models.PositiveIntegerField()
+    activated = models.BooleanField(null=False, default=False)
 
     @property
     def public_url(self):
@@ -2788,6 +2795,24 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
                 if tag.name not in new_idx:
                     tag.delete()
 
+    def save(self, *args, **kwargs):
+        activated = False
+
+        if self.pk:
+            if not self._original_activated and self.activated:
+                activated = True
+        else:
+            if self.activated:
+                activated = True
+
+        super().save(*args, **kwargs)
+        self._original_activated = self.activated
+
+        if activated:
+            from mainsite.tasks import process_learning_path_activation
+
+            process_learning_path_activation.delay(self.pk)
+
     def get_json(
         self,
         obi_version=CURRENT_OBI_VERSION,
@@ -2834,10 +2859,7 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
             {badgeinstance.badgeclass for badgeinstance in badgeinstances}
         )
 
-        max_progress = self.calculate_progress(badgeclasses)
-        user_progress = self.calculate_progress(completed_badges)
-
-        return user_progress >= max_progress
+        return len(completed_badges) >= self.required_badges_count
 
     def user_should_have_badge(self, recipient_identifier):
         if self.user_has_completed(recipient_identifier):
