@@ -413,6 +413,7 @@ class Issuer(
                     "issuer_url": self.url,
                     "issuer_email": self.email,
                     "badgr_app": badgr_app,
+                    "thumbnail_url": f"{settings.STATIC_URL}/images/badgeCreateThumbnail.png",
                 }
             except KeyError as e:
                 # A property isn't stored right in json
