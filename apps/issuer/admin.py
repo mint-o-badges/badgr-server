@@ -618,7 +618,7 @@ class LearningPathBadgeInline(TabularInline):
 
 
 class LearningPathAdmin(ModelAdmin):
-    list_display = ("name", "issuer")
+    list_display = ("name", "issuer", "required_badges_count")
     search_fields = ("name", "description")
     inlines = [LearningPathTagInline, LearningPathBadgeInline]
 
