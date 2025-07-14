@@ -1,7 +1,7 @@
 # Best practies taken from here: https://snyk.io/blog/best-practices-containerizing-python-docker/
 
 # ------------------------------> Build image
-FROM python:3.8.14-slim-buster as build
+FROM python:3.8.14-slim-buster AS build
 RUN apt-get clean all && apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-dev \
@@ -26,7 +26,7 @@ RUN apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-cairo \
                        libxml2 \
-                       curl \ 
+                       curl \
                        default-mysql-client
 
 RUN groupadd -g 999 python && \
@@ -36,7 +36,7 @@ RUN mkdir /badgr_server && chown python:python /badgr_server
 RUN mkdir /backups && chown python:python /backups
 
 RUN touch /badgr_server/user_emails.csv && chown python:python /badgr_server/user_emails.csv
-RUN touch /badgr_server/esco_issuers.txt && chown python:python /badgr_server/esco_issuers.txt  
+RUN touch /badgr_server/esco_issuers.txt && chown python:python /badgr_server/esco_issuers.txt
 
 WORKDIR /badgr_server
 
@@ -62,7 +62,7 @@ RUN touch /var/log/cron_cleartokens.log && \
 
 RUN touch /var/log/cron_qr_badgerequests.log && \
     chown python:python /var/log/cron_qr_badgerequests.log && \
-    chmod 644 /var/log/cron_qr_badgerequests.log    
+    chmod 644 /var/log/cron_qr_badgerequests.log
 
 
 # Latest releases available at https://github.com/aptible/supercronic/releases
