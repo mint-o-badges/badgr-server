@@ -1,7 +1,7 @@
 # Best practies taken from here: https://snyk.io/blog/best-practices-containerizing-python-docker/
 
 # ------------------------------> Build image
-FROM python:3.8.20-slim-bookworm as build
+FROM python:3.8.20-slim-bookworm AS build
 RUN apt-get clean all && apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-dev \
