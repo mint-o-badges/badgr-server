@@ -47,9 +47,13 @@ def is_staff(user, issuer):
 is_on_staff = is_owner | is_staff
 is_staff_editor = is_owner | is_editor
 
-rules.add_perm("issuer.is_owner", is_owner)
-rules.add_perm("issuer.is_editor", is_staff_editor)
-rules.add_perm("issuer.is_staff", is_on_staff)
+# FIXME: should those be set here?
+try:
+    rules.add_perm("issuer.is_owner", is_owner)
+    rules.add_perm("issuer.is_editor", is_staff_editor)
+    rules.add_perm("issuer.is_staff", is_on_staff)
+except KeyError:
+    pass
 
 
 @rules.predicate
@@ -110,10 +114,14 @@ can_edit_badgeclass = is_badgeclass_owner | is_badgeclass_editor
 can_issue_learningpath = is_learningpath_staff
 can_edit_learningpath = is_learningpath_owner | is_learningpath_editor
 
-rules.add_perm("issuer.can_issue_badge", can_issue_badgeclass)
-rules.add_perm("issuer.can_edit_badgeclass", can_edit_badgeclass)
-rules.add_perm("issuer.can_issue_learningpath", can_issue_learningpath)
-rules.add_perm("issuer.can_edit_learningpath", can_edit_learningpath)
+# FIXME: should those be set here?
+try:
+    rules.add_perm("issuer.can_issue_badge", can_issue_badgeclass)
+    rules.add_perm("issuer.can_edit_badgeclass", can_edit_badgeclass)
+    rules.add_perm("issuer.can_issue_learningpath", can_issue_learningpath)
+    rules.add_perm("issuer.can_edit_learningpath", can_edit_learningpath)
+except KeyError:
+    pass
 
 
 class MayIssueLearningPath(permissions.BasePermission):
