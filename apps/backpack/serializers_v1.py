@@ -369,6 +369,7 @@ class CollectionSerializerV1(serializers.Serializer):
     description = StripTagsCharField(
         required=False, allow_blank=True, allow_null=True, max_length=255
     )
+    permanent_hash = serializers.CharField(read_only=True, source="permanent_url")
     share_hash = serializers.CharField(read_only=True)
     share_url = serializers.CharField(read_only=True, max_length=1024)
     badges = CollectionBadgeSerializerV1(

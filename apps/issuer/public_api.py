@@ -595,7 +595,6 @@ class BadgeInstanceRevocations(JSONComponentView):
 class BackpackCollectionJson(JSONComponentView):
     permission_classes = (permissions.AllowAny,)
     model = BackpackCollection
-    entity_id_field_name = "share_hash"
 
     def get_context_data(self, **kwargs):
         image_url = ""
@@ -657,9 +656,12 @@ class BackpackCollectionJson(JSONComponentView):
         return ret
 
     def get_json(self, request):
+        # bypass cached version with old share_hash
+        self.current_object.refresh_from_db()
+
         expands = request.GET.getlist("expand", [])
         if not self.current_object.published:
-            return HttpResponse(status=204)
+            raise Http404
 
         json = self.current_object.get_json(
             obi_version=self._get_request_obi_version(request),
