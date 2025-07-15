@@ -1,0 +1,9 @@
+{
+  "pylint.importStrategy": "fromEnvironment",
+  "pylint.cwd": "${filenameDir}",
+  "editor.formatOnSave": true,
+  "files.trimTrailingWhitespace": true,
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  }
+}
