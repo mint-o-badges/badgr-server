@@ -1,294 +1,96 @@
 {% load static %}
-<div
-    style="
-        background: #ffffff;
-        background-color: #ffffff;
-        margin: 0px auto;
-        max-width: 600px;
-    "
->
-    <table
-        align="center"
-        border="0"
-        cellpadding="0"
-        cellspacing="0"
-        role="presentation"
-        style="
-            background: #f5f5f5;
-            background-color: #f5f5f5;
-            width: 100%;
-            position: relative;
-        "
-    >
-        <tbody>
-            <tr>
-                <td
-                    style="
-                        border-left: 1px solid #dbd8df;
-                        border-right: 1px solid #dbd8df;
-                        border-top: 1px solid #dbd8df;
-                        direction: ltr;
-                        font-size: 0px;
-                        padding: 0px 12px;
-                        padding-top: 25px;
-                        text-align: center;
-                        vertical-align: top;
-                    "
-                >
-                    <!-- Logo -->
-                    <div
-                        class="mj-column-per-100 outlook-group-fix"
-                        style="
-                            font-size: 13px;
-                            text-align: left;
-                            direction: ltr;
-                            display: inline-block;
-                            vertical-align: top;
-                            width: 100%;
-                            position: relative;
-                            z-index: 1;
-                        "
-                    >
-                        <table
-                            border="0"
-                            cellpadding="0"
-                            cellspacing="0"
-                            role="presentation"
-                            style="vertical-align: top"
-                            width="100%"
-                        >
-                            <tbody class="position: relative">
-                                <tr>
-                                    <td
-                                        rowspan="2"
-                                        align="left"
-                                        style="
-                                            font-size: 0px;
-                                            padding: 10px 10px 10px 25px;
-                                            word-break: break-word;
-                                            float: right;
-                                        "
-                                    >
-                                        <a
-                                            href="https://openbadges.education"
-                                            target="_blank"
-                                        >
-                                            <img
-                                                src="{% static '/images/Logo-Oeb.png' %}"
-                                                align="left"
-                                                style="
-                                                    width: auto;
-                                                    height: 70px;
-                                                "
-                                            />
-                                        </a>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+<div style="background: #ffffff; background-color: #ffffff; margin: 0px auto; max-width: 600px;">
+    <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background: #f5f5f5; background-color: #f5f5f5; width: 100%;">
+      <tbody>
+        <!-- Logo Section -->
+        <tr>
+          <td style="border-left: 1px solid #dbd8df; border-right: 1px solid #dbd8df; border-top: 1px solid #dbd8df; direction: ltr; font-size: 0px; padding: 25px; text-align: center; vertical-align: top;">
+            <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align: top; width: 100%;">
+              <tbody>
+                <tr>
+                  <td align="right" style="font-size: 0px; padding: 10px 10px 10px 25px; word-break: break-word;">
+                    <a href="https://openbadges.education" target="_blank" style="display: inline-block;">
+                      <img src="{% static '/images/Logo-Oeb.png' %}" alt="Logo" style="width: auto; height: 60px; max-height: 60px; display: block; outline: none; text-decoration: none; border: 0;" />
+                    </a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Heading -->
+        <tr>
+          <td style="border-left: 1px solid #dbd8df; border-right: 1px solid #dbd8df; font-size: 0px; padding: 15px 25px; word-break: break-word;">
+            <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="width: 100%;">
+              <tbody>
+                <tr>
+                  <td align="center" style="font-size: 0px; word-break: break-word; padding: 0px 24px;">
+                    <div style="font-family: Rubik, Arial, sans-serif; font-size: 30px; font-weight: 900; line-height: 130%; text-align: left; color: #323232; width: 100%; max-width: 520px; margin: auto; text-transform: uppercase;">
+                      Deine Institution {{issuer_name}} wurde verifiziert!
                     </div>
-                </td>
-            </tr>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
 
-            <!-- Email heading -->
-            <tr>
-                <td
-                    style="
-                        border-left: 1px solid #dbd8df;
-                        border-right: 1px solid #dbd8df;
-                        font-size: 0px;
-                        padding: 15px 20px;
-                        word-break: break-word;
-                    "
-                >
-                    <table
-                        cellpadding="0"
-                        cellspacing="0"
-                        role="presentation"
-                        style="border-collapse: collapse; border-spacing: 0px"
-                    >
-                        <tbody>
-                            <tr>
-                                <td
-                                    style="
-                                        font-size: 0px;
-                                        padding: 15px 25px;
-                                        word-break: break-word;
-                                    "
-                                >
-                                    <div
-                                        style="
-                                            font-weight: 900;
-                                            font-size: 22px;
-                                            font-family: Rubik;
-                                            line-height: 26px;
-                                            text-align: left;
-                                            color: #323232;
-                                            text-transform: uppercase;
-                                        "
-                                    >
-                                        Deine Institution {{issuer_name}} wurde
-                                        verifiziert!
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </td>
-            </tr>
+        <!-- Paragraph -->
+        <tr>
+          <td style="border-left: 1px solid #dbd8df; border-right: 1px solid #dbd8df; font-size: 0px; padding: 10px 25px; word-break: break-word;">
+            <table cellpadding="0" cellspacing="0" role="presentation" style="border-collapse: collapse; border-spacing: 0px; width: 100%;">
+              <tbody>
+                <tr>
+                  <td style="font-size: 0px; padding: 0px 24px; word-break: break-word;">
+                    <div style="font-weight: 400; font-size: 24px; line-height: 120%; text-align: left; color: #323232; font-family: Rubik, Arial, sans-serif;">
+                      Du kannst direkt loslegen, <span style="font-weight: 600;">Badges zu erstellen und zu vergeben.</span> Hier zeigen wir dir, wie du in minutenschnelle deinen ersten Badge anlegst:
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
 
-            <tr>
-                <td
-                    style="
-                        border-left: 1px solid #dbd8df;
-                        border-right: 1px solid #dbd8df;
-                        font-size: 0px;
-                        padding: 10px 25px;
-                        word-break: break-word;
-                    "
-                >
-                    <table
-                        cellpadding="0"
-                        cellspacing="0"
-                        role="presentation"
-                        style="border-collapse: collapse; border-spacing: 0px"
-                    >
-                        <tbody>
-                            <tr>
-                                <td
-                                    style="
-                                        font-size: 0px;
-                                        padding: 0px 25px;
-                                        word-break: break-word;
-                                    "
-                                >
-                                    <div
-                                        style="
-                                            font-weight: 400;
-                                            font-size: 18px;
-                                            line-height: 26px;
-                                            text-align: left;
-                                            color: #323232;
-                                            font-family: Rubik;
-                                        "
-                                    >
-                                        Du kannst direkt loslegen,
-                                        <span style="font-weight: 600"
-                                            >Badges zu erstellen und zu
-                                            vergeben.</span
-                                        >
-                                        Hier zeigen wir dir, wie du in
-                                        minutenschnelle deinen ersten Badge
-                                        anlegst:
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </td>
-            </tr>
+        <!-- Video -->
+        <tr>
+          <td style="border-left: 1px solid #dbd8df; border-right: 1px solid #dbd8df; font-size: 0px; padding: 10px 25px; word-break: break-word;">
+            <table cellpadding="0" cellspacing="0" role="presentation" style="border-collapse: collapse; border-spacing: 0px; width: 100%;">
+              <tbody>
+                <tr>
+                  <td style="font-size: 0px; padding: 0px 24px; word-break: break-word;">
+                    <a href="https://www.youtube.com/watch?v=hL8SBqpTAag" target="_blank">
+                      <img src="{% static '/images/badgeCreateThumbnail.png' %}" alt="Youtube video zum Badge Erstellen" style="max-width: 100%; height: auto; border: 4.58px solid #492e98; border-radius: 15.28px; display: block;" />
+                    </a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
 
-            <!-- Video -->
-            <tr>
-                <td
-                    style="
-                        border-left: 1px solid #dbd8df;
-                        border-right: 1px solid #dbd8df;
-                        font-size: 0px;
-                        padding: 10px 24px;
-                        word-break: break-word;
-                    "
-                >
-                    <table
-                        cellpadding="0"
-                        cellspacing="0"
-                        role="presentation"
-                        style="border-collapse: collapse; border-spacing: 0px"
-                    >
-                        <tbody>
-                            <tr>
-                                <td
-                                    style="
-                                        font-size: 0px;
-                                        padding: 0px 24px;
-                                        word-break: break-word;
-                                    "
-                                >
-                                    <a
-                                        href="https://www.youtube.com/watch?v=hL8SBqpTAag"
-                                        target="_blank"
-                                    >
-                                        <img
-                                            src="{{thumbnail_url}}"
-                                            alt="Youtube video zum Badge Erstellen"
-                                            style="
-                                                max-width: 100%;
-                                                height: auto;
-                                                border: 4.58px solid #492e98;
-                                                border-radius: 15.28px;
-                                            "
-                                        />
-                                    </a>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+        <!-- Button -->
+        <tr>
+          <td style="border-left: 1px solid #dbd8df; border-right: 1px solid #dbd8df; border-bottom: 1px solid #dbd8df; direction: ltr; padding: 25px;">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+              <tr>
+                <td style="padding-left: 16px;">
+                  <div>
+                    <a href="https://openbadges.education" target="_blank" style="background: #492e98; color: #ffffff; font-family: Rubik, Arial, sans-serif; font-size: 16px; font-weight: 600; line-height: 120%; margin: 0; text-decoration: none; text-transform: none; display: inline-block; padding: 15px 40px; border-radius: 10px;">
+                      Zur OEB-Plattform
+                    </a>
+                  </div>
                 </td>
-            </tr>
-
-            <!-- button -->
-            <tr>
-                <td
-                    align="left"
-                    style="
-                        border-left: 1px solid #dbd8df;
-                        border-right: 1px solid #dbd8df;
-                        direction: ltr;
-                        padding-left: 25px;
-                        padding-bottom: 10px;
-                        padding-top: 25px;
-                        padding-bottom: 25px;
-                    "
-                >
-                    <table
-                        border="0"
-                        cellpadding="0"
-                        cellspacing="0"
-                        width="100%"
-                    >
-                        <tr>
-                            <td style="padding-left: 16px">
-                                <div>
-                                    <a
-                                        href="https://openbadges.education"
-                                        target="_blank"
-                                        style="
-                                            background: #492e98;
-                                            color: #ffffff;
-                                            font-family: Rubik, Arial,
-                                                sans-serif;
-                                            font-size: 16px;
-                                            font-weight: 600;
-                                            line-height: 120%;
-                                            margin: 0;
-                                            text-decoration: none;
-                                            text-transform: none;
-                                            display: inline-block;
-                                            padding: 15px 40px;
-                                            border-radius: 10px;
-                                        "
-                                    >
-                                        Zur OEB-Plattform
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </tbody>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </tbody>
     </table>
-</div>
+  </div>
+
+  <!-- FAQ section -->
 
 <div style="background: #e4ffe4; margin: 0px auto; max-width: 600px">
     <table
