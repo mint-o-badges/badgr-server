@@ -67,6 +67,35 @@ services:
       - "8025:8025"
     networks:
       - badgr
+  celery_worker:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile.dev.api
+    entrypoint: [] # Override the entrypoint from Dockerfile
+    command: >
+      bash -c "PYTHONPATH=/badgr_server/apps celery -A mainsite worker --loglevel=info"
+    volumes:
+      - ./apps:/badgr_server/apps
+      - ./manage.py:/badgr_server/manage.py
+      - ./.docker/etc/settings_local.dev.py:/badgr_server/apps/mainsite/settings_local.py
+      - badgr_server_mediafiles:/badgr_server/mediafiles
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - "MYSQL_PASSWORD=password"
+      - "MYSQL_HOST=db"
+      - "MYSQL_ROOT_PASSWORD=password"
+    networks:
+      - badgr
+    restart: unless-stopped
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:latest
+    restart: unless-stopped
+    networks:
+      - badgr
 
 networks:
   badgr:
@@ -74,3 +103,4 @@ networks:
 
 volumes:
   badgr_server_dev_db:
+  badgr_server_mediafiles:
