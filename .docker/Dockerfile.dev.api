@@ -1,4 +1,4 @@
-FROM python:3.8.14-slim-buster
+FROM python:3.8.20-slim-bookworm
 
 RUN mkdir /badgr_server
 WORKDIR /badgr_server
@@ -12,7 +12,6 @@ RUN apt-get install -y default-libmysqlclient-dev \
     libxmlsec1-dev \
     pkg-config \
     default-mysql-client \
-    git \
     curl
 
 RUN pip install uwsgi
@@ -42,6 +41,8 @@ RUN curl -fsSLO "$SUPERCRONIC_URL" \
     && mv "$SUPERCRONIC" "/usr/local/bin/${SUPERCRONIC}" \
     && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
 
+# Add timestamp
+RUN TZ=Europe/Berlin date +"%d.%m.%y %T" > timestamp
 
 RUN pip --timeout=1000 install --no-dependencies -r requirements.txt
 RUN pip --timeout=1000 install debugpy

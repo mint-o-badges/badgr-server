@@ -43,9 +43,9 @@ badgrlogger = badgrlog.BadgrLogger()
 
 
 class BadgrAdminSite(AdminSite):
-    site_header = ugettext_lazy("Badgr")
-    index_title = f"{ugettext_lazy('Staff Dashboard')} - Version: {mainsite.__build__}"
-    site_title = "Badgr"
+    site_header = ugettext_lazy('Badgr')
+    index_title = f"{ugettext_lazy('Staff Dashboard')} - Deployment timestamp: {mainsite.__timestamp__}"
+    site_title = 'Badgr'
 
     def autodiscover(self):
         autodiscover_modules("admin", register_to=self)
