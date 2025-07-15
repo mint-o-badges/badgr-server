@@ -10,7 +10,6 @@ services:
       - badgr_server_api_sock:/badgr_server/sock
       - badgr_server_staticfiles:/badgr_server/staticfiles
       - badgr_server_mediafiles:/badgr_server/mediafiles
-      - ./.git:/badgr_server/.git
     command: chown -R 999:999 /badgr_server/sock /badgr_server/staticfiles /badgr_server/mediafiles
 
   # this container copies in the project code and runs the app with uwsgi

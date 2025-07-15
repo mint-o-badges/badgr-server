@@ -928,7 +928,9 @@ class LearningPathList(BaseEntityListView):
         badgeinstances = request.user.cached_badgeinstances().all()
         badges = list({badgeinstance.badgeclass for badgeinstance in badgeinstances})
         lp_badges = LearningPathBadge.objects.filter(badge__in=badges)
-        lps = LearningPath.objects.filter(learningpathbadge__in=lp_badges).distinct()
+        lps = LearningPath.objects.filter(
+            activated=True, learningpathbadge__in=lp_badges
+        ).distinct()
 
         return lps
 

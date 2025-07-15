@@ -17,7 +17,6 @@ services:
       - ./openbadges_bakery:/badgr_server/openbadges_bakery
       - ./manage.py:/badgr_server/manage.py
       - ./.docker/etc/settings_local.dev.py:/badgr_server/apps/mainsite/settings_local.py
-      - ./.git:/badgr_server/.git
         # The following is needed for tox to run
       - ./tox.ini:/badgr_server/tox.ini
       - ./setup.py:/badgr_server/setup.py
@@ -25,7 +24,7 @@ services:
       - ./backups:/backups
       - ./user_emails.csv:/badgr_server/user_emails.csv
       - ./esco_issuers.txt:/badgr_server/esco_issuers.txt
-      - badgr_server_mediafiles:/badgr_server/mediafiles
+      - ./badgr_server_mediafiles:/badgr_server/mediafiles
     networks:
       - badgr
     ports:

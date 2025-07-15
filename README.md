@@ -32,10 +32,10 @@ network systems.
 
 Prerequisites:
 
-- Install docker (see [instructions](https://docs.docker.com/install/))
-- Install python
-  - Make sure you have the version(s) installed referenced in the [.pre-commit-config.yaml](.pre-commit-config.yaml)
-  - Also install `python-devel`, required to run the pre-commit hooks
+-   Install docker (see [instructions](https://docs.docker.com/install/))
+-   Install python
+    -   Make sure you have the version(s) installed referenced in the [.pre-commit-config.yaml](.pre-commit-config.yaml)
+    -   Also install `python-devel`, required to run the pre-commit hooks
 
 ### Setup your IDE/Editor
 
@@ -56,60 +56,60 @@ This will e.g. setup `ruff` as the default formatter and make sure linting works
 
 Copy the example development settings:
 
-- `cp .docker/etc/settings_local.dev.py.example .docker/etc/settings_local.dev.py`
+-   `cp .docker/etc/settings_local.dev.py.example .docker/etc/settings_local.dev.py`
 
 **NOTE**: you _may_ wish to copy and edit the production config. See Running the Django Server in "Production" below for more details.
 
-- `cp .docker/etc/settings_local.prod.py.example .docker/etc/settings_local.prod.py`
+-   `cp .docker/etc/settings_local.prod.py.example .docker/etc/settings_local.prod.py`
 
 ### Customize local settings to your environment
 
 Edit the `settings_local.dev.py` and/or `settings_local.prod.py` to adjust the following settings:
 
-- Set `DEFAULT_FROM_EMAIL` to an address, for instance `"noreply@localhost"`
-  - The default `EMAIL_BACKEND= 'django.core.mail.backends.console.EmailBackend'` will log email content to console, which is often adequate for development. Other options are available. See Django docs for [sending email](https://docs.djangoproject.com/en/1.11/topics/email/).
-- Set `SECRET_KEY` and `UNSUBSCRIBE_SECRET_KEY` each to (different) cryptographically secure random values.
-  - Generate values with: `python -c "import base64; import os; print(base64.b64encode(os.urandom(30)).decode('utf-8'))"`
-  - Remove that part `.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(40))` to prevent issues with the admin panel login
-- Set `AUTHCODE_SECRET_KEY` to a 32 byte url-safe base64-encoded random string. This key is used for symmetrical encryption of authentication tokens. If not defined, services like OAuth will not work.
-  - Generate a value with: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key())"`
+-   Set `DEFAULT_FROM_EMAIL` to an address, for instance `"noreply@localhost"`
+    -   The default `EMAIL_BACKEND= 'django.core.mail.backends.console.EmailBackend'` will log email content to console, which is often adequate for development. Other options are available. See Django docs for [sending email](https://docs.djangoproject.com/en/1.11/topics/email/).
+-   Set `SECRET_KEY` and `UNSUBSCRIBE_SECRET_KEY` each to (different) cryptographically secure random values.
+    -   Generate values with: `python -c "import base64; import os; print(base64.b64encode(os.urandom(30)).decode('utf-8'))"`
+    -   Remove that part `.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(40))` to prevent issues with the admin panel login
+-   Set `AUTHCODE_SECRET_KEY` to a 32 byte url-safe base64-encoded random string. This key is used for symmetrical encryption of authentication tokens. If not defined, services like OAuth will not work.
+    -   Generate a value with: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key())"`
 
 #### Additional configuration options
 
 Set or adjust these values in your `settings_local.dev.py` and/or `settings_local.prod.py` file to further configure the application to your specific needs.
 
-- `HELP_EMAIL`:
-  - An email address for your support staff. The default is `help@badgr.io`.
-- `BADGR_APPROVED_ISSUERS_ONLY`:
-  - If you choose to use set this value to `True`, that means new user accounts will not be able to define new issuers (though they can be added as staff on issuers defined by others) unless they have the Django user permission 'issuer.add_issuer'. The recommended way to grant users this privilege is to create a group that grants it in the `/staff` admin area and addthe appropriate users to that group.
-- `PINGDOM_MONITORING_ID`:
-  - If you use [Pingdom](https://www.pingdom.com/) to monitor site performance, including this setting will embed Pingdom tracking script into the header.
-- `CELERY_ALWAYS_EAGER`:
-  - Setting this value to `True` causes Celery to immediately run tasks synchronously. Celery is an asynchronous task runner built into Django and Badgr. Advanced deployments may separate celery workers from web nodes for improved performance. For development environments where Celery tasks should run synchronously, set this flag to true. Very few time-intensive tasks are part of this repository, and eager is a safe setting for most production deploys.
-- `OPEN_FOR_SIGNUP`:
-  - Allows you to turn off signup through the API by setting to `False` if you would like to use Badgr for only single-account use or to manually create all users in `/staff`. The default is `True` (signup API is enabled). UX is not well-supported in the `/staff` interface.
-- `DEFAULT_FILE_STORAGE` and `MEDIA_URL`:
-  - Django supports various backends for storing media, as applicable for your deployment strategy. See Django docs on the [file storage API](https://docs.djangoproject.com/en/1.11/ref/files/storage/)
-- `NOUNPROJECT_API_KEY` and `NOUNPROJECT_SECRET`:
-  - Set these values to be able to search for icons with in the badge creation process.
-- `AISKILLS_API_KEY` and `AISKILLS_ENDPOINT_CHATS` and `AISKILLS_ENDPOINT_KEYWORDS`:
-  - Set these values to be able to get AI skill suggestions within the badge creation process.
-- `OIDC_RP_CLIENT_ID` and `OIDC_RP_CLIENT_SECRET`
-  - The credentials for the meinBildungsraum SSO connection
-- `OIDC_OP_AUTHORIZATION_ENDPOINT`, `OIDC_OP_TOKEN_ENDPOINT`, `OIDC_OP_USER_ENDPOINT`, `OIDC_OP_JWKS_ENDPOINT`, `OIDC_OP_END_SESSION_ENDPOINT`
-  - The endpoints for the meinBildungsraum SSO connection
-  - For the demo as specified [here](https://aai.demo.meinbildungsraum.de/realms/nbp-aai/.well-known/openid-configuration)
-- `LOGIN_BASE_URL`
-  - The base url for the redirect urls
-  - E.g. `http://localhost:4200/auth/login`
-- `LOGIN_REDIRECT_URL` and `LOGOUT_REDIRECT_URL`
-  - The redirect urls to our application after login / logout via meinBildungsraum
-  - After the login with meinBildungsraum, the OIDC session authentication needs to be converted to an access token
-  - This is done with the `auth/login?validateToken` url
-  - E.g. `http://localhost:4200/auth/login?validateToken` and `http://localhost:4200/auth/login`
-  - Typically you don't need to change these if you used the example with `LOGIN_BASE_URL`
-- `ALTCHA_API_KEY` and `ALTCHA_SECRET`:
-  - Set these values for captcha protection during the registration and issuer creation process. They can be obtained at [altcha.org](https://altcha.org/).
+-   `HELP_EMAIL`:
+    -   An email address for your support staff. The default is `help@badgr.io`.
+-   `BADGR_APPROVED_ISSUERS_ONLY`:
+    -   If you choose to use set this value to `True`, that means new user accounts will not be able to define new issuers (though they can be added as staff on issuers defined by others) unless they have the Django user permission 'issuer.add_issuer'. The recommended way to grant users this privilege is to create a group that grants it in the `/staff` admin area and addthe appropriate users to that group.
+-   `PINGDOM_MONITORING_ID`:
+    -   If you use [Pingdom](https://www.pingdom.com/) to monitor site performance, including this setting will embed Pingdom tracking script into the header.
+-   `CELERY_ALWAYS_EAGER`:
+    -   Setting this value to `True` causes Celery to immediately run tasks synchronously. Celery is an asynchronous task runner built into Django and Badgr. Advanced deployments may separate celery workers from web nodes for improved performance. For development environments where Celery tasks should run synchronously, set this flag to true. Very few time-intensive tasks are part of this repository, and eager is a safe setting for most production deploys.
+-   `OPEN_FOR_SIGNUP`:
+    -   Allows you to turn off signup through the API by setting to `False` if you would like to use Badgr for only single-account use or to manually create all users in `/staff`. The default is `True` (signup API is enabled). UX is not well-supported in the `/staff` interface.
+-   `DEFAULT_FILE_STORAGE` and `MEDIA_URL`:
+    -   Django supports various backends for storing media, as applicable for your deployment strategy. See Django docs on the [file storage API](https://docs.djangoproject.com/en/1.11/ref/files/storage/)
+-   `NOUNPROJECT_API_KEY` and `NOUNPROJECT_SECRET`:
+    -   Set these values to be able to search for icons with in the badge creation process.
+-   `AISKILLS_API_KEY` and `AISKILLS_ENDPOINT_CHATS`, `AISKILLS_ENDPOINT_KEYWORDS` and `AISKILLS_ENDPOINT_TREE`:
+    -   Set these values to be able to get AI skill suggestions within the badge creation process.
+-   `OIDC_RP_CLIENT_ID` and `OIDC_RP_CLIENT_SECRET`
+    -   The credentials for the meinBildungsraum SSO connection
+-   `OIDC_OP_AUTHORIZATION_ENDPOINT`, `OIDC_OP_TOKEN_ENDPOINT`, `OIDC_OP_USER_ENDPOINT`, `OIDC_OP_JWKS_ENDPOINT`, `OIDC_OP_END_SESSION_ENDPOINT`
+    -   The endpoints for the meinBildungsraum SSO connection
+    -   For the demo as specified [here](https://aai.demo.meinbildungsraum.de/realms/nbp-aai/.well-known/openid-configuration)
+-   `LOGIN_BASE_URL`
+    -   The base url for the redirect urls
+    -   E.g. `http://localhost:4200/auth/login`
+-   `LOGIN_REDIRECT_URL` and `LOGOUT_REDIRECT_URL`
+    -   The redirect urls to our application after login / logout via meinBildungsraum
+    -   After the login with meinBildungsraum, the OIDC session authentication needs to be converted to an access token
+    -   This is done with the `auth/login?validateToken` url
+    -   E.g. `http://localhost:4200/auth/login?validateToken` and `http://localhost:4200/auth/login`
+    -   Typically you don't need to change these if you used the example with `LOGIN_BASE_URL`
+-   `ALTCHA_API_KEY` and `ALTCHA_SECRET`:
+    -   Set these values for captcha protection during the registration and issuer creation process. They can be obtained at [altcha.org](https://altcha.org/).
 
 ### Running the Django Server in Development
 
@@ -118,11 +118,11 @@ development server will reload itself in the docker container whenever changes a
 
 To run the project with docker in a development mode:
 
-- `docker compose up`: build and get django and other components running
-- `docker compose exec api python manage.py migrate` - (while running) set up database tables
-- `docker compose exec api python manage.py dist` - generate docs swagger file(s)
-- `docker compose exec api python manage.py collectstatic` - Put built front-end assets into the static directory (Admin panel CSS, swagger docs).
-- `docker compose exec api python manage.py createsuperuser` - follow prompts to create your first admin user account
+-   `docker compose up`: build and get django and other components running
+-   `docker compose exec api python manage.py migrate` - (while running) set up database tables
+-   `docker compose exec api python manage.py dist` - generate docs swagger file(s)
+-   `docker compose exec api python manage.py collectstatic` - Put built front-end assets into the static directory (Admin panel CSS, swagger docs).
+-   `docker compose exec api python manage.py createsuperuser` - follow prompts to create your first admin user account
 
 ### Running the Django Server in "Production"
 
@@ -132,16 +132,16 @@ is the development (and thus default) config for `docker compose`.
 If you'd like to run the project with a more production-like setup, you can specify the `docker-compose.prod.yml`
 file. This setup **copies** the project code in (instead of mirroring) and uses nginx with uwsgi to run django.
 
-- `docker compose -f docker-compose.prod.yml up -d` - build and get django and other components (production mode)
+-   `docker compose -f docker-compose.prod.yml up -d` - build and get django and other components (production mode)
 
-- `docker compose -f docker-compose.prod.yml exec api python manage.py migrate` - (while running) set up database tables
+-   `docker compose -f docker-compose.prod.yml exec api python manage.py migrate` - (while running) set up database tables
 
 If you are using the production setup and you have made changes you wish to see reflected in the running container,
 you will need to stop and then rebuild the production containers:
 
-- `docker compose -f docker-compose.prod.yml build` - (re)build the production containers
+-   `docker compose -f docker-compose.prod.yml build` - (re)build the production containers
 
-- If the extension urls aren't adjusted (or the url changes, or for some other reason it seems as if extension schemas can't be loaded, e.g. because of 401 errors in the badge creation process), run the script in `scripts/change-extension-url.sh`.
+-   If the extension urls aren't adjusted (or the url changes, or for some other reason it seems as if extension schemas can't be loaded, e.g. because of 401 errors in the badge creation process), run the script in `scripts/change-extension-url.sh`.
 
 #### Deployment
 
@@ -151,11 +151,11 @@ Checkout `deployment.md`
 
 The development server will be reachable on port `8000`:
 
-- http://localhost:8000/ (development)
+-   http://localhost:8000/ (development)
 
 The production server will be reachable on port `8080`:
 
-- http://localhost:8080/ (production)
+-   http://localhost:8080/ (production)
 
 Note: An error message when accessing the above mentioned URLs is perfectly fine, since the server doesn't actually serve anything on the root url.
 
@@ -164,37 +164,37 @@ need to adjust that if you are using the production server.
 
 ### First Time Setup
 
-- Sign in to http://localhost:8000/staff/
-- Add an `EmailAddress` object for your superuser. [Edit your super user](http://localhost:8000/staff/badgeuser/badgeuser/1/change/)
-- Add an initial `TermsVersion` object
+-   Sign in to http://localhost:8000/staff/
+-   Add an `EmailAddress` object for your superuser. [Edit your super user](http://localhost:8000/staff/badgeuser/badgeuser/1/change/)
+-   Add an initial `TermsVersion` object
 
 #### Badgr App Configuration
 
-- Sign in to http://localhost:8000/staff
-- View the "Badgr app" records and use the staff admin forms to create a BadgrApp. BadgrApp(s) describe the configuration that badgr-server needs to know about an associated installation of badgr-ui.
+-   Sign in to http://localhost:8000/staff
+-   View the "Badgr app" records and use the staff admin forms to create a BadgrApp. BadgrApp(s) describe the configuration that badgr-server needs to know about an associated installation of badgr-ui.
 
 If your [badgr-ui](https://github.com/concentricsky/badgr-ui) is running on http://localhost:4000, use the following values:
 
-- CORS: ensure this setting matches the domain on which you are running badgr-ui, including the port if other than the standard HTTP or HTTPS ports. `localhost:4000`
-- Oauth authorization redirect: `http://localhost:4000/`
-- Signup redirect: `http://localhost:4000/signup/`
-- Email confirmation redirect: `http://localhost:4000/auth/login/`
-- Forgot password redirect: `http://localhost:4000/change-password/`
-- UI login redirect: `http://localhost:4000/auth/login/`
-- UI signup success redirect: `http://localhost:4000/signup/success/`
-- UI signup failure redirect: `http://localhost:4000/signup/failure/`
-- UI connect success redirect: `http://localhost:4000/profile/`
-- Public pages redirect: `http://localhost:4000/public/`
+-   CORS: ensure this setting matches the domain on which you are running badgr-ui, including the port if other than the standard HTTP or HTTPS ports. `localhost:4000`
+-   Oauth authorization redirect: `http://localhost:4000/`
+-   Signup redirect: `http://localhost:4000/signup/`
+-   Email confirmation redirect: `http://localhost:4000/auth/login/`
+-   Forgot password redirect: `http://localhost:4000/change-password/`
+-   UI login redirect: `http://localhost:4000/auth/login/`
+-   UI signup success redirect: `http://localhost:4000/signup/success/`
+-   UI signup failure redirect: `http://localhost:4000/signup/failure/`
+-   UI connect success redirect: `http://localhost:4000/profile/`
+-   Public pages redirect: `http://localhost:4000/public/`
 
 #### Authentication Configuration
 
-- [Create an OAuth2 Provider Application](http://localhost:8000/staff/oauth2_provider/application/add/) for the Badgr-UI to use with
-  - Client id: `public`
-  - Client type: Public
-  - allowed scopes: `rw:profile rw:issuer rw:backpack`
-  - Authorization grant type: Resource owner password-based
-  - Name: `Badgr UI`
-  - Redirect uris: blank (for Resource owner password-based. You can use this to set up additional OAuth applications that use authorization code token grants as well.)
+-   [Create an OAuth2 Provider Application](http://localhost:8000/staff/oauth2_provider/application/add/) for the Badgr-UI to use with
+    -   Client id: `public`
+    -   Client type: Public
+    -   allowed scopes: `rw:profile rw:issuer rw:backpack`
+    -   Authorization grant type: Resource owner password-based
+    -   Name: `Badgr UI`
+    -   Redirect uris: blank (for Resource owner password-based. You can use this to set up additional OAuth applications that use authorization code token grants as well.)
 
 #### OIDC authentication
 
@@ -238,7 +238,7 @@ For more details view the Readme for [Badgr UI](https://github.com/concentricsky
 
 To ensure consistency and quality in code contributions, we use pre-commit hooks to adhere to commit message conventions and code quality guidelines. Follow these steps to set up your development environment:
 
-- Install Pre-commit
+-   Install Pre-commit
 
 Make sure you have `pre-commit` installed on your machine. You can install it using pip:
 
@@ -246,7 +246,7 @@ Make sure you have `pre-commit` installed on your machine. You can install it us
 pip install pre-commit
 ```
 
-- Initialize Pre-commit Hooks
+-   Initialize Pre-commit Hooks
 
 Navigate to the root directory of the repository and run the following command to initialize pre-commit hooks:
 
@@ -271,4 +271,4 @@ pip install commitizen
 
 ## Branches
 
-Development happens in feature branches (e.g. `feat/foo` or `fix/bar`). Those are then merged (via a PR) into `develop`. The `develop` branch is synchronized automatically with `develop.openbadges.education`. Once dev tests have completed on `develop.openbadges.education`, `develop` is merged (via a PR) into `main`. The `main` branch is synchronized automatically with `staging.openbadges.education`. Once this state is ready for a deployment, checkout `deployment.md` for informatoin on how to deploy to `openbadges.education`.
+Development happens in feature branches (e.g. `feat/foo` or `fix/bar`). Those are then merged (via a PR) into `develop`. The `develop` branch is synchronized automatically with `develop.openbadges.education`. Once dev tests have completed on `develop.openbadges.education`, `develop` is merged (via a PR) into `main`. The `main` branch is synchronized automatically with `staging.openbadges.education`. Once this state is ready for a deployment, `main` is merged (via a PR) into `production`. The `production` branch is synchronized automatically with `openbadges.education`.
