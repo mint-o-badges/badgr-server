@@ -8,14 +8,12 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 from rest_framework.views import APIView
 
-import badgrlog
+import logging
+logger = logging.getLogger("Badgr.Events")
 from mainsite.pagination import BadgrCursorPagination
 
 
 class BaseEntityView(APIView):
-    create_event = None
-    logger = None
-
     def get_context_data(self, **kwargs):
         return {
             "request": self.request,
@@ -29,21 +27,8 @@ class BaseEntityView(APIView):
             return self.v2_serializer_class
         return getattr(self, "serializer_class", None)
 
-    def get_logger(self):
-        if self.logger:
-            return self.logger
-        self.logger = badgrlog.BadgrLogger()
-        return self.logger
-
-    def get_create_event(self):
-        return getattr(self, "create_event", None)
-
     def log_create(self, instance):
-        event_cls = self.get_create_event()
-        if event_cls is not None:
-            logger = self.get_logger()
-            if logger is not None:
-                logger.event(event_cls(instance))
+        logger.info("Created instance: '%s'", instance))
 
 
 class BaseEntityListView(BaseEntityView):
