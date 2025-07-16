@@ -3,7 +3,8 @@ import os
 import re
 import urllib.parse
 
-import badgrlog
+import logging
+logger = logging.getLogger("Badgr.Events")
 import cairosvg
 from backpack.models import BackpackCollection
 from django.conf import settings
@@ -44,9 +45,6 @@ from .serializers_v1 import (
     IssuerSerializerV1,
     LearningPathSerializerV1,
 )
-
-logger = badgrlog.BadgrLogger()
-
 
 class SlugToEntityIdRedirectMixin(object):
     slugToEntityIdRedirect = False
@@ -334,7 +332,7 @@ class IssuerJson(JSONComponentView):
     model = Issuer
 
     def log(self, obj):
-        logger.event(badgrlog.IssuerRetrievedEvent(obj, self.request))
+        logger.info("Retrieved issuer '%s'", obj)
 
     def get_context_data(self, **kwargs):
         image_url = "{}{}?type=png".format(
@@ -359,7 +357,7 @@ class IssuerBadgesJson(JSONComponentView):
     model = Issuer
 
     def log(self, obj):
-        logger.event(badgrlog.IssuerBadgesRetrievedEvent(obj, self.request))
+        logger.info("Retrieved issuer badges '%s'", obj)
 
     def get_json(self, request):
         obi_version = self._get_request_obi_version(request)
@@ -388,7 +386,7 @@ class IssuerImage(ImagePropertyDetailView):
     prop = "image"
 
     def log(self, obj):
-        logger.event(badgrlog.IssuerImageRetrievedEvent(obj, self.request))
+        logger.info("Issuer image retrieved event '%s'", obj)
 
 
 class IssuerList(JSONListView):
@@ -445,7 +443,7 @@ class BadgeClassJson(JSONComponentView):
     model = BadgeClass
 
     def log(self, obj):
-        logger.event(badgrlog.BadgeClassRetrievedEvent(obj, self.request))
+        logger.info("Badge class retrieved '%s'", obj)
 
     def get_json(self, request):
         expands = request.GET.getlist("expand", [])
@@ -482,7 +480,7 @@ class BadgeClassList(JSONListView):
     serializer_class = BadgeClassSerializerV1
 
     def log(self, obj):
-        logger.event(badgrlog.BadgeClassRetrievedEvent(obj, self.request))
+        logger.info("Badge class list retrieved '%s'", obj)
 
     def get_context_data(self, **kwargs):
         context = super(BadgeClassList, self).get_context_data(**kwargs)
@@ -505,7 +503,7 @@ class BadgeClassImage(ImagePropertyDetailView):
     prop = "image"
 
     def log(self, obj):
-        logger.event(badgrlog.BadgeClassImageRetrievedEvent(obj, self.request))
+        logger.info("Badge class image retrieved '%s'", obj)
 
 
 class BadgeClassCriteria(RedirectView, SlugToEntityIdRedirectMixin):
@@ -574,9 +572,7 @@ class BadgeInstanceImage(ImagePropertyDetailView):
     prop = "image"
 
     def log(self, badge_instance):
-        logger.event(
-            badgrlog.BadgeInstanceDownloadedEvent(badge_instance, self.request)
-        )
+        logger.info("Badge instance '%s' downloaded", badge_instance)
 
     def get_object(self, slug):
         obj = super(BadgeInstanceImage, self).get_object(slug)
