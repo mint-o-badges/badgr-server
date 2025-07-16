@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "apispec_drf",
     # deprecated
     "composition",
+    "django_filters",
 ]
 
 MIDDLEWARE = [
@@ -348,7 +349,7 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
     "DEFAULT_VERSION": "v1",
-    "ALLOWED_VERSIONS": ["v1", "v2", "bcv1", "rfc7591"],
+    "ALLOWED_VERSIONS": ["v1", "v2", "v3", "bcv1", "rfc7591"],
     "EXCEPTION_HANDLER": "entity.views.exception_handler",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 100,
@@ -394,7 +395,9 @@ try:
     print(mainsite.__timestamp__)
 except Exception as e:
     print(e)
-    mainsite.__timestamp__ = datetime.now(pytz.timezone('Europe/Berlin')).strftime("%d.%m.%y %T (last restart)")
+    mainsite.__timestamp__ = datetime.now(pytz.timezone("Europe/Berlin")).strftime(
+        "%d.%m.%y %T (last restart)"
+    )
     print("ERROR in determining deployment timestamp; used current timestamp:")
     print(mainsite.__timestamp__)
 

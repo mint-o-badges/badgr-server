@@ -11,7 +11,7 @@ from mainsite.views import (
     requestBadge,
     deleteBadgeRequest,
     createCaptchaChallenge,
-    getTimestamp
+    getTimestamp,
 )
 from mainsite.views import (
     info_view,
@@ -209,7 +209,7 @@ urlpatterns = [
     url(r"^aiskills/$", aiskills, name="aiskills"),
     url(r"^aiskills-keywords/$", aiskills_keywords, name="aiskills_keywords"),
     url(r"^request-badge/(?P<qrCodeId>[^/]+)$", requestBadge, name="request-badge"),
-    url(r'^get-server-timestamp', getTimestamp, name="get-server-timestamp"),
+    url(r"^get-server-timestamp", getTimestamp, name="get-server-timestamp"),
     url(
         r"^deleteBadgeRequest/(?P<requestId>[^/]+)$",
         deleteBadgeRequest,
@@ -225,6 +225,9 @@ urlpatterns = [
         badgeRequestsByBadgeClass,
         name="badge-requests-by-badgeclass",
     ),
+    url(r"^v3/", include("issuer.v3_api_urls"), kwargs={"version": "v3"}),
+    url(r"^v3/backpack/", include("backpack.v3_api_urls"), kwargs={"version": "v3"}),
+    url(r"^v3/issuer/", include("issuer.v3_api_urls"), kwargs={"version": "v3"}),
     # meinBildungsraum OIDC connection
     path("oidc/", include("mozilla_django_oidc.urls")),
     url(

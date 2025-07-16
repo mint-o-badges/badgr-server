@@ -82,6 +82,12 @@ class BackpackCollection(BaseAuditedModelDeletedWithUser, BaseVersionedEntity):
 
         return BadgeUser.cached.get(id=self.created_by_id)
 
+    @property
+    def permanent_url(self):
+        return OriginSetting.HTTP + reverse(
+            "collection_json", kwargs={"entity_id": self.entity_id}
+        )
+
     # Convenience methods for toggling published state
     @property
     def published(self):
