@@ -406,7 +406,8 @@ class BadgeClassDetail(BaseEntityDetailView):
         base_entity = super(BadgeClassDetail, self)
         badge_class = base_entity.get_object(request, **kwargs)
 
-        logger.info("Deleting badge class '%s' requested by '%s'", badge_class, request.user)
+        logger.info("Deleting badge class '%s' requested by '%s'",
+                    badge_class.entity_id, request.user)
 
         return base_entity.delete(request, **kwargs)
 
@@ -849,7 +850,8 @@ class BadgeInstanceDetail(BaseEntityDetailView):
             assertion, context={"request": request}
         )
 
-        logger.info("Badge assertion '%s' revoking requested by '%s'", assertion, request.user)
+        logger.info("Badge assertion '%s' revoking requested by '%s'",
+                    assertion.entity_id, request.user)
         return Response(status=HTTP_200_OK, data=serializer.data)
 
     @apispec_put_operation(

@@ -215,7 +215,8 @@ class BackpackAssertionList(BaseEntityListView):
             error_name = e.get("name", "")
             error_result = e.get("result", "")
 
-        logger.warning("Invalid badge uploaded. Image data: '%s'; user_entity_id: '%s'; error_name: '%s'; error_result: '%s'", image_data, user_entity_id, error_name, error_result)
+        logger.warning("Invalid badge uploaded. Image data: '%s'; user_entity_id: '%s'; error_name: '%s'; error_result: '%s'",
+                       image_data, user_entity_id, error_name, error_result)
 
     def get_context_data(self, **kwargs):
         context = super(BackpackAssertionList, self).get_context_data(**kwargs)
@@ -564,7 +565,8 @@ class ShareBackpackAssertion(BaseEntityDetailView):
             )
 
         share.save()
-        logger.info("Badge '%s' shared by '%s' at '%s' from '%s'", badge, provider, datetime.datetime.now(), source)
+        logger.info("Badge '%s' shared by '%s' at '%s' from '%s'",
+                    badge.entity_id, provider, datetime.datetime.now(), source)
 
         if redirect:
             headers = {"Location": share_url}

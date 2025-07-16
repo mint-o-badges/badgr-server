@@ -24,7 +24,8 @@ class Command(BaseCommand):
             shares = BackpackBadgeShare.objects.order_by("id")[start:end]
             for share in shares:
                 self.stdout.write("Processing shares %s" % processing_index)
-                logger.info("Badge '%s' shared by '%s' at '%s' from '%s'", share.badgeinstance, share.provider, share.created_at, share.source)
+                logger.info("Badge '%s' shared by '%s' at '%s' from '%s'",
+                            share.badgeinstance.entity_id, share.provider, share.created_at, share.source)
                 processing_index = processing_index + 1
             if len(shares) < chunk_size:
                 break

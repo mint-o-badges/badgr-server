@@ -572,7 +572,7 @@ class BadgeInstanceImage(ImagePropertyDetailView):
     prop = "image"
 
     def log(self, badge_instance):
-        logger.info("Badge instance '%s' downloaded", badge_instance)
+        logger.info("Badge instance '%s' downloaded", badge_instance.entity_id)
 
     def get_object(self, slug):
         obj = super(BadgeInstanceImage, self).get_object(slug)
