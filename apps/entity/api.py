@@ -28,7 +28,7 @@ class BaseEntityView(APIView):
         return getattr(self, "serializer_class", None)
 
     def log_create(self, instance):
-        logger.info("Created instance: '%s'", instance))
+        logger.info("Created instance: '%s'", instance)
 
 
 class BaseEntityListView(BaseEntityView):
