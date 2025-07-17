@@ -6,11 +6,8 @@ from oauth2_provider.models import Application
 from oauth2_provider.oauth2_backends import get_oauthlib_core
 from rest_framework.authentication import BaseAuthentication, TokenAuthentication
 
-import badgrlog
-
-
-badgrlogger = badgrlog.BadgrLogger()
-
+import logging
+logger = logging.getLogger("Badgr.Events")
 
 class BadgrOAuth2Authentication(BaseAuthentication):
     www_authenticate_realm = "api"
@@ -55,9 +52,6 @@ class LoggedLegacyTokenAuthentication(TokenAuthentication):
             LoggedLegacyTokenAuthentication, self
         ).authenticate(request)
         if authenticated_credentials is not None:
-            badgrlogger.event(
-                badgrlog.DeprecatedApiAuthToken(
-                    request, authenticated_credentials[0].username
-                )
-            )
+            logger.warning("Deprecated auth token")
+            logger.info("Username: '%s'", authenticated_credentials[0].username)
         return authenticated_credentials

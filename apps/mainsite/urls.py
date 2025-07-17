@@ -153,8 +153,6 @@ urlpatterns = [
         r"^docs/?$", RedirectView.as_view(url="/docs/v2/", permanent=True)
     ),  # default redirect to /v2/
     url(r"^docs/", include("apispec_drf.urls")),
-    # JSON-LD Context
-    url(r"^json-ld/", include("badgrlog.urls")),
     # unversioned public endpoints
     url(
         r"^unsubscribe/(?P<email_encoded>[^/]+)/(?P<expiration>[^/]+)/(?P<signature>[^/]+)",

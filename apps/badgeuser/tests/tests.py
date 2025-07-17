@@ -665,43 +665,6 @@ class UserEmailTests(BadgrTestCase):
         )
         self.assertEqual(response.status_code, 200)
 
-    @patch("mainsite.serializers.badgrlogger.event")
-    def test_log_when_api_auth_token_endpoint_is_used(self, mocked_logger):
-        response = self.client.post(
-            "/api-auth/token",
-            {
-                "username": self.first_user.username,
-                "password": "secret",
-            },
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(
-            "deprecated",
-            response.data["warning"],
-            "There is a warning returned to the requester",
-        )
-        mocked_logger.assert_called_once()
-        self.assertTrue(mocked_logger.call_args[0][0].is_new_token)
-
-    @patch("mainsite.authentication.badgrlogger.event")
-    def test_log_when_legacy_auth_token_is_used(self, mocked_logger):
-        # logout previous user
-        self.client.logout()
-
-        user_email = "hundredth.user@newemail.test"
-        user = self.setup_user(email=user_email, authenticate=False)
-        token, created = Token.objects.get_or_create(user=user)
-        self.client.get(
-            "/v2/users/self", HTTP_AUTHORIZATION="Token {}".format(token.key)
-        )
-
-        mocked_logger.assert_called_once()
-        self.assertIsNotNone(
-            mocked_logger.call_args[0][0].request.META.get("REMOTE_ADDR", None)
-        )
-        self.assertEquals(mocked_logger.call_args[0][0].username, user.username)
-        self.assertFalse(mocked_logger.call_args[0][0].is_new_token)
-
     def test_lower_variant_autocreated_on_new_email(self):
         first_email = CachedEmailAddress(
             email="HelloAgain@world.com", user=BadgeUser.objects.first(), verified=True

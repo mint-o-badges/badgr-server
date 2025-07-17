@@ -8,7 +8,6 @@ from rest_framework.exceptions import ValidationError, PermissionDenied, NotFoun
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-import badgrlog
 from badgeuser.models import CachedEmailAddress, UserRecipientIdentifier
 from entity.api import VersionedObjectMixin
 from issuer.models import Issuer, IssuerStaff
@@ -21,8 +20,6 @@ from issuer.serializers_v1 import (
 from issuer.utils import get_badgeclass_by_identifier
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAdmin
 from mainsite.utils import throttleable
-
-logger = badgrlog.BadgrLogger()
 
 
 class AbstractIssuerAPIEndpoint(APIView):

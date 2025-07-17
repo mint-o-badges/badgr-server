@@ -25,7 +25,7 @@ class BadgrSocialAccountAdapter(DefaultSocialAccountAdapter):
     def authentication_error(
         self, request, provider_id, error=None, exception=None, extra_context=None
     ):
-        logging.getLogger(__name__).info(
+        logging.getLogger("Badgr.Events").info(
             "social login authentication error: %s"
             % {
                 "error": error,

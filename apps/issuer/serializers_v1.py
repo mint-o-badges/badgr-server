@@ -53,7 +53,7 @@ from .models import (
     RequestedLearningPath,
 )
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("Badgr.Events")
 
 
 class ExtensionsSaverMixin(object):

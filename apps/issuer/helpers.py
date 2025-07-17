@@ -31,7 +31,7 @@ import json
 import requests
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("Badgr.Events")
 
 
 class DjangoCacheDict(MutableMapping):

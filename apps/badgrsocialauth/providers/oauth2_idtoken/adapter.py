@@ -23,7 +23,7 @@ from django.utils.http import urlencode
 from socialauth.providers.log_configuration import debug_requests
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("Badgr.Events")
 
 
 class IdTokenOAuth2Adapter(OAuth2Adapter):
