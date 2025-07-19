@@ -24,7 +24,7 @@ name = "badgr-server"
 version = "2.2.0"
 description = "Digital badge management for issuers, earners, and consumers"
 readme = "README.md"
-requires-python = "==3.8.*"
+requires-python = "==3.9.*"
 dependencies = [
     "apispec==0.22.0",
     "apispec-djangorestframework==1.1.1",
