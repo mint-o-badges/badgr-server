@@ -278,7 +278,7 @@ requires-dist = [
     { name = "ruff", specifier = ">=0.11.10" },
     { name = "rules", specifier = "==3.3" },
     { name = "semver", specifier = "==2.6.0" },
-    { name = "setuptools", specifier = ">=75.3.2" },
+    { name = "setuptools", specifier = ">=75.3.2,<81" },
     { name = "simplejson", specifier = "==3.6.4" },
     { name = "six", specifier = "==1.10.0" },
     { name = "sqlparse", specifier = "==0.3.0" },

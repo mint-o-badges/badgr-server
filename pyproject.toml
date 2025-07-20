@@ -95,7 +95,7 @@ dependencies = [
     "ruff>=0.11.10",
     "rules==3.3",
     "semver==2.6.0",
-    "setuptools>=75.3.2",
+    "setuptools>=75.3.2, <81",
     "simplejson==3.6.4",
     "six==1.10.0",
     "sqlparse==0.3.0",
