@@ -104,44 +104,28 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
-        'mail_admins': {
-            'level': 'ERROR',
-            'filters': [],
-            'class': 'django.utils.log.AdminEmailHandler'
-        },
-
-        # badgr events log to disk by default
-        'badgr_events': {
+        # Only logs to the console appear in the docker / grafana logs
+        'console': {
             'level': 'INFO',
-            'formatter': 'json',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(LOGS_DIR, 'badgr_events.log')
-        }
+            'formatter': 'default',
+            'class': 'logging.StreamHandler'
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "WARNING",
     },
     'loggers': {
-        'django.request': {
-            'handlers': ['mail_admins'],
-            'level': 'ERROR',
-            'propagate': True,
-        },
-
         # Badgr.Events emits all badge related activity
         'Badgr.Events': {
-            'handlers': ['badgr_events'],
-            'level': 'INFO',
-            'propagate': False,
-
-        }
-
+            'handlers': ['console'],
+            # INFO contains sensible information about users
+            'level': 'WARNING',
+        },
     },
     'formatters': {
         'default': {
             'format': '%(asctime)s %(levelname)s %(module)s %(message)s'
-        },
-        'json': {
-            '()': 'mainsite.formatters.JsonFormatter',
-            'format': '%(asctime)s',
-            'datefmt': '%Y-%m-%dT%H:%M:%S%z',
         }
     },
 }
