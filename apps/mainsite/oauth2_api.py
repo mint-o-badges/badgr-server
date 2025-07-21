@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 import datetime
 import jwt
 import logging
+logger = logging.getLogger("Badgr.Events")
 
 from django.core.files.storage import default_storage
 from django.conf import settings
@@ -40,7 +41,6 @@ from rest_framework.status import (
 )
 from rest_framework.views import APIView
 
-import badgrlog
 from badgeuser.authcode import accesstoken_for_authcode
 from backpack.badge_connect_api import BADGE_CONNECT_SCOPES
 from mainsite.models import ApplicationInfo
@@ -51,9 +51,6 @@ from mainsite.utils import (
     throttleable,
     set_url_query_params,
 )
-
-badgrlogger = badgrlog.BadgrLogger()
-LOGGER = logging.getLogger(__name__)
 
 
 class AuthorizationApiView(OAuthLibMixin, APIView):
@@ -533,7 +530,7 @@ def request_renewed_oidc_access_token(self, refresh_token):
         )
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
-        LOGGER.error("Failed to refresh session: %s", e)
+        logger.error("Failed to refresh session: '%s'", e)
         return None
     return response.json()
 
@@ -742,9 +739,8 @@ class TokenView(OAuth2ProviderTokenView):
             response.content = json.dumps(data)
 
         if grant_type == "password" and response.status_code == 401:
-            badgrlogger.event(
-                badgrlog.FailedLoginAttempt(request, username, endpoint="/o/token")
-            )
+            logger.info("Failed login attempt from '%s' (response code: %s)",
+                        username, response.status_code)
 
         if response.status_code == 200:
             setTokenHttpOnly(response)
