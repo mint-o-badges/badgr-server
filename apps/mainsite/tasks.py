@@ -29,7 +29,5 @@ def process_learning_path_activation(pk):
     except LearningPath.DoesNotExist:
         return f"LearningPath with pk {pk} not found"
     except Exception as e:
-        import logging
-
         logger.error(f"Error processing learning path activation {pk}: {str(e)}")
         raise
