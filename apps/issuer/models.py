@@ -13,7 +13,8 @@ from json import dumps as json_dumps, loads as json_loads
 from cryptography.hazmat.primitives import serialization
 from pyld import jsonld
 
-import badgrlog
+import logging
+logger = logging.getLogger("Badgr.Events")
 import cachemodel
 import dateutil
 from allauth.account.adapter import get_adapter
@@ -65,9 +66,6 @@ RECIPIENT_TYPE_EMAIL = "email"
 RECIPIENT_TYPE_ID = "openBadgeId"
 RECIPIENT_TYPE_TELEPHONE = "telephone"
 RECIPIENT_TYPE_URL = "url"
-
-logger = badgrlog.BadgrLogger()
-
 
 class BaseAuditedModel(cachemodel.CacheModel):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
@@ -1712,7 +1710,8 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             if blacklist.api_query_is_in_blacklist(
                 self.recipient_type, self.recipient_identifier
             ):
-                logger.event(badgrlog.BlacklistAssertionNotCreatedEvent(self))
+                logger.warning("The recipient '%s' is in the blacklist for this ('%s') badge class",
+                               self.recipient_identifier, self.badgeclass.entity_id)
                 raise ValidationError("You may not award this badge to this recipient.")
 
             self.salt = uuid.uuid4().hex
@@ -1866,7 +1865,8 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             # Allow sending, as this email is not blacklisted.
             pass
         else:
-            logger.event(badgrlog.BlacklistEarnerNotNotifiedEvent(self))
+            logger.warning("The email for the badge with ID '%s' is blacklisted and was not sent", self.entity_id)
+            logger.debug("Recipient: '%s'; badge instance: '%s'", self.recipient_identifier, self.json)
             return
 
         if badgr_app is None:
@@ -1924,9 +1924,6 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
                 "badgr_app": badgr_app,
                 "activate_url": url,
                 "call_to_action_label": "Badge im Rucksack sammeln",
-                "oeb_info_block": (
-                    False if categoryExtension["Category"] == "learningpath" else True
-                ),
             }
             if badgr_app.cors == "badgr.io":
                 email_context["promote_mobile"] = True

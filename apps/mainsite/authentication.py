@@ -8,10 +8,9 @@ from rest_framework.authentication import BaseAuthentication, TokenAuthenticatio
 from rest_framework.permissions import BasePermission
 
 from apps.mainsite.utils import validate_altcha
-import badgrlog
+import logging
 
-
-badgrlogger = badgrlog.BadgrLogger()
+logger = logging.getLogger("Badgr.Events")
 
 
 class BadgrOAuth2Authentication(BaseAuthentication):
@@ -57,16 +56,14 @@ class LoggedLegacyTokenAuthentication(TokenAuthentication):
             LoggedLegacyTokenAuthentication, self
         ).authenticate(request)
         if authenticated_credentials is not None:
-            badgrlogger.event(
-                badgrlog.DeprecatedApiAuthToken(
-                    request, authenticated_credentials[0].username
-                )
-            )
+            logger.warning("Deprecated auth token")
+            logger.info("Username: '%s'", authenticated_credentials[0].username)
         return authenticated_credentials
+
 
 class ValidAltcha(BasePermission):
     def has_permission(self, request, view):
-        if 'HTTP_X_OEB_ALTCHA' in request.META:
-            return validate_altcha(request.META['HTTP_X_OEB_ALTCHA'], request)
+        if "HTTP_X_OEB_ALTCHA" in request.META:
+            return validate_altcha(request.META["HTTP_X_OEB_ALTCHA"], request)
 
         return False

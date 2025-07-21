@@ -51,7 +51,7 @@ from mainsite.models import EmailBlacklist, BadgrApp, AltchaChallenge
 from mainsite.serializers import LegacyVerifiedAuthTokenSerializer
 from mainsite.utils import createHash, createHmac
 from random import randrange
-import badgrlog
+
 import mainsite
 
 from django.views.decorators.csrf import csrf_exempt
@@ -68,8 +68,9 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table
 from reportlab.lib.utils import ImageReader
+import logging
 
-logger = badgrlog.BadgrLogger()
+logger = logging.getLogger("Badgr.Events")
 
 
 ##
@@ -181,8 +182,15 @@ def call_aiskills_api(endpoint, method, payload: dict):
             )
         else:
             attempt_num += 1
-            # You can probably use a logger to log the error here
-            time.sleep(5)  # Wait for 5 seconds before re-trying
+            logger.warning(
+                "Request to AI skills endpoint failed with response code %d (try %d): '%s'",
+                response.status_code,
+                attempt_num,
+                response.text,
+            )
+            # No need to sleep if there's no more try
+            if attempt_num < 4:
+                time.sleep(5)  # Wait for 5 seconds before re-trying
 
     return JsonResponse(
         {"error": f"Request failed with status code {response.status_code}"},
@@ -564,8 +572,15 @@ def nounproject(req, searchterm, page):
                 )
             else:
                 attempt_num += 1
-                # You can probably use a logger to log the error here
-                time.sleep(5)  # Wait for 5 seconds before re-trying
+                logger.warning(
+                    "Request to nounproject endpoint failed with response code %d (try %d): '%s'",
+                    response.status_code,
+                    attempt_num,
+                    response.text,
+                )
+                # No need to sleep if there's no more try
+                if attempt_num < 4:
+                    time.sleep(5)  # Wait for 5 seconds before re-trying
 
         return JsonResponse(
             {"error": f"Request failed with status code {response.status_code}"},
@@ -597,16 +612,18 @@ def email_unsubscribe(request, *args, **kwargs):
 
     try:
         email = base64.b64decode(kwargs["email_encoded"]).decode("utf-8")
-    except TypeError:
-        logger.event(
-            badgrlog.BlacklistUnsubscribeInvalidLinkEvent(kwargs["email_encoded"])
+    except TypeError as e:
+        logger.error(
+            "The unsubscribe link was invalid and caused a type error: '%s'", e
         )
+        logger.info("Encoded e-Mail: '%s'", kwargs["email_encoded"])
         return email_unsubscribe_response(
             request, "Invalid unsubscribe link.", error=True
         )
 
     if not EmailBlacklist.verify_email_signature(**kwargs):
-        logger.event(badgrlog.BlacklistUnsubscribeInvalidLinkEvent(email))
+        logger.error("The unsubscribe link signature was invalid")
+        logger.info("E-Mail: '%s'", email)
         return email_unsubscribe_response(
             request, "Invalid unsubscribe link.", error=True
         )
@@ -614,11 +631,12 @@ def email_unsubscribe(request, *args, **kwargs):
     blacklist_instance = EmailBlacklist(email=email)
     try:
         blacklist_instance.save()
-        logger.event(badgrlog.BlacklistUnsubscribeRequestSuccessEvent(email))
+        logger.info("Successfully unsubscribed E-Mail '%s'", email)
     except IntegrityError:
         pass
-    except Exception:
-        logger.event(badgrlog.BlacklistUnsubscribeRequestFailedEvent(email))
+    except Exception as e:
+        logger.error("Unsubscribing E-Mail failed with an exception: '%s'", e)
+        logger.info("E-Mail: '%s'", email)
         return email_unsubscribe_response(
             request, "Failed to unsubscribe email.", error=True
         )
