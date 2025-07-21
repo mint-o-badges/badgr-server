@@ -16,9 +16,10 @@ RUN apt-get install -y default-libmysqlclient-dev \
 RUN pip install uwsgi
 
 COPY requirements.txt              /badgr_server
+ENV TZ="Europe/Berlin"
 
 # Add timestamp
-RUN TZ=Europe/Berlin date +"%d.%m.%y %T" > timestamp
+RUN date +"%d.%m.%y %T" > timestamp
 
 RUN pip --timeout=1000 install --no-dependencies -r requirements.txt
 RUN pip --timeout=1000 install debugpy

@@ -16,6 +16,7 @@ RUN mkdir /badgr_server
 WORKDIR /badgr_server
 RUN python -m venv /badgr_server/venv
 ENV PATH="/badgr_server/venv/bin:$PATH"
+ENV TZ="Europe/Berlin"
 
 COPY requirements.txt .
 RUN pip install --no-dependencies -r requirements.txt
@@ -82,4 +83,5 @@ RUN TZ=Europe/Berlin date +"%d.%m.%y %T" > timestamp && chown python:python time
 USER 999
 
 ENV PATH="/badgr_server/venv/bin:$PATH"
+ENV TZ="Europe/Berlin"
 ENTRYPOINT ["./entrypoint.sh"]
