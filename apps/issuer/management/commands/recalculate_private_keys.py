@@ -23,7 +23,7 @@ class Command(BaseCommand):
         affected_issuer_ids = list(affected_issuers.values_list("id", flat=True))
 
         affected_assertions = BadgeInstance.objects.filter(
-            issuer_id__in=affected_issuer_ids
+            issuer_id__in=affected_issuer_ids, ob_json_3_0__isnull=False
         )
 
         self.stdout.write(f"Found {len(duplicate_keys)} duplicate private keys")
