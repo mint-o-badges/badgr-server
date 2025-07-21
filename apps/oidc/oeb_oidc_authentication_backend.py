@@ -1,4 +1,3 @@
-import logging
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 from mozilla_django_oidc.utils import absolutify
 
@@ -7,7 +6,8 @@ from django.urls import reverse
 
 from badgeuser.utils import generate_badgr_username
 
-LOGGER = logging.getLogger(__name__)
+import logging
+logger = logging.getLogger("Badgr.Events")
 
 
 # Since we only get the subject identifier from meinBildungsraum,
@@ -122,7 +122,7 @@ class OebOIDCAuthenticationBackend(OIDCAuthenticationBackend):
             try:
                 return self.get_or_create_user(access_token, id_token, payload)
             except SuspiciousOperation as exc:
-                LOGGER.warning("failed to get or create user: %s", exc)
+                logger.warning("failed to get or create user: %s", exc)
                 return None
 
         return None
