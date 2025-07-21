@@ -1865,8 +1865,8 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             # Allow sending, as this email is not blacklisted.
             pass
         else:
-            logger.warning("The email of the recipient '%s' for the badge instance '%s' is blacklisted and was not sent",
-                           self.json, self.recipient_identifier)
+            logger.warning("The email for the badge with ID '%s' is blacklisted and was not sent", self.entity_id)
+            logger.debug("Recipient: '%s'; badge instance: '%s'", self.recipient_identifier, self.json)
             return
 
         if badgr_app is None:
