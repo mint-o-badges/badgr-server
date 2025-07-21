@@ -24,7 +24,7 @@ services:
       - ./backups:/backups
       - ./user_emails.csv:/badgr_server/user_emails.csv
       - ./esco_issuers.txt:/badgr_server/esco_issuers.txt
-      - badgr_server_mediafiles:/badgr_server/mediafiles
+      - ./badgr_server_mediafiles:/badgr_server/mediafiles
     networks:
       - badgr
     ports:
