@@ -301,14 +301,14 @@ def requestBadge(req, qrCodeId):
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-def getVersion(req):
+def getTimestamp(req):
     if req.method != "GET":
         return JsonResponse(
             {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
         )
-    version = mainsite.__build__
+    timestamp = mainsite.__timestamp__
 
-    return JsonResponse({"message": version}, status=status.HTTP_200_OK)
+    return JsonResponse({"message": timestamp}, status=status.HTTP_200_OK)
 
 
 def PageSetup(canvas, doc, badgeImage, issuerImage):

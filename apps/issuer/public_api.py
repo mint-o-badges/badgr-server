@@ -90,6 +90,9 @@ class JSONListView(BaseEntityListView, UncachedPaginatedViewMixin):
     def log(self, obj):
         pass
 
+    def get_queryset(self, request, **kwargs):
+        return self.model.objects.all()
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
@@ -103,7 +106,7 @@ class JSONListView(BaseEntityListView, UncachedPaginatedViewMixin):
         return context
 
     def get(self, request, **kwargs):
-        objects = self.model.objects
+        objects = UncachedPaginatedViewMixin.get_objects(self, request, **kwargs)
         context = self.get_context_data(**kwargs)
         serializer_class = self.serializer_class
         serializer = serializer_class(objects, many=True, context=context)
@@ -592,7 +595,6 @@ class BadgeInstanceRevocations(JSONComponentView):
 class BackpackCollectionJson(JSONComponentView):
     permission_classes = (permissions.AllowAny,)
     model = BackpackCollection
-    entity_id_field_name = "share_hash"
 
     def get_context_data(self, **kwargs):
         image_url = ""
@@ -654,9 +656,12 @@ class BackpackCollectionJson(JSONComponentView):
         return ret
 
     def get_json(self, request):
+        # bypass cached version with old share_hash
+        self.current_object.refresh_from_db()
+
         expands = request.GET.getlist("expand", [])
         if not self.current_object.published:
-            return HttpResponse(status=204)
+            raise Http404
 
         json = self.current_object.get_json(
             obi_version=self._get_request_obi_version(request),
@@ -948,6 +953,10 @@ class LearningPathList(JSONListView):
     permission_classes = (permissions.AllowAny,)
     model = LearningPath
     serializer_class = LearningPathSerializerV1
+
+    def get_queryset(self, request, **kwargs):
+        queryset = LearningPath.objects.filter(activated=True)
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

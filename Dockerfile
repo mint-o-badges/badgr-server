@@ -1,7 +1,7 @@
 # Best practies taken from here: https://snyk.io/blog/best-practices-containerizing-python-docker/
 
 # ------------------------------> Build image
-FROM python:3.8.14-slim-buster as build
+FROM python:3.8.20-slim-bookworm AS build
 RUN apt-get clean all && apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-dev \
@@ -21,13 +21,12 @@ COPY requirements.txt .
 RUN pip install --no-dependencies -r requirements.txt
 
 # ------------------------------> Final image
-FROM python:3.8.14-slim-buster
+FROM python:3.8.20-slim-bookworm
 RUN apt-get update
 RUN apt-get install -y default-libmysqlclient-dev \
                        python3-cairo \
                        libxml2 \
-                       git \
-                       curl \ 
+                       curl \
                        default-mysql-client
 
 RUN groupadd -g 999 python && \
@@ -37,7 +36,7 @@ RUN mkdir /badgr_server && chown python:python /badgr_server
 RUN mkdir /backups && chown python:python /backups
 
 RUN touch /badgr_server/user_emails.csv && chown python:python /badgr_server/user_emails.csv
-RUN touch /badgr_server/esco_issuers.txt && chown python:python /badgr_server/esco_issuers.txt  
+RUN touch /badgr_server/esco_issuers.txt && chown python:python /badgr_server/esco_issuers.txt
 
 WORKDIR /badgr_server
 
@@ -51,7 +50,6 @@ COPY --chown=python:python  .docker/etc/wsgi.py                .
 COPY --chown=python:python  apps                               ./apps
 COPY --chown=python:python  openbadges                         ./openbadges
 COPY --chown=python:python  openbadges_bakery                  ./openbadges_bakery
-COPY --chown=python:python  .git                               ./.git
 COPY --chown=python:python  .docker/etc/settings_local.py      ./apps/mainsite/settings_local.py
 COPY --chown=python:python  entrypoint.sh                      .
 COPY --chown=python:python  crontab                             /etc/cron.d/crontab
@@ -64,7 +62,7 @@ RUN touch /var/log/cron_cleartokens.log && \
 
 RUN touch /var/log/cron_qr_badgerequests.log && \
     chown python:python /var/log/cron_qr_badgerequests.log && \
-    chmod 644 /var/log/cron_qr_badgerequests.log    
+    chmod 644 /var/log/cron_qr_badgerequests.log
 
 
 # Latest releases available at https://github.com/aptible/supercronic/releases
@@ -77,6 +75,9 @@ RUN curl -fsSLO "$SUPERCRONIC_URL" \
  && chmod +x "$SUPERCRONIC" \
  && mv "$SUPERCRONIC" "/usr/local/bin/${SUPERCRONIC}" \
  && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
+
+# Add timestamp
+RUN TZ=Europe/Berlin date +"%d.%m.%y %T" > timestamp && chown python:python timestamp
 
 USER 999
 
