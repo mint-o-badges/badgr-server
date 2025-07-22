@@ -528,6 +528,13 @@ SVG_HTTP_CONVERSION_ENDPOINT = (
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 # OIDC Global settings
+OIDC_RP_CLIENT_ID = None
+OIDC_RP_CLIENT_SECRET = None
+OIDC_OP_AUTHORIZATION_ENDPOINT = None
+OIDC_OP_TOKEN_ENDPOINT = None
+OIDC_OP_USER_ENDPOINT = None
+OIDC_OP_JWKS_ENDPOINT = None
+OIDC_OP_END_SESSION_ENDPOINT = None
 # The document specifies nbp-enmeshed-address to also be an option, but at least in the demo it doesn't work
 # OIDC_RP_SCOPES = 'openid nbp-enmeshed-address'
 OIDC_RP_SCOPES = "openid"
