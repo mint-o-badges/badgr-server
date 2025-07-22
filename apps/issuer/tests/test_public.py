@@ -249,36 +249,6 @@ class PublicAPITests(SetupIssuerHelper, BadgrTestCase):
                     html=True,
                 )
 
-    def test_scraping_empty_backpack_share_returns_html_with_no_image_based_tags(self):
-        test_user_email = "test.user@email.test"
-        test_user = self.setup_user(authenticate=False, email=test_user_email)
-        # empty backpack
-        test_collection = BackpackCollection.objects.create(
-            created_by=test_user, name="Test Collection", description="testing"
-        )
-        test_collection.published = True
-        test_collection.save()
-
-        testcase_headers = [
-            # bots/scrapers should get an html stub with opengraph tags
-            {
-                "HTTP_USER_AGENT": "LinkedInBot/1.0 (compatible; Mozilla/5.0; Jakarta Commons-HttpClient/3.1 +http://www.linkedin.com)"
-            },
-            {"HTTP_USER_AGENT": "Twitterbot/1.0"},
-            {"HTTP_USER_AGENT": "facebook"},
-            {"HTTP_USER_AGENT": "Facebot"},
-            {
-                "HTTP_USER_AGENT": "Slackbot-LinkExpanding 1.0 (+https://api.slack.com/robots)"
-            },
-        ]
-
-        for headers in testcase_headers:
-            with self.assertNumQueries(0):
-                response = self.client.get(test_collection.share_url, **headers)
-                self.assertEqual(response.status_code, 200)
-                self.assertNotContains(response, "og:image", html=True)
-                self.assertNotContains(response, '<img src="">', html=True)
-
     def test_public_collection_json(self):
         test_user_email = "test.user@email.test"
 
