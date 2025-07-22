@@ -730,7 +730,10 @@ def cms_api_page_details(request):
     api_response = call_cms_api(request, "page/slug", {"slug": slug})
     api_data = json.loads(api_response.content.decode())
 
-    api_data["post_content"] = cms_transform_urls(api_data["post_content"])
+    try:
+        api_data["post_content"] = cms_transform_urls(api_data["post_content"])
+    except KeyError:
+        api_data["post_content"] = "Page not found"
 
     return JsonResponse(api_data)
 
@@ -740,7 +743,10 @@ def cms_api_post_details(request):
     api_response = call_cms_api(request, "post/slug", {"slug": "post/" + slug})
     api_data = json.loads(api_response.content.decode())
 
-    api_data["post_content"] = cms_transform_urls(api_data["post_content"])
+    try:
+        api_data["post_content"] = cms_transform_urls(api_data["post_content"])
+    except KeyError:
+        api_data["post_content"] = "Page not found"
 
     return JsonResponse(api_data)
 
