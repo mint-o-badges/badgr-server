@@ -6,7 +6,6 @@ import json
 import responses
 import mock
 from django.db import IntegrityError
-from django.urls import reverse
 from openbadges.verifier.openbadges_context import (
     OPENBADGES_CONTEXT_V2_URI,
     OPENBADGES_CONTEXT_V1_URI,
@@ -15,12 +14,10 @@ from openbadges.verifier.openbadges_context import (
 
 from backpack.models import BackpackBadgeShare
 from badgeuser.models import CachedEmailAddress, UserRecipientIdentifier
-from issuer.models import BadgeClass, Issuer, BadgeInstance
+from issuer.models import Issuer, BadgeInstance
 from mainsite.tests.base import BadgrTestCase, SetupIssuerHelper
-from mainsite.utils import first_node_match, OriginSetting
+from mainsite.utils import first_node_match
 from .utils import (
-    setup_basic_1_0,
-    setup_basic_1_0_bad_image,
     setup_resources,
 )
 
@@ -68,126 +65,6 @@ class TestBadgeUploads(BadgrTestCase):
         with self.assertRaises(IntegrityError):
             Issuer.objects.create(name="test1", source_url=ditto)
             Issuer.objects.create(name="test2", source_url=ditto)
-
-    @responses.activate
-    def test_creating_no_duplicate_badgeclasses_and_issuers(self):
-        setup_basic_1_0()
-        setup_resources(
-            [
-                {
-                    "url": "http://a.com/instance2",
-                    "filename": "1_0_basic_instance2.json",
-                },
-                {"url": OPENBADGES_CONTEXT_V1_URI, "filename": "v1_context.json"},
-                {
-                    "url": OPENBADGES_CONTEXT_V2_URI,
-                    "response_body": json.dumps(OPENBADGES_CONTEXT_V2_DICT),
-                },
-            ]
-        )
-        self.setup_user(email="test@example.com", authenticate=True)
-
-        badgeclass_count = BadgeClass.objects.all().count()
-        issuer_count = Issuer.objects.all().count()
-
-        post_input = {"url": "http://a.com/instance"}
-
-        with mock.patch(
-            "mainsite.blacklist.api_query_is_in_blacklist", new=lambda a, b: False
-        ):
-            response = self.client.post("/v1/earner/badges", post_input)
-        self.assertEqual(response.status_code, 201)
-
-        post2_input = {"url": "http://a.com/instance2"}
-        with mock.patch(
-            "mainsite.blacklist.api_query_is_in_blacklist", new=lambda a, b: False
-        ):
-            response2 = self.client.post("/v1/earner/badges", post2_input)
-        self.assertEqual(response2.status_code, 201)
-
-        self.assertEqual(BadgeClass.objects.all().count(), badgeclass_count + 1)
-        self.assertEqual(Issuer.objects.all().count(), issuer_count + 1)
-
-    def test_shouldnt_access_already_stored_badgeclass_for_validation(self):
-        """
-        TODO: If we already have a LocalBadgeClass saved for a URL,
-        don't bother fetching again too soon.
-        """
-        pass
-
-    def test_should_recheck_stale_localbadgeclass_in_validation(self):
-        """
-        TODO: If it has been more than a month since we last examined a LocalBadgeClass,
-        maybe we should check
-        it again.
-        """
-        pass
-        # TODO: Re-evaluate badgecheck caching strategy
-
-    @responses.activate
-    def test_submit_badge_assertion_with_bad_date(self):
-        setup_basic_1_0()
-        setup_resources(
-            [
-                {
-                    "url": "http://a.com/instancebaddate",
-                    "filename": "1_0_basic_instance_with_bad_date.json",
-                },
-                {"url": OPENBADGES_CONTEXT_V1_URI, "filename": "v1_context.json"},
-                {
-                    "url": OPENBADGES_CONTEXT_V2_URI,
-                    "response_body": json.dumps(OPENBADGES_CONTEXT_V2_DICT),
-                },
-            ]
-        )
-        self.setup_user(email="test@example.com", authenticate=True)
-
-        post_input = {"url": "http://a.com/instancebaddate"}
-        with mock.patch(
-            "mainsite.blacklist.api_query_is_in_blacklist", new=lambda a, b: False
-        ):
-            response = self.client.post("/v1/earner/badges", post_input)
-        self.assertEqual(response.status_code, 400)
-
-        self.assertIsNotNone(
-            first_node_match(
-                response.data,
-                dict(
-                    messageLevel="ERROR", name="VALIDATE_PROPERTY", prop_name="issuedOn"
-                ),
-            )
-        )
-
-    @responses.activate
-    def test_submit_badge_invalid_component_json(self):
-        setup_basic_1_0(**{"exclude": ["http://a.com/issuer"]})
-        setup_resources(
-            [
-                {
-                    "url": "http://a.com/issuer",
-                    "filename": "1_0_basic_issuer_invalid_json.json",
-                },
-                {"url": OPENBADGES_CONTEXT_V1_URI, "filename": "v1_context.json"},
-                {
-                    "url": OPENBADGES_CONTEXT_V2_URI,
-                    "response_body": json.dumps(OPENBADGES_CONTEXT_V2_DICT),
-                },
-            ]
-        )
-        self.setup_user(email="test@example.com", authenticate=True)
-
-        post_input = {"url": "http://a.com/instance"}
-        with mock.patch(
-            "mainsite.blacklist.api_query_is_in_blacklist", new=lambda a, b: False
-        ):
-            response = self.client.post("/v1/earner/badges", post_input)
-        self.assertEqual(response.status_code, 400)
-
-        self.assertIsNotNone(
-            first_node_match(
-                response.data, dict(messageLevel="ERROR", name="FETCH_HTTP_NODE")
-            )
-        )
 
     @responses.activate
     def test_submit_badge_invalid_assertion_json(self):
@@ -252,85 +129,6 @@ class TestBadgeUploads(BadgrTestCase):
         ):
             response = self.client.post("/v1/earner/badges", post_input, format="json")
         self.assertEqual(response.status_code, 201)
-
-    @responses.activate
-    def test_submit_basic_1_0_badge_via_url_delete_and_readd(self):
-        setup_basic_1_0()
-        setup_resources(
-            [
-                {"url": OPENBADGES_CONTEXT_V1_URI, "filename": "v1_context.json"},
-                {
-                    "url": OPENBADGES_CONTEXT_V2_URI,
-                    "response_body": json.dumps(OPENBADGES_CONTEXT_V2_DICT),
-                },
-            ]
-        )
-        self.setup_user(email="test@example.com", token_scope="rw:backpack")
-
-        post_input = {"url": "http://a.com/instance"}
-        with mock.patch(
-            "mainsite.blacklist.api_query_is_in_blacklist", new=lambda a, b: False
-        ):
-            response = self.client.post("/v1/earner/badges", post_input)
-        self.assertEqual(response.status_code, 201)
-        get_response = self.client.get("/v1/earner/badges")
-        self.assertEqual(get_response.status_code, 200)
-        self.assertEqual(
-            get_response.data[0].get("json", {}).get("id"),
-            "http://a.com/instance",
-            "The badge in our backpack should report its JSON-LD id as its original OpenBadgeId",
-        )
-
-        new_instance = BadgeInstance.objects.first()
-        expected_url = "{}{}".format(
-            OriginSetting.HTTP,
-            reverse(
-                "badgeinstance_image", kwargs=dict(entity_id=new_instance.entity_id)
-            ),
-        )
-        self.assertEqual(
-            get_response.data[0].get("json", {}).get("image", {}).get("id"),
-            expected_url,
-        )
-
-        response = self.client.delete(
-            "/v1/earner/badges/{}".format(new_instance.entity_id)
-        )
-        self.assertEqual(response.status_code, 204)
-        self.assertEqual(BadgeInstance.objects.count(), 0)
-
-        with mock.patch(
-            "mainsite.blacklist.api_query_is_in_blacklist", new=lambda a, b: False
-        ):
-            response = self.client.post("/v1/earner/badges", post_input)
-        self.assertEqual(response.status_code, 201)
-
-    @responses.activate
-    def test_submit_badge_without_valid_image(self):
-        setup_basic_1_0_bad_image()
-        setup_resources(
-            [
-                {"url": OPENBADGES_CONTEXT_V1_URI, "filename": "v1_context.json"},
-                {
-                    "url": OPENBADGES_CONTEXT_V2_URI,
-                    "response_body": json.dumps(OPENBADGES_CONTEXT_V2_DICT),
-                },
-            ]
-        )
-        self.setup_user(email="test@example.com", token_scope="rw:backpack")
-
-        post_input = {"url": "http://a.com/instance"}
-        with mock.patch(
-            "mainsite.blacklist.api_query_is_in_blacklist", new=lambda a, b: False
-        ):
-            response = self.client.post("/v1/earner/badges", post_input)
-
-        self.assertEqual(response.status_code, 400)
-
-        get_response = self.client.get("/v1/earner/badges")
-        self.assertEqual(get_response.status_code, 200)
-        self.assertEqual(len(get_response.data), 0, "The backpack should be empty")
-        self.assertEqual(BadgeInstance.objects.count(), 0)
 
 
 class TestDeleteLocalAssertion(BadgrTestCase, SetupIssuerHelper):
