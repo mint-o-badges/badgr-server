@@ -22,9 +22,6 @@ jobs:
       - name: ⬇️ Checkout code
         uses: actions/checkout@v4.2.2
 
-      - name: ⛓️ Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3.11.1
-
       - name: 🐳 Set up Docker Compose
         uses: hoverkraft-tech/compose-action@v2.3.0
         with:
