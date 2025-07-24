@@ -26,6 +26,8 @@ services:
     ports:
       - "8000:8000"
       - "5678:5678"
+    environment:
+      - TZ=Europe/Berlin
 
   # this container runs memcached
   memcached:
@@ -34,6 +36,8 @@ services:
       - "11211"
     networks:
       - badgr
+    environment:
+      - TZ=Europe/Berlin
 
   # this container runs mysql (database)
   db:
@@ -46,6 +50,7 @@ services:
       - "MYSQL_PASSWORD=password"
       - "MYSQL_HOST=db"
       - "MYSQL_ROOT_PASSWORD=password"
+      - TZ=Europe/Berlin
     ulimits:
       # Needs to be set e.g. on Fedora, Arch, etc.
       # https://github.com/docker-library/mysql/issues/873#issuecomment-1909948195
@@ -57,6 +62,7 @@ services:
       - "3306"
     networks:
       - badgr
+
   mailhog:
     image: mailhog/mailhog
     container_name: mailhog
@@ -66,6 +72,9 @@ services:
       - "8025:8025"
     networks:
       - badgr
+    environment:
+      - TZ=Europe/Berlin
+
   celery_worker:
     build:
       context: .
@@ -84,6 +93,7 @@ services:
       - "MYSQL_PASSWORD=password"
       - "MYSQL_HOST=db"
       - "MYSQL_ROOT_PASSWORD=password"
+      - TZ=Europe/Berlin
     networks:
       - badgr
     restart: unless-stopped
@@ -95,6 +105,8 @@ services:
     restart: unless-stopped
     networks:
       - badgr
+    environment:
+      - TZ=Europe/Berlin
 
 networks:
   badgr:
