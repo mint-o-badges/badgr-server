@@ -1,5 +1,3 @@
-# A dockerized badgr-server stack for development
-version: "3.3"
 services:
   # this container mirrors in the app code and runs the django dev server
   api:
