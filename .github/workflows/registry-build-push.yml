@@ -15,6 +15,22 @@ env:
 
 jobs:
 
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - name: 🐳 Set up Docker Compose
+        uses: hoverkraft-tech/compose-action@v2.3.0
+        with:
+          compose-file: docker-compose.debug.yml
+          up-flags: "--build -d"
+
+      - name: 🔍 Run tox
+        run: docker compose exec api tox
+
   build-and-push-image:
     runs-on: ubuntu-latest
     permissions:
