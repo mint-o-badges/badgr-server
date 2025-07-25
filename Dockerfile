@@ -16,6 +16,7 @@ RUN mkdir /badgr_server
 WORKDIR /badgr_server
 RUN python -m venv /badgr_server/venv
 ENV PATH="/badgr_server/venv/bin:$PATH"
+ENV TZ="Europe/Berlin"
 
 COPY requirements.txt .
 RUN pip install --no-dependencies -r requirements.txt
@@ -69,6 +70,7 @@ RUN touch /var/log/cron_qr_badgerequests.log && \
 ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.2.30/supercronic-linux-amd64 \
     SUPERCRONIC=supercronic-linux-amd64 \
     SUPERCRONIC_SHA1SUM=9f27ad28c5c57cd133325b2a66bba69ba2235799
+ENV TZ="Europe/Berlin"
 
 RUN curl -fsSLO "$SUPERCRONIC_URL" \
  && echo "${SUPERCRONIC_SHA1SUM}  ${SUPERCRONIC}" | sha1sum -c - \
@@ -77,7 +79,7 @@ RUN curl -fsSLO "$SUPERCRONIC_URL" \
  && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
 
 # Add timestamp
-RUN TZ=Europe/Berlin date +"%d.%m.%y %T" > timestamp && chown python:python timestamp
+RUN date +"%d.%m.%y %T" > timestamp && chown python:python timestamp
 
 USER 999
 

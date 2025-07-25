@@ -26,6 +26,17 @@ from mainsite.views import (
     DocsAuthorizeRedirect,
     LegacyLoginAndObtainAuthToken,
 )
+
+from mainsite.views import (
+    cms_api_menu_list,
+    cms_api_page_details,
+    cms_api_post_details,
+    cms_api_post_list,
+    cms_api_style,
+    cms_api_script,
+    call_cms_api,
+)
+
 from django.apps import apps
 from django.conf import settings
 from django.conf.urls import include, url
@@ -223,6 +234,13 @@ urlpatterns = [
         name="oidcLogoutRedirect",
     ),
     url(r"^altcha", createCaptchaChallenge, name="create_captcha_challenge"),
+    url(r"^cms/menu/list/?$", cms_api_menu_list, name="cms_api_menu_list"),
+    url(r"^cms/post/list/?$", cms_api_post_list, name="cms_api_post_list"),
+    url(r"^cms/page/slug/?$", cms_api_page_details, name="cms_api_page_details"),
+    url(r"^cms/post/slug/?$", cms_api_post_details, name="cms_api_post_details"),
+    url(r"^cms/style/?$", cms_api_style, name="cms_api_style"),
+    url(r"^cms/script/?$", cms_api_script, name="cms_api_script"),
+    url(r"^cms/(?P<path>.+)$", call_cms_api, name="call_cms_api"),
     # Prometheus endpoint
     path("", include("django_prometheus.urls")),
 ]
