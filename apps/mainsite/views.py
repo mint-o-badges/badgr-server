@@ -4,12 +4,15 @@ import json
 import time
 import re
 import os
+from hashlib import md5
+import html
 
 from django import forms
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.urls import reverse_lazy
 from django.db import IntegrityError
+from django.core.cache import cache
 from django.http import (
     HttpResponseServerError,
     HttpResponseNotFound,
@@ -39,6 +42,7 @@ from rest_framework.authentication import (
     TokenAuthentication,
 )
 
+from apps.mainsite.authentication import ValidAltcha
 from issuer.tasks import rebake_all_assertions, update_issuedon_all_assertions
 from issuer.models import BadgeClass, QrCode, RequestedBadge
 from issuer.serializers_v1 import RequestedBadgeSerializer
@@ -47,8 +51,7 @@ from mainsite.models import EmailBlacklist, BadgrApp, AltchaChallenge
 from mainsite.serializers import LegacyVerifiedAuthTokenSerializer
 from mainsite.utils import createHash, createHmac
 from random import randrange
-import logging
-logger = logging.getLogger("Badgr.Events")
+
 import mainsite
 
 from django.views.decorators.csrf import csrf_exempt
@@ -65,6 +68,9 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table
 from reportlab.lib.utils import ImageReader
+import logging
+
+logger = logging.getLogger("Badgr.Events")
 
 
 ##
@@ -176,8 +182,12 @@ def call_aiskills_api(endpoint, method, payload: dict):
             )
         else:
             attempt_num += 1
-            logger.warning("Request to AI skills endpoint failed with response code %d (try %d): '%s'",
-                           response.status_code, attempt_num, response.text)
+            logger.warning(
+                "Request to AI skills endpoint failed with response code %d (try %d): '%s'",
+                response.status_code,
+                attempt_num,
+                response.text,
+            )
             # No need to sleep if there's no more try
             if attempt_num < 4:
                 time.sleep(5)  # Wait for 5 seconds before re-trying
@@ -192,7 +202,8 @@ def call_aiskills_api(endpoint, method, payload: dict):
 @authentication_classes(
     [TokenAuthentication, SessionAuthentication, BasicAuthentication]
 )
-@permission_classes([IsAuthenticated])
+# require valid Login OR valid altcha challenge for demo on start page
+@permission_classes([IsAuthenticated | ValidAltcha])
 def aiskills(req):
     searchterm = req.data["text"]
 
@@ -561,8 +572,12 @@ def nounproject(req, searchterm, page):
                 )
             else:
                 attempt_num += 1
-                logger.warning("Request to nounproject endpoint failed with response code %d (try %d): '%s'",
-                            response.status_code, attempt_num, response.text)
+                logger.warning(
+                    "Request to nounproject endpoint failed with response code %d (try %d): '%s'",
+                    response.status_code,
+                    attempt_num,
+                    response.text,
+                )
                 # No need to sleep if there's no more try
                 if attempt_num < 4:
                     time.sleep(5)  # Wait for 5 seconds before re-trying
@@ -598,7 +613,9 @@ def email_unsubscribe(request, *args, **kwargs):
     try:
         email = base64.b64decode(kwargs["email_encoded"]).decode("utf-8")
     except TypeError as e:
-        logger.error("The unsubscribe link was invalid and caused a type error: '%s'", e)
+        logger.error(
+            "The unsubscribe link was invalid and caused a type error: '%s'", e
+        )
         logger.info("Encoded e-Mail: '%s'", kwargs["email_encoded"])
         return email_unsubscribe_response(
             request, "Invalid unsubscribe link.", error=True
@@ -629,6 +646,144 @@ def email_unsubscribe(request, *args, **kwargs):
         "You will no longer receive email notifications for earned"
         " badges from this domain.",
     )
+
+
+# CMS contents
+
+
+def call_cms_api(request, path, params={}):
+    params = {"api_key": settings.CMS_API_KEY, **params}
+    try:
+        params["lang"] = request.GET.get("lang")
+    except Exception:
+        pass
+
+    headers = {"accept": "application/json"}
+    url = settings.CMS_API_BASE_URL + settings.CMS_API_BASE_PATH + path
+
+    cache_key = md5(url.encode() + json.dumps(params).encode()).hexdigest()
+
+    data = cache.get(cache_key)
+    if not data:
+        try:
+            response = requests.get(url, params=params, headers=headers)
+            data = response.json()
+            cache.set(cache_key, data, 60)
+        except Exception:
+            data = ""
+    return JsonResponse(data, safe=False)
+
+
+def cms_transform_urls(text):
+    # remove api base url
+    text = text.replace(f"{settings.CMS_API_BASE_URL}/wp-content", "asset://")
+    text = text.replace(settings.CMS_API_BASE_URL, "/page")
+    text = text.replace("/page/post", "/post")
+    text = text.replace("/page/en/post", "/post")
+    text = text.replace("asset://", f"{settings.CMS_API_BASE_URL}/wp-content")
+    return text
+
+
+def cms_api_menu_list(request):
+    api_response = call_cms_api(request, "menu/list")
+    api_data = json.loads(api_response.content.decode())
+
+    # transform menu response
+    menus = {"header": {"de": [], "en": []}, "footer": {"de": [], "en": []}}
+    for i, menu in api_data.items():
+        all_items = [
+            {
+                "id": x["ID"],
+                "page_id": int(x["object_id"]),
+                "title": x["title"],
+                "url": cms_transform_urls(x["url"]),
+                "parent": int(x["menu_item_parent"]),
+                "children": [],
+            }
+            for x in menu["items"]
+        ]
+
+        # turn into tree
+        items = []
+        for x in all_items:
+            if x["parent"] == 0:
+                items.append(x)
+            else:
+                parent = next(filter(lambda y: y["id"] == x["parent"], items), None)
+                if parent:
+                    parent["children"].append(x)
+
+        if menu["menu"]["slug"] == "footer":
+            menus["footer"]["de"] = items
+        elif menu["menu"]["slug"] == "footer-eng":
+            menus["footer"]["en"] = items
+        elif menu["menu"]["slug"] == "header":
+            menus["header"]["de"] = items
+        elif menu["menu"]["slug"] == "header-eng":
+            menus["header"]["en"] = items
+
+    return JsonResponse(menus)
+
+
+def cms_api_page_details(request):
+    slug = request.GET.get("slug")
+    api_response = call_cms_api(request, "page/slug", {"slug": slug})
+    api_data = json.loads(api_response.content.decode())
+
+    try:
+        api_data["post_content"] = cms_transform_urls(api_data["post_content"])
+    except KeyError:
+        api_data["post_content"] = "Page not found"
+
+    return JsonResponse(api_data)
+
+
+def cms_api_post_details(request):
+    slug = request.GET.get("slug")
+    api_response = call_cms_api(request, "post/slug", {"slug": "post/" + slug})
+    api_data = json.loads(api_response.content.decode())
+
+    try:
+        api_data["post_content"] = cms_transform_urls(api_data["post_content"])
+    except KeyError:
+        api_data["post_content"] = "Page not found"
+
+    return JsonResponse(api_data)
+
+
+def cms_api_post_list(request):
+    api_response = call_cms_api(request, "post/list", {})
+    api_data = json.loads(api_response.content.decode())
+    for post in api_data:
+        post["post_content"] = cms_transform_urls(post["post_content"])
+        post["slug"] = cms_transform_urls(post["slug"])
+
+    return JsonResponse(api_data, safe=False)
+
+
+def cms_api_style(request):
+    api_response = call_cms_api(request, "style", {})
+    api_response_content = api_response.content.decode()
+    api_response_content = api_response_content.replace("body.", ".body.")
+    api_response_content = api_response_content.replace("body ", ":host ")
+    api_response_content = api_response_content.replace("body{", ":host{")
+    api_response_content = api_response_content.replace(":root", ":host")
+    api_response_content = html.unescape(api_response_content)
+    api_data = json.loads(api_response_content)
+
+    return HttpResponse(api_data, content_type="text/css")
+
+
+def cms_api_script(request):
+    api_response = call_cms_api(request, "script", {})
+    api_response_content = api_response.content.decode()
+    api_response_content = api_response_content.replace(
+        "document.querySelector",
+        "document.querySelector('cms-content shadow-dom').shadowRoot.querySelector",
+    )
+    api_data = json.loads(api_response_content)
+
+    return HttpResponse(api_data, content_type="text/javascript")
 
 
 class AppleAppSiteAssociation(APIView):
