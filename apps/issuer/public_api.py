@@ -3,7 +3,8 @@ import os
 import re
 import urllib.parse
 
-import badgrlog
+import logging
+logger = logging.getLogger("Badgr.Events")
 import cairosvg
 from backpack.models import BackpackCollection
 from django.conf import settings
@@ -44,9 +45,6 @@ from .serializers_v1 import (
     IssuerSerializerV1,
     LearningPathSerializerV1,
 )
-
-logger = badgrlog.BadgrLogger()
-
 
 class SlugToEntityIdRedirectMixin(object):
     slugToEntityIdRedirect = False
@@ -90,6 +88,9 @@ class JSONListView(BaseEntityListView, UncachedPaginatedViewMixin):
     def log(self, obj):
         pass
 
+    def get_queryset(self, request, **kwargs):
+        return self.model.objects.all()
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
@@ -103,7 +104,7 @@ class JSONListView(BaseEntityListView, UncachedPaginatedViewMixin):
         return context
 
     def get(self, request, **kwargs):
-        objects = self.model.objects
+        objects = UncachedPaginatedViewMixin.get_objects(self, request, **kwargs)
         context = self.get_context_data(**kwargs)
         serializer_class = self.serializer_class
         serializer = serializer_class(objects, many=True, context=context)
@@ -331,7 +332,7 @@ class IssuerJson(JSONComponentView):
     model = Issuer
 
     def log(self, obj):
-        logger.event(badgrlog.IssuerRetrievedEvent(obj, self.request))
+        logger.info("Retrieved issuer '%s'", obj)
 
     def get_context_data(self, **kwargs):
         image_url = "{}{}?type=png".format(
@@ -356,7 +357,7 @@ class IssuerBadgesJson(JSONComponentView):
     model = Issuer
 
     def log(self, obj):
-        logger.event(badgrlog.IssuerBadgesRetrievedEvent(obj, self.request))
+        logger.info("Retrieved issuer badges '%s'", obj)
 
     def get_json(self, request):
         obi_version = self._get_request_obi_version(request)
@@ -385,7 +386,7 @@ class IssuerImage(ImagePropertyDetailView):
     prop = "image"
 
     def log(self, obj):
-        logger.event(badgrlog.IssuerImageRetrievedEvent(obj, self.request))
+        logger.info("Issuer image retrieved event '%s'", obj)
 
 
 class IssuerList(JSONListView):
@@ -442,7 +443,7 @@ class BadgeClassJson(JSONComponentView):
     model = BadgeClass
 
     def log(self, obj):
-        logger.event(badgrlog.BadgeClassRetrievedEvent(obj, self.request))
+        logger.info("Badge class retrieved '%s'", obj)
 
     def get_json(self, request):
         expands = request.GET.getlist("expand", [])
@@ -479,7 +480,7 @@ class BadgeClassList(JSONListView):
     serializer_class = BadgeClassSerializerV1
 
     def log(self, obj):
-        logger.event(badgrlog.BadgeClassRetrievedEvent(obj, self.request))
+        logger.info("Badge class list retrieved '%s'", obj)
 
     def get_context_data(self, **kwargs):
         context = super(BadgeClassList, self).get_context_data(**kwargs)
@@ -502,7 +503,7 @@ class BadgeClassImage(ImagePropertyDetailView):
     prop = "image"
 
     def log(self, obj):
-        logger.event(badgrlog.BadgeClassImageRetrievedEvent(obj, self.request))
+        logger.info("Badge class image retrieved '%s'", obj)
 
 
 class BadgeClassCriteria(RedirectView, SlugToEntityIdRedirectMixin):
@@ -571,9 +572,7 @@ class BadgeInstanceImage(ImagePropertyDetailView):
     prop = "image"
 
     def log(self, badge_instance):
-        logger.event(
-            badgrlog.BadgeInstanceDownloadedEvent(badge_instance, self.request)
-        )
+        logger.info("Badge instance '%s' downloaded", badge_instance.entity_id)
 
     def get_object(self, slug):
         obj = super(BadgeInstanceImage, self).get_object(slug)
@@ -592,7 +591,6 @@ class BadgeInstanceRevocations(JSONComponentView):
 class BackpackCollectionJson(JSONComponentView):
     permission_classes = (permissions.AllowAny,)
     model = BackpackCollection
-    entity_id_field_name = "share_hash"
 
     def get_context_data(self, **kwargs):
         image_url = ""
@@ -654,9 +652,12 @@ class BackpackCollectionJson(JSONComponentView):
         return ret
 
     def get_json(self, request):
+        # bypass cached version with old share_hash
+        self.current_object.refresh_from_db()
+
         expands = request.GET.getlist("expand", [])
         if not self.current_object.published:
-            return HttpResponse(status=204)
+            raise Http404
 
         json = self.current_object.get_json(
             obi_version=self._get_request_obi_version(request),
@@ -948,6 +949,10 @@ class LearningPathList(JSONListView):
     permission_classes = (permissions.AllowAny,)
     model = LearningPath
     serializer_class = LearningPathSerializerV1
+
+    def get_queryset(self, request, **kwargs):
+        queryset = LearningPath.objects.filter(activated=True)
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

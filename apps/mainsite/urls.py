@@ -11,7 +11,7 @@ from mainsite.views import (
     requestBadge,
     deleteBadgeRequest,
     createCaptchaChallenge,
-    getVersion,
+    getTimestamp,
 )
 from mainsite.views import (
     info_view,
@@ -26,6 +26,17 @@ from mainsite.views import (
     DocsAuthorizeRedirect,
     LegacyLoginAndObtainAuthToken,
 )
+
+from mainsite.views import (
+    cms_api_menu_list,
+    cms_api_page_details,
+    cms_api_post_details,
+    cms_api_post_list,
+    cms_api_style,
+    cms_api_script,
+    call_cms_api,
+)
+
 from django.apps import apps
 from django.conf import settings
 from django.conf.urls import include, url
@@ -153,8 +164,6 @@ urlpatterns = [
         r"^docs/?$", RedirectView.as_view(url="/docs/v2/", permanent=True)
     ),  # default redirect to /v2/
     url(r"^docs/", include("apispec_drf.urls")),
-    # JSON-LD Context
-    url(r"^json-ld/", include("badgrlog.urls")),
     # unversioned public endpoints
     url(
         r"^unsubscribe/(?P<email_encoded>[^/]+)/(?P<expiration>[^/]+)/(?P<signature>[^/]+)",
@@ -198,7 +207,7 @@ urlpatterns = [
     url(r"^aiskills/$", aiskills, name="aiskills"),
     url(r"^aiskills-keywords/$", aiskills_keywords, name="aiskills_keywords"),
     url(r"^request-badge/(?P<qrCodeId>[^/]+)$", requestBadge, name="request-badge"),
-    url(r"^get-server-version", getVersion, name="get-server-version"),
+    url(r"^get-server-timestamp", getTimestamp, name="get-server-timestamp"),
     url(
         r"^deleteBadgeRequest/(?P<requestId>[^/]+)$",
         deleteBadgeRequest,
@@ -214,6 +223,9 @@ urlpatterns = [
         badgeRequestsByBadgeClass,
         name="badge-requests-by-badgeclass",
     ),
+    url(r"^v3/", include("issuer.v3_api_urls"), kwargs={"version": "v3"}),
+    url(r"^v3/backpack/", include("backpack.v3_api_urls"), kwargs={"version": "v3"}),
+    url(r"^v3/issuer/", include("issuer.v3_api_urls"), kwargs={"version": "v3"}),
     # meinBildungsraum OIDC connection
     path("oidc/", include("mozilla_django_oidc.urls")),
     url(
@@ -222,6 +234,13 @@ urlpatterns = [
         name="oidcLogoutRedirect",
     ),
     url(r"^altcha", createCaptchaChallenge, name="create_captcha_challenge"),
+    url(r"^cms/menu/list/?$", cms_api_menu_list, name="cms_api_menu_list"),
+    url(r"^cms/post/list/?$", cms_api_post_list, name="cms_api_post_list"),
+    url(r"^cms/page/slug/?$", cms_api_page_details, name="cms_api_page_details"),
+    url(r"^cms/post/slug/?$", cms_api_post_details, name="cms_api_post_details"),
+    url(r"^cms/style/?$", cms_api_style, name="cms_api_style"),
+    url(r"^cms/script/?$", cms_api_script, name="cms_api_script"),
+    url(r"^cms/(?P<path>.+)$", call_cms_api, name="call_cms_api"),
     # Prometheus endpoint
     path("", include("django_prometheus.urls")),
 ]

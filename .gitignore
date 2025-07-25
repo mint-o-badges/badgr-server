@@ -35,9 +35,11 @@ dist/
 htmlcov/
 api_spec_v1.json
 api_spec_v2.json
+api_spec_v3.json
 api_spec_bcv1.json
 
 django.log
 
 venv/
 venv
+badgr_server_mediafiles*

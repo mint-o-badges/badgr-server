@@ -9,7 +9,6 @@ from rest_framework.fields import JSONField
 from rest_framework.exceptions import ValidationError as RestframeworkValidationError
 from rest_framework.fields import SkipField
 
-import badgrlog
 from backpack.models import BackpackCollection, BackpackCollectionBadgeInstance
 from issuer.helpers import BadgeCheckHelper, ImportedBadgeHelper
 from issuer.models import BadgeInstance, ImportedBadgeAssertion
@@ -17,8 +16,6 @@ from issuer.serializers_v1 import EvidenceItemSerializer
 from mainsite.drf_fields import Base64FileField
 from mainsite.serializers import StripTagsCharField, MarkdownCharField
 from mainsite.utils import OriginSetting
-
-logger = badgrlog.BadgrLogger()
 
 
 class ImportedBadgeAssertionSerializer(serializers.Serializer):
@@ -369,6 +366,7 @@ class CollectionSerializerV1(serializers.Serializer):
     description = StripTagsCharField(
         required=False, allow_blank=True, allow_null=True, max_length=255
     )
+    permanent_hash = serializers.CharField(read_only=True, source="permanent_url")
     share_hash = serializers.CharField(read_only=True)
     share_url = serializers.CharField(read_only=True, max_length=1024)
     badges = CollectionBadgeSerializerV1(

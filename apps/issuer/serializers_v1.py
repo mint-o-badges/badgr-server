@@ -53,7 +53,7 @@ from .models import (
     RequestedLearningPath,
 )
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("Badgr.Events")
 
 
 class ExtensionsSaverMixin(object):
@@ -820,7 +820,7 @@ class RequestedLearningPathSerializer(serializers.ModelSerializer):
 
 
 class BadgeOrderSerializer(serializers.Serializer):
-    slug = StripTagsCharField(max_length=255)
+    badge = JSONField()
     order = serializers.IntegerField()
 
     class Meta:
@@ -835,6 +835,9 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
     participant_count = serializers.IntegerField(
         required=False, read_only=True, source="v1_api_participant_count"
     )
+
+    required_badges_count = serializers.IntegerField(required=True)
+    activated = serializers.BooleanField(required=True)
 
     name = StripTagsCharField(max_length=255)
     slug = StripTagsCharField(max_length=255, read_only=True, source="entity_id")
@@ -879,11 +882,11 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
         )
         representation["badges"] = [
             {
+                "order": badge.order,
                 "badge": BadgeClassSerializerV1(
                     badge.badge,
                     context={"exclude_fields": ["extensions:OrgImageExtension"]},
                 ).data,
-                "order": badge.order,
             }
             for badge in instance.learningpathbadge_set.all().order_by("order")
         ]
@@ -957,6 +960,8 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
     def create(self, validated_data, **kwargs):
         name = validated_data.get("name")
         description = validated_data.get("description")
+        required_badges_count = validated_data.get("required_badges_count")
+        activated = validated_data.get("activated")
         tags = validated_data.get("tag_items")
         issuer_id = validated_data.get("issuer_id")
         participationBadge_id = validated_data.get("participationBadge_id")
@@ -978,14 +983,14 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
 
         badges_with_order = []
         for badge_data in badges_data:
-            slug = badge_data.get("slug")
+            badge = badge_data.get("badge")
             order = badge_data.get("order")
 
             try:
-                badge = BadgeClass.objects.get(entity_id=slug)
+                badge = BadgeClass.objects.get(entity_id=badge.get("slug"))
             except BadgeClass.DoesNotExist:
                 raise serializers.ValidationError(
-                    f"Badge with slug '{slug}' does not exist."
+                    f"Badge with slug '{badge.get('slug')}' does not exist."
                 )
 
             badges_with_order.append((badge, order))
@@ -993,6 +998,8 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
         new_learningpath = LearningPath.objects.create(
             name=name,
             description=description,
+            required_badges_count=required_badges_count,
+            activated=activated,
             issuer=issuer,
             participationBadge=participationBadge,
         )
@@ -1004,6 +1011,10 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
     def update(self, instance, validated_data):
         instance.name = validated_data.get("name", instance.name)
         instance.description = validated_data.get("description", instance.description)
+        instance.required_badges_count = validated_data.get(
+            "required_badges_count", instance.required_badges_count
+        )
+        instance.activated = validated_data.get("activated", instance.activated)
 
         tags = validated_data.get("tag_items", None)
         if tags is not None:
@@ -1013,14 +1024,14 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
         if badges_data is not None:
             badges_with_order = []
             for badge_data in badges_data:
-                slug = badge_data.get("slug")
+                badge = badge_data.get("badge")
                 order = badge_data.get("order")
 
                 try:
-                    badge = BadgeClass.objects.get(entity_id=slug)
+                    badge = BadgeClass.objects.get(entity_id=badge.get("slug"))
                 except BadgeClass.DoesNotExist:
                     raise serializers.ValidationError(
-                        f"Badge with slug '{slug}' does not exist."
+                        f"Badge with slug '{badge.slug}' does not exist."
                     )
 
                 badges_with_order.append((badge, order))

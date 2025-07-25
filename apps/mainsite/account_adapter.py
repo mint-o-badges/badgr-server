@@ -1,4 +1,5 @@
 import logging
+logger = logging.getLogger("Badgr.Events")
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -18,14 +19,11 @@ from django.utils.safestring import mark_safe
 from issuer.models import BadgeClass, BadgeInstance
 from badgeuser.authcode import authcode_for_accesstoken
 from badgeuser.models import BadgeUser, CachedEmailAddress
-import badgrlog
 from badgrsocialauth.utils import set_session_badgr_app
 from mainsite.models import BadgrApp, EmailBlacklist, AccessTokenProxy
 from mainsite.utils import get_name, OriginSetting, set_url_query_params
 
 from mainsite.badge_pdf import BadgePDFCreator
-
-logger = badgrlog.BadgrLogger()
 
 
 class BadgrAccountAdapter(DefaultAccountAdapter):
@@ -47,8 +45,7 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
         try:
             get_name(badgeinstance)
         except BadgeUser.DoesNotExist:
-            logger = logging.getLogger(__name__)
-            logger.warning("Could not find badgeuser")
+            logger.warning("Could not find badgeuser '%s'", slug)
 
         pdf_creator = BadgePDFCreator()
         pdf_content = pdf_creator.generate_pdf(
@@ -106,7 +103,8 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                 badge_img = f.read()
             msg.attach(badge_name + ".png", badge_img, "image/png")
             msg.attach(badge_name + ".pdf", pdf_document, "application/pdf")
-        logger.event(badgrlog.EmailRendered(msg))
+        logger.debug("Rendered E-Mail with subject '%s' from '%s' to '%s'",
+                     msg.subject, msg.from_email, msg.to)
         msg.send()
 
     def set_email_string(self, context):
@@ -140,7 +138,6 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
         if badgr_app is None:
             badgr_app = BadgrApp.objects.get_current(request)
             if not badgr_app:
-                logger = logging.getLogger(self.__class__.__name__)
                 logger.warning("Could not determine authorized badgr app")
                 return super(
                     BadgrAccountAdapter, self

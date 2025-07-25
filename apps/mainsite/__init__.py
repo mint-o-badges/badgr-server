@@ -17,9 +17,7 @@ def get_version(version=None):
         version = VERSION
     return semver.format_version(*version)
 
-
-__build__ = ""
-
+__timestamp__ = ''
 
 # assume we are ./apps/mainsite/__init__.py
 APPS_DIR = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))

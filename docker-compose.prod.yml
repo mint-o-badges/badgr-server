@@ -10,7 +10,6 @@ services:
       - badgr_server_api_sock:/badgr_server/sock
       - badgr_server_staticfiles:/badgr_server/staticfiles
       - badgr_server_mediafiles:/badgr_server/mediafiles
-      - ./.git:/badgr_server/.git
     command: chown -R 999:999 /badgr_server/sock /badgr_server/staticfiles /badgr_server/mediafiles
 
   # this container copies in the project code and runs the app with uwsgi
@@ -36,6 +35,7 @@ services:
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - TZ=Europe/Berlin
 
   # this container runs memcached
   memcached:
@@ -44,6 +44,8 @@ services:
       - "11211"
     networks:
       - badgr
+    environment:
+      - TZ=Europe/Berlin
 
   # this container runs mysql (database)
   db:
@@ -57,6 +59,7 @@ services:
       - "MYSQL_PASSWORD=password"
       - "MYSQL_HOST=db"
       - "MYSQL_ROOT_PASSWORD=password"
+      - TZ=Europe/Berlin
     ulimits:
       # Needs to be set e.g. on Fedora, Arch, etc.
       # https://github.com/docker-library/mysql/issues/873#issuecomment-1909948195
@@ -86,6 +89,8 @@ services:
       - badgr
     ports:
       - "8080:80"
+    environment:
+      - TZ=Europe/Berlin
 
   celery_worker:
     build:
@@ -103,6 +108,7 @@ services:
       - "MYSQL_PASSWORD=password"
       - "MYSQL_HOST=db"
       - "MYSQL_ROOT_PASSWORD=password"
+      - TZ=Europe/Berlin
     networks:
       - badgr
     restart: unless-stopped
@@ -114,6 +120,8 @@ services:
     restart: unless-stopped
     networks:
       - badgr
+    environment:
+      - TZ=Europe/Berlin
 
 networks:
   badgr:

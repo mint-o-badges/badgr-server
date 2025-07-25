@@ -2,7 +2,7 @@
 
 
 import uuid
-from collections import MutableMapping
+from collections.abc import MutableMapping
 
 import openbadges
 from django.conf import settings
@@ -31,7 +31,7 @@ import json
 import requests
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("Badgr.Events")
 
 
 class DjangoCacheDict(MutableMapping):
