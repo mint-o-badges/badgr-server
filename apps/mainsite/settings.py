@@ -186,6 +186,9 @@ SOCIALACCOUNT_ADAPTER = "badgrsocialauth.adapter.BadgrSocialAccountAdapter"
 
 AUTH_PASSWORD_VALIDATORS = [
     {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+    },
+    {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
         "OPTIONS": {
             "min_length": 8,
@@ -196,6 +199,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+    },
+    {
+        "NAME": "mainsite.validators.ComplexityPasswordValidator",
     },
 ]
 
