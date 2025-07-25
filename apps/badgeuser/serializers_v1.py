@@ -57,6 +57,7 @@ class BadgeUserProfileSerializerV1(serializers.Serializer):
     agreed_terms_version = serializers.IntegerField(required=False)
     marketing_opt_in = serializers.BooleanField(required=False)
     has_password_set = serializers.SerializerMethodField()
+    secure_password_set = serializers.BooleanField(required=False)
     source = serializers.CharField(write_only=True, required=False)
 
     def get_has_password_set(self, obj):
