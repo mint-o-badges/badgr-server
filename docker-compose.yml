@@ -88,6 +88,8 @@ services:
       bash -c "PYTHONPATH=/badgr_server/apps celery -A mainsite worker --loglevel=info"
     volumes:
       - ./apps:/badgr_server/apps
+      - ./openbadges:/badgr_server/openbadges
+      - ./openbadges_bakery:/badgr_server/openbadges_bakery
       - ./manage.py:/badgr_server/manage.py
       - ./.docker/etc/settings_local.dev.py:/badgr_server/apps/mainsite/settings_local.py
       - badgr_server_mediafiles:/badgr_server/mediafiles
