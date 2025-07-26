@@ -120,6 +120,7 @@ class BadgeUserProfileSerializerV1(serializers.Serializer):
                 )
             if user.check_password(current_password):
                 user.set_password(password)
+                user.secure_password_set = True
                 notify_on_password_change(user)
             else:
                 raise serializers.ValidationError(
