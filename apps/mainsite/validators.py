@@ -1,6 +1,7 @@
 # encoding: utf-8
 
 
+import re
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import RegexValidator
 from rest_framework.exceptions import ValidationError
@@ -98,3 +99,25 @@ class PositiveIntegerValidator(object):
                 raise ValidationError(self.message)
         except ValueError:
             raise ValidationError(self.message)
+
+
+class ComplexityPasswordValidator:
+    def validate(self, password, user=None):
+        if not re.search(r"[A-Z]", password):
+            raise ValidationError(
+                "The password must contain at least one uppercase letter.",
+                code="password_no_upper",
+            )
+        if not re.search(r"\d", password):
+            raise ValidationError(
+                "The password must contain at least one digit.",
+                code="password_no_digit",
+            )
+        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+            raise ValidationError(
+                "The password must contain at least one special character.",
+                code="password_no_special",
+            )
+
+    def get_help_text(self):
+        return "Your password must contain at least one uppercase letter, one number, and one special character."

@@ -57,6 +57,7 @@ class BadgeUserProfileSerializerV1(serializers.Serializer):
     agreed_terms_version = serializers.IntegerField(required=False)
     marketing_opt_in = serializers.BooleanField(required=False)
     has_password_set = serializers.SerializerMethodField()
+    secure_password_set = serializers.BooleanField(required=False)
     source = serializers.CharField(write_only=True, required=False)
 
     def get_has_password_set(self, obj):
@@ -119,6 +120,7 @@ class BadgeUserProfileSerializerV1(serializers.Serializer):
                 )
             if user.check_password(current_password):
                 user.set_password(password)
+                user.secure_password_set = True
                 notify_on_password_change(user)
             else:
                 raise serializers.ValidationError(

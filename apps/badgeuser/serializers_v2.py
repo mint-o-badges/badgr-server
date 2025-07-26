@@ -82,6 +82,9 @@ class BadgeUserSerializerV2(DetailSerializerV2):
     badgrDomain = serializers.CharField(
         read_only=True, max_length=255, source="badgrapp"
     )
+    securePasswordSet = serializers.BooleanField(
+        source="secure_password_set", required=False
+    )
     hasPasswordSet = serializers.SerializerMethodField("get_has_password_set")
     recipient = serializers.SerializerMethodField(read_only=True)
 

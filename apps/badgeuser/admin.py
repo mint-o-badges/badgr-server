@@ -95,6 +95,7 @@ class BadgeUserAdmin(DjangoObjectActions, ModelAdmin):
                     "badgrapp",
                     "agreed_terms_version",
                     "marketing_opt_in",
+                    "secure_password_set",
                 )
             },
         ),
