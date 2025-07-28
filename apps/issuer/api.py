@@ -1,7 +1,8 @@
 import datetime
 from collections import OrderedDict
 
-import badgrlog
+import logging
+logger = logging.getLogger("Badgr.Events")
 import dateutil.parser
 from allauth.account.adapter import get_adapter
 from apispec_drf.decorators import (
@@ -84,8 +85,6 @@ from rest_framework.status import (
 
 from apps.mainsite.utils import OriginSetting
 
-logger = badgrlog.BadgrLogger()
-
 
 class IssuerList(BaseEntityListView):
     """
@@ -104,8 +103,6 @@ class IssuerList(BaseEntityListView):
         )
     ]
     valid_scopes = ["rw:issuer"]
-
-    create_event = badgrlog.IssuerCreatedEvent
 
     def get_objects(self, request, **kwargs):
         # return self.request.user.cached_issuers()
@@ -236,7 +233,6 @@ class IssuerBadgeClassList(
     ]
     v1_serializer_class = BadgeClassSerializerV1
     v2_serializer_class = BadgeClassSerializerV2
-    create_event = badgrlog.BadgeClassCreatedEvent
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
     def get_queryset(self, request=None, **kwargs):
@@ -410,7 +406,8 @@ class BadgeClassDetail(BaseEntityDetailView):
         base_entity = super(BadgeClassDetail, self)
         badge_class = base_entity.get_object(request, **kwargs)
 
-        logger.event(badgrlog.BadgeClassDeletedEvent(badge_class, request.user))
+        logger.info("Deleting badge class '%s' requested by '%s'",
+                    badge_class.entity_id, request.user)
 
         return base_entity.delete(request, **kwargs)
 
@@ -637,7 +634,6 @@ class BadgeInstanceList(
     ]
     v1_serializer_class = BadgeInstanceSerializerV1
     v2_serializer_class = BadgeInstanceSerializerV2
-    create_event = badgrlog.BadgeInstanceCreatedEvent
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
     def get_queryset(self, request=None, **kwargs):
@@ -648,7 +644,7 @@ class BadgeInstanceList(
             queryset = queryset.filter(recipient_identifier__in=recipients)
         if request.query_params.get("include_expired", "").lower() not in ["1", "true"]:
             queryset = queryset.filter(
-                Q(expires_at__gte=datetime.datetime.now()) | Q(expires_at__isnull=True)
+                Q(expires_at__gte=timezone.now()) | Q(expires_at__isnull=True)
             )
         if request.query_params.get("include_revoked", "").lower() not in ["1", "true"]:
             queryset = queryset.filter(revoked=False)
@@ -722,7 +718,6 @@ class IssuerBadgeInstanceList(
     ]
     v1_serializer_class = BadgeInstanceSerializerV1
     v2_serializer_class = BadgeInstanceSerializerV2
-    create_event = badgrlog.BadgeInstanceCreatedEvent
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
     def get_queryset(self, request=None, **kwargs):
@@ -733,7 +728,7 @@ class IssuerBadgeInstanceList(
             queryset = queryset.filter(recipient_identifier__in=recipients)
         if request.query_params.get("include_expired", "").lower() not in ["1", "true"]:
             queryset = queryset.filter(
-                Q(expires_at__gte=datetime.datetime.now()) | Q(expires_at__isnull=True)
+                Q(expires_at__gte=timezone.now()) | Q(expires_at__isnull=True)
             )
         if request.query_params.get("include_revoked", "").lower() not in ["1", "true"]:
             queryset = queryset.filter(revoked=False)
@@ -855,7 +850,8 @@ class BadgeInstanceDetail(BaseEntityDetailView):
             assertion, context={"request": request}
         )
 
-        logger.event(badgrlog.BadgeAssertionRevokedEvent(assertion, request.user))
+        logger.info("Badge assertion '%s' revoking requested by '%s'",
+                    assertion.entity_id, request.user)
         return Response(status=HTTP_200_OK, data=serializer.data)
 
     @apispec_put_operation(

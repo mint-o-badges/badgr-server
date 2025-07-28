@@ -2,6 +2,9 @@ from celery import shared_task
 from issuer.models import LearningPath
 from badgeuser.models import BadgeUser
 
+import logging
+logger = logging.getLogger("Badgr.Events")
+
 
 @shared_task
 def process_learning_path_activation(pk):
@@ -26,8 +29,5 @@ def process_learning_path_activation(pk):
     except LearningPath.DoesNotExist:
         return f"LearningPath with pk {pk} not found"
     except Exception as e:
-        import logging
-
-        logger = logging.getLogger(__name__)
         logger.error(f"Error processing learning path activation {pk}: {str(e)}")
         raise

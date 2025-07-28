@@ -24,7 +24,7 @@ services:
       - ./backups:/backups
       - ./user_emails.csv:/badgr_server/user_emails.csv
       - ./esco_issuers.txt:/badgr_server/esco_issuers.txt
-      - badgr_server_mediafiles:/badgr_server/mediafiles
+      - ./badgr_server_mediafiles:/badgr_server/mediafiles
     networks:
       - badgr
     ports:
@@ -32,6 +32,7 @@ services:
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - TZ=Europe/Berlin
 
   # this container runs memcached
   memcached:
@@ -41,6 +42,9 @@ services:
     networks:
       - badgr
     command: ["memcached", "-m", "512", "-I", "10m"]
+    environment:
+      - TZ=Europe/Berlin
+
   # this container runs mysql (database)
   db:
     image: mysql:5.7.31
@@ -53,6 +57,7 @@ services:
       - "MYSQL_PASSWORD=password"
       - "MYSQL_HOST=db"
       - "MYSQL_ROOT_PASSWORD=password"
+      - TZ=Europe/Berlin
     ulimits:
       # Needs to be set e.g. on Fedora, Arch, etc.
       # https://github.com/docker-library/mysql/issues/873#issuecomment-1909948195
@@ -64,6 +69,7 @@ services:
       - "3306"
     networks:
       - badgr
+
   mailhog:
     image: mailhog/mailhog
     container_name: mailhog
@@ -82,6 +88,8 @@ services:
       bash -c "PYTHONPATH=/badgr_server/apps celery -A mainsite worker --loglevel=info"
     volumes:
       - ./apps:/badgr_server/apps
+      - ./openbadges:/badgr_server/openbadges
+      - ./openbadges_bakery:/badgr_server/openbadges_bakery
       - ./manage.py:/badgr_server/manage.py
       - ./.docker/etc/settings_local.dev.py:/badgr_server/apps/mainsite/settings_local.py
       - badgr_server_mediafiles:/badgr_server/mediafiles
@@ -91,6 +99,7 @@ services:
       - "MYSQL_PASSWORD=password"
       - "MYSQL_HOST=db"
       - "MYSQL_ROOT_PASSWORD=password"
+      - TZ=Europe/Berlin
     networks:
       - badgr
     restart: unless-stopped
@@ -102,6 +111,8 @@ services:
     restart: unless-stopped
     networks:
       - badgr
+    environment:
+      - TZ=Europe/Berlin
 
 networks:
   badgr:

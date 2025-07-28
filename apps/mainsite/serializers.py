@@ -1,7 +1,8 @@
 import json
 from collections import OrderedDict
 
-import badgrlog
+import logging
+logger = logging.getLogger("Badgr.Events")
 import pytz
 from django.utils.html import strip_tags
 from entity.serializers import BaseSerializerV2
@@ -9,8 +10,6 @@ from mainsite.pagination import BadgrCursorPagination
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.exceptions import ValidationError
-
-badgrlogger = badgrlog.BadgrLogger()
 
 
 class HumanReadableBooleanField(serializers.BooleanField):
@@ -168,11 +167,8 @@ class LegacyVerifiedAuthTokenSerializer(AuthTokenSerializer):
         attrs = super(LegacyVerifiedAuthTokenSerializer, self).validate(attrs)
         user = attrs.get("user")
 
-        badgrlogger.event(
-            badgrlog.DeprecatedApiAuthToken(
-                self.context["request"], user.username, is_new_token=True
-            )
-        )
+        logger.warning("Deprecated new auth token")
+        logger.info("Username: '%s'", user.username)
         if not user.verified:
             try:
                 email = user.cached_emails()[0]
