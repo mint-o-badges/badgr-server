@@ -5,9 +5,13 @@ from django.utils import timezone
 from oauth2_provider.models import Application
 from oauth2_provider.oauth2_backends import get_oauthlib_core
 from rest_framework.authentication import BaseAuthentication, TokenAuthentication
+from rest_framework.permissions import BasePermission
 
+from apps.mainsite.utils import validate_altcha
 import logging
+
 logger = logging.getLogger("Badgr.Events")
+
 
 class BadgrOAuth2Authentication(BaseAuthentication):
     www_authenticate_realm = "api"
@@ -55,3 +59,11 @@ class LoggedLegacyTokenAuthentication(TokenAuthentication):
             logger.warning("Deprecated auth token")
             logger.info("Username: '%s'", authenticated_credentials[0].username)
         return authenticated_credentials
+
+
+class ValidAltcha(BasePermission):
+    def has_permission(self, request, view):
+        if "HTTP_X_OEB_ALTCHA" in request.META:
+            return validate_altcha(request.META["HTTP_X_OEB_ALTCHA"], request)
+
+        return False

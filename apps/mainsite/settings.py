@@ -211,7 +211,11 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_EXPOSE_HEADERS = ("link",)
 
-CORS_ALLOW_HEADERS = [*default_headers, "x-altcha-spam-filter"]
+CORS_ALLOW_HEADERS = [
+    *default_headers,
+    'x-altcha-spam-filter',
+    'x-oeb-altcha'
+]
 
 ##
 #
@@ -556,3 +560,8 @@ SESSION_COOKIE_AGE = 60
 ALTCHA_SECRET = ""
 ALTCHA_MINNUMBER = 10000
 ALTCHA_MAXNUMBER = 100000
+
+# CMS contents
+CMS_API_BASE_URL = ''
+CMS_API_BASE_PATH = ''
+CMS_API_KEY = ''
