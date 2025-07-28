@@ -35,6 +35,9 @@ jobs:
               with:
                   time: 90s
 
+            - name: Check running containers again
+              run: docker ps -a
+
             - name: 🔍 Run tox
               run: docker compose exec api tox
 
