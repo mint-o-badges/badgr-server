@@ -38,6 +38,12 @@ jobs:
             - name: Check running containers again
               run: docker ps -a
 
+            - name: Inspect api
+              run: docker compose logs api
+
+            - name: Inspect db
+              run: docker compose logs db
+
             - name: 🔍 Run tox
               run: docker compose exec api tox
 
