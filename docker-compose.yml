@@ -47,7 +47,7 @@ services:
 
   # this container runs mysql (database)
   db:
-    image: mysql:5.7.31
+    image: mysql:8.0.36
     # platform: linux/amd64 comment in if you are on Apple Silicon
     volumes:
       - badgr_server_dev_db:/var/lib/mysql:rw
