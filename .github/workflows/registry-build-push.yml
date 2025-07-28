@@ -27,6 +27,9 @@ jobs:
                   compose-file: docker-compose.debug.yml
                   up-flags: "--build -d"
 
+            - name: Check running containers
+              run: docker ps -a
+
             - name: 😴 Let the services start
               uses: juliangruber/sleep-action@v2.0.0
               with:
