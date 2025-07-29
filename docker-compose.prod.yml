@@ -1,5 +1,3 @@
-# A dockerized badgr-server stack to emulate a production build
-version: "3.9"
 services:
   change-ownership:
     image: alpine
