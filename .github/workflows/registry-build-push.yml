@@ -1,54 +1,77 @@
 name: 🏗️ Build and publish to Github Container Registry
 
 on:
-  push:
-    branches: [main,production,develop]
-    tags: ["v*.*.*"]
-  pull_request:
-    branches:
-      - main
-      - develop
+    push:
+        branches: [main, production, develop]
+        tags: ["v*.*.*"]
+    pull_request:
+        branches:
+            - main
+            - develop
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+    REGISTRY: ghcr.io
+    IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+    test:
+        runs-on: ubuntu-latest
 
-  build-and-push-image:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+        steps:
+            - name: ⬇️ Checkout code
+              uses: actions/checkout@v4.2.2
 
-    steps:
-      - name: ⬇️ Checkout repository
-        uses: actions/checkout@v4.2.2
+            - name: ©️ Copy container settings
+              run: cp ./.docker/etc/settings_local.dev.py.example ./.docker/etc/settings_local.dev.py
 
-      - name: 🏄 Copy default env vars
-        run: cp .docker/etc/settings_local.prod.py.example .docker/etc/settings_local.py
+            - name: 🐳 Set up Docker Compose
+              uses: hoverkraft-tech/compose-action@v2.3.0
+              with:
+                  compose-file: docker-compose.debug.yml
+                  up-flags: "--build -d"
 
-      - name: 🔑 Log in to the Container registry
-        uses: docker/login-action@v3.4.0
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+            - name: 😴 Let the services start
+              uses: juliangruber/sleep-action@v2.0.0
+              with:
+                  time: 90s
 
-      - name: 📋 Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5.7.0
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          flavor: |
-            latest=auto
-            prefix=
-            suffix=
+            - name: 🔍 Run tox
+              run: docker compose exec api tox
 
-      - name: 🏗️ Build and push Docker image
-        uses: docker/build-push-action@v6.18.0
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+    build-and-push-image:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            packages: write
+
+        steps:
+            - name: ⬇️ Checkout repository
+              uses: actions/checkout@v4.2.2
+
+            - name: 🏄 Copy default env vars
+              run: cp .docker/etc/settings_local.prod.py.example .docker/etc/settings_local.py
+
+            - name: 🔑 Log in to the Container registry
+              uses: docker/login-action@v3.4.0
+              with:
+                  registry: ${{ env.REGISTRY }}
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: 📋 Extract metadata (tags, labels) for Docker
+              id: meta
+              uses: docker/metadata-action@v5.7.0
+              with:
+                  images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+                  flavor: |
+                      latest=auto
+                      prefix=
+                      suffix=
+
+            - name: 🏗️ Build and push Docker image
+              uses: docker/build-push-action@v6.18.0
+              with:
+                  context: .
+                  push: true
+                  tags: ${{ steps.meta.outputs.tags }}
+                  labels: ${{ steps.meta.outputs.labels }}

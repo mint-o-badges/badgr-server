@@ -1,3 +1,8 @@
+import json
+import os
+
+from django.test import override_settings
+from mainsite import TOP_DIR
 from badgeuser.models import BadgeUser, CachedEmailAddress
 from issuer.models import BadgeClass, Issuer, BadgeInstance
 from mainsite.tests.base import BadgrTestCase
@@ -7,6 +12,8 @@ from backpack.serializers_v1 import CollectionSerializerV1
 from backpack.serializers_v2 import BackpackCollectionSerializerV2
 
 
+# Override MEDIA_ROOT to point tests to the testfiles for issuer and badge images
+@override_settings(MEDIA_ROOT=os.path.join(TOP_DIR, "apps/mainsite/tests/testfiles"))
 class TestCollections(BadgrTestCase):
     def setUp(self):
         super(TestCollections, self).setUp()
@@ -19,30 +26,40 @@ class TestCollections(BadgrTestCase):
         self.issuer = Issuer.objects.create(
             name="Open Badges",
             created_at="2015-12-15T15:55:51Z",
-            created_by=None,
+            created_by=self.user,
             slug="open-badges",
             source_url="http://badger.openbadges.org/program/meta/bda68a0b505bc0c7cf21bc7900280ee74845f693",
             source="test-fixture",
-            image="",
+            image="issuer.png",
+            url="example.com",
+            email="issuer@example.com",
+            verified=True,
         )
 
         self.badge_class = BadgeClass.objects.create(
-            name="MozFest Reveler",
+            name="This is a badge",
+            description="created on Open Educational Badges",
             created_at="2015-12-15T15:55:51Z",
             created_by=None,
             slug="mozfest-reveler",
             criteria_text=None,
             source_url="http://badger.openbadges.org/badge/meta/mozfest-reveler",
             source="test-fixture",
-            image="",
+            image="badge.png",
             issuer=self.issuer,
+            extension_items={
+                "extensions:CategoryExtension": json.loads(
+                    '{ "type": ["Extension", "extensions:CategoryExtension"], "Category": "participation" }'
+                ),
+                "extensions:CompetencyExtension": json.loads("[]"),
+            },
         )
 
         self.local_badge_instance_1 = BadgeInstance.objects.create(
             recipient_identifier="test@example.com",
             badgeclass=self.badge_class,
             issuer=self.issuer,
-            image="uploads/badges/local_badgeinstance_174e70bf-b7a8-4b71-8125-c34d1a994a7c.png",
+            image=None,
             acceptance=BadgeInstance.ACCEPTANCE_ACCEPTED,
         )
 
@@ -50,7 +67,7 @@ class TestCollections(BadgrTestCase):
             recipient_identifier="test@example.com",
             badgeclass=self.badge_class,
             issuer=self.issuer,
-            image="uploads/badges/local_badgeinstance_174e70bf-b7a8-4b71-8125-c34d1a994a7c.png",
+            image=None,
             acceptance=BadgeInstance.ACCEPTANCE_ACCEPTED,
         )
 
@@ -58,7 +75,7 @@ class TestCollections(BadgrTestCase):
             recipient_identifier="test@example.com",
             badgeclass=self.badge_class,
             issuer=self.issuer,
-            image="uploads/badges/local_badgeinstance_174e70bf-b7a8-4b71-8125-c34d1a994a7c.png",
+            image=None,
             acceptance=BadgeInstance.ACCEPTANCE_ACCEPTED,
         )
 

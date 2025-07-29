@@ -217,7 +217,11 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_EXPOSE_HEADERS = ("link",)
 
-CORS_ALLOW_HEADERS = [*default_headers, "x-altcha-spam-filter"]
+CORS_ALLOW_HEADERS = [
+    *default_headers,
+    'x-altcha-spam-filter',
+    'x-oeb-altcha'
+]
 
 ##
 #
@@ -534,6 +538,13 @@ SVG_HTTP_CONVERSION_ENDPOINT = (
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 # OIDC Global settings
+OIDC_RP_CLIENT_ID = ""
+OIDC_RP_CLIENT_SECRET = ""
+OIDC_OP_AUTHORIZATION_ENDPOINT = ""
+OIDC_OP_TOKEN_ENDPOINT = ""
+OIDC_OP_USER_ENDPOINT = ""
+OIDC_OP_JWKS_ENDPOINT = ""
+OIDC_OP_END_SESSION_ENDPOINT = ""
 # The document specifies nbp-enmeshed-address to also be an option, but at least in the demo it doesn't work
 # OIDC_RP_SCOPES = 'openid nbp-enmeshed-address'
 OIDC_RP_SCOPES = "openid"
@@ -555,3 +566,8 @@ SESSION_COOKIE_AGE = 60
 ALTCHA_SECRET = ""
 ALTCHA_MINNUMBER = 10000
 ALTCHA_MAXNUMBER = 100000
+
+# CMS contents
+CMS_API_BASE_URL = ''
+CMS_API_BASE_PATH = ''
+CMS_API_KEY = ''
