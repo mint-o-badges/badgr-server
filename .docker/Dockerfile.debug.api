@@ -20,9 +20,6 @@ COPY requirements.txt              /badgr_server
 
 COPY crontab                       /etc/cron.d/crontab
 
-COPY openbadges                    /badgr_server
-
-COPY openbadges_bakery             /badgr_server
 RUN touch /var/log/cron_cleartokens.log && chmod 644 /var/log/cron_cleartokens.log
 RUN touch /var/log/cron_qr_badgerequests.log && chmod 644 /var/log/cron_qr_badgerequests.log
 
