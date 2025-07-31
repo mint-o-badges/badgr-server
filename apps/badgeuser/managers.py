@@ -28,7 +28,7 @@ class BadgeUserManager(UserManager):
         send_confirmation=True,
         create_email_address=True,
         marketing_opt_in=False,
-        secure_password_set=False,
+        secure_password_set=True,
         source="",
     ):
         from badgeuser.models import CachedEmailAddress, TermsVersion
