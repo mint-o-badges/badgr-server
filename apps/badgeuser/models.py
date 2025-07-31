@@ -254,7 +254,7 @@ class BadgeUser(BaseVersionedEntity, AbstractUser, cachemodel.CacheModel):
 
     marketing_opt_in = models.BooleanField(default=False)
 
-    secure_password_set = models.BooleanField(default=False)
+    secure_password_set = models.BooleanField(default=True)
 
     objects = BadgeUserManager()
 
