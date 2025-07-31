@@ -46,6 +46,5 @@ RUN curl -fsSLO "$SUPERCRONIC_URL" \
 RUN date +"%d.%m.%y %T" > timestamp
 
 RUN pip --timeout=1000 install --no-dependencies -r requirements.txt
-RUN pip --timeout=1000 install debugpy
 
 ENTRYPOINT ["/badgr_server/entrypoint.dev.sh"]
