@@ -21,7 +21,7 @@ services:
             - ./openbadges_bakery:/badgr_server/openbadges_bakery
             - ./manage.py:/badgr_server/manage.py
             - ./.docker/etc/settings_local.dev.py:/badgr_server/apps/mainsite/settings_local.py
-              # The following is needed for tox to run
+            # The following is needed for tox to run
             - ./pyproject.toml:/badgr_server/pyproject.toml
             - ./setup.py:/badgr_server/setup.py
             - ./README.md:/badgr_server/README.md
@@ -52,24 +52,24 @@ services:
         image: mysql:8.0.36
         # platform: linux/amd64 comment in if you are on Apple Silicon
         volumes:
-        - badgr_server_dev_db:/var/lib/mysql:rw
-        - ./.docker/etc/init.sql:/docker-entrypoint-initdb.d/init.sql
+            - badgr_server_dev_db:/var/lib/mysql:rw
+            - ./.docker/etc/init.sql:/docker-entrypoint-initdb.d/init.sql
         environment:
-        - "MYSQL_PASSWORD=password"
-        - "MYSQL_HOST=db"
-        - "MYSQL_ROOT_PASSWORD=password"
-        - TZ=Europe/Berlin
+            - "MYSQL_PASSWORD=password"
+            - "MYSQL_HOST=db"
+            - "MYSQL_ROOT_PASSWORD=password"
+            - TZ=Europe/Berlin
         ulimits:
-        # Needs to be set e.g. on Fedora, Arch, etc.
-        # https://github.com/docker-library/mysql/issues/873#issuecomment-1909948195
-        # https://github.com/ddev/ddev/issues/4862#issuecomment-1533141193
-        nofile: # Fix memory leak issue on some systems when LimitCORE=infinity or LimitNOFILE=infinity (containerd)
-            soft: 1048576
-            hard: 1048576
+            # Needs to be set e.g. on Fedora, Arch, etc.
+            # https://github.com/docker-library/mysql/issues/873#issuecomment-1909948195
+            # https://github.com/ddev/ddev/issues/4862#issuecomment-1533141193
+            nofile: # Fix memory leak issue on some systems when LimitCORE=infinity or LimitNOFILE=infinity (containerd)
+                soft: 1048576
+                hard: 1048576
         expose:
-        - "3306"
+            - "3306"
         networks:
-        - badgr
+            - badgr
 
     mailhog:
         image: mailhog/mailhog
