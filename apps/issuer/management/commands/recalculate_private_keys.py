@@ -52,7 +52,7 @@ class Command(BaseCommand):
                     self.stdout.write(f"  Progress: {i}/{affected_assertions.count()}")
 
                 try:
-                    original_json = assertion.get_json_3_0()
+                    original_json = assertion.get_json(obi_version="3_0")
                     original_proof_value = None
 
                     if "proof" in original_json and len(original_json["proof"]) > 0:
@@ -62,7 +62,9 @@ class Command(BaseCommand):
 
                     assertion.rebake()
 
-                    new_json = assertion.get_json_3_0()
+                    new_json = assertion.get_json(
+                        obi_version="3_0", force_recreate=True
+                    )
                     new_proof_value = None
 
                     if "proof" in new_json and len(new_json["proof"]) > 0:
