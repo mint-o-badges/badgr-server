@@ -39,6 +39,9 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
+            - name: ⬇️ Checkout code
+              uses: actions/checkout@v4.2.2
+
             - name: 👟 Run ruff
               uses: astral-sh/ruff-action@v3
               with:
