@@ -13,8 +13,6 @@ from json import dumps as json_dumps, loads as json_loads
 from cryptography.hazmat.primitives import serialization
 from pyld import jsonld
 
-import logging
-logger = logging.getLogger("Badgr.Events")
 import cachemodel
 import dateutil
 from allauth.account.adapter import get_adapter
@@ -59,6 +57,9 @@ from .utils import (
     parse_original_datetime,
     generate_private_key_pem,
 )
+import logging
+
+logger = logging.getLogger("Badgr.Events")
 
 AUTH_USER_MODEL = getattr(settings, "AUTH_USER_MODEL", "auth.User")
 
@@ -66,6 +67,7 @@ RECIPIENT_TYPE_EMAIL = "email"
 RECIPIENT_TYPE_ID = "openBadgeId"
 RECIPIENT_TYPE_TELEPHONE = "telephone"
 RECIPIENT_TYPE_URL = "url"
+
 
 class BaseAuditedModel(cachemodel.CacheModel):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
@@ -1710,8 +1712,11 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             if blacklist.api_query_is_in_blacklist(
                 self.recipient_type, self.recipient_identifier
             ):
-                logger.warning("The recipient '%s' is in the blacklist for this ('%s') badge class",
-                               self.recipient_identifier, self.badgeclass.entity_id)
+                logger.warning(
+                    "The recipient '%s' is in the blacklist for this ('%s') badge class",
+                    self.recipient_identifier,
+                    self.badgeclass.entity_id,
+                )
                 raise ValidationError("You may not award this badge to this recipient.")
 
             self.salt = uuid.uuid4().hex
@@ -1865,8 +1870,15 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             # Allow sending, as this email is not blacklisted.
             pass
         else:
-            logger.warning("The email for the badge with ID '%s' is blacklisted and was not sent", self.entity_id)
-            logger.debug("Recipient: '%s'; badge instance: '%s'", self.recipient_identifier, self.json)
+            logger.warning(
+                "The email for the badge with ID '%s' is blacklisted and was not sent",
+                self.entity_id,
+            )
+            logger.debug(
+                "Recipient: '%s'; badge instance: '%s'",
+                self.recipient_identifier,
+                self.json,
+            )
             return
 
         if badgr_app is None:
