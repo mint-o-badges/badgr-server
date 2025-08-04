@@ -41,3 +41,5 @@ jobs:
         steps:
             - name: 👟 Run ruff
               uses: astral-sh/ruff-action@v3
+              with:
+                  src: "./apps"
