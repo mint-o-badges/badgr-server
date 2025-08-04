@@ -1,25 +1,30 @@
 from entity.api_v3 import EntityViewSet
 from backpack.serializers_v2 import BackpackAssertionSerializerV2
-from issuer.permissions import BadgrOAuthTokenHasScope, VerifiedEmailMatchesRecipientIdentifier
+from issuer.permissions import (
+    BadgrOAuthTokenHasScope,
+    VerifiedEmailMatchesRecipientIdentifier,
+)
 from issuer.serializers_v1 import LearningPathSerializerV1
-from issuer.models import BadgeInstance, LearningPath, LearningPathBadge
+from issuer.models import LearningPath, LearningPathBadge
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier
+
 
 class Badges(EntityViewSet):
     serializer_class = BackpackAssertionSerializerV2
 
     valid_scopes = {
-        'get': ['r:backpack', 'rw:backpack'],
-        'post': ['rw:backpack'],
+        "get": ["r:backpack", "rw:backpack"],
+        "post": ["rw:backpack"],
     }
     permission_classes = (
         AuthenticatedWithVerifiedIdentifier,
         VerifiedEmailMatchesRecipientIdentifier,
-        BadgrOAuthTokenHasScope
+        BadgrOAuthTokenHasScope,
     )
 
     def get_queryset(self):
         return self.request.user.cached_badgeinstances()
+
 
 class LearningPaths(EntityViewSet):
     serializer_class = LearningPathSerializerV1
@@ -28,7 +33,7 @@ class LearningPaths(EntityViewSet):
     permission_classes = (
         AuthenticatedWithVerifiedIdentifier,
         VerifiedEmailMatchesRecipientIdentifier,
-        BadgrOAuthTokenHasScope
+        BadgrOAuthTokenHasScope,
     )
 
     def get_queryset(self):

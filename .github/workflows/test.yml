@@ -34,3 +34,15 @@ jobs:
 
             - name: 🔍 Run tox
               run: docker compose exec api tox
+
+    lint:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: ⬇️ Checkout code
+              uses: actions/checkout@v4.2.2
+
+            - name: 👟 Run ruff
+              uses: astral-sh/ruff-action@v3
+              with:
+                  src: "./apps"
