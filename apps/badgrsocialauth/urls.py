@@ -92,7 +92,7 @@ for provider in [p for p in provider_list if p.id in configured_providers]:
     try:
         prov_mod = importlib.import_module(provider.get_package() + ".urls")
     except ImportError:
-        logging.getLogger(__name__).warning(
+        logging.getLogger("Badgr.Events").warning(
             "url import failed for %s socialaccount provider" % provider.id,
             exc_info=True,
         )

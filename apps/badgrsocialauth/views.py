@@ -53,7 +53,7 @@ from saml2.client import Saml2Client
 from saml2.config import Config as Saml2Config
 from mainsite.models import AccessTokenProxy
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("Badgr.Events")
 
 
 class BadgrSocialLogin(RedirectView):

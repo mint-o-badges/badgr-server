@@ -22,11 +22,14 @@ services:
       - ./setup.py:/badgr_server/setup.py
       - ./README.md:/badgr_server/README.md
       - ./user_emails.csv:/badgr_server/user_emails.csv
+      - ./badgr_server_mediafiles:/badgr_server/mediafiles
     networks:
       - badgr
     ports:
       - "8000:8000"
       - "5678:5678"
+    environment:
+      - TZ=Europe/Berlin
 
   # this container runs memcached
   memcached:
@@ -35,6 +38,8 @@ services:
       - "11211"
     networks:
       - badgr
+    environment:
+      - TZ=Europe/Berlin
 
   # this container runs mysql (database)
   db:
@@ -47,6 +52,7 @@ services:
       - "MYSQL_PASSWORD=password"
       - "MYSQL_HOST=db"
       - "MYSQL_ROOT_PASSWORD=password"
+      - TZ=Europe/Berlin
     ulimits:
       # Needs to be set e.g. on Fedora, Arch, etc.
       # https://github.com/docker-library/mysql/issues/873#issuecomment-1909948195
@@ -58,6 +64,7 @@ services:
       - "3306"
     networks:
       - badgr
+
   mailhog:
     image: mailhog/mailhog
     container_name: mailhog
@@ -67,6 +74,41 @@ services:
       - "8025:8025"
     networks:
       - badgr
+    environment:
+      - TZ=Europe/Berlin
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile.dev.api
+    entrypoint: [] # Override the entrypoint from Dockerfile
+    command: >
+      bash -c "PYTHONPATH=/badgr_server/apps celery -A mainsite worker --loglevel=info"
+    volumes:
+      - ./apps:/badgr_server/apps
+      - ./manage.py:/badgr_server/manage.py
+      - ./.docker/etc/settings_local.dev.py:/badgr_server/apps/mainsite/settings_local.py
+      - badgr_server_mediafiles:/badgr_server/mediafiles
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - "MYSQL_PASSWORD=password"
+      - "MYSQL_HOST=db"
+      - "MYSQL_ROOT_PASSWORD=password"
+      - TZ=Europe/Berlin
+    networks:
+      - badgr
+    restart: unless-stopped
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:latest
+    restart: unless-stopped
+    networks:
+      - badgr
+    environment:
+      - TZ=Europe/Berlin
 
 networks:
   badgr:
@@ -74,3 +116,4 @@ networks:
 
 volumes:
   badgr_server_dev_db:
+  badgr_server_mediafiles:
