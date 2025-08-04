@@ -1,0 +1,36 @@
+name: 🔍 Run tests
+
+on:
+    push:
+        branches: [main, production, develop]
+        tags: ["v*.*.*"]
+    pull_request:
+        branches:
+            - production
+            - main
+            - develop
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: ⬇️ Checkout code
+              uses: actions/checkout@v4.2.2
+
+            - name: ©️ Copy container settings
+              run: cp ./.docker/etc/settings_local.dev.py.example ./.docker/etc/settings_local.dev.py
+
+            - name: 🐳 Set up Docker Compose
+              uses: hoverkraft-tech/compose-action@v2.3.0
+              with:
+                  compose-file: docker-compose.debug.yml
+                  up-flags: "--build -d"
+
+            - name: 😴 Let the services start
+              uses: juliangruber/sleep-action@v2.0.0
+              with:
+                  time: 90s
+
+            - name: 🔍 Run tox
+              run: docker compose exec api tox
