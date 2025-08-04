@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     # deprecated
     "composition",
     "django_filters",
+    "lti_tool",
 ]
 
 MIDDLEWARE = [
@@ -75,6 +76,7 @@ MIDDLEWARE = [
     "badgeuser.middleware.InactiveUserMiddleware",
     # 'mainsite.middleware.TrailingSlashMiddleware',
     "django_prometheus.middleware.PrometheusAfterMiddleware",
+    "lti_tool.middleware.LtiLaunchMiddleware",
 ]
 
 DBBACKUP_STORAGE = "django.core.files.storage.FileSystemStorage"

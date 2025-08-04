@@ -1,0 +1,28 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-beasties-container>
+  <head>
+    <meta charset="utf-8" />
+    <title>OEB Web Components</title>
+    <link
+      rel="stylesheet"
+      href="{% static 'webcomponents/profile/styles.css' %}"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript><link rel="stylesheet" href="{% static 'webcomponents/profile/styles.css' %}" /></noscript>
+  </head>
+  <body>
+    <oeb-skill-visualisation id="skills"></oeb-skill-visualisation>
+
+    <script src="{% static 'webcomponents/profile/polyfills.js' %}" type="module"></script>
+    <script src="{% static 'webcomponents/profile/main.js' %}" type="module"></script>
+    <script type="text/javascript">
+      document.addEventListener("DOMContentLoaded", () => {
+        const skills = JSON.parse('{{ skill_json | escapejs }}');
+        document.getElementById("skills").skills = skills;
+        console.log([document.getElementById("skills"), skills]);
+      });
+    </script>
+  </body>
+</html>
