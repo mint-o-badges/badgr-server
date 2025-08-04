@@ -7,8 +7,6 @@ import re
 from urllib.parse import urlparse
 import datetime
 import jwt
-import logging
-logger = logging.getLogger("Badgr.Events")
 
 from django.core.files.storage import default_storage
 from django.conf import settings
@@ -51,6 +49,9 @@ from mainsite.utils import (
     throttleable,
     set_url_query_params,
 )
+import logging
+
+logger = logging.getLogger("Badgr.Events")
 
 
 class AuthorizationApiView(OAuthLibMixin, APIView):
@@ -739,8 +740,11 @@ class TokenView(OAuth2ProviderTokenView):
             response.content = json.dumps(data)
 
         if grant_type == "password" and response.status_code == 401:
-            logger.info("Failed login attempt from '%s' (response code: %s)",
-                        username, response.status_code)
+            logger.info(
+                "Failed login attempt from '%s' (response code: %s)",
+                username,
+                response.status_code,
+            )
 
         if response.status_code == 200:
             setTokenHttpOnly(response)

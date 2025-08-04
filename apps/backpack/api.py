@@ -6,7 +6,6 @@ from django.conf import settings
 from django.http import Http404, JsonResponse
 from apps.mainsite.views import call_aiskills_api
 import logging
-logger = logging.getLogger("Badgr.Events")
 import datetime
 
 from django.utils import timezone
@@ -50,6 +49,8 @@ from apispec_drf.decorators import (
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAdmin
 
 from badgeuser.models import BadgeUser
+
+logger = logging.getLogger("Badgr.Events")
 
 _TRUE_VALUES = ["true", "t", "on", "yes", "y", "1", 1, 1.0, True]
 _FALSE_VALUES = ["false", "f", "off", "no", "n", "0", 0, 0.0, False]
@@ -215,8 +216,13 @@ class BackpackAssertionList(BaseEntityListView):
             error_name = e.get("name", "")
             error_result = e.get("result", "")
 
-        logger.warning("Invalid badge uploaded. Image data: '%s'; user_entity_id: '%s'; error_name: '%s'; error_result: '%s'",
-                       image_data, user_entity_id, error_name, error_result)
+        logger.warning(
+            "Invalid badge uploaded. Image data: '%s'; user_entity_id: '%s'; error_name: '%s'; error_result: '%s'",
+            image_data,
+            user_entity_id,
+            error_name,
+            error_result,
+        )
 
     def get_context_data(self, **kwargs):
         context = super(BackpackAssertionList, self).get_context_data(**kwargs)
@@ -565,8 +571,13 @@ class ShareBackpackAssertion(BaseEntityDetailView):
             )
 
         share.save()
-        logger.info("Badge '%s' shared by '%s' at '%s' from '%s'",
-                    badge.entity_id, provider, datetime.datetime.now(), source)
+        logger.info(
+            "Badge '%s' shared by '%s' at '%s' from '%s'",
+            badge.entity_id,
+            provider,
+            datetime.datetime.now(),
+            source,
+        )
 
         if redirect:
             headers = {"Location": share_url}

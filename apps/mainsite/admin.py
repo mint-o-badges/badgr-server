@@ -26,8 +26,6 @@ from oauth2_provider.models import (
     get_refresh_token_model,
 )
 
-import logging
-logger = logging.getLogger("Badgr.Events")
 from badgeuser.models import CachedEmailAddress, ProxyEmailConfirmation
 from mainsite.models import (
     AltchaChallenge,
@@ -40,11 +38,15 @@ from mainsite.models import (
 from mainsite.utils import backoff_cache_key, set_url_query_params
 import mainsite
 
+import logging
+
+logger = logging.getLogger("Badgr.Events")
+
 
 class BadgrAdminSite(AdminSite):
-    site_header = ugettext_lazy('Badgr')
+    site_header = ugettext_lazy("Badgr")
     index_title = f"{ugettext_lazy('Staff Dashboard')} - Deployment timestamp: {mainsite.__timestamp__}"
-    site_title = 'Badgr'
+    site_title = "Badgr"
 
     def autodiscover(self):
         autodiscover_modules("admin", register_to=self)
@@ -56,8 +58,11 @@ class BadgrAdminSite(AdminSite):
             if response.status_code != 302:
                 # failed /staff login
                 username = request.POST.get("username", None)
-                logger.info("User '%s' failed to login with code '%s'",
-                            username, response.status_code)
+                logger.info(
+                    "User '%s' failed to login with code '%s'",
+                    username,
+                    response.status_code,
+                )
 
         return response
 
