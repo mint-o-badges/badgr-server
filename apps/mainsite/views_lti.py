@@ -59,8 +59,9 @@ def LtiProfile(request):
         )
 
     # check if the embedding tool provided an email adress
+    lti_user = request.lti_launch.user
     try:
-        if not request.lti_launch.user.email:
+        if not lti_user.email:
             raise LtiUser.DoesNotExist
     except LtiUser.DoesNotExist:
         return render(request, "lti/not_logged_in.html")
@@ -75,7 +76,7 @@ def LtiProfile(request):
         locale = "en"
 
     # try to find a badgeuser by email and get his badgeinstances,
-    # else get badgeinstances by email
+    # else get badgeinstances by
     try:
         email_variant = EmailAddress.objects.get(email__iexact=lti_user.email)
         badgeuser = email_variant.user
