@@ -28,7 +28,7 @@ jobs:
                   up-flags: "--build -d"
 
             - name: 😴 Let the services start
-              uses: juliangruber/sleep-action@v2.0.0
+              uses: juliangruber/sleep-action@v2.0.3
               with:
                   time: 90s
 
