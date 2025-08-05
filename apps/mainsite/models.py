@@ -460,7 +460,7 @@ class AltchaChallenge(models.Model):
 
 class IframeUrl(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    iframe = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
     params = JSONField()
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(
@@ -470,3 +470,8 @@ class IframeUrl(models.Model):
         related_name="+",
         on_delete=models.SET_NULL,
     )
+
+    @property
+    def url(self):
+        baseUrl = getattr(settings, "HTTP_ORIGIN", "http://localhost:8000")
+        return f"{baseUrl}/iframes/{self.id}/"

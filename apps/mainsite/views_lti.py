@@ -1,8 +1,6 @@
 from django.conf import settings
 from django.http import (
-    HttpResponseRedirect,
     HttpResponseNotFound,
-    HttpResponse,
 )
 from django.shortcuts import render
 from django.utils.decorators import method_decorator
@@ -14,12 +12,15 @@ from lti_tool.views import LtiLaunchBaseView, OIDCLoginInitView
 from lti_tool.models import LtiUser
 from pylti1p3.deep_link_resource import DeepLinkResource
 
-from apps.mainsite.views_iframes import iframe_profile
+from backpack.utils import get_skills_tree
+from issuer.models import BadgeInstance
+from mainsite.views_iframes import iframe_profile
 
 
 @method_decorator(xframe_options_exempt, name="dispatch")
 class XFrameExemptOIDCLoginInitView(OIDCLoginInitView):
     pass
+
 
 @method_decorator(xframe_options_exempt, name="dispatch")
 class ApplicationLaunchView(LtiLaunchBaseView):
@@ -41,10 +42,10 @@ class ApplicationLaunchView(LtiLaunchBaseView):
         resources = []
         resources.append(
             DeepLinkResource()
-                .set_url(f"{baseUrl}/lti/tools/profile/")\
-                # if we don't set a custom parameter moodle throws an error
-                .set_custom_params({"custom": ""})\
-                .set_title('Learners Profile')
+            .set_url(f"{baseUrl}/lti/tools/profile/")
+            # if we don't set a custom parameter moodle throws an error
+            .set_custom_params({"custom": ""})
+            .set_title("Learners Profile")
         )
         return lti_launch.deep_link_response(resources)
 
@@ -52,29 +53,36 @@ class ApplicationLaunchView(LtiLaunchBaseView):
 @xframe_options_exempt
 @csrf_exempt
 def LtiProfile(request):
-
     if not request.lti_launch.is_present:
         return HttpResponseNotFound(
             "Error: no LTI context".encode(), content_type="text/html"
         )
 
+    # check if the embedding tool provided an email adress
     try:
-        lti_user = LtiUser.objects.get(pk=request.lti_launch.user.pk)
-        if not lti_user.email:
+        if not request.lti_launch.user.email:
             raise LtiUser.DoesNotExist
     except LtiUser.DoesNotExist:
         return render(request, "lti/not_logged_in.html")
 
-    try:
-        email_variant = EmailAddress.objects.get(email__iexact=lti_user.email)
-        badgeuser = email_variant.user
-    except EmailAddress.DoesNotExist:
-        return render(request, "lti/not_logged_in.html")
-
+    # get language (locale) from lti_launch data
     launch_data = request.lti_launch.get_launch_data()
-    launch_presentation = launch_data.get("https://purl.imsglobal.org/spec/lti/claim/launch_presentation", {})
+    launch_presentation = launch_data.get(
+        "https://purl.imsglobal.org/spec/lti/claim/launch_presentation", {}
+    )
     locale = launch_presentation.get("locale", "de").lower()
     if locale not in ["de", "en"]:
         locale = "en"
 
-    return iframe_profile(request, badgeuser, locale)
+    # try to find a badgeuser by email and get his badgeinstances,
+    # else get badgeinstances by email
+    try:
+        email_variant = EmailAddress.objects.get(email__iexact=lti_user.email)
+        badgeuser = email_variant.user
+        instances = BadgeInstance.objects.filter(user=badgeuser)
+    except EmailAddress.DoesNotExist:
+        instances = BadgeInstance.objects.filter(recipient_identifier=lti_user.email)
+
+    tree = get_skills_tree(instances, locale)
+
+    return iframe_profile(request, tree["skills"], locale)
