@@ -3,8 +3,6 @@ import os
 import re
 import urllib.parse
 
-import logging
-logger = logging.getLogger("Badgr.Events")
 import cairosvg
 from backpack.models import BackpackCollection
 from django.conf import settings
@@ -45,6 +43,10 @@ from .serializers_v1 import (
     IssuerSerializerV1,
     LearningPathSerializerV1,
 )
+import logging
+
+logger = logging.getLogger("Badgr.Events")
+
 
 class SlugToEntityIdRedirectMixin(object):
     slugToEntityIdRedirect = False

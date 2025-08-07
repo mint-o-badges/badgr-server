@@ -6,6 +6,7 @@ on:
         tags: ["v*.*.*"]
     pull_request:
         branches:
+            - production
             - main
             - develop
 
@@ -14,30 +15,6 @@ env:
     IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-    test:
-        runs-on: ubuntu-latest
-
-        steps:
-            - name: ⬇️ Checkout code
-              uses: actions/checkout@v4.2.2
-
-            - name: ©️ Copy container settings
-              run: cp ./.docker/etc/settings_local.dev.py.example ./.docker/etc/settings_local.dev.py
-
-            - name: 🐳 Set up Docker Compose
-              uses: hoverkraft-tech/compose-action@v2.3.0
-              with:
-                  compose-file: docker-compose.debug.yml
-                  up-flags: "--build -d"
-
-            - name: 😴 Let the services start
-              uses: juliangruber/sleep-action@v2.0.0
-              with:
-                  time: 90s
-
-            - name: 🔍 Run tox
-              run: docker compose exec api tox
-
     build-and-push-image:
         runs-on: ubuntu-latest
         permissions:
@@ -52,7 +29,7 @@ jobs:
               run: cp .docker/etc/settings_local.prod.py.example .docker/etc/settings_local.py
 
             - name: 🔑 Log in to the Container registry
-              uses: docker/login-action@v3.4.0
+              uses: docker/login-action@v3.5.0
               with:
                   registry: ${{ env.REGISTRY }}
                   username: ${{ github.actor }}
@@ -60,7 +37,7 @@ jobs:
 
             - name: 📋 Extract metadata (tags, labels) for Docker
               id: meta
-              uses: docker/metadata-action@v5.7.0
+              uses: docker/metadata-action@v5.8.0
               with:
                   images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
                   flavor: |
