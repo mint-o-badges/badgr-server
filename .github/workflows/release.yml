@@ -1,0 +1,20 @@
+on:
+    push:
+        branches:
+            - production
+
+jobs:
+    release-on-merge:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        steps:
+            - name: Create release and release notes
+              uses: dexwritescode/release-on-merge-action@v1
+              with:
+                  version-increment-strategy: minor
+                  initial-version: '2.10.0'
+                  tag-prefix: v
+                  generate-release-notes: true

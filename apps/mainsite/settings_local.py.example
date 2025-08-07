@@ -29,7 +29,8 @@ DATABASES = {
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
         'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
         'OPTIONS': {
-#            "SET character_set_connection=utf8mb3, collation_connection=utf8_unicode_ci",  # Uncomment when using MySQL to ensure consistency across servers
+             'charset': 'utf8mb4',
+             'init_command': "SET NAMES 'utf8mb4' COLLATE 'utf8mb4_general_ci'"
         },
     }
 }
@@ -101,8 +102,12 @@ CELERY_RESULT_BACKEND = None
 # CELERY_RESULTS_SERIALIZER = 'json'
 # CELERY_ACCEPT_CONTENT = ['json']
 
-# Run celery tasks in same thread as webserver (True means that asynchronous processing is OFF)
-CELERY_ALWAYS_EAGER = True
+# Using dedicated Celery workers for asynchronous tasks (required e.g. for asynchronous batch badge-awarding)
+# Set to True to run celery tasks in same thread as webserver (True means that asynchronous processing is OFF)
+CELERY_ALWAYS_EAGER = False
+
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
 
 
 ###
@@ -120,7 +125,7 @@ BADGR_APPROVED_ISSUERS_ONLY = False
 GDPR_COMPLIANCE_NOTIFY_ON_FIRST_AWARD = True
 
 # For the browsable API documentation at '/docs'
-# For local development environment: When you have a user you'd like to make API requests, 
+# For local development environment: When you have a user you'd like to make API requests,
 # as you can force the '/docs' endpoint to use particular credentials.
 # Get a token for your user at '/v1/user/auth-token'
 # SWAGGER_SETTINGS = {
@@ -145,13 +150,13 @@ ALLOWED_HOSTS = ['<your badgr server domain>', ]
 SECRET_KEY = 'QKQ9NKGJLXE8UVS3TXIB0DE7Q9W41J578C5FCRJL'  # ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(40))
 UNSUBSCRIBE_KEY = '8GGGDKOT4H4O7QU4GPGZ7ERY9GPE2FKALAO81WYP'  # ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(40))
 
+CSRF_COOKIE_DOMAIN = 'localhost'
 
 ###
 #
 # Logging
 #
 ###
-
 LOGS_DIR = os.path.join(TOP_DIR, 'logs')
 if not os.path.exists(LOGS_DIR):
     os.makedirs(LOGS_DIR)
@@ -159,47 +164,31 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
-        'mail_admins': {
-            'level': 'ERROR',
-            'filters': [],
-            'class': 'django.utils.log.AdminEmailHandler'
-        },
-
-        # badgr events log to disk by default
-        'badgr_events': {
+        # Only logs to the console appear in the docker / grafana logs
+        'console': {
             'level': 'INFO',
-            'formatter': 'json',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(LOGS_DIR, 'badgr_events.log')
-        }
+            'formatter': 'default',
+            'class': 'logging.StreamHandler'
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
     },
     'loggers': {
-        'django.request': {
-            'handlers': ['mail_admins'],
-            'level': 'ERROR',
-            'propagate': True,
-        },
-
         # Badgr.Events emits all badge related activity
         'Badgr.Events': {
-            'handlers': ['badgr_events'],
-            'level': 'INFO',
-            'propagate': False,
-
-        }
-
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
     },
     'formatters': {
         'default': {
             'format': '%(asctime)s %(levelname)s %(module)s %(message)s'
-        },
-        'json': {
-            '()': 'mainsite.formatters.JsonFormatter',
-            'format': '%(asctime)s',
-            'datefmt': '%Y-%m-%dT%H:%M:%S%z',
         }
     },
 }
+
 
 NOUNPROJECT_API_KEY = ''
 NOUNPROJECT_SECRET = ''

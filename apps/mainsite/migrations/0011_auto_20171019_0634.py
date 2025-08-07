@@ -7,15 +7,16 @@ import mainsite.models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('mainsite', '0010_auto_20171004_1510'),
+        ("mainsite", "0010_auto_20171004_1510"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='applicationinfo',
-            name='allowed_scopes',
-            field=models.TextField(validators=[mainsite.models.DefinedScopesValidator()]),
+            model_name="applicationinfo",
+            name="allowed_scopes",
+            field=models.TextField(
+                validators=[mainsite.models.DefinedScopesValidator()]
+            ),
         ),
     ]

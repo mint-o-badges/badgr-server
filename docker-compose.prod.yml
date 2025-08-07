@@ -1,7 +1,4 @@
-# A dockerized badgr-server stack to emulate a production build
-version: "3.9"
 services:
-
   change-ownership:
     image: alpine
     user: root
@@ -11,7 +8,6 @@ services:
       - badgr_server_api_sock:/badgr_server/sock
       - badgr_server_staticfiles:/badgr_server/staticfiles
       - badgr_server_mediafiles:/badgr_server/mediafiles
-      - ./.git:/badgr_server/.git
     command: chown -R 999:999 /badgr_server/sock /badgr_server/staticfiles /badgr_server/mediafiles
 
   # this container copies in the project code and runs the app with uwsgi
@@ -24,12 +20,20 @@ services:
         condition: service_started
       memcached:
         condition: service_started
+      redis:
+        condition: service_started
+      celery_worker:
+        condition: service_started
     volumes:
       - badgr_server_api_sock:/badgr_server/sock
       - badgr_server_mediafiles:/badgr_server/mediafiles
       - badgr_server_staticfiles:/badgr_server/staticfiles
     networks:
       - badgr
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - TZ=Europe/Berlin
 
   # this container runs memcached
   memcached:
@@ -38,6 +42,8 @@ services:
       - "11211"
     networks:
       - badgr
+    environment:
+      - TZ=Europe/Berlin
 
   # this container runs mysql (database)
   db:
@@ -45,10 +51,20 @@ services:
     volumes:
       - badgr_server_prod_db:/var/lib/mysql:rw
       - ./.docker/etc/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./my.cnf:/etc/mysql/conf.d/mysql.cnf
+
     environment:
       - "MYSQL_PASSWORD=password"
       - "MYSQL_HOST=db"
       - "MYSQL_ROOT_PASSWORD=password"
+      - TZ=Europe/Berlin
+    ulimits:
+      # Needs to be set e.g. on Fedora, Arch, etc.
+      # https://github.com/docker-library/mysql/issues/873#issuecomment-1909948195
+      # https://github.com/ddev/ddev/issues/4862#issuecomment-1533141193
+      nofile: # Fix memory leak issue on some systems when LimitCORE=infinity or LimitNOFILE=infinity (containerd)
+        soft: 1048576
+        hard: 1048576
     expose:
       - "3306"
     networks:
@@ -71,6 +87,39 @@ services:
       - badgr
     ports:
       - "8080:80"
+    environment:
+      - TZ=Europe/Berlin
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile.prod.api
+    entrypoint: [] # Override the entrypoint from Dockerfile
+    user: "999:999"
+    command: >
+      bash -c "PYTHONPATH=/badgr_server/apps celery -A mainsite worker --loglevel=info"
+    volumes:
+      - badgr_server_mediafiles:/badgr_server/mediafiles
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - "MYSQL_PASSWORD=password"
+      - "MYSQL_HOST=db"
+      - "MYSQL_ROOT_PASSWORD=password"
+      - TZ=Europe/Berlin
+    networks:
+      - badgr
+    restart: unless-stopped
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:latest
+    restart: unless-stopped
+    networks:
+      - badgr
+    environment:
+      - TZ=Europe/Berlin
 
 networks:
   badgr:

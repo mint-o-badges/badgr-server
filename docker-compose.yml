@@ -1,67 +1,124 @@
-# A dockerized badgr-server stack for development
-version: "3.3"
 services:
-  # this container mirrors in the app code and runs the django dev server
-  api:
-    build:
-      context: .
-      dockerfile: .docker/Dockerfile.dev.api
-    depends_on:
-      - "db"
-      - "memcached"
-    volumes:
-      - ./apps:/badgr_server/apps
-      - ./manage.py:/badgr_server/manage.py
-      - ./.docker/etc/settings_local.dev.py:/badgr_server/apps/mainsite/settings_local.py
-      - ./.git:/badgr_server/.git
-        # The following is needed for tox to run
-      - ./tox.ini:/badgr_server/tox.ini
-      - ./setup.py:/badgr_server/setup.py
-      - ./README.md:/badgr_server/README.md
-      - ./backups:/backups
-      - ./user_emails.csv:/badgr_server/user_emails.csv
-      - ./esco_issuers.txt:/badgr_server/esco_issuers.txt
-    networks:
-      - badgr
-    ports:
-      - "8000:8000"
+    # this container mirrors in the app code and runs the django dev server
+    api:
+        build:
+            context: .
+            dockerfile: .docker/Dockerfile.dev.api
+        depends_on:
+            - "db"
+            - "memcached"
+            - "redis"
+            - "celery_worker"
+        volumes:
+            - ./apps:/badgr_server/apps
+            - ./openbadges:/badgr_server/openbadges
+            - ./openbadges_bakery:/badgr_server/openbadges_bakery
+            - ./manage.py:/badgr_server/manage.py
+            - ./.docker/etc/settings_local.dev.py:/badgr_server/apps/mainsite/settings_local.py
+              # The following is needed for tox to run
+            - ./pyproject.toml:/badgr_server/pyproject.toml
+            - ./setup.py:/badgr_server/setup.py
+            - ./README.md:/badgr_server/README.md
+            - ./backups:/backups
+            - ./user_emails.csv:/badgr_server/user_emails.csv
+            - ./esco_issuers.txt:/badgr_server/esco_issuers.txt
+            - ./badgr_server_mediafiles:/badgr_server/mediafiles
+        networks:
+            - badgr
+        ports:
+            - "8000:8000"
+        environment:
+            - CELERY_BROKER_URL=redis://redis:6379/0
+            - CELERY_RESULT_BACKEND=redis://redis:6379/0
+            - TZ=Europe/Berlin
 
-  # this container runs memcached
-  memcached:
-    image: "bitnami/memcached:latest"
-    expose:
-      - "11211"
-    networks:
-      - badgr
-    command: ["memcached", "-m", "64", "-I", "10m"]
-  # this container runs mysql (database)
-  db:
-    image: mysql:5.7.31
-    # platform: linux/amd64 comment in if you are on Apple Silicon
-    volumes:
-      - badgr_server_dev_db:/var/lib/mysql:rw
-      - ./.docker/etc/init.sql:/docker-entrypoint-initdb.d/init.sql
-    environment:
-      - "MYSQL_PASSWORD=password"
-      - "MYSQL_HOST=db"
-      - "MYSQL_ROOT_PASSWORD=password"
-    expose:
-      - "3306"
-    networks:
-      - badgr
-  mailhog:
-    image: mailhog/mailhog
-    container_name: mailhog
-    restart: always
-    ports:
-      - "1025:1025" #127.0.0.1:1025:1025
-      - "8025:8025"
-    networks:
-      - badgr
+    # this container runs memcached
+    memcached:
+        image: "bitnami/memcached:latest"
+        expose:
+            - "11211"
+        networks:
+            - badgr
+        command: ["memcached", "-m", "512", "-I", "10m"]
+        environment:
+            - TZ=Europe/Berlin
+
+    # this container runs mysql (database)
+    db:
+        image: mysql:5.7.31
+        # platform: linux/amd64 comment in if you are on Apple Silicon
+        volumes:
+            - badgr_server_dev_db:/var/lib/mysql:rw
+            - ./.docker/etc/init.sql:/docker-entrypoint-initdb.d/init.sql
+            - ./my.cnf:/etc/mysql/conf.d/mysql.cnf
+        environment:
+            - "MYSQL_PASSWORD=password"
+            - "MYSQL_HOST=db"
+            - "MYSQL_ROOT_PASSWORD=password"
+            - TZ=Europe/Berlin
+        ulimits:
+            # Needs to be set e.g. on Fedora, Arch, etc.
+            # https://github.com/docker-library/mysql/issues/873#issuecomment-1909948195
+            # https://github.com/ddev/ddev/issues/4862#issuecomment-1533141193
+            nofile: # Fix memory leak issue on some systems when LimitCORE=infinity or LimitNOFILE=infinity (containerd)
+                soft: 1048576
+                hard: 1048576
+        expose:
+            - "3306"
+        networks:
+            - badgr
+
+    mailhog:
+        image: mailhog/mailhog
+        container_name: mailhog
+        restart: always
+        ports:
+            - "1025:1025" #127.0.0.1:1025:1025
+            - "8025:8025"
+        networks:
+            - badgr
+        environment:
+            - TZ=Europe/Berlin
+
+    celery_worker:
+        build:
+            context: .
+            dockerfile: .docker/Dockerfile.dev.api
+        entrypoint: [] # Override the entrypoint from Dockerfile
+        command: >
+            bash -c "PYTHONPATH=/badgr_server/apps celery -A mainsite worker --loglevel=info"
+        volumes:
+            - ./apps:/badgr_server/apps
+            - ./openbadges:/badgr_server/openbadges
+            - ./openbadges_bakery:/badgr_server/openbadges_bakery
+            - ./manage.py:/badgr_server/manage.py
+            - ./.docker/etc/settings_local.dev.py:/badgr_server/apps/mainsite/settings_local.py
+            - badgr_server_mediafiles:/badgr_server/mediafiles
+        environment:
+            - CELERY_BROKER_URL=redis://redis:6379/0
+            - CELERY_RESULT_BACKEND=redis://redis:6379/0
+            - "MYSQL_PASSWORD=password"
+            - "MYSQL_HOST=db"
+            - "MYSQL_ROOT_PASSWORD=password"
+            - TZ=Europe/Berlin
+        networks:
+            - badgr
+        restart: unless-stopped
+        depends_on:
+            - redis
+
+    redis:
+        image: redis:latest
+        restart: unless-stopped
+        networks:
+            - badgr
+        environment:
+            - TZ=Europe/Berlin
 
 networks:
-  badgr:
-    driver: bridge
+    badgr:
+        driver: bridge
 
 volumes:
-  badgr_server_dev_db:
+    badgr_server_dev_db:
+    badgr_server_mediafiles:

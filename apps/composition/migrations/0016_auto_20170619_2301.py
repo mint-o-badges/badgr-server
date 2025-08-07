@@ -6,102 +6,101 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('composition', '0015_auto_20170420_0649'),
+        ("composition", "0015_auto_20170420_0649"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='collection',
+            name="collection",
             unique_together=set([]),
         ),
         migrations.RemoveField(
-            model_name='collection',
-            name='instances',
+            model_name="collection",
+            name="instances",
         ),
         migrations.RemoveField(
-            model_name='collection',
-            name='owner',
+            model_name="collection",
+            name="owner",
         ),
         migrations.RemoveField(
-            model_name='collection',
-            name='shared_with',
+            model_name="collection",
+            name="shared_with",
         ),
         migrations.AlterUniqueTogether(
-            name='collectionpermission',
+            name="collectionpermission",
             unique_together=set([]),
         ),
         migrations.RemoveField(
-            model_name='collectionpermission',
-            name='collection',
+            model_name="collectionpermission",
+            name="collection",
         ),
         migrations.RemoveField(
-            model_name='collectionpermission',
-            name='user',
+            model_name="collectionpermission",
+            name="user",
         ),
         migrations.RemoveField(
-            model_name='collectionshare',
-            name='collection',
+            model_name="collectionshare",
+            name="collection",
         ),
         migrations.RemoveField(
-            model_name='localbadgeinstance',
-            name='created_by',
+            model_name="localbadgeinstance",
+            name="created_by",
         ),
         migrations.RemoveField(
-            model_name='localbadgeinstance',
-            name='issuer_badgeclass',
+            model_name="localbadgeinstance",
+            name="issuer_badgeclass",
         ),
         migrations.RemoveField(
-            model_name='localbadgeinstance',
-            name='recipient_user',
-        )
+            model_name="localbadgeinstance",
+            name="recipient_user",
+        ),
     ]
-    if settings.DATABASES['default'].get('ENGINE', '') != 'sql_server.pyodbc':
+    if settings.DATABASES["default"].get("ENGINE", "") != "sql_server.pyodbc":
         # only include this migration if not sql server, it doesn't like it.
         operations += [
             migrations.AlterUniqueTogether(
-                name='localbadgeinstancecollection',
+                name="localbadgeinstancecollection",
                 unique_together=set([]),
             )
         ]
     operations += [
         migrations.RemoveField(
-            model_name='localbadgeinstancecollection',
-            name='collection',
+            model_name="localbadgeinstancecollection",
+            name="collection",
         ),
         migrations.RemoveField(
-            model_name='localbadgeinstancecollection',
-            name='instance',
+            model_name="localbadgeinstancecollection",
+            name="instance",
         ),
         migrations.RemoveField(
-            model_name='localbadgeinstancecollection',
-            name='issuer_instance',
+            model_name="localbadgeinstancecollection",
+            name="issuer_instance",
         ),
         migrations.RemoveField(
-            model_name='localbadgeinstanceshare',
-            name='instance',
+            model_name="localbadgeinstanceshare",
+            name="instance",
         ),
         migrations.RemoveField(
-            model_name='localbadgeinstanceshare',
-            name='issuer_instance',
+            model_name="localbadgeinstanceshare",
+            name="issuer_instance",
         ),
         migrations.DeleteModel(
-            name='Collection',
+            name="Collection",
         ),
         migrations.DeleteModel(
-            name='CollectionPermission',
+            name="CollectionPermission",
         ),
         migrations.DeleteModel(
-            name='CollectionShare',
+            name="CollectionShare",
         ),
         migrations.DeleteModel(
-            name='LocalBadgeInstance',
+            name="LocalBadgeInstance",
         ),
         migrations.DeleteModel(
-            name='LocalBadgeInstanceCollection',
+            name="LocalBadgeInstanceCollection",
         ),
         migrations.DeleteModel(
-            name='LocalBadgeInstanceShare',
+            name="LocalBadgeInstanceShare",
         ),
     ]

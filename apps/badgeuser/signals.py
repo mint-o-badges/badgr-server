@@ -1,14 +1,12 @@
-import badgrlog
-
-badgrlogger = badgrlog.BadgrLogger()
-
+import logging
+logger = logging.getLogger("Badgr.Events")
 
 def log_user_signed_up(sender, **kwargs):
-    badgrlogger.event(badgrlog.UserSignedUp(**kwargs))
+    logger.debug("User '%s' signed up", kwargs.get("user").username)
 
 
 def log_email_confirmed(sender, **kwargs):
-    badgrlogger.event(badgrlog.EmailConfirmed(**kwargs))
+    logger.debug("Confirmed email '%s'", kwargs.get("email_address").email)
 
 
 def handle_email_created(sender, instance=None, created=False, **kwargs):
@@ -18,4 +16,4 @@ def handle_email_created(sender, instance=None, created=False, **kwargs):
     leaves user.cached_emails() empty.
     """
     if created:
-        instance.user.publish_method('cached_emails')
+        instance.user.publish_method("cached_emails")

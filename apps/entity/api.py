@@ -8,42 +8,29 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 from rest_framework.views import APIView
 
-import badgrlog
 from mainsite.pagination import BadgrCursorPagination
+
+import logging
+
+logger = logging.getLogger("Badgr.Events")
 
 
 class BaseEntityView(APIView):
-    create_event = None
-    logger = None
-
     def get_context_data(self, **kwargs):
         return {
-            'request': self.request,
-            'kwargs': kwargs,
+            "request": self.request,
+            "kwargs": kwargs,
         }
 
     def get_serializer_class(self):
-        if self.request.version == 'v1' and hasattr(self, 'v1_serializer_class'):
+        if self.request.version == "v1" and hasattr(self, "v1_serializer_class"):
             return self.v1_serializer_class
-        elif self.request.version == 'v2' and hasattr(self, 'v2_serializer_class'):
+        elif self.request.version == "v2" and hasattr(self, "v2_serializer_class"):
             return self.v2_serializer_class
-        return getattr(self, 'serializer_class', None)
-
-    def get_logger(self):
-        if self.logger:
-            return self.logger
-        self.logger = badgrlog.BadgrLogger()
-        return self.logger
-
-    def get_create_event(self):
-        return getattr(self, 'create_event', None)
+        return getattr(self, "serializer_class", None)
 
     def log_create(self, instance):
-        event_cls = self.get_create_event()
-        if event_cls is not None:
-            logger = self.get_logger()
-            if logger is not None:
-                logger.event(event_cls(instance))
+        logger.info("Created instance: '%s'", instance)
 
 
 class BaseEntityListView(BaseEntityView):
@@ -56,7 +43,10 @@ class BaseEntityListView(BaseEntityView):
         """
         GET a list of an entities the authenticated user is authorized for
         """
-        if self.allow_any_unauthenticated_access is False and not request.user.is_authenticated:
+        if (
+            self.allow_any_unauthenticated_access is False
+            and not request.user.is_authenticated
+        ):
             raise NotAuthenticated()
 
         objects = self.get_objects(request, **kwargs)
@@ -65,11 +55,11 @@ class BaseEntityListView(BaseEntityView):
         serializer = serializer_class(objects, many=True, context=context)
 
         headers = dict()
-        paginator = getattr(self, 'paginator', None)
-        if paginator and callable(getattr(paginator, 'get_link_header', None)):
+        paginator = getattr(self, "paginator", None)
+        if paginator and callable(getattr(paginator, "get_link_header", None)):
             link_header = paginator.get_link_header()
             if link_header:
-                headers['Link'] = link_header
+                headers["Link"] = link_header
 
         return Response(serializer.data, headers=headers)
 
@@ -90,7 +80,7 @@ class BaseEntityListView(BaseEntityView):
 
 
 class VersionedObjectMixin(object):
-    entity_id_field_name = 'entity_id'
+    entity_id_field_name = "entity_id"
     allow_any_unauthenticated_access = False
 
     def has_object_permissions(self, request, obj):
@@ -100,17 +90,22 @@ class VersionedObjectMixin(object):
         return True
 
     def get_object(self, request, **kwargs):
-        if self.allow_any_unauthenticated_access is False and not request.user.is_authenticated:
+        if (
+            self.allow_any_unauthenticated_access is False
+            and not request.user.is_authenticated
+        ):
             raise NotAuthenticated()
 
-        version = getattr(request, 'version', 'v1')
-        if version == 'v1':
-            identifier = kwargs.get('slug')
-        elif version == 'v2':
-            identifier = kwargs.get('entity_id')
+        version = getattr(request, "version", "v1")
+        if version == "v1":
+            identifier = kwargs.get("slug")
+        elif version == "v2":
+            identifier = kwargs.get("entity_id")
 
         try:
-            self.object = self.model.cached.get(**{self.get_entity_id_field_name(): identifier})
+            self.object = self.model.cached.get(
+                **{self.get_entity_id_field_name(): identifier}
+            )
         except self.model.DoesNotExist:
             pass
         else:
@@ -118,7 +113,7 @@ class VersionedObjectMixin(object):
                 raise Http404
             return self.object
 
-        if version == 'v1':
+        if version == "v1":
             # try a lookup by legacy slug if its v1
             try:
                 self.object = self.model.cached.get(slug=identifier)
@@ -134,27 +129,29 @@ class VersionedObjectMixin(object):
 
     def get_entity_id_field_name(self):
         return self.entity_id_field_name
-    
+
+
 class VersionedObjectMixinPublic(object):
-    entity_id_field_name = 'entity_id'
+    entity_id_field_name = "entity_id"
     allow_any_unauthenticated_access = True
 
     def get_object(self, request, **kwargs):
-
-        version = getattr(request, 'version', 'v1')
-        if version == 'v1':
-            identifier = kwargs.get('slug')
-        elif version == 'v2':
-            identifier = kwargs.get('entity_id')
+        version = getattr(request, "version", "v1")
+        if version == "v1":
+            identifier = kwargs.get("slug")
+        elif version == "v2":
+            identifier = kwargs.get("entity_id")
 
         try:
-            self.object = self.model.cached.get(**{self.get_entity_id_field_name(): identifier})
+            self.object = self.model.cached.get(
+                **{self.get_entity_id_field_name(): identifier}
+            )
         except self.model.DoesNotExist:
             pass
         else:
             return self.object
 
-        if version == 'v1':
+        if version == "v1":
             # try a lookup by legacy slug if its v1
             try:
                 self.object = self.model.cached.get(slug=identifier)
@@ -167,10 +164,10 @@ class VersionedObjectMixinPublic(object):
         raise Http404
 
     def get_entity_id_field_name(self):
-        return self.entity_id_field_name    
+        return self.entity_id_field_name
+
 
 class BaseEntityDetailViewPublic(BaseEntityView, VersionedObjectMixinPublic):
-
     def get(self, request, **kwargs):
         """
         GET a single entity by its identifier
@@ -182,8 +179,8 @@ class BaseEntityDetailViewPublic(BaseEntityView, VersionedObjectMixinPublic):
         serializer = serializer_class(obj, context=context)
         return Response(serializer.data)
 
-class BaseEntityDetailView(BaseEntityView, VersionedObjectMixin):
 
+class BaseEntityDetailView(BaseEntityView, VersionedObjectMixin):
     def get(self, request, **kwargs):
         """
         GET a single entity by its identifier
@@ -206,7 +203,9 @@ class BaseEntityDetailView(BaseEntityView, VersionedObjectMixin):
 
         context = self.get_context_data(**kwargs)
         serializer_class = self.get_serializer_class()
-        serializer = serializer_class(obj, data=data, partial=allow_partial, context=context)
+        serializer = serializer_class(
+            obj, data=data, partial=allow_partial, context=context
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save(updated_by=request.user)
         return Response(serializer.data)
@@ -224,7 +223,7 @@ class UncachedPaginatedViewMixin(object):
     min_per_page = 1
     max_per_page = 500
     default_per_page = None  # dont paginate by default
-    per_page_query_parameter_name = 'num'
+    per_page_query_parameter_name = "num"
     ordering = "-created_at"
 
     def get_ordering(self):
@@ -234,7 +233,11 @@ class UncachedPaginatedViewMixin(object):
         if request is None:
             return self.default_per_page
         try:
-            per_page = int(request.query_params.get(self.per_page_query_parameter_name, self.default_per_page))
+            per_page = int(
+                request.query_params.get(
+                    self.per_page_query_parameter_name, self.default_per_page
+                )
+            )
             per_page = max(self.min_per_page, per_page)
             return min(self.max_per_page, per_page)
         except (TypeError, ValueError):
@@ -249,7 +252,9 @@ class UncachedPaginatedViewMixin(object):
 
         # only paginate on request
         if per_page:
-            self.paginator = BadgrCursorPagination(ordering=self.get_ordering(), page_size=per_page)
+            self.paginator = BadgrCursorPagination(
+                ordering=self.get_ordering(), page_size=per_page
+            )
             page = self.paginator.paginate_queryset(queryset, request=request)
         else:
             page = list(queryset)

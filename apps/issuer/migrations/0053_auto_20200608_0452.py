@@ -5,35 +5,48 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('issuer', '0052_auto_20200106_1621'),
+        ("issuer", "0052_auto_20200106_1621"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='badgeclass',
-            name='image',
-            field=models.FileField(blank=True, upload_to='uploads/badges'),
+            model_name="badgeclass",
+            name="image",
+            field=models.FileField(blank=True, upload_to="uploads/badges"),
         ),
         migrations.AlterField(
-            model_name='badgeinstance',
-            name='acceptance',
-            field=models.CharField(choices=[('Unaccepted', 'Unaccepted'), ('Accepted', 'Accepted'), ('Rejected', 'Rejected')], default='Unaccepted', max_length=254),
+            model_name="badgeinstance",
+            name="acceptance",
+            field=models.CharField(
+                choices=[
+                    ("Unaccepted", "Unaccepted"),
+                    ("Accepted", "Accepted"),
+                    ("Rejected", "Rejected"),
+                ],
+                default="Unaccepted",
+                max_length=254,
+            ),
         ),
         migrations.AlterField(
-            model_name='badgeinstance',
-            name='image',
-            field=models.FileField(blank=True, upload_to='uploads/badges'),
+            model_name="badgeinstance",
+            name="image",
+            field=models.FileField(blank=True, upload_to="uploads/badges"),
         ),
         migrations.AlterField(
-            model_name='issuer',
-            name='badgrapp',
-            field=models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, to='mainsite.BadgrApp'),
+            model_name="issuer",
+            name="badgrapp",
+            field=models.ForeignKey(
+                blank=True,
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="mainsite.BadgrApp",
+            ),
         ),
         migrations.AlterField(
-            model_name='issuer',
-            name='image',
-            field=models.FileField(blank=True, null=True, upload_to='uploads/issuers'),
+            model_name="issuer",
+            name="image",
+            field=models.FileField(blank=True, null=True, upload_to="uploads/issuers"),
         ),
     ]

@@ -1,34 +1,33 @@
-from collections import OrderedDict
 import json
+from collections import OrderedDict
+
 import pytz
-
 from django.utils.html import strip_tags
-from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
-from rest_framework.authtoken.serializers import AuthTokenSerializer
-
-import badgrlog
 from entity.serializers import BaseSerializerV2
 from mainsite.pagination import BadgrCursorPagination
+from rest_framework import serializers
+from rest_framework.authtoken.serializers import AuthTokenSerializer
+from rest_framework.exceptions import ValidationError
+import logging
 
-badgrlogger = badgrlog.BadgrLogger()
+logger = logging.getLogger("Badgr.Events")
 
 
 class HumanReadableBooleanField(serializers.BooleanField):
-    TRUE_VALUES = serializers.BooleanField.TRUE_VALUES | set(('on', 'On', 'ON'))
-    TRUE_VALUES = serializers.BooleanField.TRUE_VALUES | set(('on', 'On', 'ON'))
-    FALSE_VALUES = serializers.BooleanField.FALSE_VALUES | set(('off', 'Off', 'OFF'))
+    TRUE_VALUES = serializers.BooleanField.TRUE_VALUES | set(("on", "On", "ON"))
+    TRUE_VALUES = serializers.BooleanField.TRUE_VALUES | set(("on", "On", "ON"))
+    FALSE_VALUES = serializers.BooleanField.FALSE_VALUES | set(("off", "Off", "OFF"))
 
 
 class ReadOnlyJSONField(serializers.CharField):
-
     def to_representation(self, value):
         if isinstance(value, (dict, list)):
             return value
         else:
             raise serializers.ValidationError(
                 "WriteableJsonField: Did not get a JSON-serializable datatype "
-                "from storage for this item: " + str(value))
+                "from storage for this item: " + str(value)
+            )
 
 
 class WritableJSONField(ReadOnlyJSONField):
@@ -38,18 +37,22 @@ class WritableJSONField(ReadOnlyJSONField):
         except Exception:
             # TODO: this is going to choke on dict input, when it should be allowed in addition to JSON.
             raise serializers.ValidationError(
-                "WriteableJsonField: Could not process input into a python dict for storage " + str(data))
+                "WriteableJsonField: Could not process input into a python dict for storage "
+                + str(data)
+            )
 
         return internal_value
 
 
 class LinkedDataEntitySerializer(serializers.Serializer):
     def to_representation(self, instance):
-        representation = super(LinkedDataEntitySerializer, self).to_representation(instance)
-        representation['@id'] = instance.jsonld_id
+        representation = super(LinkedDataEntitySerializer, self).to_representation(
+            instance
+        )
+        representation["@id"] = instance.jsonld_id
 
         try:
-            representation['@type'] = self.jsonld_type
+            representation["@type"] = self.jsonld_type
         except AttributeError:
             pass
 
@@ -64,7 +67,7 @@ class LinkedDataReferenceField(serializers.Serializer):
     """
 
     def __init__(self, keys=[], model=None, read_only=True, field_names=None, **kwargs):
-        kwargs.pop('many', None)
+        kwargs.pop("many", None)
         super(LinkedDataReferenceField, self).__init__(read_only=read_only, **kwargs)
         self.included_keys = keys
         self.model = model
@@ -72,7 +75,7 @@ class LinkedDataReferenceField(serializers.Serializer):
 
     def to_representation(self, obj):
         output = OrderedDict()
-        output['@id'] = obj.jsonld_id
+        output["@id"] = obj.jsonld_id
 
         for key in self.included_keys:
             field_name = key
@@ -84,7 +87,7 @@ class LinkedDataReferenceField(serializers.Serializer):
 
     def to_internal_value(self, data):
         if not isinstance(data, str):
-            idstring = data.get('@id')
+            idstring = data.get("@id")
         else:
             idstring = data
 
@@ -131,8 +134,10 @@ class CachedUrlHyperlinkedRelatedField(serializers.HyperlinkedRelatedField):
 
 class StripTagsCharField(serializers.CharField):
     def __init__(self, *args, **kwargs):
-        self.strip_tags = kwargs.pop('strip_tags', True)
-        self.convert_null = kwargs.pop('convert_null', False)  # Converts db nullable fields to empty strings
+        self.strip_tags = kwargs.pop("strip_tags", True)
+        self.convert_null = kwargs.pop(
+            "convert_null", False
+        )  # Converts db nullable fields to empty strings
         super(StripTagsCharField, self).__init__(*args, **kwargs)
 
     def to_internal_value(self, data):
@@ -150,8 +155,8 @@ class StripTagsCharField(serializers.CharField):
 
 class MarkdownCharFieldValidator(object):
     def __call__(self, value):
-        if '![' in value:
-            raise ValidationError('Images not supported in markdown')
+        if "![" in value:
+            raise ValidationError("Images not supported in markdown")
 
 
 class MarkdownCharField(StripTagsCharField):
@@ -161,46 +166,112 @@ class MarkdownCharField(StripTagsCharField):
 class LegacyVerifiedAuthTokenSerializer(AuthTokenSerializer):
     def validate(self, attrs):
         attrs = super(LegacyVerifiedAuthTokenSerializer, self).validate(attrs)
-        user = attrs.get('user')
+        user = attrs.get("user")
 
-        badgrlogger.event(badgrlog.DeprecatedApiAuthToken(self.context['request'], user.username, is_new_token=True))
+        logger.warning("Deprecated new auth token")
+        logger.info("Username: '%s'", user.username)
         if not user.verified:
             try:
                 email = user.cached_emails()[0]
                 email.send_confirmation()
             except IndexError:
                 pass
-            raise ValidationError('You must verify your primary email address before you can sign in.')
+            raise ValidationError(
+                "You must verify your primary email address before you can sign in."
+            )
         return attrs
 
 
 class OriginalJsonSerializerMixin(serializers.Serializer):
     def to_representation(self, instance):
-        representation = super(OriginalJsonSerializerMixin, self).to_representation(instance)
+        representation = super(OriginalJsonSerializerMixin, self).to_representation(
+            instance
+        )
 
-        if hasattr(instance, 'get_filtered_json'):
+        if hasattr(instance, "get_filtered_json"):
             # properties in original_json not natively supported
             extra_properties = instance.get_filtered_json()
             if extra_properties and len(extra_properties) > 0:
                 for k, v in list(extra_properties.items()):
-                    if k not in representation or v is not None and representation.get(k, None) is None:
+                    if (
+                        k not in representation
+                        or v is not None
+                        and representation.get(k, None) is None
+                    ):
                         representation[k] = v
 
         return representation
 
 
+class ExcludeFieldsMixin:
+    """
+    A mixin to recursively exclude specific fields from the given request data.
+
+    Use in a serializers `get_fields` method to enable it:
+    ```
+    def get_fields(self):
+        fields = super().get_fields()
+        ...
+        # Use the mixin to exclude any fields that are unwantend in the final result
+        exclude_fields = self.context.get("exclude_fields", [])
+        self.exclude_fields(fields, exclude_fields)
+        return fields
+    ```
+
+    Then use the context of the serializer to enable it:
+    ```
+    context["exclude_fields"] = [
+        *context.get("exclude_fields", []),
+        "staff",
+        "created_by",
+    ]
+    ```
+
+    You can also hook into the `to_representation` method
+    to exclude fields from the final json (e.g. when extensions are present)
+    instead of using the get_fields method:
+    ```
+    def to_representation(self, instance):
+        representation = super(BadgeClassSerializerV1, self).to_representation(instance)
+        exclude_fields = self.context.get("exclude_fields", [])
+        self.exclude_fields(representation, exclude_fields)
+        ...
+        return representation
+    ```
+    """
+
+    def exclude_fields(self, data, fields_to_exclude):
+        """
+        Exclude specified fields from the given request data recusively.
+        """
+        for field in fields_to_exclude:
+            if isinstance(data, dict):
+                data.pop(field, None)
+                for key in data.keys():
+                    data[key] = self.exclude_fields(data[key], [field])
+            elif isinstance(data, list):
+                for item in data:
+                    self.exclude_fields(item, [field])
+
+        return data
+
+
 class CursorPaginatedListSerializer(serializers.ListSerializer):
-    def __init__(self, queryset, request, ordering='updated_at', *args, **kwargs):
+    def __init__(self, queryset, request, ordering="updated_at", *args, **kwargs):
         self.paginator = BadgrCursorPagination(ordering=ordering)
         self.page = self.paginator.paginate_queryset(queryset, request)
-        super(CursorPaginatedListSerializer, self).__init__(data=self.page, *args, **kwargs)
+        super(CursorPaginatedListSerializer, self).__init__(
+            data=self.page, *args, **kwargs
+        )
 
     def to_representation(self, data):
-        representation = super(CursorPaginatedListSerializer, self).to_representation(data)
-        envelope = BaseSerializerV2.response_envelope(result=representation,
-                                                      success=True,
-                                                      description='ok')
-        envelope['pagination'] = self.paginator.get_page_info()
+        representation = super(CursorPaginatedListSerializer, self).to_representation(
+            data
+        )
+        envelope = BaseSerializerV2.response_envelope(
+            result=representation, success=True, description="ok"
+        )
+        envelope["pagination"] = self.paginator.get_page_info()
         return envelope
 
     @property
@@ -213,12 +284,12 @@ class DateTimeWithUtcZAtEndField(serializers.DateTimeField):
 
 
 class ApplicationInfoSerializer(serializers.Serializer):
-    name = serializers.CharField(read_only=True, source='get_visible_name')
-    image = serializers.URLField(read_only=True, source='get_icon_url')
+    name = serializers.CharField(read_only=True, source="get_visible_name")
+    image = serializers.URLField(read_only=True, source="get_icon_url")
     website_url = serializers.URLField(read_only=True)
-    clientId = serializers.CharField(read_only=True, source='application.client_id')
-    policyUri = serializers.URLField(read_only=True, source='policy_uri')
-    termsUri = serializers.URLField(read_only=True, source='terms_uri')
+    clientId = serializers.CharField(read_only=True, source="application.client_id")
+    policyUri = serializers.URLField(read_only=True, source="policy_uri")
+    termsUri = serializers.URLField(read_only=True, source="terms_uri")
 
 
 class AuthorizationSerializer(serializers.Serializer):

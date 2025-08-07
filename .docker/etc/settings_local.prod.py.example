@@ -28,7 +28,8 @@ DATABASES = {
         'HOST': 'db',
         'PORT': '',
         'OPTIONS': {
-#            "SET character_set_connection=utf8mb3, collation_connection=utf8_unicode_ci",  # Uncomment when using MySQL to ensure consistency across servers
+            'charset': 'utf8mb4',
+            'init_command': "SET NAMES 'utf8mb4' COLLATE 'utf8mb4_general_ci'"
         },
     }
 }
@@ -63,9 +64,12 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # Celery Asynchronous Task Processing (Optional)
 #
 ###
-CELERY_RESULT_BACKEND = None
-# Run celery tasks in same thread as webserver (True means that asynchronous processing is OFF)
-CELERY_ALWAYS_EAGER = True
+# Using dedicated Celery workers for asynchronous tasks (required e.g. for asynchronous batch badge-awarding)
+# Set to True to run celery tasks in same thread as webserver (True means that asynchronous processing is OFF)
+CELERY_ALWAYS_EAGER = False
+
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
 
 
 ###
@@ -76,6 +80,9 @@ CELERY_ALWAYS_EAGER = True
 HTTP_ORIGIN = 'http://localhost:8080'
 ALLOWED_HOSTS = ['*']
 STATIC_URL = HTTP_ORIGIN + '/static/'
+
+CSRF_COOKIE_DOMAIN = ''
+
 
 # Optionally restrict issuer creation to accounts that have the 'issuer.add_issuer' permission
 BADGR_APPROVED_ISSUERS_ONLY = False
@@ -100,44 +107,28 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
-        'mail_admins': {
-            'level': 'ERROR',
-            'filters': [],
-            'class': 'django.utils.log.AdminEmailHandler'
-        },
-
-        # badgr events log to disk by default
-        'badgr_events': {
+        # Only logs to the console appear in the docker / grafana logs
+        'console': {
             'level': 'INFO',
-            'formatter': 'json',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(LOGS_DIR, 'badgr_events.log')
-        }
+            'formatter': 'default',
+            'class': 'logging.StreamHandler'
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "WARNING",
     },
     'loggers': {
-        'django.request': {
-            'handlers': ['mail_admins'],
-            'level': 'ERROR',
-            'propagate': True,
-        },
-
         # Badgr.Events emits all badge related activity
         'Badgr.Events': {
-            'handlers': ['badgr_events'],
-            'level': 'INFO',
-            'propagate': False,
-
-        }
-
+            'handlers': ['console'],
+            # INFO contains sensible information about users
+            'level': 'WARNING',
+        },
     },
     'formatters': {
         'default': {
             'format': '%(asctime)s %(levelname)s %(module)s %(message)s'
-        },
-        'json': {
-            '()': 'mainsite.formatters.JsonFormatter',
-            'format': '%(asctime)s',
-            'datefmt': '%Y-%m-%dT%H:%M:%S%z',
         }
     },
 }
@@ -148,6 +139,7 @@ NOUNPROJECT_SECRET = ''
 AISKILLS_API_KEY = ''
 AISKILLS_ENDPOINT_CHATS = ''
 AISKILLS_ENDPOINT_KEYWORDS = ''
+AISKILLS_ENDPOINT_TREE = ''
 
 OIDC_RP_CLIENT_ID = ''
 OIDC_RP_CLIENT_SECRET = ''
@@ -165,3 +157,8 @@ LOGOUT_REDIRECT_URL = f'{LOGIN_BASE_URL}'
 ALTCHA_API_KEY = ''
 ALTCHA_SECRET = ''
 ALTCHA_SPAMFILTER_ENDPOINT = "https://eu.altcha.org/api/v1/classify?"
+
+# CMS contents
+CMS_API_BASE_URL = ''
+CMS_API_BASE_PATH = ''
+CMS_API_KEY = ''
