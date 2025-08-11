@@ -4,6 +4,9 @@ import io
 import os
 import base64
 from django.contrib.staticfiles import finders
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ImageComposer:
@@ -100,8 +103,8 @@ class ImageComposer:
             return result
 
         except Exception as e:
-            print(f"Error preparing uploaded image: {e}")
-            return None
+            logger.error(f"Error preparing uploaded image: {e}")
+            raise e
 
     def _get_colored_shape_svg(self):
         """
@@ -118,8 +121,7 @@ class ImageComposer:
             svg_path = finders.find(f"images/{svg_filename}")
 
             if not os.path.exists(svg_path):
-                print(f"SVG file not found: {svg_path}")
-                return None
+                raise (f"SVG file not found: {svg_path}")
 
             with open(svg_path, "r", encoding="utf-8") as f:
                 png_buf = io.BytesIO()
@@ -127,14 +129,13 @@ class ImageComposer:
                 try:
                     cairosvg.svg2png(file_obj=f, write_to=png_buf)
                 except IOError as e:
-                    print(f"IO error while converting svg2png {e}")
+                    raise (f"IO error while converting svg2png {e}")
                 img = Image.open(png_buf)
 
             return img
 
         except Exception as e:
-            print(f"Error processing shape SVG: {e}")
-            return None
+            raise (f"Error processing shape SVG: {e}")
 
     def _add_issuer_logo(self, canvas, category, issuerImage):
         """
@@ -179,8 +180,7 @@ class ImageComposer:
         frame_path = finders.find("images/square.svg")
 
         if not os.path.exists(frame_path):
-            print(f"Square frame SVG not found: {frame_path}")
-            return None
+            raise (f"Square frame SVG not found: {frame_path}")
 
         try:
             with open(frame_path, "r", encoding="utf-8") as f:
@@ -191,13 +191,13 @@ class ImageComposer:
 
         except Exception as e:
             print(f"Error loading logo frame: {e}")
-            return None
+            raise e
 
     def _prepare_issuer_logo(self, logo_field, target_size):
         """Prepare issuer logo with support for SVG and PNG formats"""
         try:
             if not hasattr(logo_field, "name"):
-                return None
+                raise
 
             file_extension = logo_field.name.lower().split(".")[-1]
 
@@ -206,12 +206,12 @@ class ImageComposer:
             elif file_extension in ["png", "jpg", "jpeg"]:
                 return self._prepare_raster_logo(logo_field, target_size)
             else:
-                print(f"Unsupported logo format: {file_extension}")
-                return None
+                logger.error(f"Unsupported logo format: {file_extension}")
+                raise
 
         except Exception as e:
             print(f"Error preparing issuer logo: {e}")
-            return None
+            raise e
 
     def _prepare_raster_logo(self, logo_field, target_size):
         """Prepare PNG/JPEG logo with proper sizing and centering"""
@@ -223,8 +223,10 @@ class ImageComposer:
                 img.size[0] > self.MAX_DIMENSIONS[0]
                 or img.size[1] > self.MAX_DIMENSIONS[1]
             ):
-                print(f"Logo dimensions {img.size} exceed limits {self.MAX_DIMENSIONS}")
-                return None
+                logger.error(
+                    f"Logo dimensions {img.size} exceed limits {self.MAX_DIMENSIONS}"
+                )
+                raise
 
             img.thumbnail(target_size, Image.Resampling.LANCZOS)
 
@@ -237,7 +239,7 @@ class ImageComposer:
 
         except Exception as e:
             print(f"Error preparing raster logo: {e}")
-            return None
+            raise e
 
     def _prepare_svg_logo(self, svg_field, target_size):
         try:
@@ -263,4 +265,4 @@ class ImageComposer:
 
         except Exception as e:
             print(f"Error preparing SVG logo: {e}")
-            return None
+            raise e

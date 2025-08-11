@@ -1005,8 +1005,6 @@ class BadgeClass(
 
     def save(self, *args, **kwargs):
         self.clean()
-        if not self.image and self.imageFrame:
-            self.generate_badge_image(self.issuer.image)
         return super().save(*args, **kwargs)
 
     def clean(self):
@@ -1016,41 +1014,25 @@ class BadgeClass(
                 "Only verified issuers can create / update badges", code="invalid"
             )
 
-    def generate_badge_image(self, issuer_image):
+    def generate_badge_image(self, issuer_image, category, badgeImage):
         """Generate composed badge image from original image"""
-        try:
-            try:
-                categoryExtension = self.cached_extensions().get(
-                    name="extensions:CategoryExtension"
-                )
-                category = json_loads(categoryExtension.original_json)["Category"]
-                orgImage = self.cached_extensions().get(
-                    name="extensions:OrgImageExtension"
-                )
-                original_image = json_loads(orgImage.original_json)["OrgImage"]
-            except Exception:
-                return None
 
-            composer = ImageComposer(category=category)
+        composer = ImageComposer(category=category)
 
-            image_b64 = composer.compose_badge_from_uploaded_image(
-                original_image, issuer_image
-            )
+        image_b64 = composer.compose_badge_from_uploaded_image(badgeImage, issuer_image)
 
-            if image_b64:
-                if image_b64.startswith("data:image/png;base64,"):
-                    image_b64 = image_b64.split(",", 1)[1]
+        if not image_b64:
+            raise ValueError("Badge image generation failed")
 
-                image_data = base64.b64decode(image_b64)
+        if image_b64.startswith("data:image/png;base64,"):
+            image_b64 = image_b64.split(",", 1)[1]
 
-                filename = f"issuer_badgeclass_{uuid.uuid4()}.png"
-                content_file = ContentFile(image_data, name=filename)
+        image_data = base64.b64decode(image_b64)
 
-                self.image.save(filename, content_file, save=False)
+        filename = f"issuer_badgeclass_{uuid.uuid4()}.png"
+        content_file = ContentFile(image_data, name=filename)
 
-        except Exception as e:
-            logger.warning(f"Error generating badge image: {e}")
-            return None
+        self.image.save(filename, content_file, save=False)
 
     def publish(self):
         fields_cache = (
