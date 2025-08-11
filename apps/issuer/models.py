@@ -342,7 +342,7 @@ class Issuer(
     def save(self, *args, **kwargs):
         original_verified = None
         should_geocode = False
-        original_image = None
+        # original_image = None
 
         if not self.pk:
             self.notify_admins(self)
@@ -372,7 +372,7 @@ class Issuer(
         else:
             original_object = Issuer.objects.get(pk=self.pk)
             original_verified = original_object.verified
-            original_image = original_object.image
+            # original_image = original_object.image
 
             if (
                 self.street != original_object.street
