@@ -27,7 +27,7 @@ def get_skills_tree(badge_instances, language):
                                 skill_studyloads[uri_path] = studyload
 
     if not len(skill_studyloads.keys()) > 0:
-        return JsonResponse({"skills": []})
+        return { "skills": [] }
 
     # get esco trees from ai skills api
     endpoint = getattr(settings, "AISKILLS_ENDPOINT_TREE")
