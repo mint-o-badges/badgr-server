@@ -1775,6 +1775,7 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
         new_filename = generate_rebaked_filename(
             self.image.name, self.cached_badgeclass.image.name
         )
+        new_filename = self.image.field.generate_filename(self.image.instance, new_filename)
         new_name = default_storage.save(new_filename, ContentFile(new_image.read()))
         default_storage.delete(self.image.name)
         self.image.name = new_name
