@@ -573,3 +573,6 @@ ALTCHA_MAXNUMBER = 100000
 CMS_API_BASE_URL = ''
 CMS_API_BASE_PATH = ''
 CMS_API_KEY = ''
+
+# path to webcomponents assets build in badgr-ui
+WEBCOMPONENTS_ASSETS_PATH = '/'

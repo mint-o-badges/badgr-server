@@ -3,14 +3,14 @@
 <html lang="en" data-beasties-container>
   <head>
     <meta charset="utf-8" />
-    <title>OEB Web Components</title>
+    <title>Open Educational Badges Learners Profile</title>
     <link
       rel="stylesheet"
-      href="{% static 'webcomponents/oeb-skill-visualisation/styles.css' %}"
+      href="{{ asset_path }}oeb-skill-visualisation/styles.css"
       media="print"
       onload="this.media='all'"
     />
-    <noscript><link rel="stylesheet" href="{% static 'webcomponents/oeb-skill-visualisation/styles.css' %}" /></noscript>
+    <noscript><link rel="stylesheet" href="{{ asset_path }}oeb-skill-visualisation/styles.css" /></noscript>
     <script>
         window.OEBWebComponentSettings = {
             "language": "{{ language }}"
@@ -20,8 +20,8 @@
   <body>
     <oeb-skill-visualisation id="skills"></oeb-skill-visualisation>
 
-    <script src="{% static 'webcomponents/oeb-skill-visualisation/polyfills.js' %}" type="module"></script>
-    <script src="{% static 'webcomponents/oeb-skill-visualisation/main.js' %}" type="module"></script>
+    <script src="{{ asset_path }}oeb-skill-visualisation/polyfills.js" type="module"></script>
+    <script src="{{ asset_path }}oeb-skill-visualisation/main.js" type="module"></script>
     <script type="text/javascript">
       document.addEventListener("DOMContentLoaded", () => {
         const skills = JSON.parse('{{ skill_json | escapejs }}');

@@ -41,5 +41,5 @@ def iframe_profile(request, skills, language):
     return render(
         request,
         "iframes/profile/index.html",
-        context={"skill_json": skill_json, "language": language},
+        context={"asset_path": settings.WEBCOMPONENTS_ASSETS_PATH, "skill_json": skill_json, "language": language},
     )
