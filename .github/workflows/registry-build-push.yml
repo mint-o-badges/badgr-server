@@ -9,6 +9,10 @@ on:
             - production
             - main
             - develop
+    merge_group:
+        branches:
+            - production
+            - main
 
 env:
     REGISTRY: ghcr.io
