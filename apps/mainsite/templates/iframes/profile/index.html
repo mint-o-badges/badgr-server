@@ -26,7 +26,6 @@
       document.addEventListener("DOMContentLoaded", () => {
         const skills = JSON.parse('{{ skill_json | escapejs }}');
         document.getElementById("skills").skills = skills;
-        console.log([document.getElementById("skills"), skills]);
       });
     </script>
   </body>
