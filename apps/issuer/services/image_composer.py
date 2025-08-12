@@ -121,7 +121,7 @@ class ImageComposer:
             svg_path = finders.find(f"images/{svg_filename}")
 
             if not os.path.exists(svg_path):
-                raise (f"SVG file not found: {svg_path}")
+                raise FileNotFoundError(f"SVG file not found: {svg_path}")
 
             with open(svg_path, "r", encoding="utf-8") as f:
                 png_buf = io.BytesIO()
@@ -171,7 +171,7 @@ class ImageComposer:
             return canvas
 
         except Exception as e:
-            print(f"Error adding issuer logo: {e}")
+            logger.error(f"Error adding issuer logo: {e}")
             return canvas
 
     def _get_logo_frame_svg(self):
@@ -190,14 +190,14 @@ class ImageComposer:
             return Image.open(io.BytesIO(png_bytes)).convert("RGBA")
 
         except Exception as e:
-            print(f"Error loading logo frame: {e}")
+            logger.error(f"Error loading logo frame: {e}")
             raise e
 
     def _prepare_issuer_logo(self, logo_field, target_size):
         """Prepare issuer logo with support for SVG and PNG formats"""
         try:
             if not hasattr(logo_field, "name"):
-                raise
+                raise Exception("Logo field missing name attribute")
 
             file_extension = logo_field.name.lower().split(".")[-1]
 
@@ -207,10 +207,10 @@ class ImageComposer:
                 return self._prepare_raster_logo(logo_field, target_size)
             else:
                 logger.error(f"Unsupported logo format: {file_extension}")
-                raise
+                raise Exception("Logo format not supported")
 
         except Exception as e:
-            print(f"Error preparing issuer logo: {e}")
+            logger.error(f"Error preparing issuer logo: {e}")
             raise e
 
     def _prepare_raster_logo(self, logo_field, target_size):
@@ -226,7 +226,7 @@ class ImageComposer:
                 logger.error(
                     f"Logo dimensions {img.size} exceed limits {self.MAX_DIMENSIONS}"
                 )
-                raise
+                raise Exception("Logo dimensions exceed limits")
 
             img.thumbnail(target_size, Image.Resampling.LANCZOS)
 
@@ -238,7 +238,7 @@ class ImageComposer:
             return result
 
         except Exception as e:
-            print(f"Error preparing raster logo: {e}")
+            logger.error(f"Error preparing raster logo: {e}")
             raise e
 
     def _prepare_svg_logo(self, svg_field, target_size):
@@ -264,5 +264,5 @@ class ImageComposer:
             return result
 
         except Exception as e:
-            print(f"Error preparing SVG logo: {e}")
+            logger.error(f"Error preparing SVG logo: {e}")
             raise e
