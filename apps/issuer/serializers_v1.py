@@ -52,6 +52,7 @@ from .models import (
     RequestedBadge,
     RequestedLearningPath,
 )
+from django.db import transaction
 
 logger = logging.getLogger("Badgr.Events")
 
@@ -470,40 +471,58 @@ class BadgeClassSerializerV1(
         logger.info("UPDATE BADGECLASS")
         logger.debug(validated_data)
 
-        force_image_resize = False
+        with transaction.atomic():
+            force_image_resize = False
 
-        new_name = validated_data.get("name")
-        if new_name:
-            new_name = strip_tags(new_name)
-            instance.name = new_name
+            new_name = validated_data.get("name")
+            if new_name:
+                new_name = strip_tags(new_name)
+                instance.name = new_name
 
-        new_description = validated_data.get("description")
-        if new_description:
-            instance.description = strip_tags(new_description)
+            new_description = validated_data.get("description")
+            if new_description:
+                instance.description = strip_tags(new_description)
 
-        if "image" in validated_data:
-            instance.image = validated_data.get("image")
-            force_image_resize = True
+            if "image" in validated_data:
+                instance.image = validated_data.get("image")
+                force_image_resize = True
 
-        if "criteria" in validated_data:
-            instance.criteria = validated_data.get("criteria")
+            if "criteria" in validated_data:
+                instance.criteria = validated_data.get("criteria")
 
-        instance.alignment_items = validated_data.get("alignment_items")
-        instance.tag_items = validated_data.get("tag_items")
+            instance.alignment_items = validated_data.get("alignment_items")
+            instance.tag_items = validated_data.get("tag_items")
 
-        instance.expires_amount = validated_data.get("expires_amount", None)
-        instance.expires_duration = validated_data.get("expires_duration", None)
+            instance.expires_amount = validated_data.get("expires_amount", None)
+            instance.expires_duration = validated_data.get("expires_duration", None)
 
-        instance.imageFrame = validated_data.get("imageFrame", True)
+            instance.imageFrame = validated_data.get("imageFrame", True)
 
-        instance.copy_permissions_list = validated_data.get(
-            "copy_permissions_list", ["issuer"]
-        )
+            instance.copy_permissions_list = validated_data.get(
+                "copy_permissions_list", ["issuer"]
+            )
 
-        logger.debug("SAVING EXTENSION")
-        self.save_extensions(validated_data, instance)
+            logger.debug("SAVING EXTENSION")
+            self.save_extensions(validated_data, instance)
 
-        instance.save(force_resize=force_image_resize)
+            if instance.imageFrame:
+                extensions = instance.cached_extensions()
+                try:
+                    category_ext = extensions.get(name="extensions:CategoryExtension")
+                    category = json.loads(category_ext.original_json)["Category"]
+                    org_img_ext = extensions.get(name="extensions:OrgImageExtension")
+                    original_image = json.loads(org_img_ext.original_json)["OrgImage"]
+
+                    instance.generate_badge_image(
+                        instance.issuer.image, category, original_image
+                    )
+                    instance.save(update_fields=["image"])
+                except BadgeClassExtension.DoesNotExist as e:
+                    raise serializers.ValidationError({"extensions": str(e)})
+                except Exception as e:
+                    raise serializers.ValidationError(
+                        f"Badge image generation failed: {e}"
+                    )
 
         return instance
 
@@ -511,23 +530,42 @@ class BadgeClassSerializerV1(
         logger.info("CREATE NEW BADGECLASS")
         logger.debug(validated_data)
 
-        if "image" not in validated_data:
-            raise serializers.ValidationError({"image": ["This field is required"]})
+        with transaction.atomic():
+            if "image" not in validated_data:
+                raise serializers.ValidationError({"image": ["This field is required"]})
 
-        if "issuer" in self.context:
-            validated_data["issuer"] = self.context.get("issuer")
+            if "issuer" in self.context:
+                validated_data["issuer"] = self.context.get("issuer")
 
-        # criteria_text is now created at runtime
-        # if (
-        #     validated_data.get("criteria_text", None) is None
-        #     and validated_data.get("criteria_url", None) is None
-        # ):
-        #     raise serializers.ValidationError(
-        #         "One or both of the criteria_text and criteria_url fields must be provided"
-        #     )
+            # criteria_text is now created at runtime
+            # if (
+            #     validated_data.get("criteria_text", None) is None
+            #     and validated_data.get("criteria_url", None) is None
+            # ):
+            #     raise serializers.ValidationError(
+            #         "One or both of the criteria_text and criteria_url fields must be provided"
+            #     )
 
-        new_badgeclass = BadgeClass.objects.create(**validated_data)
-        return new_badgeclass
+            new_badgeclass = BadgeClass.objects.create(**validated_data)
+
+            extensions = new_badgeclass.cached_extensions()
+
+            try:
+                categoryExtension = extensions.get(name="extensions:CategoryExtension")
+                category = json.loads(categoryExtension.original_json)["Category"]
+                orgImage = extensions.get(name="extensions:OrgImageExtension")
+                original_image = json.loads(orgImage.original_json)["OrgImage"]
+            except BadgeClassExtension.DoesNotExist as e:
+                raise serializers.ValidationError({"extensions": str(e)})
+
+            try:
+                new_badgeclass.generate_badge_image(
+                    new_badgeclass.issuer.image, category, original_image
+                )
+                new_badgeclass.save(update_fields=["image"])
+            except Exception as e:
+                raise serializers.ValidationError(f"Badge image generation failed: {e}")
+            return new_badgeclass
 
 
 class EvidenceItemSerializer(serializers.Serializer):

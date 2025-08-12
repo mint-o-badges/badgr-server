@@ -26,6 +26,7 @@ from django.db import models, transaction
 from django.db.models import ProtectedError
 from django.urls import reverse
 from django.utils import timezone
+from apps.issuer.services.image_composer import ImageComposer
 from entity.models import BaseVersionedEntity
 from geopy.geocoders import Nominatim
 from issuer.managers import (
@@ -341,6 +342,7 @@ class Issuer(
     def save(self, *args, **kwargs):
         original_verified = None
         should_geocode = False
+        # original_image = None
 
         if not self.pk:
             self.notify_admins(self)
@@ -370,6 +372,7 @@ class Issuer(
         else:
             original_object = Issuer.objects.get(pk=self.pk)
             original_verified = original_object.verified
+            # original_image = original_object.image
 
             if (
                 self.street != original_object.street
@@ -404,6 +407,10 @@ class Issuer(
         # The user who created the issuer should always be an owner
         if ensureOwner:
             self.ensure_owner()
+
+        # if original_image.name != self.image.name:
+        #     for bc in self.cached_badgeclasses():
+        #         bc.generate_badge_image(self.image)
 
         if self.verified and not original_verified:
             badgr_app = BadgrApp.objects.get_current(None)
@@ -1006,6 +1013,26 @@ class BadgeClass(
             raise ValidationError(
                 "Only verified issuers can create / update badges", code="invalid"
             )
+
+    def generate_badge_image(self, issuer_image, category, badgeImage):
+        """Generate composed badge image from original image"""
+
+        composer = ImageComposer(category=category)
+
+        image_b64 = composer.compose_badge_from_uploaded_image(badgeImage, issuer_image)
+
+        if not image_b64:
+            raise ValueError("Badge image generation failed")
+
+        if image_b64.startswith("data:image/png;base64,"):
+            image_b64 = image_b64.split(",", 1)[1]
+
+        image_data = base64.b64decode(image_b64)
+
+        filename = f"issuer_badgeclass_{uuid.uuid4()}.png"
+        content_file = ContentFile(image_data, name=filename)
+
+        self.image.save(filename, content_file, save=False)
 
     def publish(self):
         fields_cache = (
