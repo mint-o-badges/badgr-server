@@ -2,7 +2,6 @@ import json
 from urllib.parse import urlparse
 
 from django.conf import settings
-from django.http import JsonResponse
 
 from apps.mainsite.views import call_aiskills_api
 

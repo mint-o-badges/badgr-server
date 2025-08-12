@@ -26,6 +26,9 @@ from oauth2_provider.models import (
     get_refresh_token_model,
 )
 
+from lti_tool.admin import LtiRegistrationAdmin
+from lti_tool.models import LtiRegistration
+
 from badgeuser.models import CachedEmailAddress, ProxyEmailConfirmation
 from mainsite.models import (
     AltchaChallenge,
@@ -334,9 +337,5 @@ class AltchaAdmin(ModelAdmin):
 
 badgr_admin.register(AltchaChallenge, AltchaAdmin)
 
-
 # register admin views from lti_tool library on our admin backend
-from lti_tool.admin import LtiRegistrationAdmin
-from lti_tool.models import LtiRegistration
-
 badgr_admin.register(LtiRegistration, LtiRegistrationAdmin)
