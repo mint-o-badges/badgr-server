@@ -652,9 +652,13 @@ class BadgePDFCreator:
             elif file_ext in ["png", "jpg", "jpeg", "gif"]:
                 dummy = Image(badge_class.issuer.image)
                 aspect = dummy.imageHeight / dummy.imageWidth
-                imageContent = Image(
-                    badge_class.issuer.image, width=80, height=80 * aspect
-                )
+                try:
+                    badge_class.issuer.image.open()
+                    img_data = BytesIO(badge_class.issuer.image.read())
+                    badge_class.issuer.image.close()
+                    imageContent = Image(img_data, width=80, height=80 * aspect)
+                except Exception as e:
+                    print(f"Unexpected error for image {badge_class.issuer.image}: {e}")
             else:
                 raise ValueError(f"Unsupported file type: {file_ext}")
         except Exception:
