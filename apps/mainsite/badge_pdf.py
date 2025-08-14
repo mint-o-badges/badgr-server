@@ -4,6 +4,8 @@ import os
 from functools import partial
 from io import BytesIO
 from json import loads as json_loads
+import cairosvg
+
 
 import qrcode
 from badgeuser.models import BadgeUser
@@ -11,7 +13,7 @@ from django.conf import settings
 from django.db.models import Max
 from issuer.models import BadgeInstance, LearningPath
 from mainsite.utils import get_name
-from reportlab.graphics import renderPM
+from django.core.files.storage import DefaultStorage
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
 from reportlab.lib.pagesizes import A4
@@ -33,7 +35,6 @@ from reportlab.platypus import (
     Table,
     TableStyle,
 )
-from svglib.svglib import svg2rlg
 
 font_path_rubik_regular = os.path.join(os.path.dirname(__file__), "Rubik-Regular.ttf")
 font_path_rubik_medium = os.path.join(os.path.dirname(__file__), "Rubik-Medium.ttf")
@@ -633,16 +634,18 @@ class BadgePDFCreator:
         try:
             file_ext = badge_class.issuer.image.path.split(".")[-1].lower()
             if file_ext == "svg":
-                drawing = svg2rlg(badge_class.issuer.image)
-                if drawing is None:
+                storage = DefaultStorage()
+                bio = BytesIO()
+                file_path = badge_class.issuer.image.name
+                try:
+                    with storage.open(file_path, "rb") as svg_file:
+                        cairosvg.svg2png(file_obj=svg_file, write_to=bio)
+                except IOError:
                     raise ValueError(
-                        f"Failed to parse SVG file: {badge_class.issuer.image}"
+                        f"Failed to convert SVG to PNG: {badge_class.issuer.image}"
                     )
 
-                bio = BytesIO()
-                renderPM.drawToFile(drawing, bio, fmt="PNG")
                 bio.seek(0)
-
                 dummy = Image(bio)
                 aspect = dummy.imageHeight / dummy.imageWidth
                 imageContent = Image(bio, width=80, height=80 * aspect)
