@@ -20,7 +20,7 @@ jobs:
 
         steps:
             - name: ⬇️ Checkout code
-              uses: actions/checkout@v4.2.2
+              uses: actions/checkout@v5
 
             - name: ©️ Copy container settings
               run: cp ./.docker/etc/settings_local.dev.py.example ./.docker/etc/settings_local.dev.py
@@ -44,7 +44,7 @@ jobs:
 
         steps:
             - name: ⬇️ Checkout code
-              uses: actions/checkout@v4.2.2
+              uses: actions/checkout@v5
 
             - name: 👟 Run ruff
               uses: astral-sh/ruff-action@v3
