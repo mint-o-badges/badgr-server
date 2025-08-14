@@ -35,7 +35,6 @@ from reportlab.platypus import (
     Table,
     TableStyle,
 )
-from svglib.svglib import svg2rlg
 
 font_path_rubik_regular = os.path.join(os.path.dirname(__file__), "Rubik-Regular.ttf")
 font_path_rubik_medium = os.path.join(os.path.dirname(__file__), "Rubik-Medium.ttf")
