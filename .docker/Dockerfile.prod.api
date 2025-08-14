@@ -70,5 +70,11 @@ RUN date +"%d.%m.%y %T" > timestamp && chown python:python timestamp
 
 USER 999
 
+# Create necessary log files as user
+RUN touch /var/log/cron_cleartokens.log && chmod 644 /var/log/cron_cleartokens.log
+RUN touch /var/log/cron_qr_badgerequests.log && chmod 644 /var/log/cron_qr_badgerequests.log
+RUN touch /var/log/cron_clear_altcha.log && chmod 644 /var/log/cron_clear_altcha.log
+RUN touch /var/log/cron_clear_iframe_urls.log && chmod 644 /var/log/cron_clear_iframe_urls.log
+
 ENV PATH="/badgr_server/venv/bin:$PATH"
 ENTRYPOINT ["./entrypoint.sh"]
