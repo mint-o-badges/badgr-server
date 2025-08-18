@@ -1,8 +1,6 @@
 import json
 from collections import OrderedDict
 
-import logging
-logger = logging.getLogger("Badgr.Events")
 import pytz
 from django.utils.html import strip_tags
 from entity.serializers import BaseSerializerV2
@@ -10,6 +8,9 @@ from mainsite.pagination import BadgrCursorPagination
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.exceptions import ValidationError
+import logging
+
+logger = logging.getLogger("Badgr.Events")
 
 
 class HumanReadableBooleanField(serializers.BooleanField):

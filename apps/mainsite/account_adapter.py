@@ -1,8 +1,3 @@
-import logging
-logger = logging.getLogger("Badgr.Events")
-import urllib.request
-import urllib.parse
-import urllib.error
 import urllib.parse
 import os
 
@@ -24,6 +19,10 @@ from mainsite.models import BadgrApp, EmailBlacklist, AccessTokenProxy
 from mainsite.utils import get_name, OriginSetting, set_url_query_params
 
 from mainsite.badge_pdf import BadgePDFCreator
+
+import logging
+
+logger = logging.getLogger("Badgr.Events")
 
 
 class BadgrAccountAdapter(DefaultAccountAdapter):
@@ -103,8 +102,12 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                 badge_img = f.read()
             msg.attach(badge_name + ".png", badge_img, "image/png")
             msg.attach(badge_name + ".pdf", pdf_document, "application/pdf")
-        logger.debug("Rendered E-Mail with subject '%s' from '%s' to '%s'",
-                     msg.subject, msg.from_email, msg.to)
+        logger.debug(
+            "Rendered E-Mail with subject '%s' from '%s' to '%s'",
+            msg.subject,
+            msg.from_email,
+            msg.to,
+        )
         msg.send()
 
     def set_email_string(self, context):
