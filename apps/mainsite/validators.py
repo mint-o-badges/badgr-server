@@ -113,7 +113,7 @@ class ComplexityPasswordValidator:
                 "The password must contain at least one digit.",
                 code="password_no_digit",
             )
-        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+        if not re.search(r"[!\"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~€]", password):
             raise ValidationError(
                 "The password must contain at least one special character.",
                 code="password_no_special",
