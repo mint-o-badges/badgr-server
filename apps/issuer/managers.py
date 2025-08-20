@@ -90,6 +90,59 @@ class IssuerManager(BaseOpenBadgeObjectManager):
         )
 
 
+class NetworkManager(BaseOpenBadgeObjectManager):
+    ALLOWED_MINE_TYPES = [
+        "image/png",
+        "image/gif",
+        "image/jpeg",
+        "image/svg+xml",
+    ]
+
+    def update_from_ob2(self, network_obo, original_json=None):
+        image = self.image_from_ob2(network_obo)
+        return self.update_or_create(
+            source_url=network_obo.get("id"),
+            defaults=dict(
+                name=network_obo.get("name"),
+                description=network_obo.get("description", None),
+                url=network_obo.get("url", None),
+                image=image,
+                original_json=original_json,
+            ),
+        )
+
+    def image_from_ob2(self, network_obo):
+        image_url = network_obo.get("image", None)
+        image = None
+        if image_url:
+            if isinstance(image_url, dict):
+                image_url = image_url.get("id")
+            image = _fetch_image_and_get_file(
+                image_url, self.ALLOWED_MINE_TYPES, upload_to="remote/network"
+            )
+        return image
+
+    def get_or_create_from_ob2(
+        self, network_obo, source=None, original_json=None, image=None
+    ):
+        source_url = network_obo.get("id")
+        local_object = self.get_local_object(source_url)
+        if local_object:
+            return local_object, False
+
+        return self.get_or_create(
+            source_url=source_url,
+            defaults=dict(
+                source=source if source is not None else "local",
+                name=network_obo.get("name"),
+                description=network_obo.get("description", None),
+                url=network_obo.get("url", None),
+                image=image,
+                original_json=original_json,
+            ),
+        )
+
+
 class BadgeClassManager(BaseOpenBadgeObjectManager):
     ALLOWED_MINE_TYPES = [
         "image/png",

@@ -2,6 +2,7 @@ from django.conf.urls import url
 
 from issuer.api import (
     BadgeRequestList,
+    ConfirmNetworkInvitation,
     IssuerLearningPathList,
     IssuerList,
     IssuerDetail,
@@ -16,6 +17,9 @@ from issuer.api import (
     IssuerStaffRequestList,
     LearningPathDetail,
     LearningPathParticipantsList,
+    NetworkInvitation,
+    NetworkIssuerList,
+    NetworkList,
     QRCodeDetail,
 )
 from issuer.api_v1 import FindBadgeClassDetail, IssuerStaffList
@@ -33,6 +37,7 @@ urlpatterns = [
         name="v1_api_find_badgeclass_by_identifier",
     ),
     url(r"^issuers$", IssuerList.as_view(), name="v1_api_issuer_list"),
+    url(r"^networks$", NetworkList.as_view(), name="v1_api_network_list"),
     url(
         r"^issuers/(?P<slug>[^/]+)$",
         IssuerDetail.as_view(),
@@ -102,6 +107,11 @@ urlpatterns = [
         name="v1_api_learningpath_list",
     ),
     url(
+        r"^networks/(?P<slug>[^/]+)/issuer$",
+        NetworkIssuerList.as_view(),
+        name="v1_api_network_issuer_list",
+    ),
+    url(
         r"^issuers/(?P<issuerSlug>[^/]+)/learningpath/(?P<slug>[^/]+)$",
         LearningPathDetail.as_view(),
         name="v1_api_learningpath_detail",
@@ -125,5 +135,25 @@ urlpatterns = [
         r"^issuers/(?P<issuerSlug>[^/]+)/staffRequests/(?P<requestId>[^/]+)/confirm$",
         IssuerStaffRequestDetail.as_view(),
         name="v1_api_staffrequest_detail",
+    ),
+    url(
+        r"^networks/(?P<networkSlug>[^/]+)/invite$",
+        NetworkInvitation.as_view(),
+        name="v1_api_network_invite_detail",
+    ),
+    url(
+        r"^networks/(?P<networkSlug>[^/]+)/invite/(?P<slug>[^/]+)$",
+        NetworkInvitation.as_view(),
+        name="v1_api_network_invite_detail",
+    ),
+    url(
+        r"^networks/(?P<networkSlug>[^/]+)/invite/(?P<slug>[^/]+)/confirm$",
+        NetworkInvitation.as_view(),
+        name="v1_api_network_invite_detail",
+    ),
+    url(
+        r"^networks/(?P<networkSlug>[^/]+)confirm-network-invitation/(?P<inviteSlug>[^/]+)$",
+        ConfirmNetworkInvitation.as_view(),
+        name="v1_api_issuer_confirm_network_invite",
     ),
 ]

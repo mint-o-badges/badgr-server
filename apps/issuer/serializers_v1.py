@@ -48,6 +48,9 @@ from .models import (
     IssuerStaffRequest,
     LearningPath,
     LearningPathBadge,
+    Network,
+    NetworkInvite,
+    NetworkStaff,
     QrCode,
     RequestedBadge,
     RequestedLearningPath,
@@ -123,57 +126,51 @@ class IssuerStaffSerializerV1(serializers.Serializer):
         )
 
 
-class IssuerSerializerV1(
+class NetworkStaffSerializerV1(serializers.Serializer):
+    """A read_only serializer for staff roles"""
+
+    user = BadgeUserProfileSerializerV1(source="cached_user")
+    role = serializers.CharField(
+        validators=[ChoicesValidator(list(dict(NetworkStaff.ROLE_CHOICES).keys()))]
+    )
+
+    class Meta:
+        list_serializer_class = CachedListSerializer
+
+        apispec_definition = (
+            "NetworkStaff",
+            {
+                "properties": {
+                    "role": {"type": "string", "enum": ["staff", "editor", "owner"]}
+                }
+            },
+        )
+
+
+class BaseIssuerSerializerV1(
     OriginalJsonSerializerMixin, ExcludeFieldsMixin, serializers.Serializer
 ):
+    """Base serializer for issuers and networks"""
+
+    class Meta:
+        abstract = True
+
     created_at = DateTimeWithUtcZAtEndField(read_only=True)
     created_by = BadgeUserIdentifierFieldV1()
     name = StripTagsCharField(max_length=1024)
     slug = StripTagsCharField(max_length=255, source="entity_id", read_only=True)
     image = ValidImageField(required=False)
-    email = serializers.EmailField(max_length=255, required=True)
     description = StripTagsCharField(max_length=16384, required=False)
     url = serializers.URLField(max_length=1024, required=True)
-    staff = IssuerStaffSerializerV1(
-        read_only=True, source="cached_issuerstaff", many=True
-    )
     badgrapp = serializers.CharField(
         read_only=True, max_length=255, source="cached_badgrapp"
     )
-    verified = serializers.BooleanField(default=False)
-
-    category = serializers.CharField(max_length=255, required=True, allow_null=True)
     source_url = serializers.CharField(
-        max_length=255, required=False, allow_blank=True, allow_null=True
-    )
-
-    street = serializers.CharField(
-        max_length=255, required=False, allow_blank=True, allow_null=True
-    )
-    streetnumber = serializers.CharField(
-        max_length=255, required=False, allow_blank=True, allow_null=True
-    )
-    zip = serializers.CharField(
-        max_length=255, required=False, allow_blank=True, allow_null=True
-    )
-    city = serializers.CharField(
         max_length=255, required=False, allow_blank=True, allow_null=True
     )
     country = serializers.CharField(
         max_length=255, required=False, allow_blank=True, allow_null=True
     )
-
-    intendedUseVerified = serializers.BooleanField(default=False)
-
-    lat = serializers.CharField(
-        max_length=255, required=False, allow_blank=True, allow_null=True
-    )
-    lon = serializers.CharField(
-        max_length=255, required=False, allow_blank=True, allow_null=True
-    )
-
-    class Meta:
-        apispec_definition = ("Issuer", {})
 
     def get_fields(self):
         fields = super().get_fields()
@@ -189,6 +186,43 @@ class IssuerSerializerV1(
             img_name, img_ext = os.path.splitext(image.name)
             image.name = "issuer_logo_" + str(uuid.uuid4()) + img_ext
         return image
+
+
+class IssuerSerializerV1(BaseIssuerSerializerV1):
+    email = serializers.EmailField(max_length=255, required=True)
+    description = StripTagsCharField(max_length=16384, required=False)
+    url = serializers.URLField(max_length=1024, required=True)
+    staff = IssuerStaffSerializerV1(
+        read_only=True, source="cached_issuerstaff", many=True
+    )
+    verified = serializers.BooleanField(default=False)
+
+    category = serializers.CharField(max_length=255, required=True, allow_null=True)
+
+    street = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, allow_null=True
+    )
+    streetnumber = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, allow_null=True
+    )
+    zip = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, allow_null=True
+    )
+    city = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, allow_null=True
+    )
+
+    intendedUseVerified = serializers.BooleanField(default=False)
+
+    lat = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, allow_null=True
+    )
+    lon = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, allow_null=True
+    )
+
+    class Meta:
+        apispec_definition = ("Issuer", {})
 
     def create(self, validated_data, **kwargs):
         user = validated_data["created_by"]
@@ -222,6 +256,8 @@ class IssuerSerializerV1(
         )
 
         new_issuer.save()
+        print(f"staff: {new_issuer.cached_issuerstaff().all()}")
+
         return new_issuer
 
     def update(self, instance, validated_data):
@@ -277,6 +313,35 @@ class IssuerSerializerV1(
         representation["ownerAcceptedTos"] = any(
             user.agreed_terms_version == TermsVersion.cached.latest_version()
             for user in instance.owners
+        )
+
+        return representation
+
+
+class NetworkSerializerV1(BaseIssuerSerializerV1):
+    staff = NetworkStaffSerializerV1(
+        read_only=True, source="cached_networkstaff", many=True
+    )
+
+    state = serializers.CharField(
+        max_length=254, required=False, allow_blank=True, allow_null=True
+    )
+
+    def create(self, validated_data, **kwargs):
+        new_network = Network(**validated_data)
+
+        new_network.badgrapp = BadgrApp.objects.get_current(
+            self.context.get("request", None)
+        )
+
+        new_network.save()
+
+        return new_network
+
+    def to_representation(self, instance):
+        representation = super(NetworkSerializerV1, self).to_representation(instance)
+        representation["json"] = instance.get_json(
+            obi_version="1_1", use_canonical_id=True
         )
 
         return representation
@@ -803,6 +868,15 @@ class IssuerStaffRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = IssuerStaffRequest
+        fields = "__all__"
+
+
+class NetworkInviteSerializer(serializers.ModelSerializer):
+    network = NetworkSerializerV1(read_only=True)
+    issuer = IssuerSerializerV1(read_only=True)
+
+    class Meta:
+        model = NetworkInvite
         fields = "__all__"
 
 

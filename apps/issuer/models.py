@@ -33,6 +33,7 @@ from issuer.managers import (
     BadgeInstanceEvidenceManager,
     BadgeInstanceManager,
     IssuerManager,
+    NetworkManager,
 )
 from jsonfield import JSONField
 from mainsite import blacklist
@@ -222,7 +223,7 @@ class BaseOpenBadgeExtension(cachemodel.CacheModel):
         abstract = True
 
 
-class Issuer(
+class BaseIssuer(
     ResizeUploadedImage,
     ScrubUploadedSvgImage,
     PngImagePreview,
@@ -230,6 +231,30 @@ class Issuer(
     BaseVersionedEntity,
     BaseOpenBadgeObjectModel,
 ):
+    """Abstract base class for all issuer types"""
+
+    class Meta:
+        abstract = True
+
+    entity_class_name = "BaseIssuer"
+    slug = models.CharField(
+        max_length=255, db_index=True, blank=True, null=True, default=None
+    )
+    badgrapp = models.ForeignKey(
+        "mainsite.BadgrApp",
+        blank=True,
+        null=True,
+        default=None,
+        on_delete=models.SET_NULL,
+    )
+    name = models.CharField(max_length=1024)
+    image = models.FileField(upload_to="uploads/issuers", blank=True, null=True)
+    description = models.TextField(blank=True, null=True, default=None)
+    url = models.CharField(max_length=254, blank=True, null=True, default=None)
+    country = models.CharField(max_length=254, null=True, blank=True)
+
+
+class Issuer(BaseIssuer):
     entity_class_name = "Issuer"
     COMPARABLE_PROPERTIES = (
         "badgrapp_id",
@@ -244,25 +269,6 @@ class Issuer(
     )
 
     staff = models.ManyToManyField(AUTH_USER_MODEL, through="IssuerStaff")
-
-    # slug has been deprecated for now, but preserve existing values
-    slug = models.CharField(
-        max_length=255, db_index=True, blank=True, null=True, default=None
-    )
-    # slug = AutoSlugField(max_length=255, populate_from='name', unique=True, blank=False, editable=True)
-
-    badgrapp = models.ForeignKey(
-        "mainsite.BadgrApp",
-        blank=True,
-        null=True,
-        default=None,
-        on_delete=models.SET_NULL,
-    )
-
-    name = models.CharField(max_length=1024)
-    image = models.FileField(upload_to="uploads/issuers", blank=True, null=True)
-    description = models.TextField(blank=True, null=True, default=None)
-    url = models.CharField(max_length=254, blank=True, null=True, default=None)
     email = models.CharField(max_length=254, blank=True, null=True, default=None)
     old_json = JSONField()
 
@@ -280,7 +286,6 @@ class Issuer(
     streetnumber = models.CharField(max_length=255, null=True, blank=True)
     zip = models.CharField(max_length=255, null=True, blank=True)
     city = models.CharField(max_length=255, null=True, blank=True)
-    country = models.CharField(max_length=255, null=True, blank=True)
 
     intendedUseVerified = models.BooleanField(null=False, default=False)
 
@@ -555,6 +560,18 @@ class Issuer(
     def cached_issuerstaff(self):
         return IssuerStaff.objects.filter(issuer=self)
 
+    @cachemodel.cached_method(auto_publish=True)
+    def cached_badgeclasses(self):
+        return self.badgeclasses.all().order_by("created_at")
+
+    @cachemodel.cached_method(auto_publish=True)
+    def cached_networks(self):
+        return self.networks.all().order_by("created_at")
+
+    @cachemodel.cached_method(auto_publish=True)
+    def cached_learningpaths(self):
+        return self.learningpaths.all().order_by("created_at")
+
     @property
     def staff_items(self):
         return self.cached_issuerstaff()
@@ -598,14 +615,6 @@ class Issuer(
         return UserModel.objects.filter(
             issuerstaff__issuer=self, issuerstaff__role=IssuerStaff.ROLE_EDITOR
         )
-
-    @cachemodel.cached_method(auto_publish=True)
-    def cached_badgeclasses(self):
-        return self.badgeclasses.all().order_by("created_at")
-
-    @cachemodel.cached_method(auto_publish=True)
-    def cached_learningpaths(self):
-        return self.learningpaths.all().order_by("created_at")
 
     @property
     def image_preview(self):
@@ -794,6 +803,225 @@ class Issuer(
             adapter.send_mail(template_name, user.email, context=email_context)
 
 
+class Network(BaseIssuer):
+    COMPARABLE_PROPERTIES = (
+        "badgrapp_id",
+        "description",
+        "entity_id",
+        "entity_version",
+        "name",
+        "pk",
+        "updated_at",
+        "url",
+    )
+    entity_class_name = "Network"
+
+    staff = models.ManyToManyField(AUTH_USER_MODEL, through="NetworkStaff")
+    state = models.CharField(max_length=254, null=True, blank=True)
+
+    partner_issuers = models.ManyToManyField(
+        Issuer, related_name="networks", blank=True
+    )
+
+    objects = NetworkManager()
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            ret = super(Network, self).save(*args, **kwargs)
+
+            new_owner = NetworkStaff.objects.create(
+                network=self, user=self.created_by, role=NetworkStaff.ROLE_OWNER
+            )
+            new_owner.save()
+
+    def get_json(
+        self,
+        obi_version=CURRENT_OBI_VERSION,
+        include_extra=True,
+        use_canonical_id=False,
+    ):
+        obi_version, context_iri = get_obi_context(obi_version)
+
+        id = (
+            self.jsonld_id
+            if use_canonical_id
+            else add_obi_version_ifneeded(self.jsonld_id, obi_version)
+        )
+
+        # spread 3_0 context_iri to create a copy because we might modify it later on
+        json = OrderedDict({"@context": context_iri})
+
+        json.update(
+            OrderedDict(
+                type="Network",
+                id=id,
+                name=self.name,
+                url=self.url,
+                description=self.description,
+                slug=self.entity_id,
+            )
+        )
+
+        image_url = self.image_url(public=True)
+        json["image"] = image_url
+        if self.original_json:
+            image_info = self.get_original_json().get("image", None)
+            if isinstance(image_info, dict):
+                json["image"] = image_info
+                json["image"]["id"] = image_url
+
+        # source url
+        if self.source_url:
+            if obi_version == "1_1":
+                json["source_url"] = self.source_url
+                json["hosted_url"] = OriginSetting.HTTP + self.get_absolute_url()
+            elif obi_version == "2_0":
+                json["sourceUrl"] = self.source_url
+                json["hostedUrl"] = OriginSetting.HTTP + self.get_absolute_url()
+
+        return json
+
+    @property
+    def json(self):
+        return self.get_json()
+
+    def publish(self, publish_staff=True, *args, **kwargs):
+        fields_cache = (
+            self._state.fields_cache
+        )  # stash the fields cache to avoid publishing related objects here
+        self._state.fields_cache = dict()
+
+        super(Network, self).publish(*args, **kwargs)
+        if publish_staff:
+            for member in self.cached_networkstaff():
+                member.cached_user.publish()
+
+        self._state.fields_cache = fields_cache
+
+    def get_extensions_manager(self):
+        return self.networkextension_set
+
+    @property
+    def staff_items(self):
+        return self.cached_networkstaff()
+
+    @staff_items.setter
+    def staff_items(self, value):
+        """
+        Update this networks NetworkStaff from a list of IssuerStaffSerializerV2 data
+        """
+        existing_staff_idx = {s.cached_user: s for s in self.staff_items}
+        new_staff_idx = {s["cached_user"]: s for s in value}
+
+        with transaction.atomic():
+            # add missing staff records
+            for staff_data in value:
+                if staff_data["cached_user"] not in existing_staff_idx:
+                    staff_record, created = NetworkStaff.cached.get_or_create(
+                        network=self,
+                        user=staff_data["cached_user"],
+                        defaults={"role": staff_data["role"]},
+                    )
+                    if not created:
+                        staff_record.role = staff_data["role"]
+                        staff_record.save()
+
+            # remove old staff records -- but never remove the only OWNER role
+            for staff_record in self.staff_items:
+                if staff_record.cached_user not in new_staff_idx:
+                    if (
+                        staff_record.role != NetworkStaff.ROLE_OWNER
+                        or len(self.owners) > 1
+                    ):
+                        staff_record.delete()
+
+    @cachemodel.cached_method(auto_publish=True)
+    def cached_networkstaff(self):
+        return NetworkStaff.objects.filter(network=self)
+
+    @cachemodel.cached_method(auto_publish=True)
+    def cached_issuers(self):
+        return self.partner_issuers.all().order_by("created_at")
+
+    @property
+    def cached_badgrapp(self):
+        id = self.badgrapp_id if self.badgrapp_id else None
+        return BadgrApp.objects.get_by_id_or_default(badgrapp_id=id)
+
+    @property
+    def public_url(self):
+        return OriginSetting.HTTP + self.get_absolute_url()
+
+    def image_url(self, public=False):
+        if bool(self.image):
+            if public:
+                return OriginSetting.HTTP + reverse(
+                    "issuer_image", kwargs={"entity_id": self.entity_id}
+                )
+            if getattr(settings, "MEDIA_URL").startswith("http"):
+                return default_storage.url(self.image.name)
+            else:
+                return getattr(settings, "HTTP_ORIGIN") + default_storage.url(
+                    self.image.name
+                )
+        else:
+            return None
+
+    @property
+    def jsonld_id(self):
+        if self.source_url:
+            return self.source_url
+        return OriginSetting.HTTP + self.get_absolute_url()
+
+    def get_absolute_url(self):
+        return reverse("network_json", kwargs={"entity_id": self.entity_id})
+
+
+class NetworkStaff(cachemodel.CacheModel):
+    ROLE_OWNER = "owner"
+    ROLE_EDITOR = "editor"
+    ROLE_STAFF = "staff"
+    ROLE_CHOICES = (
+        (ROLE_OWNER, "Owner"),
+        (ROLE_EDITOR, "Editor"),
+        (ROLE_STAFF, "Staff"),
+    )
+    network = models.ForeignKey(Network, on_delete=models.CASCADE)
+    user = models.ForeignKey(AUTH_USER_MODEL, on_delete=models.CASCADE)
+    role = models.CharField(max_length=254, choices=ROLE_CHOICES, default=ROLE_STAFF)
+
+    class Meta:
+        unique_together = ("network", "user")
+
+    def publish(self):
+        super(NetworkStaff, self).publish()
+        self.network.publish(publish_staff=False)
+        self.user.publish()
+
+    def delete(self, *args, **kwargs):
+        publish_network = kwargs.pop("publish_network", True)
+        new_contact = self.is_staff_contact()
+        super(NetworkStaff, self).delete()
+        if publish_network:
+            self.network.publish(publish_staff=False)
+        self.user.publish()
+        # Note that this delete method is not called if the user is deleted,
+        # since the cascade is done on the database level. That means that this logic
+        # *also* has to be contained in the delete method of the user
+        if new_contact:
+            self.network.new_contact_email()
+
+    @property
+    def cached_user(self):
+        from badgeuser.models import BadgeUser
+
+        return BadgeUser.cached.get(pk=self.user_id)
+
+    @property
+    def cached_network(self):
+        return Network.cached.get(pk=self.network_id)
+
+
 class IssuerStaff(cachemodel.CacheModel):
     ROLE_OWNER = "owner"
     ROLE_EDITOR = "editor"
@@ -895,6 +1123,36 @@ class IssuerStaffRequest(BaseVersionedEntity):
     def revoke(self):
         if self.revoked:
             raise ValidationError("Membership request is already revoked")
+
+        self.revoked = True
+        self.status = self.Status.REVOKED
+        self.save()
+
+
+class NetworkInvite(BaseVersionedEntity):
+    class Status(models.TextChoices):
+        PENDING = "Pending", "Pending"
+        APPROVED = "Approved", "Approved"
+        REJECTED = "Rejected", "Rejected"
+        REVOKED = "Revoked", "Revoked"
+
+    network = models.ForeignKey(
+        Network,
+        blank=False,
+        null=False,
+        on_delete=models.CASCADE,
+        related_name="invites",
+    )
+    issuer = models.ForeignKey(Issuer, blank=True, null=True, on_delete=models.CASCADE)
+    invitedOn = models.DateTimeField(blank=False, null=False, default=timezone.now)
+    status = models.CharField(
+        max_length=254, choices=Status.choices, default=Status.PENDING
+    )
+    revoked = models.BooleanField(default=False, db_index=True)
+
+    def revoke(self):
+        if self.revoked:
+            raise ValidationError("Invitation is already revoked")
 
         self.revoked = True
         self.status = self.Status.REVOKED
@@ -1775,7 +2033,9 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
         new_filename = generate_rebaked_filename(
             self.image.name, self.cached_badgeclass.image.name
         )
-        new_filename = self.image.field.generate_filename(self.image.instance, new_filename)
+        new_filename = self.image.field.generate_filename(
+            self.image.instance, new_filename
+        )
         new_name = default_storage.save(new_filename, ContentFile(new_image.read()))
         default_storage.delete(self.image.name)
         self.image.name = new_name
@@ -2600,6 +2860,10 @@ class IssuerExtension(BaseOpenBadgeExtension):
     def delete(self, *args, **kwargs):
         super(IssuerExtension, self).delete(*args, **kwargs)
         self.issuer.publish(publish_staff=False)
+
+
+class NetworkExtension(BaseOpenBadgeExtension):
+    network = models.ForeignKey("issuer.Network", on_delete=models.CASCADE)
 
 
 class BadgeClassExtension(BaseOpenBadgeExtension):

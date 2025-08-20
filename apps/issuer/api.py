@@ -19,6 +19,9 @@ from django.db.models import Q
 from django.http import Http404
 from django.urls import reverse
 from django.utils import timezone
+from apps.badgeuser.api import BaseRedirectView
+from rest_framework import permissions
+
 from entity.api import (
     BaseEntityDetailView,
     BaseEntityListView,
@@ -34,6 +37,8 @@ from issuer.models import (
     IssuerStaff,
     IssuerStaffRequest,
     LearningPath,
+    Network,
+    NetworkInvite,
     QrCode,
     RequestedBadge,
 )
@@ -57,6 +62,8 @@ from issuer.serializers_v1 import (
     IssuerStaffRequestSerializer,
     LearningPathParticipantSerializerV1,
     LearningPathSerializerV1,
+    NetworkInviteSerializer,
+    NetworkSerializerV1,
     QrCodeSerializerV1,
     RequestedBadgeSerializer,
 )
@@ -66,10 +73,12 @@ from issuer.serializers_v2 import (
     IssuerAccessTokenSerializerV2,
     IssuerSerializerV2,
 )
-from mainsite.models import AccessTokenProxy
+from mainsite.models import AccessTokenProxy, BadgrApp
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAdmin
 from mainsite.serializers import CursorPaginatedListSerializer
 from oauthlib.oauth2.rfc6749.tokens import random_token_generator
+from rest_framework.serializers import BaseSerializer
+from rest_framework.views import APIView
 from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -169,6 +178,48 @@ class IssuerDetail(BaseEntityDetailView):
     )
     def delete(self, request, **kwargs):
         return super(IssuerDetail, self).delete(request, **kwargs)
+
+
+class NetworkList(BaseEntityListView):
+    """
+    Network list resource for the authenticated user
+    """
+
+    model = Network
+    v1_serializer_class = NetworkSerializerV1
+    permission_classes = [
+        IsServerAdmin
+        | (
+            AuthenticatedWithVerifiedIdentifier
+            & BadgrOAuthTokenHasScope
+            & ApprovedIssuersOnly
+        )
+    ]
+    valid_scopes = ["rw:issuer"]
+
+    def get_objects(self, request, **kwargs):
+        # return self.request.user.cached_issuers()
+        # Note: The issue with the commented line above is that When deleting an entity using the delete method,
+        # it is removed from the database, but the cache is not invalidated. So this is a temporary workaround
+        # till figuring out how to invalidate/refresh cache.
+        # Force fresh data from the database
+        return Network.objects.filter(staff__id=request.user.id).distinct()
+
+    @apispec_list_operation(
+        "Network",
+        summary="Get a list of Networks for authenticated user",
+        tags=["Networks"],
+    )
+    def get(self, request, **kwargs):
+        return super(NetworkList, self).get(request, **kwargs)
+
+    @apispec_post_operation(
+        "Network",
+        summary="Create a new Network",
+        tags=["Networks"],
+    )
+    def post(self, request, **kwargs):
+        return super(NetworkList, self).post(request, **kwargs)
 
 
 class AllBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListView):
@@ -329,6 +380,49 @@ class IssuerLearningPathList(
     def post(self, request, **kwargs):
         self.get_object(request, **kwargs)  # trigger a has_object_permissions() check
         return super(IssuerLearningPathList, self).post(request, **kwargs)
+
+
+class NetworkIssuerList(
+    UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEntityListView
+):
+    """
+    GET a list of issuers within one network context
+    """
+
+    model = Network
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsEditor & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    v1_serializer_class = IssuerSerializerV1
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    def get_queryset(self, request=None, **kwargs):
+        network = self.get_object(request, **kwargs)
+        return network.partner_issuers
+
+    def get_context_data(self, **kwargs):
+        context = super(NetworkIssuerList, self).get_context_data(**kwargs)
+        context["network"] = self.get_object(self.request, **kwargs)
+        return context
+
+    @apispec_list_operation(
+        "Issuer",
+        summary="Get a list of issuers for a single Network",
+        description="Authenticated user must have owner, editor, or staff status on the Network",
+        tags=["Issuers", "Network"],
+        parameters=[
+            {
+                "in": "query",
+                "name": "num",
+                "type": "string",
+                "description": "Request pagination of results",
+            },
+        ],
+    )
+    def get(self, request, **kwargs):
+        return super(NetworkIssuerList, self).get(request, **kwargs)
 
 
 class LearningPathParticipantsList(BaseEntityView):
@@ -1442,3 +1536,212 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
             return Response(
                 {"detail": "Staff request not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
+
+class NetworkInvitation(BaseEntityDetailView):
+    model = NetworkInvite
+    v1_serializer_class = NetworkInviteSerializer
+    permission_classes = [
+        IsServerAdmin | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope)
+    ]
+    valid_scopes = ["rw:issuer"]
+
+    @apispec_get_operation(
+        "NetworkInvite",
+        summary="Get a single NetworkInvitation",
+        tags=["NetworkInvite"],
+    )
+    def get(self, request, **kwargs):
+        return super(NetworkInvitation, self).get(request, **kwargs)
+
+    @apispec_post_operation(
+        "NetworkInvite",
+        summary="Create new network invitations",
+        tags=["NetworkInvite"],
+        responses=OrderedDict(
+            [
+                (
+                    "201",
+                    {"description": "Network invitation request created successfully"},
+                ),
+                ("400", {"description": "Bad request or validation error"}),
+            ]
+        ),
+    )
+    def post(self, request, **kwargs):
+        try:
+            network_slug = kwargs.get("networkSlug")
+            network = Network.objects.get(entity_id=network_slug)
+        except Network.DoesNotExist:
+            return Response(
+                {"response": "Network not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        issuers_data = request.data
+        if not issuers_data:
+            return Response(
+                {"response": "No issuers provided"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        slugs = []
+        for issuer_data in issuers_data:
+            slug = issuer_data.get("slug")
+            if not slug:
+                return Response(
+                    {"response": "All issuers must have a slug"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            slugs.append(slug)
+
+        issuers = Issuer.objects.filter(entity_id__in=slugs)
+        found_slugs = set(issuers.values_list("entity_id", flat=True))
+
+        missing_slugs = set(slugs) - found_slugs
+        if missing_slugs:
+            return Response(
+                {"response": f"Issuers not found: {', '.join(missing_slugs)}"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        existing_partner_ids = set(
+            network.partner_issuers.filter(entity_id__in=slugs).values_list(
+                "entity_id", flat=True
+            )
+        )
+
+        if existing_partner_ids:
+            existing_names = list(
+                issuers.filter(entity_id__in=existing_partner_ids).values_list(
+                    "name", flat=True
+                )
+            )
+            return Response(
+                {
+                    "response": f"Diese Institutionen sind bereits Teil des Netzwerks: {', '.join(existing_names)}"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        existing_invitations = NetworkInvite.objects.filter(
+            issuer__entity_id__in=slugs,
+            network=network,
+            status=NetworkInvite.Status.PENDING,
+        ).select_related("issuer")
+
+        if existing_invitations.exists():
+            pending_names = [inv.issuer.name for inv in existing_invitations]
+            return Response(
+                {
+                    "response": f"Für diese Institutionen liegen bereits offene Einladungen vor: {', '.join(pending_names)}"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            with transaction.atomic():
+                created_invitations = []
+                for issuer in issuers:
+                    invitation = NetworkInvite.objects.create(
+                        issuer=issuer, network=network
+                    )
+                    created_invitations.append(invitation)
+
+                    owners = issuer.cached_issuerstaff().filter(
+                        role=IssuerStaff.ROLE_OWNER
+                    )
+
+                    email_context = {
+                        "network": network,
+                        "issuer": issuer,
+                        "activate_url": OriginSetting.HTTP
+                        + reverse(
+                            "v1_api_issuer_confirm_network_invite",
+                            kwargs={
+                                "networkSlug": network.entity_id,
+                                "inviteSlug": invitation.entity_id,
+                            },
+                        ),
+                        "call_to_action_label": "Einladung bestätigen",
+                    }
+
+                    adapter = get_adapter()
+
+                    for owner in owners:
+                        adapter.send_mail(
+                            "issuer/email/notify_issuer_network_invitation",
+                            owner.user.email,
+                            email_context,
+                        )
+
+                return Response(
+                    {
+                        "response": f"Successfully created {len(created_invitations)} network invitations",
+                        "created_count": len(created_invitations),
+                        "created_for": [inv.issuer.name for inv in created_invitations],
+                    },
+                    status=status.HTTP_201_CREATED,
+                )
+        except Exception as e:
+            return Response(
+                {"response": f"Failed to create invitations: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @apispec_put_operation(
+        "NetworkInvite",
+        summary="Update a single NetworkInvite",
+        tags=["NetworkInvite"],
+    )
+    def put(self, request, **kwargs):
+        if "confirm" in request.path:
+            return self.confirm(request, **kwargs)
+        return super(NetworkInvitation, self).put(request, **kwargs)
+
+    def confirm(self, request, **kwargs):
+        try:
+            invitation = NetworkInvite.objects.get(entity_id=kwargs.get("slug"))
+
+            if invitation.status != NetworkInvite.Status.PENDING:
+                return Response(
+                    {"detail": "Only pending invites can be confirmed"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if invitation.status == NetworkInvite.Status.APPROVED:
+                return Response(
+                    {"detail": "Issuer is already a partner of this network"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            with transaction.atomic():
+                invitation.status = NetworkInvite.Status.APPROVED
+                invitation.save()
+
+                if invitation.issuer:
+                    invitation.network.partner_issuers.add(invitation.issuer)
+
+            serializer = self.v1_serializer_class(invitation)
+            return Response(serializer.data)
+
+        except NetworkInvite.DoesNotExist:
+            return Response(
+                {"detail": "Invitation not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class ConfirmNetworkInvitation(BaseEntityDetailView, BaseRedirectView):
+    permission_classes = (permissions.AllowAny,)
+    v1_serializer_class = BaseSerializer
+    v2_serializer_class = BaseSerializerV2
+
+    def get(self, request, **kwargs):
+        """
+        Redirect to frontend to confirm network invitation
+        """
+        badgrapp_id = request.query_params.get("a")
+        badgrapp = BadgrApp.objects.get_by_id_or_default(badgrapp_id)
+        networkSlug = kwargs.get("networkSlug")
+        inviteSlug = kwargs.get("inviteSlug")
+        intended_redirect = f"/issuer/networks/{networkSlug}/invite/{inviteSlug}"
+
+        return self._prepare_redirect(request, badgrapp, intended_redirect)
