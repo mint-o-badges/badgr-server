@@ -72,6 +72,18 @@ class Issuers(EntityViewSet):
     queryset = Issuer.objects.all()
     serializer_class = IssuerSerializerV1
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        # some fields have to be excluded due to data privacy concerns
+        # in the get routes
+        if self.request.method == "GET":
+            context["exclude_fields"] = [
+                *context.get("exclude_fields", []),
+                "staff",
+                "created_by",
+            ]
+        return context
+
 
 class LearningPathFilter(EntityFilter):
     tags = filters.CharFilter(
