@@ -35,7 +35,7 @@ class Command(BaseCommand):
                     else:
                         uncategorized_count += 1
 
-                except (KeyError, ValueError) as e:
+                except (KeyError, ValueError):
                     uncategorized_count += 1
             else:
                 uncategorized_count += 1
