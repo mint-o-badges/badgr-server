@@ -1,5 +1,4 @@
 from cryptography.fernet import Fernet
-import sys
 import os
 from datetime import datetime
 import pytz
