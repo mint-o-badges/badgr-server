@@ -253,6 +253,230 @@ class BaseIssuer(
     url = models.CharField(max_length=254, blank=True, null=True, default=None)
     country = models.CharField(max_length=254, null=True, blank=True)
 
+    staff = models.ManyToManyField(AUTH_USER_MODEL)
+
+    cached = SlugOrJsonIdCacheModelManager(
+        slug_kwarg_name="entity_id", slug_field_name="entity_id"
+    )
+
+    private_key = models.CharField(
+        max_length=512, blank=True, null=True, default=generate_private_key_pem
+    )
+
+    def json_type_data(self):
+        raise NotImplementedError
+
+    def get_json(
+        self,
+        obi_version=CURRENT_OBI_VERSION,
+        include_extra=True,
+        use_canonical_id=False,
+    ):
+        obi_version, context_iri = get_obi_context(obi_version)
+
+        id = (
+            self.jsonld_id
+            if use_canonical_id
+            else add_obi_version_ifneeded(self.jsonld_id, obi_version)
+        )
+
+        json = OrderedDict(
+            {"@context": [*context_iri] if obi_version == "3_0" else context_iri}
+        )
+
+        json.update(OrderedDict(self.json_type_data(id)))
+
+        image_url = self.image_url(public=True)
+        json["image"] = image_url
+        if self.original_json:
+            image_info = self.get_original_json().get("image", None)
+            if isinstance(image_info, dict):
+                json["image"] = image_info
+                json["image"]["id"] = image_url
+
+        # source url
+        if self.source_url:
+            if obi_version == "1_1":
+                json["source_url"] = self.source_url
+                json["hosted_url"] = OriginSetting.HTTP + self.get_absolute_url()
+            elif obi_version == "2_0":
+                json["sourceUrl"] = self.source_url
+                json["hostedUrl"] = OriginSetting.HTTP + self.get_absolute_url()
+
+        # extensions
+        if len(self.cached_extensions()) > 0:
+            for extension in self.cached_extensions():
+                json[extension.name] = json_loads(extension.original_json)
+
+        # pass through imported json
+        if include_extra:
+            extra = self.get_filtered_json()
+            if extra is not None:
+                for k, v in list(extra.items()):
+                    if k not in json:
+                        json[k] = v
+
+        if obi_version == "2_0":
+            # link to v3 version of profile
+            json["related"] = [
+                {
+                    "type": [
+                        "https://purl.imsglobal.org/spec/vc/ob/vocab.html#Profile"
+                    ],
+                    "id": add_obi_version_ifneeded(self.jsonld_id, "3_0"),
+                    "version": "Open Badges v3p0",
+                }
+            ]
+
+        # add verificationMethod
+        if obi_version == "3_0":
+            json["@context"].append("https://www.w3.org/ns/did/v1")
+
+            # link to v2 version of profile
+            # https://www.imsglobal.org/spec/ob/v3p0/impl#example-issuer-profile-relation-between-open-badges-3-0-and-open-badges-2-0
+            json["alsoKnownAs"] = [add_obi_version_ifneeded(self.jsonld_id, "2_0")]
+
+            private_key = serialization.load_pem_private_key(
+                self.private_key.encode(), settings.SECRET_KEY.encode()
+            )
+            public_key = private_key.public_key()
+
+            # for multicodec
+            ed01_prefix = b"\xed\x01"
+
+            public_key_bytes = public_key.public_bytes(
+                encoding=serialization.Encoding.Raw,
+                format=serialization.PublicFormat.Raw,
+            )
+
+            public_key_base58 = base58.b58encode(
+                ed01_prefix + public_key_bytes
+            ).decode()
+
+            # z prefix for multibase 58
+            public_key_multibase = f"z{public_key_base58}"
+
+            # FIXME: needed for current version of https://github.com/1EdTech/digital-credentials-public-validator/ to work..
+            json["controller"] = ""
+
+            # FIXME: this should be a list of dicts according to the spec, but the verificator only supports it this way for now
+            json["verificationMethod"] = OrderedDict(
+                {
+                    "id": f"{id}#key-0",
+                    "type": "DataIntegrityProof",
+                    "cryptosuite": "eddsa-rdf-2022",
+                    "controller": id,
+                    "publicKeyMultibase": public_key_multibase,
+                }
+            )
+
+        return json
+
+    @property
+    def json(self):
+        return self.get_json()
+
+    def get_absolute_url(self):
+        raise NotImplementedError
+
+    @property
+    def image_preview(self):
+        return self.image
+
+    @property
+    def public_url(self):
+        return OriginSetting.HTTP + self.get_absolute_url()
+
+    @property
+    def jsonld_id(self):
+        if self.source_url:
+            return self.source_url
+        return OriginSetting.HTTP + self.get_absolute_url()
+
+    def image_url(self, public=False):
+        if bool(self.image):
+            if public:
+                return OriginSetting.HTTP + reverse(
+                    self.get_image_url_name(), kwargs={"entity_id": self.entity_id}
+                )
+            if getattr(settings, "MEDIA_URL").startswith("http"):
+                return default_storage.url(self.image.name)
+            else:
+                return getattr(settings, "HTTP_ORIGIN") + default_storage.url(
+                    self.image.name
+                )
+        else:
+            return None
+
+    def get_staff_model_class(self):
+        """Return the staff model class (NetworkStaff or IssuerStaff)"""
+        raise NotImplementedError
+
+    def get_staff_cached_method(self):
+        """Return the cached staff queryset"""
+        raise NotImplementedError
+
+    def get_staff_field_name(self):
+        """Return the field name for the staff relationship ('network' or 'issuer')"""
+        raise NotImplementedError
+
+    def get_image_url_name(self):
+        raise NotImplementedError
+
+    @property
+    def staff_items(self):
+        return self.get_staff_cached_method()
+
+    @staff_items.setter
+    def staff_items(self, value):
+        """
+        Update staff records from a list of staff serializer data
+        """
+        from django.db import transaction
+
+        existing_staff_idx = {s.cached_user: s for s in self.staff_items}
+        new_staff_idx = {s["cached_user"]: s for s in value}
+
+        staff_model_class = self.get_staff_model_class()
+        staff_field_name = self.get_staff_field_name()
+
+        with transaction.atomic():
+            for staff_data in value:
+                if staff_data["cached_user"] not in existing_staff_idx:
+                    staff_record, created = staff_model_class.cached.get_or_create(
+                        **{staff_field_name: self},
+                        user=staff_data["cached_user"],
+                        defaults={"role": staff_data["role"]},
+                    )
+                    if not created:
+                        staff_record.role = staff_data["role"]
+                        staff_record.save()
+
+            # remove old staff records -- but never remove the only OWNER role
+            for staff_record in self.staff_items:
+                if staff_record.cached_user not in new_staff_idx:
+                    if (
+                        staff_record.role != staff_model_class.ROLE_OWNER
+                        or len(self.owners) > 1
+                    ):
+                        staff_record.delete()
+
+    def publish(self, publish_staff=True, *args, **kwargs):
+        fields_cache = self._state.fields_cache
+        self._state.fields_cache = dict()
+
+        super().publish(*args, **kwargs)
+        if publish_staff:
+            for member in self.get_staff_cached_method():
+                member.cached_user.publish()
+
+        self._state.fields_cache = fields_cache
+
+    @property
+    def cached_badgrapp(self):
+        id = self.badgrapp_id if self.badgrapp_id else None
+        return BadgrApp.objects.get_by_id_or_default(badgrapp_id=id)
+
 
 class Issuer(BaseIssuer):
     entity_class_name = "Issuer"
@@ -275,9 +499,6 @@ class Issuer(BaseIssuer):
     verified = models.BooleanField(null=False, default=False)
 
     objects = IssuerManager()
-    cached = SlugOrJsonIdCacheModelManager(
-        slug_kwarg_name="entity_id", slug_field_name="entity_id"
-    )
 
     category = models.CharField(max_length=255, null=False, default="n/a")
 
@@ -292,22 +513,18 @@ class Issuer(BaseIssuer):
     lat = models.FloatField(null=True, blank=True)
     lon = models.FloatField(null=True, blank=True)
 
-    private_key = models.CharField(
-        max_length=512, blank=True, null=True, default=generate_private_key_pem
-    )
+    # def publish(self, publish_staff=True, *args, **kwargs):
+    #     fields_cache = (
+    #         self._state.fields_cache
+    #     )  # stash the fields cache to avoid publishing related objects here
+    #     self._state.fields_cache = dict()
 
-    def publish(self, publish_staff=True, *args, **kwargs):
-        fields_cache = (
-            self._state.fields_cache
-        )  # stash the fields cache to avoid publishing related objects here
-        self._state.fields_cache = dict()
+    #     super(Issuer, self).publish(*args, **kwargs)
+    #     if publish_staff:
+    #         for member in self.cached_issuerstaff():
+    #             member.cached_user.publish()
 
-        super(Issuer, self).publish(*args, **kwargs)
-        if publish_staff:
-            for member in self.cached_issuerstaff():
-                member.cached_user.publish()
-
-        self._state.fields_cache = fields_cache  # restore the fields cache
+    #     self._state.fields_cache = fields_cache  # restore the fields cache
 
     def has_nonrevoked_assertions(self):
         return self.badgeinstance_set.filter(revoked=False).exists()
@@ -349,7 +566,7 @@ class Issuer(BaseIssuer):
 
         if not self.pk:
             self.notify_admins(self)
-            should_geocode = True
+            # should_geocode = True
             if not self.verified:
                 badgr_app = BadgrApp.objects.get_current(None)
                 try:
@@ -521,30 +738,8 @@ class Issuer(BaseIssuer):
     def get_absolute_url(self):
         return reverse("issuer_json", kwargs={"entity_id": self.entity_id})
 
-    @property
-    def public_url(self):
-        return OriginSetting.HTTP + self.get_absolute_url()
-
-    def image_url(self, public=False):
-        if bool(self.image):
-            if public:
-                return OriginSetting.HTTP + reverse(
-                    "issuer_image", kwargs={"entity_id": self.entity_id}
-                )
-            if getattr(settings, "MEDIA_URL").startswith("http"):
-                return default_storage.url(self.image.name)
-            else:
-                return getattr(settings, "HTTP_ORIGIN") + default_storage.url(
-                    self.image.name
-                )
-        else:
-            return None
-
-    @property
-    def jsonld_id(self):
-        if self.source_url:
-            return self.source_url
-        return OriginSetting.HTTP + self.get_absolute_url()
+    def get_image_url_name(self):
+        return "issuer_image"
 
     @property
     def editors(self):
@@ -572,39 +767,14 @@ class Issuer(BaseIssuer):
     def cached_learningpaths(self):
         return self.learningpaths.all().order_by("created_at")
 
-    @property
-    def staff_items(self):
+    def get_staff_model_class(self):
+        return IssuerStaff
+
+    def get_staff_field_name(self):
+        return "issuer"
+
+    def get_staff_cached_method(self):
         return self.cached_issuerstaff()
-
-    @staff_items.setter
-    def staff_items(self, value):
-        """
-        Update this issuers IssuerStaff from a list of IssuerStaffSerializerV2 data
-        """
-        existing_staff_idx = {s.cached_user: s for s in self.staff_items}
-        new_staff_idx = {s["cached_user"]: s for s in value}
-
-        with transaction.atomic():
-            # add missing staff records
-            for staff_data in value:
-                if staff_data["cached_user"] not in existing_staff_idx:
-                    staff_record, created = IssuerStaff.cached.get_or_create(
-                        issuer=self,
-                        user=staff_data["cached_user"],
-                        defaults={"role": staff_data["role"]},
-                    )
-                    if not created:
-                        staff_record.role = staff_data["role"]
-                        staff_record.save()
-
-            # remove old staff records -- but never remove the only OWNER role
-            for staff_record in self.staff_items:
-                if staff_record.cached_user not in new_staff_idx:
-                    if (
-                        staff_record.role != IssuerStaff.ROLE_OWNER
-                        or len(self.owners) > 1
-                    ):
-                        staff_record.delete()
 
     def get_extensions_manager(self):
         return self.issuerextension_set
@@ -616,131 +786,17 @@ class Issuer(BaseIssuer):
             issuerstaff__issuer=self, issuerstaff__role=IssuerStaff.ROLE_EDITOR
         )
 
-    @property
-    def image_preview(self):
-        return self.image
-
-    def get_json(
-        self,
-        obi_version=CURRENT_OBI_VERSION,
-        include_extra=True,
-        use_canonical_id=False,
-    ):
-        obi_version, context_iri = get_obi_context(obi_version)
-
-        id = (
-            self.jsonld_id
-            if use_canonical_id
-            else add_obi_version_ifneeded(self.jsonld_id, obi_version)
-        )
-
-        # spread 3_0 context_iri to create a copy because we might modify it later on
-        json = OrderedDict(
-            {"@context": [*context_iri] if obi_version == "3_0" else context_iri}
-        )
-
-        json.update(
-            OrderedDict(
-                type="Issuer",
-                id=id,
-                name=self.name,
-                url=self.url,
-                email=self.email,
-                description=self.description,
-                category=self.category,
-                slug=self.entity_id,
-            )
-        )
-
-        image_url = self.image_url(public=True)
-        json["image"] = image_url
-        if self.original_json:
-            image_info = self.get_original_json().get("image", None)
-            if isinstance(image_info, dict):
-                json["image"] = image_info
-                json["image"]["id"] = image_url
-
-        # source url
-        if self.source_url:
-            if obi_version == "1_1":
-                json["source_url"] = self.source_url
-                json["hosted_url"] = OriginSetting.HTTP + self.get_absolute_url()
-            elif obi_version == "2_0":
-                json["sourceUrl"] = self.source_url
-                json["hostedUrl"] = OriginSetting.HTTP + self.get_absolute_url()
-
-        # extensions
-        if len(self.cached_extensions()) > 0:
-            for extension in self.cached_extensions():
-                json[extension.name] = json_loads(extension.original_json)
-
-        # pass through imported json
-        if include_extra:
-            extra = self.get_filtered_json()
-            if extra is not None:
-                for k, v in list(extra.items()):
-                    if k not in json:
-                        json[k] = v
-
-        if obi_version == "2_0":
-            # link to v3 version of profile
-            json["related"] = [
-                {
-                    "type": [
-                        "https://purl.imsglobal.org/spec/vc/ob/vocab.html#Profile"
-                    ],
-                    "id": add_obi_version_ifneeded(self.jsonld_id, "3_0"),
-                    "version": "Open Badges v3p0",
-                }
-            ]
-
-        # add verificationMethod
-        if obi_version == "3_0":
-            json["@context"].append("https://www.w3.org/ns/did/v1")
-
-            # link to v2 version of profile
-            # https://www.imsglobal.org/spec/ob/v3p0/impl#example-issuer-profile-relation-between-open-badges-3-0-and-open-badges-2-0
-            json["alsoKnownAs"] = [add_obi_version_ifneeded(self.jsonld_id, "2_0")]
-
-            private_key = serialization.load_pem_private_key(
-                self.private_key.encode(), settings.SECRET_KEY.encode()
-            )
-            public_key = private_key.public_key()
-
-            # for multicodec
-            ed01_prefix = b"\xed\x01"
-
-            public_key_bytes = public_key.public_bytes(
-                encoding=serialization.Encoding.Raw,
-                format=serialization.PublicFormat.Raw,
-            )
-
-            public_key_base58 = base58.b58encode(
-                ed01_prefix + public_key_bytes
-            ).decode()
-
-            # z prefix for multibase 58
-            public_key_multibase = f"z{public_key_base58}"
-
-            # FIXME: needed for current version of https://github.com/1EdTech/digital-credentials-public-validator/ to work..
-            json["controller"] = ""
-
-            # FIXME: this should be a list of dicts according to the spec, but the verificator only supports it this way for now
-            json["verificationMethod"] = OrderedDict(
-                {
-                    "id": f"{id}#key-0",
-                    "type": "DataIntegrityProof",
-                    "cryptosuite": "eddsa-rdf-2022",
-                    "controller": id,
-                    "publicKeyMultibase": public_key_multibase,
-                }
-            )
-
-        return json
-
-    @property
-    def json(self):
-        return self.get_json()
+    def json_type_data(self, id):
+        return {
+            "type": "Issuer",
+            "id": id,
+            "name": self.name,
+            "url": self.url,
+            "email": self.email,
+            "description": self.description,
+            "category": self.category,
+            "slug": self.entity_id,
+        }
 
     def get_filtered_json(
         self,
@@ -756,11 +812,6 @@ class Issuer(BaseIssuer):
         ),
     ):
         return super(Issuer, self).get_filtered_json(excluded_fields=excluded_fields)
-
-    @property
-    def cached_badgrapp(self):
-        id = self.badgrapp_id if self.badgrapp_id else None
-        return BadgrApp.objects.get_by_id_or_default(badgrapp_id=id)
 
     def notify_admins(self, badgr_app=None, renotify=False):
         """
@@ -825,6 +876,16 @@ class Network(BaseIssuer):
 
     objects = NetworkManager()
 
+    def json_type_data(self, id):
+        return {
+            "type": "Network",
+            "id": id,
+            "name": self.name,
+            "url": self.url,
+            "description": self.description,
+            "slug": self.entity_id,
+        }
+
     def save(self, *args, **kwargs):
         if not self.pk:
             ret = super(Network, self).save(*args, **kwargs)
@@ -885,55 +946,30 @@ class Network(BaseIssuer):
     def json(self):
         return self.get_json()
 
-    def publish(self, publish_staff=True, *args, **kwargs):
-        fields_cache = (
-            self._state.fields_cache
-        )  # stash the fields cache to avoid publishing related objects here
-        self._state.fields_cache = dict()
+    # def publish(self, publish_staff=True, *args, **kwargs):
+    #     fields_cache = (
+    #         self._state.fields_cache
+    #     )  # stash the fields cache to avoid publishing related objects here
+    #     self._state.fields_cache = dict()
 
-        super(Network, self).publish(*args, **kwargs)
-        if publish_staff:
-            for member in self.cached_networkstaff():
-                member.cached_user.publish()
+    #     super(Network, self).publish(*args, **kwargs)
+    #     if publish_staff:
+    #         for member in self.cached_networkstaff():
+    #             member.cached_user.publish()
 
-        self._state.fields_cache = fields_cache
+    #     self._state.fields_cache = fields_cache
 
     def get_extensions_manager(self):
         return self.networkextension_set
 
-    @property
-    def staff_items(self):
+    def get_staff_model_class(self):
+        return NetworkStaff
+
+    def get_staff_field_name(self):
+        return "network"
+
+    def get_staff_cached_method(self):
         return self.cached_networkstaff()
-
-    @staff_items.setter
-    def staff_items(self, value):
-        """
-        Update this networks NetworkStaff from a list of IssuerStaffSerializerV2 data
-        """
-        existing_staff_idx = {s.cached_user: s for s in self.staff_items}
-        new_staff_idx = {s["cached_user"]: s for s in value}
-
-        with transaction.atomic():
-            # add missing staff records
-            for staff_data in value:
-                if staff_data["cached_user"] not in existing_staff_idx:
-                    staff_record, created = NetworkStaff.cached.get_or_create(
-                        network=self,
-                        user=staff_data["cached_user"],
-                        defaults={"role": staff_data["role"]},
-                    )
-                    if not created:
-                        staff_record.role = staff_data["role"]
-                        staff_record.save()
-
-            # remove old staff records -- but never remove the only OWNER role
-            for staff_record in self.staff_items:
-                if staff_record.cached_user not in new_staff_idx:
-                    if (
-                        staff_record.role != NetworkStaff.ROLE_OWNER
-                        or len(self.owners) > 1
-                    ):
-                        staff_record.delete()
 
     @cachemodel.cached_method(auto_publish=True)
     def cached_networkstaff(self):
@@ -948,36 +984,14 @@ class Network(BaseIssuer):
         id = self.badgrapp_id if self.badgrapp_id else None
         return BadgrApp.objects.get_by_id_or_default(badgrapp_id=id)
 
-    @property
-    def public_url(self):
-        return OriginSetting.HTTP + self.get_absolute_url()
-
-    def image_url(self, public=False):
-        if bool(self.image):
-            if public:
-                return OriginSetting.HTTP + reverse(
-                    "issuer_image", kwargs={"entity_id": self.entity_id}
-                )
-            if getattr(settings, "MEDIA_URL").startswith("http"):
-                return default_storage.url(self.image.name)
-            else:
-                return getattr(settings, "HTTP_ORIGIN") + default_storage.url(
-                    self.image.name
-                )
-        else:
-            return None
-
-    @property
-    def jsonld_id(self):
-        if self.source_url:
-            return self.source_url
-        return OriginSetting.HTTP + self.get_absolute_url()
+    def get_image_url_name(self):
+        return "network_image"
 
     def get_absolute_url(self):
         return reverse("network_json", kwargs={"entity_id": self.entity_id})
 
 
-class NetworkStaff(cachemodel.CacheModel):
+class BaseStaff(cachemodel.CacheModel):
     ROLE_OWNER = "owner"
     ROLE_EDITOR = "editor"
     ROLE_STAFF = "staff"
@@ -986,91 +1000,91 @@ class NetworkStaff(cachemodel.CacheModel):
         (ROLE_EDITOR, "Editor"),
         (ROLE_STAFF, "Staff"),
     )
-    network = models.ForeignKey(Network, on_delete=models.CASCADE)
+
     user = models.ForeignKey(AUTH_USER_MODEL, on_delete=models.CASCADE)
     role = models.CharField(max_length=254, choices=ROLE_CHOICES, default=ROLE_STAFF)
 
     class Meta:
-        unique_together = ("network", "user")
+        abstract = True
 
     def publish(self):
-        super(NetworkStaff, self).publish()
-        self.network.publish(publish_staff=False)
+        self.get_parent_entity().publish(publish_staff=False)
         self.user.publish()
 
     def delete(self, *args, **kwargs):
-        publish_network = kwargs.pop("publish_network", True)
-        new_contact = self.is_staff_contact()
-        super(NetworkStaff, self).delete()
-        if publish_network:
-            self.network.publish(publish_staff=False)
+        """Delete with proper cleanup and notifications"""
+        publish_parent = kwargs.pop(self.get_publish_kwarg_name(), True)
+        new_contact = (
+            self.is_staff_contact() if hasattr(self, "is_staff_contact") else False
+        )
+
+        super().delete()
+
+        if publish_parent:
+            self.get_parent_entity().publish(publish_staff=False)
         self.user.publish()
-        # Note that this delete method is not called if the user is deleted,
-        # since the cascade is done on the database level. That means that this logic
-        # *also* has to be contained in the delete method of the user
+
         if new_contact:
-            self.network.new_contact_email()
+            self.get_parent_entity().new_contact_email()
 
     @property
     def cached_user(self):
         from badgeuser.models import BadgeUser
 
         return BadgeUser.cached.get(pk=self.user_id)
+
+    def get_parent_entity(self):
+        raise NotImplementedError
+
+    def get_publish_kwarg_name(self):
+        """Return the kwarg name for controlling publish behavior"""
+        raise NotImplementedError
+
+    def get_cached_parent_property_name(self):
+        raise NotImplementedError
+
+
+class NetworkStaff(BaseStaff):
+    network = models.ForeignKey(Network, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ("network", "user")
+
+    def get_parent_entity(self):
+        return self.network
+
+    def get_publish_kwarg_name(self):
+        return "publish_network"
+
+    def get_cached_parent_property_name(self):
+        return "cached_network"
 
     @property
     def cached_network(self):
         return Network.cached.get(pk=self.network_id)
 
 
-class IssuerStaff(cachemodel.CacheModel):
-    ROLE_OWNER = "owner"
-    ROLE_EDITOR = "editor"
-    ROLE_STAFF = "staff"
-    ROLE_CHOICES = (
-        (ROLE_OWNER, "Owner"),
-        (ROLE_EDITOR, "Editor"),
-        (ROLE_STAFF, "Staff"),
-    )
+class IssuerStaff(BaseStaff):
     issuer = models.ForeignKey(Issuer, on_delete=models.CASCADE)
-    user = models.ForeignKey(AUTH_USER_MODEL, on_delete=models.CASCADE)
-    role = models.CharField(max_length=254, choices=ROLE_CHOICES, default=ROLE_STAFF)
 
     class Meta:
         unique_together = ("issuer", "user")
 
-    def publish(self):
-        super(IssuerStaff, self).publish()
-        self.issuer.publish(publish_staff=False)
-        self.user.publish()
+    def get_parent_entity(self):
+        return self.issuer
 
-    def delete(self, *args, **kwargs):
-        publish_issuer = kwargs.pop("publish_issuer", True)
-        new_contact = self.is_staff_contact()
-        super(IssuerStaff, self).delete()
-        if publish_issuer:
-            self.issuer.publish(publish_staff=False)
-        self.user.publish()
-        # Note that this delete method is not called if the user is deleted,
-        # since the cascade is done on the database level. That means that this logic
-        # *also* has to be contained in the delete method of the user
-        if new_contact:
-            self.issuer.new_contact_email()
+    def get_publish_kwarg_name(self):
+        return "publish_issuer"
+
+    def get_cached_parent_property_name(self):
+        return "cached_issuer"
 
     def is_staff_contact(self) -> bool:
-        # Get verified emails of associated user
         user_emails = self.user.verified_emails
-        # Get email of issuer
         issuer_email = self.issuer.email
-        # Check if overlap exists
         if issuer_email is None:
             return False
         return any(user_email.email == issuer_email for user_email in user_emails)
-
-    @property
-    def cached_user(self):
-        from badgeuser.models import BadgeUser
-
-        return BadgeUser.cached.get(pk=self.user_id)
 
     @property
     def cached_issuer(self):
