@@ -381,6 +381,39 @@ class IssuerLearningPathList(
         return super(IssuerLearningPathList, self).post(request, **kwargs)
 
 
+class NetworkIssuerDetail(BaseEntityDetailView):
+    model = Network
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsEditor & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    def get_object(self, network, issuer_slug):
+        try:
+            return network.partner_issuers.get(entity_id=issuer_slug)
+        except Issuer.DoesNotExist:
+            raise Http404("Issuer not found in this network")
+
+    @apispec_delete_operation(
+        "Issuer",
+        summary="Remove an issuer from a network",
+        description="Authenticated user must have owner, editor, or staff status on the Network",
+        tags=["Issuers", "Network"],
+    )
+    def delete(self, request, slug, issuer_slug, **kwargs):
+        try:
+            network = Network.objects.get(entity_id=slug)
+        except Network.DoesNotExist:
+            raise Exception("Network not found")
+
+        issuer = self.get_object(network, issuer_slug)
+        network.partner_issuers.remove(issuer)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class NetworkIssuerList(
     UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEntityListView
 ):
@@ -1726,6 +1759,61 @@ class NetworkInvitation(BaseEntityDetailView):
             return Response(
                 {"detail": "Invitation not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
+    @apispec_delete_operation(
+        "NetworkInvite",
+        summary="Revoke a single NetworkInvitation",
+        tags=["NetworkInvite"],
+    )
+    def delete(self, request, **kwargs):
+        try:
+            print(f"invite slug {kwargs.get('slug')}")
+            invite = NetworkInvite.objects.get(entity_id=kwargs.get("slug"))
+
+            if invite.status != IssuerStaffRequest.Status.PENDING:
+                if invite.status == IssuerStaffRequest.Status.REVOKED:
+                    return Response(
+                        {
+                            "detail": "Request has already been revoked.",
+                        },
+                        status=status.HTTP_200_OK,
+                    )
+                return Response(
+                    {"detail": "Only pending requests can be revoked"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            invite.status = IssuerStaffRequest.Status.REVOKED
+            invite.save()
+
+            serializer = self.v1_serializer_class(invite)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except IssuerStaffRequest.DoesNotExist:
+            return Response(
+                {"detail": "Network invitation not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+
+class NetworkInvitationList(BaseEntityListView):
+    model = NetworkInvite
+    v1_serializer_class = NetworkInviteSerializer
+    permission_classes = [
+        IsServerAdmin | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope)
+    ]
+    valid_scopes = ["rw:issuer"]
+
+    def get_objects(self, request, **kwargs):
+        return NetworkInvite.objects.filter(status=NetworkInvite.Status.PENDING)
+
+    @apispec_get_operation(
+        "NetworkInvite",
+        summary="Get pending invitations in a network context",
+        tags=["NetworkInvite"],
+    )
+    def get(self, request, **kwargs):
+        return super(NetworkInvitationList, self).get(request, **kwargs)
 
 
 class ConfirmNetworkInvitation(BaseEntityDetailView, BaseRedirectView):

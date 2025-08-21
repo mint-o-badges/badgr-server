@@ -976,7 +976,7 @@ class Network(BaseIssuer):
         return NetworkStaff.objects.filter(network=self)
 
     @cachemodel.cached_method(auto_publish=True)
-    def cached_issuers(self):
+    def cached_partner_issuers(self):
         return self.partner_issuers.all().order_by("created_at")
 
     @property

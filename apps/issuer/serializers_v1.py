@@ -188,11 +188,60 @@ class BaseIssuerSerializerV1(
         return image
 
 
+class NetworkSerializerV1(BaseIssuerSerializerV1):
+    staff = NetworkStaffSerializerV1(
+        read_only=True, source="cached_networkstaff", many=True
+    )
+
+    state = serializers.CharField(
+        max_length=254, required=False, allow_blank=True, allow_null=True
+    )
+
+    partner_issuers = serializers.SerializerMethodField()
+
+    def get_partner_issuers(self, obj):
+        from .serializers_v1 import IssuerSerializerV1
+
+        # Exclude 'networks' field from nested issuer serialization to prevent circular reference
+        context = self.context.copy()
+        context["exclude_fields"] = context.get("exclude_fields", []) + ["networks"]
+
+        direct_issuers = obj.partner_issuers.all()
+
+        data = IssuerSerializerV1(direct_issuers, many=True, context=context).data
+        # print(f"data {data}")
+        # print(f"cached_issuers {obj.cached_partner_issuers()}")
+        # return IssuerSerializerV1(
+        #     obj.cached_partner_issuers(), many=True, context=context
+        # ).data
+        return data
+
+    def create(self, validated_data, **kwargs):
+        new_network = Network(**validated_data)
+
+        new_network.badgrapp = BadgrApp.objects.get_current(
+            self.context.get("request", None)
+        )
+
+        new_network.save()
+
+        return new_network
+
+    def to_representation(self, instance):
+        representation = super(NetworkSerializerV1, self).to_representation(instance)
+        representation["json"] = instance.get_json(
+            obi_version="1_1", use_canonical_id=True
+        )
+
+        return representation
+
+
 class IssuerSerializerV1(BaseIssuerSerializerV1):
     email = serializers.EmailField(max_length=255, required=True)
     staff = IssuerStaffSerializerV1(
         read_only=True, source="cached_issuerstaff", many=True
     )
+    networks = serializers.SerializerMethodField()
     verified = serializers.BooleanField(default=False)
 
     category = serializers.CharField(max_length=255, required=True, allow_null=True)
@@ -218,6 +267,18 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
     lon = serializers.CharField(
         max_length=255, required=False, allow_blank=True, allow_null=True
     )
+
+    def get_networks(self, obj):
+        from .serializers_v1 import NetworkSerializerV1
+
+        # Exclude 'partner_issuers' field from nested network serialization to prevent circular reference
+        context = self.context.copy()
+        context["exclude_fields"] = context.get("exclude_fields", []) + [
+            "partner_issuers"
+        ]
+        return NetworkSerializerV1(
+            obj.cached_networks(), many=True, context=context
+        ).data
 
     class Meta:
         apispec_definition = ("Issuer", {})
@@ -310,35 +371,6 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
         representation["ownerAcceptedTos"] = any(
             user.agreed_terms_version == TermsVersion.cached.latest_version()
             for user in instance.owners
-        )
-
-        return representation
-
-
-class NetworkSerializerV1(BaseIssuerSerializerV1):
-    staff = NetworkStaffSerializerV1(
-        read_only=True, source="cached_networkstaff", many=True
-    )
-
-    state = serializers.CharField(
-        max_length=254, required=False, allow_blank=True, allow_null=True
-    )
-
-    def create(self, validated_data, **kwargs):
-        new_network = Network(**validated_data)
-
-        new_network.badgrapp = BadgrApp.objects.get_current(
-            self.context.get("request", None)
-        )
-
-        new_network.save()
-
-        return new_network
-
-    def to_representation(self, instance):
-        representation = super(NetworkSerializerV1, self).to_representation(instance)
-        representation["json"] = instance.get_json(
-            obi_version="1_1", use_canonical_id=True
         )
 
         return representation

@@ -18,6 +18,8 @@ from issuer.api import (
     LearningPathDetail,
     LearningPathParticipantsList,
     NetworkInvitation,
+    NetworkInvitationList,
+    NetworkIssuerDetail,
     NetworkIssuerList,
     NetworkList,
     QRCodeDetail,
@@ -107,6 +109,11 @@ urlpatterns = [
         name="v1_api_learningpath_list",
     ),
     url(
+        r"^networks/(?P<slug>[^/]+)/issuer/(?P<issuer_slug>[^/]+)$",
+        NetworkIssuerDetail.as_view(),
+        name="v1_api_network_issuer_detail",
+    ),
+    url(
         r"^networks/(?P<slug>[^/]+)/issuer$",
         NetworkIssuerList.as_view(),
         name="v1_api_network_issuer_list",
@@ -140,6 +147,11 @@ urlpatterns = [
         r"^networks/(?P<networkSlug>[^/]+)/invite$",
         NetworkInvitation.as_view(),
         name="v1_api_network_invite_detail",
+    ),
+    url(
+        r"^networks/(?P<networkSlug>[^/]+)/invites$",
+        NetworkInvitationList.as_view(),
+        name="v1_api_network_invite_list",
     ),
     url(
         r"^networks/(?P<networkSlug>[^/]+)/invite/(?P<slug>[^/]+)$",
