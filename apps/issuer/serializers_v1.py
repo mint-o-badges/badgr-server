@@ -190,8 +190,6 @@ class BaseIssuerSerializerV1(
 
 class IssuerSerializerV1(BaseIssuerSerializerV1):
     email = serializers.EmailField(max_length=255, required=True)
-    description = StripTagsCharField(max_length=16384, required=False)
-    url = serializers.URLField(max_length=1024, required=True)
     staff = IssuerStaffSerializerV1(
         read_only=True, source="cached_issuerstaff", many=True
     )
@@ -256,7 +254,6 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
         )
 
         new_issuer.save()
-        print(f"staff: {new_issuer.cached_issuerstaff().all()}")
 
         return new_issuer
 
