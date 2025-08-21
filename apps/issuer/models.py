@@ -888,7 +888,7 @@ class Network(BaseIssuer):
 
     def save(self, *args, **kwargs):
         if not self.pk:
-            ret = super(Network, self).save(*args, **kwargs)
+            super(Network, self).save(*args, **kwargs)
 
             new_owner = NetworkStaff.objects.create(
                 network=self, user=self.created_by, role=NetworkStaff.ROLE_OWNER

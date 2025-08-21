@@ -78,7 +78,6 @@ from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAd
 from mainsite.serializers import CursorPaginatedListSerializer
 from oauthlib.oauth2.rfc6749.tokens import random_token_generator
 from rest_framework.serializers import BaseSerializer
-from rest_framework.views import APIView
 from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
