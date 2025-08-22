@@ -472,8 +472,6 @@ class BadgeClassSerializerV1(
         logger.debug(validated_data)
 
         with transaction.atomic():
-            force_image_resize = False
-
             new_name = validated_data.get("name")
             if new_name:
                 new_name = strip_tags(new_name)
@@ -485,7 +483,6 @@ class BadgeClassSerializerV1(
 
             if "image" in validated_data:
                 instance.image = validated_data.get("image")
-                force_image_resize = True
 
             if "criteria" in validated_data:
                 instance.criteria = validated_data.get("criteria")
