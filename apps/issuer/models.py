@@ -1159,6 +1159,7 @@ class NetworkInvite(BaseVersionedEntity):
     )
     issuer = models.ForeignKey(Issuer, blank=True, null=True, on_delete=models.CASCADE)
     invitedOn = models.DateTimeField(blank=False, null=False, default=timezone.now)
+    acceptedOn = models.DateTimeField(blank=True, null=True, default=None)
     status = models.CharField(
         max_length=254, choices=Status.choices, default=Status.PENDING
     )

@@ -1686,8 +1686,8 @@ class NetworkInvitation(BaseEntityDetailView):
                         "activate_url": OriginSetting.HTTP
                         + reverse(
                             "v1_api_user_confirm_network_invite",
+                            current_app="badgeuser",
                             kwargs={
-                                "networkSlug": network.entity_id,
                                 "inviteSlug": invitation.entity_id,
                             },
                         ),
@@ -1745,6 +1745,7 @@ class NetworkInvitation(BaseEntityDetailView):
 
             with transaction.atomic():
                 invitation.status = NetworkInvite.Status.APPROVED
+                invitation.acceptedOn = timezone.now()
                 invitation.save()
 
                 if invitation.issuer:
@@ -1803,11 +1804,37 @@ class NetworkInvitationList(BaseEntityListView):
     valid_scopes = ["rw:issuer"]
 
     def get_objects(self, request, **kwargs):
-        return NetworkInvite.objects.filter(status=NetworkInvite.Status.PENDING)
+        status_filter = request.GET.get("status", "").lower()
+
+        queryset = NetworkInvite.objects.all()
+
+        if status_filter == "pending":
+            queryset = queryset.filter(status=NetworkInvite.Status.PENDING)
+        elif status_filter == "approved":
+            queryset = queryset.filter(status=NetworkInvite.Status.APPROVED)
+        else:
+            # return all
+            pass
+
+        return queryset
 
     @apispec_get_operation(
         "NetworkInvite",
-        summary="Get pending invitations in a network context",
+        summary="Get network invitations with optional status filter",
+        description="Get network invitations. Use 'status' query parameter to filter.",
+        parameters=[
+            {
+                "name": "status",
+                "in": "query",
+                "description": "Filter invitations by status",
+                "required": False,
+                "schema": {
+                    "type": "string",
+                    "enum": ["pending", "approved"],
+                    "default": "pending",
+                },
+            }
+        ],
         tags=["NetworkInvite"],
     )
     def get(self, request, **kwargs):
