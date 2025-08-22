@@ -49,7 +49,6 @@ INSTALLED_APPS = [
     "entity",
     "issuer",
     "backpack",
-    "externaltools",
     # api docs
     "apispec_drf",
     # deprecated
@@ -219,11 +218,7 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_EXPOSE_HEADERS = ("link",)
 
-CORS_ALLOW_HEADERS = [
-    *default_headers,
-    'x-altcha-spam-filter',
-    'x-oeb-altcha'
-]
+CORS_ALLOW_HEADERS = [*default_headers, "x-altcha-spam-filter", "x-oeb-altcha"]
 
 ##
 #
@@ -570,9 +565,9 @@ ALTCHA_MINNUMBER = 10000
 ALTCHA_MAXNUMBER = 100000
 
 # CMS contents
-CMS_API_BASE_URL = ''
-CMS_API_BASE_PATH = ''
-CMS_API_KEY = ''
+CMS_API_BASE_URL = ""
+CMS_API_BASE_PATH = ""
+CMS_API_KEY = ""
 
 # path to webcomponents assets build in badgr-ui
-WEBCOMPONENTS_ASSETS_PATH = '/'
+WEBCOMPONENTS_ASSETS_PATH = "/"
