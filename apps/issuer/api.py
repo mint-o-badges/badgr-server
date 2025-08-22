@@ -1746,7 +1746,7 @@ class NetworkInvitation(BaseEntityDetailView):
 
             if invitation.status != NetworkInvite.Status.PENDING:
                 return Response(
-                    {"detail": "Only pending invites can be confirmed"},
+                    {"detail": "Link expired"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
