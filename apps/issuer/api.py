@@ -19,8 +19,6 @@ from django.db.models import Q
 from django.http import Http404
 from django.urls import reverse
 from django.utils import timezone
-from apps.badgeuser.api import BaseRedirectView
-from rest_framework import permissions
 
 from entity.api import (
     BaseEntityDetailView,
@@ -1687,7 +1685,7 @@ class NetworkInvitation(BaseEntityDetailView):
                         "issuer": issuer,
                         "activate_url": OriginSetting.HTTP
                         + reverse(
-                            "v1_api_issuer_confirm_network_invite",
+                            "v1_api_user_confirm_network_invite",
                             kwargs={
                                 "networkSlug": network.entity_id,
                                 "inviteSlug": invitation.entity_id,
@@ -1814,21 +1812,3 @@ class NetworkInvitationList(BaseEntityListView):
     )
     def get(self, request, **kwargs):
         return super(NetworkInvitationList, self).get(request, **kwargs)
-
-
-class ConfirmNetworkInvitation(BaseEntityDetailView, BaseRedirectView):
-    permission_classes = (permissions.AllowAny,)
-    v1_serializer_class = BaseSerializer
-    v2_serializer_class = BaseSerializerV2
-
-    def get(self, request, **kwargs):
-        """
-        Redirect to frontend to confirm network invitation
-        """
-        badgrapp_id = request.query_params.get("a")
-        badgrapp = BadgrApp.objects.get_by_id_or_default(badgrapp_id)
-        networkSlug = kwargs.get("networkSlug")
-        inviteSlug = kwargs.get("inviteSlug")
-        intended_redirect = f"/issuer/networks/{networkSlug}/invite/{inviteSlug}"
-
-        return self._prepare_redirect(request, badgrapp, intended_redirect)

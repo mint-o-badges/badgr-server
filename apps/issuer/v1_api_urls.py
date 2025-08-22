@@ -2,7 +2,6 @@ from django.conf.urls import url
 
 from issuer.api import (
     BadgeRequestList,
-    ConfirmNetworkInvitation,
     IssuerLearningPathList,
     IssuerList,
     IssuerDetail,
@@ -154,7 +153,7 @@ urlpatterns = [
         name="v1_api_network_invite_list",
     ),
     url(
-        r"^networks/(?P<networkSlug>[^/]+)/invite/(?P<slug>[^/]+)$",
+        r"^networks/invites/(?P<slug>[^/]+)$",
         NetworkInvitation.as_view(),
         name="v1_api_network_invite_detail",
     ),
@@ -162,10 +161,5 @@ urlpatterns = [
         r"^networks/(?P<networkSlug>[^/]+)/invite/(?P<slug>[^/]+)/confirm$",
         NetworkInvitation.as_view(),
         name="v1_api_network_invite_detail",
-    ),
-    url(
-        r"^networks/(?P<networkSlug>[^/]+)confirm-network-invitation/(?P<inviteSlug>[^/]+)$",
-        ConfirmNetworkInvitation.as_view(),
-        name="v1_api_issuer_confirm_network_invite",
     ),
 ]
