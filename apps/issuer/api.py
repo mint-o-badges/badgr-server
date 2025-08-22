@@ -409,6 +409,19 @@ class NetworkIssuerDetail(BaseEntityDetailView):
         issuer = self.get_object(network, issuer_slug)
         network.partner_issuers.remove(issuer)
 
+        owners = issuer.cached_issuerstaff().filter(role=IssuerStaff.ROLE_OWNER)
+
+        email_context = {"issuer": issuer, "network": network}
+
+        adapter = get_adapter()
+
+        for owner in owners:
+            adapter.send_mail(
+                "issuer/email/notify_issuer_network_update",
+                owner.user.email,
+                email_context,
+            )
+
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
