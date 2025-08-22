@@ -399,7 +399,7 @@ class NetworkIssuersJson(JSONComponentView):
 
         return [
             b.get_json(obi_version=obi_version)
-            for b in self.current_object.cached_issuers()
+            for b in self.current_object.cached_partner_issuers()
         ]
 
 
