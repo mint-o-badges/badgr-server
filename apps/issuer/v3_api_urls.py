@@ -10,5 +10,6 @@ router.register(r"issuers", api_v3.Issuers)
 router.register(r"learningpaths", api_v3.LearningPaths)
 
 urlpatterns = [
+    path("learnersprofile", api_v3.LearnersProfile.as_view()),
     path("", include(router.urls)),
 ]
