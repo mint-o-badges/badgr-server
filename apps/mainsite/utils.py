@@ -418,16 +418,6 @@ def first_node_match(graph, condition):
             return node
 
 
-def get_tool_consumer_instance_guid():
-    guid = getattr(settings, "EXTERNALTOOL_CONSUMER_INSTANCE_GUID", None)
-    if guid is None:
-        guid = cache.get("external_tool_consumer_instance_guid")
-        if guid is None:
-            guid = "badgr-tool-consumer:{}".format(generate_entity_uri())
-            cache.set("external_tool_consumer_instance_guid", guid, timeout=None)
-    return guid
-
-
 def list_of(value):
     if value is None:
         return []
