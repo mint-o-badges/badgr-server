@@ -1,5 +1,4 @@
 from cryptography.fernet import Fernet
-import sys
 import os
 from datetime import datetime
 import pytz
@@ -77,6 +76,7 @@ MIDDLEWARE = [
     # 'mainsite.middleware.TrailingSlashMiddleware',
     "django_prometheus.middleware.PrometheusAfterMiddleware",
     "lti_tool.middleware.LtiLaunchMiddleware",
+    "mainsite.middleware.ExceptionLoggingMiddleware",
 ]
 
 DBBACKUP_STORAGE = "django.core.files.storage.FileSystemStorage"
@@ -254,43 +254,33 @@ FIXTURE_DIRS = [
 ##
 
 LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "mail_admins": {
-            "level": "ERROR",
-            "filters": [],
-            "class": "django.utils.log.AdminEmailHandler",
-        },
-        "console": {
-            "level": "DEBUG",
-            "class": "logging.StreamHandler",
-            "stream": sys.stdout,
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        # Only logs to the console appear in the docker / grafana logs
+        'console': {
+            'level': 'INFO',
+            'formatter': 'default',
+            'class': 'logging.StreamHandler'
         },
     },
-    "loggers": {
-        "django.request": {
-            "handlers": ["mail_admins"],
-            "level": "ERROR",
-            "propagate": True,
-        },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    'loggers': {
         # Badgr.Events emits all badge related activity
-        "Badgr.Events": {
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
+        'Badgr.Events': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
         },
     },
-    "formatters": {
-        "default": {"format": "%(asctime)s %(levelname)s %(module)s %(message)s"},
-        "json": {
-            "()": "mainsite.formatters.JsonFormatter",
-            "format": "%(asctime)s",
-            "datefmt": "%Y-%m-%dT%H:%M:%S%z",
-        },
+    'formatters': {
+        'default': {
+            'format': '%(asctime)s %(levelname)s %(module)s %(message)s'
+        }
     },
 }
-
 
 ##
 #
