@@ -395,7 +395,7 @@ class Issuer(
                 + (str(self.city) if self.city is not None else "")
                 + " Deutschland"
             )
-            nom = Nominatim(user_agent="...")
+            nom = Nominatim(user_agent="OpenEducationalBadges")
             geoloc = nom.geocode(addr_string)
             if geoloc:
                 self.lon = geoloc.longitude
