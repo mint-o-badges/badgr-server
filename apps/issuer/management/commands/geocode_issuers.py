@@ -69,7 +69,7 @@ class Command(BaseCommand):
             try:
                 # Add delay to respect rate limits
                 if not delay or delay < 1.0:
-                    self.style.WARNING(f"A delay of less than 1s violates rate limits; setting to 1s")
+                    self.style.WARNING(f"A delay of {delay}, which is less than 1s violates rate limits; setting to 1s")
                     delay = 1.0
                 time.sleep(delay)
 
