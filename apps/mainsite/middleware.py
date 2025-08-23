@@ -43,8 +43,7 @@ class ExceptionLoggingMiddleware(MiddlewareMixin):
     def process_exception(self, request, exception):
         if django_settings.DEBUG:
             return None
-        logger.error("An unhandled exception occurred:")
-        logger.exception(exception)
+        logger.exception("An unhandled exception occured:", exc_info=exception)
 
 class CookieToBearerMiddleware(MiddlewareMixin):
     """
