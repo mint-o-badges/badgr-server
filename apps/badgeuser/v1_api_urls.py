@@ -9,6 +9,7 @@ from badgeuser.api import (
     BadgeUserEmailConfirm,
     BadgeUserDetail,
     BadgeUserResendEmailConfirmation,
+    ConfirmNetworkInvitation,
     GetRedirectPath,
     IssuerStaffRequestDetail,
     IssuerStaffRequestList,
@@ -88,5 +89,10 @@ urlpatterns = [
         r"^confirm-staff-request/(?P<entity_id>[^/]+)$",
         BadgeUserConfirmStaffRequest.as_view(),
         name="v1_api_user_confirm_staffrequest",
+    ),
+    url(
+        r"^confirm-network-invitation/(?P<inviteSlug>[^/]+)$",
+        ConfirmNetworkInvitation.as_view(),
+        name="v1_api_user_confirm_network_invite",
     ),
 ]
