@@ -766,7 +766,7 @@ class Issuer(BaseIssuer):
     def cached_badgeclasses(self):
         return self.badgeclasses.all().order_by("created_at")
 
-    @cachemodel.cached_method(auto_publish=True)
+    # @cachemodel.cached_method(auto_publish=True)
     def cached_networks(self):
         return self.networks.all().order_by("created_at")
 
@@ -982,7 +982,7 @@ class Network(BaseIssuer):
     def cached_networkstaff(self):
         return NetworkStaff.objects.filter(network=self)
 
-    @cachemodel.cached_method(auto_publish=True)
+    # @cachemodel.cached_method(auto_publish=True)
     def cached_partner_issuers(self):
         return self.partner_issuers.all().order_by("created_at")
 
