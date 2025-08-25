@@ -2,6 +2,10 @@ from django import http
 from django.utils import deprecation
 from django.utils.deprecation import MiddlewareMixin
 from mainsite import settings
+from django.conf import settings as django_settings
+import logging
+
+logger = logging.getLogger("Badgr.Events")
 
 
 class MaintenanceMiddleware(deprecation.MiddlewareMixin):
@@ -35,6 +39,11 @@ class XframeExempt500Middleware(MiddlewareMixin):
             response.xframe_options_exempt = True
         return response
 
+class ExceptionLoggingMiddleware(MiddlewareMixin):
+    def process_exception(self, request, exception):
+        if django_settings.DEBUG:
+            return None
+        logger.exception("An unhandled exception occured:", exc_info=exception)
 
 class CookieToBearerMiddleware(MiddlewareMixin):
     """

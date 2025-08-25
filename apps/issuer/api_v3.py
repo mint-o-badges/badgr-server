@@ -1,3 +1,11 @@
+from django.conf import settings
+from django.http import (
+    HttpResponse,
+    HttpResponseBadRequest,
+    HttpResponseForbidden,
+    JsonResponse,
+)
+from django.views import View
 from django_filters import rest_framework as filters
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
@@ -6,6 +14,14 @@ from apispec_drf.decorators import (
     apispec_list_operation,
 )
 
+from backpack.utils import get_skills_tree
+from mainsite.models import IframeUrl
+from issuer.permissions import (
+    BadgrOAuthTokenHasEntityScope,
+    BadgrOAuthTokenHasScope,
+    IsStaff,
+)
+from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAdmin
 from entity.api_v3 import EntityFilter, EntityViewSet, TagFilter
 
 from .serializers_v1 import (
@@ -13,7 +29,7 @@ from .serializers_v1 import (
     IssuerSerializerV1,
     LearningPathSerializerV1,
 )
-from .models import BadgeClass, BadgeClassTag, Issuer, LearningPath
+from .models import BadgeClass, BadgeClassTag, BadgeInstance, Issuer, LearningPath
 
 
 class BadgeFilter(EntityFilter):
@@ -56,6 +72,18 @@ class Issuers(EntityViewSet):
     queryset = Issuer.objects.all()
     serializer_class = IssuerSerializerV1
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        # some fields have to be excluded due to data privacy concerns
+        # in the get routes
+        if self.request.method == "GET":
+            context["exclude_fields"] = [
+                *context.get("exclude_fields", []),
+                "staff",
+                "created_by",
+            ]
+        return context
+
 
 class LearningPathFilter(EntityFilter):
     tags = filters.CharFilter(
@@ -67,3 +95,56 @@ class LearningPaths(EntityViewSet):
     queryset = LearningPath.objects.all()
     serializer_class = LearningPathSerializerV1
     filterset_class = LearningPathFilter
+
+
+class LearnersProfile(View):
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsStaff & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    # for easier in-browser testing
+    def get(self, request, **kwargs):
+        if settings.DEBUG:
+            request.POST = request.GET
+            return self.post(request, **kwargs)
+        else:
+            return HttpResponse(b'', status=405)
+
+
+    def post(self, request, **kwargs):
+        try:
+            email = request.POST["email"]
+        except KeyError:
+            return HttpResponseBadRequest(b"Missing email parameter")
+
+        if not request.user:
+            return HttpResponseForbidden()
+
+        issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
+        if issuers.count == 0:
+            return HttpResponseForbidden()
+
+        instances = []
+        for issuer in issuers:
+            instances += BadgeInstance.objects.filter(
+                issuer=issuer, recipient_identifier=email
+            )
+
+        try:
+            language = request.POST["lang"]
+            assert language in ["de", "en"]
+        except (KeyError, AssertionError):
+            language = "en"
+
+        tree = get_skills_tree(instances, language)
+
+        iframe = IframeUrl.objects.create(
+            name="profile",
+            params={"skills": tree["skills"], "language": language},
+            created_by=request.user,
+        )
+
+        return JsonResponse({"url": iframe.url})

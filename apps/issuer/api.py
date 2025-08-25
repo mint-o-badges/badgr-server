@@ -71,6 +71,9 @@ from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAd
 from mainsite.serializers import CursorPaginatedListSerializer
 from oauthlib.oauth2.rfc6749.tokens import random_token_generator
 from rest_framework import serializers, status
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from django.http import JsonResponse
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -82,6 +85,7 @@ from rest_framework.status import (
 )
 
 from apps.mainsite.utils import OriginSetting
+from issuer.services.image_composer import ImageComposer
 
 import logging
 
@@ -1441,4 +1445,64 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
         except IssuerStaffRequest.DoesNotExist:
             return Response(
                 {"detail": "Staff request not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class BadgeImageComposition(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        try:
+            badgeImage = request.data.get("image")
+            issuerSlug = request.data.get("issuerSlug")
+            category = request.data.get("category")
+            useIssuerImage = request.data.get("useIssuerImage", True)
+
+            if not badgeImage:
+                return JsonResponse(
+                    {"error": "Missing required field: image"}, status=400
+                )
+
+            if not issuerSlug:
+                return JsonResponse(
+                    {"error": "Missing required field: issuerSlug"}, status=400
+                )
+
+            if not category:
+                return JsonResponse(
+                    {"error": "Missing required field: category"}, status=400
+                )
+
+            try:
+                issuer = Issuer.objects.get(entity_id=issuerSlug)
+            except Issuer.DoesNotExist:
+                return JsonResponse(
+                    {"error": f"Issuer with slug {issuerSlug} not found"}, status=404
+                )
+
+            issuer_image = issuer.image if (useIssuerImage and issuer.image) else None
+
+            composer = ImageComposer(category=category)
+
+            image_url = composer.compose_badge_from_uploaded_image(
+                badgeImage, issuer_image
+            )
+
+            if not image_url:
+                return JsonResponse(
+                    {"error": "Failed to compose badge image"}, status=500
+                )
+
+            return JsonResponse(
+                {
+                    "success": True,
+                    "image_url": image_url,
+                    "message": "Badge image composed successfully",
+                }
+            )
+
+        except Exception as e:
+            print(f"Error in BadgeImageComposition: {e}")
+            return JsonResponse(
+                {"error": f"Internal server error: {str(e)}"}, status=500
             )
