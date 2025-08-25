@@ -18,7 +18,7 @@ class Command(BaseCommand):
             "--delay",
             type=float,
             default=1.0,
-            help="Delay in seconds between geocoding requests (default: 1.0)",
+            help="Delay in seconds between geocoding requests (default and minimum: 1.0)",
         )
 
     def handle(self, *args, **options):
@@ -68,8 +68,10 @@ class Command(BaseCommand):
 
             try:
                 # Add delay to respect rate limits
-                if delay > 0:
-                    time.sleep(delay)
+                if not delay or delay < 1.0:
+                    self.style.WARNING(f"A delay of {delay}, which is less than 1s violates rate limits; setting to 1s")
+                    delay = 1.0
+                time.sleep(delay)
 
                 geoloc = nom.geocode(addr_string)
 

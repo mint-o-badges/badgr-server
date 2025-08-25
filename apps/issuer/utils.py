@@ -12,6 +12,9 @@ from django.conf import settings
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519
 
+from geopy.geocoders import Nominatim
+from ratelimit import limits, sleep_and_retry
+
 from mainsite.utils import OriginSetting
 
 
@@ -202,3 +205,14 @@ def assertion_is_v3(assertion_json):
         return False
     # search for vc context IRIs
     return reduce(lambda x, y: x or "/credentials/" in y, context, False)
+
+@sleep_and_retry
+@limits(calls=1, period=1)
+def geocode(addr_string: str):
+    """
+    Geocodes the given addr_string.
+    Rate limitted to 1 request/s; will sleep if exceeded.
+    """
+    nom = Nominatim(user_agent="OpenEducationalBadges")
+    geoloc = nom.geocode(addr_string)
+    return geoloc
