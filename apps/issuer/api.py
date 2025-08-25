@@ -73,11 +73,10 @@ from issuer.serializers_v2 import (
     IssuerAccessTokenSerializerV2,
     IssuerSerializerV2,
 )
-from mainsite.models import AccessTokenProxy, BadgrApp
+from mainsite.models import AccessTokenProxy
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAdmin
 from mainsite.serializers import CursorPaginatedListSerializer
 from oauthlib.oauth2.rfc6749.tokens import random_token_generator
-from rest_framework.serializers import BaseSerializer
 from rest_framework import serializers, status
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
