@@ -1752,14 +1752,14 @@ class NetworkInvitation(BaseEntityDetailView):
             status=NetworkInvite.Status.PENDING,
         ).select_related("issuer")
 
-        if existing_invitations.exists():
-            pending_names = [inv.issuer.name for inv in existing_invitations]
-            return Response(
-                {
-                    "response": f"Für diese Institutionen liegen bereits offene Einladungen vor: {', '.join(pending_names)}"
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        # if existing_invitations.exists():
+        #     pending_names = [inv.issuer.name for inv in existing_invitations]
+        #     return Response(
+        #         {
+        #             "response": f"Für diese Institutionen liegen bereits offene Einladungen vor: {', '.join(pending_names)}"
+        #         },
+        #         status=status.HTTP_400_BAD_REQUEST,
+        #     )
 
         try:
             with transaction.atomic():
@@ -1899,7 +1899,12 @@ class NetworkInvitationList(BaseEntityListView):
     def get_objects(self, request, **kwargs):
         status_filter = request.GET.get("status", "").lower()
 
-        queryset = NetworkInvite.objects.all()
+        try:
+            network = Network.objects.get(entity_id=kwargs.get("networkSlug"))
+        except Network.DoesNotExist:
+            Exception("Network not found")
+
+        queryset = NetworkInvite.objects.filter(network=network)
 
         if status_filter == "pending":
             queryset = queryset.filter(status=NetworkInvite.Status.PENDING)
