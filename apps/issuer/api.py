@@ -47,11 +47,13 @@ from issuer.permissions import (
     BadgrOAuthTokenHasScope,
     IsEditor,
     IsEditorButOwnerForDelete,
+    IsNetworkEditor,
     IsStaff,
     MayEditBadgeClass,
     MayIssueBadgeClass,
     MayIssueLearningPath,
     is_learningpath_editor,
+    is_network_editor,
 )
 from issuer.serializers_v1 import (
     BadgeClassSerializerV1,
@@ -383,8 +385,11 @@ class NetworkIssuerDetail(BaseEntityDetailView):
     model = Network
     permission_classes = [
         IsServerAdmin
-        | (AuthenticatedWithVerifiedIdentifier & IsEditor & BadgrOAuthTokenHasScope)
-        | BadgrOAuthTokenHasEntityScope
+        | (
+            AuthenticatedWithVerifiedIdentifier
+            & IsNetworkEditor
+            & BadgrOAuthTokenHasScope
+        )
     ]
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
@@ -406,7 +411,14 @@ class NetworkIssuerDetail(BaseEntityDetailView):
         except Network.DoesNotExist:
             raise Exception("Network not found")
 
+        if not is_network_editor(request.user, network):
+            return Response(
+                {"error": "You are not authorized to remove this issuer."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         issuer = self.get_object(network, issuer_slug)
+
         network.partner_issuers.remove(issuer)
 
         owners = issuer.cached_issuerstaff().filter(role=IssuerStaff.ROLE_OWNER)
@@ -1620,6 +1632,12 @@ class NetworkInvitation(BaseEntityDetailView):
                 {"response": "Network not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
+        if not is_network_editor(request.user, network):
+            return Response(
+                {"error": "You are not authorized to invite issuers."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         issuers_data = request.data
         if not issuers_data:
             return Response(
@@ -1779,7 +1797,6 @@ class NetworkInvitation(BaseEntityDetailView):
     )
     def delete(self, request, **kwargs):
         try:
-            print(f"invite slug {kwargs.get('slug')}")
             invite = NetworkInvite.objects.get(entity_id=kwargs.get("slug"))
 
             if invite.status != IssuerStaffRequest.Status.PENDING:
