@@ -272,7 +272,7 @@ requires-dist = [
     { name = "python-resize-image", specifier = "==1.1.19" },
     { name = "pytz", specifier = ">=2021.1" },
     { name = "qrcode", specifier = ">=7.4.2" },
-    { name = "ratelimit", specifier = "==2.2.1" },
+    { name = "ratelimit", specifier = ">=2.2.1" },
     { name = "redis", specifier = "==4.5.0" },
     { name = "reportlab", specifier = ">=3.6.9" },
     { name = "requests", specifier = ">2.25.0" },

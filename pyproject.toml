@@ -65,7 +65,7 @@ dependencies = [
     "python-resize-image==1.1.19",
     "pytz>=2021.1",
     "qrcode>=7.4.2",
-    "ratelimit==2.2.1",
+    "ratelimit>=2.2.1",
     "redis==4.5.0",
     "reportlab>=3.6.9",
     "requests>2.25.0",
