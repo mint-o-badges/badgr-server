@@ -1746,11 +1746,11 @@ class NetworkInvitation(BaseEntityDetailView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        existing_invitations = NetworkInvite.objects.filter(
-            issuer__entity_id__in=slugs,
-            network=network,
-            status=NetworkInvite.Status.PENDING,
-        ).select_related("issuer")
+        # existing_invitations = NetworkInvite.objects.filter(
+        #     issuer__entity_id__in=slugs,
+        #     network=network,
+        #     status=NetworkInvite.Status.PENDING,
+        # ).select_related("issuer")
 
         # if existing_invitations.exists():
         #     pending_names = [inv.issuer.name for inv in existing_invitations]
