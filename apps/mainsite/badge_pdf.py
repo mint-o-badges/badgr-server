@@ -36,10 +36,18 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-font_path_rubik_regular = os.path.join(os.path.dirname(__file__), "Rubik-Regular.ttf")
-font_path_rubik_medium = os.path.join(os.path.dirname(__file__), "Rubik-Medium.ttf")
-font_path_rubik_bold = os.path.join(os.path.dirname(__file__), "Rubik-Bold.ttf")
-font_path_rubik_italic = os.path.join(os.path.dirname(__file__), "Rubik-Italic.ttf")
+font_path_rubik_regular = os.path.join(
+    os.path.dirname(__file__), "static", "fonts", "Rubik-Regular.ttf"
+)
+font_path_rubik_medium = os.path.join(
+    os.path.dirname(__file__), "static", "fonts", "Rubik-Medium.ttf"
+)
+font_path_rubik_bold = os.path.join(
+    os.path.dirname(__file__), "static", "fonts", "Rubik-Bold.ttf"
+)
+font_path_rubik_italic = os.path.join(
+    os.path.dirname(__file__), "static", "fonts", "Rubik-Italic.ttf"
+)
 
 pdfmetrics.registerFont(TTFont("Rubik-Regular", font_path_rubik_regular))
 pdfmetrics.registerFont(TTFont("Rubik-Medium", font_path_rubik_medium))
