@@ -6,7 +6,7 @@ argparse==1.4.0
 asgiref==3.9.1
 async-timeout==5.0.1
 backports-csv==1.0.4
-badgecheck==1.1.8
+badgecheck==1.2.0
 base58==2.1.1
 billiard==3.6.4.0
 bleach==3.3.0
