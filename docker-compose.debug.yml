@@ -44,7 +44,7 @@ services:
             - "11211"
         networks:
             - badgr
-        command: ["memcached", "-u", "root", "-m", "512", "-I", "10m", "-vv"]
+        command: ["memcached", "-m", "512", "-I", "10m", "-vv"]
         environment:
             - TZ=Europe/Berlin
 
