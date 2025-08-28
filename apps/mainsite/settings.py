@@ -481,8 +481,6 @@ GDPR_COMPLIANCE_NOTIFY_ON_FIRST_AWARD = (
 BADGR_APPROVED_ISSUERS_ONLY = False
 
 # Email footer operator information
-PRIVACY_POLICY_URL = None
-TERMS_OF_SERVICE_URL = None
 GDPR_INFO_URL = None
 OPERATOR_STREET_ADDRESS = None
 OPERATOR_NAME = None
@@ -561,3 +559,8 @@ CMS_API_KEY = ""
 
 # path to webcomponents assets build in badgr-ui
 WEBCOMPONENTS_ASSETS_PATH = "/"
+
+MJML_BACKEND_MODE = "cmd"
+# make sure to not load any fonts automatically
+MJML_EXEC_CMD = ["mjml", "--config.fonts", "{}"]
+# MJML_CHECK_CMD_ON_STARTUP = False
