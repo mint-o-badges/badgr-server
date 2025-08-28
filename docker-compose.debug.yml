@@ -39,11 +39,12 @@ services:
 
     # this container runs memcached
     memcached:
-        image: "bitnami/memcached:latest"
+        image: "memcached:1.6.29-alpine"
         expose:
             - "11211"
         networks:
             - badgr
+        command: ["memcached", "-u", "root", "-m", "512", "-I", "10m", "-vv"]
         environment:
             - TZ=Europe/Berlin
 

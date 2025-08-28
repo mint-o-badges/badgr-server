@@ -34,7 +34,7 @@ services:
 
     # this container runs memcached
     memcached:
-        image: "bitnami/memcached:latest"
+        image: "memcached:1.6.29-alpine"
         expose:
             - "11211"
         networks:
