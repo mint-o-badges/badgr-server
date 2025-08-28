@@ -81,7 +81,7 @@ HTTP_ORIGIN = 'http://localhost:8000'
 ALLOWED_HOSTS = ['*']
 STATIC_URL = HTTP_ORIGIN + '/static/'
 
-CORS_ORIGIN_ALLOW_ALL = False
+CORS_ORIGIN_ALLOW_ALL = True
 CORS_ORIGIN_WHITELIST = (
     'http://localhost:4200',
 )
