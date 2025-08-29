@@ -3,6 +3,7 @@
 {% load mjml %}
 {% mjml %}
 {% block main %}
+    <mj-section background-color="#ffffff">
     <mj-column>
     <mj-image src="{% static '/images/Logo-Oeb.png' %}" alt="Logo" href="https://openbadges.education" padding-left="25px" width="150px" align="left" fluid-on-mobile="true" />
     <mj-text font-size="32px" color="#492e98">
@@ -17,6 +18,7 @@
     Viel Spaß auf OEB!
     </mj-text>
     </mj-column>
+    </mj-section>
 {% endblock main %}
 {% block button_url %}
     {{ activate_url }}

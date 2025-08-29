@@ -3,6 +3,7 @@
 {% load mjml %}
 {% mjml %}
 {% block main %}
+    <mj-section background-color="#ffffff">
     <mj-column>
     <mj-text font-size="32px" font-weight="bold">
     Bitte bestätige Deine zusätzliche E-Mail-Adresse.
@@ -15,6 +16,7 @@
       {% endblocktrans %}
     </mj-text>
     </mj-column>
+    </mj-section>
 {% endblock main %}
 {% block button_url %}
     {{ activate_url }}
