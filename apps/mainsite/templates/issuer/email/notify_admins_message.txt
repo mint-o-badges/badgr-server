@@ -1,0 +1,7 @@
+Eine neue Institution benötigt Verifikation!
+
+Hallo Admins,
+eine neue Institution "{{ issuer_name }}" wurde erstellt.
+Bitte verifiziereren Sie diese.
+
+Zur Verifikation: {{ HTTP_ORIGIN }}/staff/issuer/issuer/
