@@ -1,0 +1,18 @@
+Verifiziere deine Institution
+
+    Super, dass du deine Institution {{ issuer_name }} auf OEB angelegt hast!
+
+    Leider konnten wir sie nicht automatisch verifizieren, da die verwendete E-Mail-Adresse nicht zur Domain der angegebenen Webseite passt.
+
+    So kannst du die Verifizierung abschließen:
+
+    • Füge die offizielle E-Mail-Adresse der Institution zu deinem Account hinzu oder
+    • antworte an support@openbadges.education mit deinem Namen,
+      einem Link zur Webseite deiner Organisation
+      sowie einer kurzen Bestätigung deiner Zugehörigkeit.
+
+    Bei Fragen helfen wir gerne weiter.
+
+    Beste Grüße
+
+    dein OEB-Team

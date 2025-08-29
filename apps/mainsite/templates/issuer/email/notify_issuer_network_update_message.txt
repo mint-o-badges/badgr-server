@@ -1,0 +1,3 @@
+Netzwerk-Update
+
+Deine Institution {{ issuer.name }} wurde aus dem Netzwerk {{ network.name }} entfernt.

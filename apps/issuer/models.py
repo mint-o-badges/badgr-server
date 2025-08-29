@@ -57,7 +57,7 @@ from .utils import (
     get_obi_context,
     parse_original_datetime,
     generate_private_key_pem,
-    geocode
+    geocode,
 )
 import logging
 
@@ -2234,7 +2234,6 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
                 "image_url": self.public_url + "/image?type=png",
                 "download_url": self.public_url + "?action=download",
                 "site_name": "Open Educational Badges",
-                "site_url": badgr_app.signup_redirect,
                 "badgr_app": badgr_app,
                 "activate_url": url,
                 "call_to_action_label": "Badge im Rucksack sammeln",
@@ -2248,17 +2247,6 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             raise e
 
         template_name = "issuer/email/notify_earner"
-
-        try:
-            from badgeuser.models import CachedEmailAddress
-
-            CachedEmailAddress.objects.get(
-                email=self.recipient_identifier, verified=True
-            )
-            template_name = "issuer/email/notify_account_holder"
-            email_context["site_url"] = badgr_app.ui_login_redirect
-        except CachedEmailAddress.DoesNotExist:
-            pass
 
         if (
             categoryExtension["Category"] == "learningpath"

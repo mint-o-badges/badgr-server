@@ -1,0 +1,7 @@
+QR-Code-Anfrage für deinen Badge
+
+Dein Badge {{ badgeclass }} wurde von {{ email }} per QR-Code angefragt.
+
+Bitte bestätige die Anfrage auf Open Educational Badges über den folgenden Button.
+
+Anfrage bestätigen: {{ activate_url }}

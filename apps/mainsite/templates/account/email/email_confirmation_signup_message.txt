@@ -1,9 +1,7 @@
-Bitte verifiziere Deine Email-Adresse auf OpenEducationalBadges, 
-{{ email.email }}
+Herzlich Willkommen bei Open Educational Badges.
 
-Bestätige Deine Email-Adresse, um Deinen OpenEducationalBadges Account zu aktivieren.
-Klicke auf den Link oder kopiere ihn in die Adresszeile Deines Browsers.
+Bitte bestätige deinen Account, um Badges zu sammeln,
+zu erstellen und zu vergeben.
 
+Meinen Account bestätigen:
 {{ activate_url }}
-
-Wenn Du das nicht angefragt hast, dann kannst Du diese Email sicher ignorieren, und es wird nichts weiter passieren. 

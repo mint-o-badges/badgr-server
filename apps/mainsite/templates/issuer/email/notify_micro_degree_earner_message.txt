@@ -1,18 +1,25 @@
-***************************************************
-Herzlichen Glückwunsch, Du hast einen Micro Degree erhalten! 
-***************************************************
+Herzlichen Glückwunsch{% if name %} {{ name }}{% endif %},
+du hast einen {% if badge_category == "learningpath" %}MICRO DEGREE{% else %}BADGE{% endif %}erhalten!
 
-{{ badge_name }}
+Vergeben von: {{ issuer_name }}
+{% if badge_category != "learningpath" %}
+Du hast erfolgreich an dem Lernangebot {{ badge_name }} teilgenommen.
+{% endif %}
+{% if badge_competencies %}
+Dabei hast du folgende Kompetenzen gestärkt:
+{% for item in badge_competencies %}
+    {{ item.name }} - {{ item.studyLoad }}
+{% endfor %}
+{% endif %}
+{% if badge_category == "learningpath" %}
+{{ call_to_action_label }}: {{ activate_url }}
 
+Im Anhang dieser Mail findest du neben der Micro-Degree-Datei ein PDF-Zertifikat, das deinen Lernerfolg ebenfalls ausweist.
+{% else %}
+Im Anhang dieser Mail findest du deine Badge-Datei und das zugehörige PDF-Zertifikat zum Herunterladen.
 
-{{ badge_description }}
-
----------
-Dieses Micro Degree wurde erstellt von:
----------
-
-{{ issuer_name }}
-{{ issuer_url }}
-
-{% if PRIVACY_POLICY_URL %}Privacy Policy: {{ PRIVACY_POLICY_URL }}{% endif %}
-{% if TERMS_OF_SERVICE_URL %}Terms of Service: {{ TERMS_OF_SERVICE_URL }}{% endif %}
+Alle deine erhaltenen Badges kannst du auf Open Educational Badges
+in deinem Rucksack sammeln und mit anderen teilen.
+Lege dafür einfach kostenlos einen Account an:
+{{ activate_url }}
+{% endif %}

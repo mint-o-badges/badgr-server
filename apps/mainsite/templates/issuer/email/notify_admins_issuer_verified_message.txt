@@ -1,0 +1,6 @@
+Eine Institution wurde automatisch verifiziert!
+
+Hallo Admins,
+eine neue Institution "{{ issuer_name }}" wurde erstellt und automatisch verifiziert.
+
+Zur Admin Übersicht: {{ HTTP_ORIGIN }}/staff/issuer/issuer/

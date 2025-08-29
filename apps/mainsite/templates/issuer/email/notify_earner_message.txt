@@ -1,57 +1,25 @@
-***************************************************
-Herzlichen Glückwunsch, Du hast einen Badge erhalten! 
-***************************************************
+Herzlichen Glückwunsch{% if name %} {{ name }}{% endif %},
+du hast einen {% if badge_category == "learningpath" %}MICRO DEGREE{% else %}BADGE{% endif %}erhalten!
 
-{{ badge_name }}
-
-
-{{ badge_description }}
-
----------
-Dieses Badge wurde vergeben von:
----------
-
-{{ issuer_name }}
-{{ issuer_url }}
-
-----------
-Download
-----------
-
-Speicher dieses Badge Bild für Deine Unterlagen oder zum Hochladen in einen Open Badges-kompatiblen Dienst:
-{{ download_url }}
-
-----------
-Badge Speicherung und Zugriff
-----------
-
-Wohin auch immer Du Dein Badge mitnimmst, Informationen über Deine Leistung werden
-darin kodiert sein. Du kannst jeden Open Badges Rucksackservice nutzen, aber wenn Du 
-einen {{ site_name }} ( {{ site_url }} ) Account erstellst, werden die von dieser Institution vergebenen Badges
-automatisch hinzugefügt.
-{% if GDPR_INFO_URL %}
------------
-Kenne Deine Rechte
------------
-Die Institution, die dieses Abzeichen vergibt, hat {{ site_name }} Deine E-Mail-Adresse und die
-Daten über Deine Leistung, die in diesem Badge enthalten sind, bereitgestellt. Wenn Du Fragen zu diesem Badge hast,
-kontaktiere die ausstellende Institution unter {{ issuer_email }}. Du kannst auch eine Kopie Deiner Daten anfordern, 
-die Entfernung der Daten über Dich oder die Aktualisierung falscher Informationen. Erfahre mehr unter
-{{ GDPR_INFO_URL }}
+Vergeben von: {{ issuer_name }}
+{% if badge_category != "learningpath" %}
+Du hast erfolgreich an dem Lernangebot {{ badge_name }} teilgenommen.
 {% endif %}
------------
-Open Badges: Übertragbare Digitale Abzeichen
------------
+{% if badge_competencies %}
+Dabei hast du folgende Kompetenzen gestärkt:
+{% for item in badge_competencies %}
+    {{ item.name }} - {{ item.studyLoad }}
+{% endfor %}
+{% endif %}
+{% if badge_category == "learningpath" %}
+{{ call_to_action_label }}: {{ activate_url }}
 
+Im Anhang dieser Mail findest du neben der Micro-Degree-Datei ein PDF-Zertifikat, das deinen Lernerfolg ebenfalls ausweist.
+{% else %}
+Im Anhang dieser Mail findest du deine Badge-Datei und das zugehörige PDF-Zertifikat zum Herunterladen.
 
-Open Badges ermöglichen Dir Abzeichen von den vielen Orten mitzunehmen, wo Du lernst.
-Kombinieren sie, um eine zusammenhängende Geschichte über Dein Lernen zu erzählen.
-
-Erfahre mehr unter http://openbadges.org
-
-Abmelden: Wenn Du nicht über zukünftige Vergaben von Badges von diesem Dienst informiert werden möchtest, 
-klicke auf den folgenden Link:
-{{ unsubscribe_url }}
-
-{% if PRIVACY_POLICY_URL %}Privacy Policy: {{ PRIVACY_POLICY_URL }}{% endif %}
-{% if TERMS_OF_SERVICE_URL %}Terms of Service: {{ TERMS_OF_SERVICE_URL }}{% endif %}
+Alle deine erhaltenen Badges kannst du auf Open Educational Badges
+in deinem Rucksack sammeln und mit anderen teilen.
+Lege dafür einfach kostenlos einen Account an:
+{{ activate_url }}
+{% endif %}
