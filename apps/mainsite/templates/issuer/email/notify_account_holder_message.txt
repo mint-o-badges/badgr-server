@@ -1,4 +1,4 @@
-Herzlichen Glückwunsch{% if name %} {{ name }}{% else %},
+Herzlichen Glückwunsch{% if name %} {{ name }}{% endif %},
 du hast einen {% if badge_category == "learningpath" %}MICRO DEGREE{% else %}BADGE{% endif %}erhalten!
 
 Vergeben von: {{ issuer_name }}
