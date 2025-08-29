@@ -16,7 +16,7 @@ Dabei hast du folgende Kompetenzen gestärkt:
 
 Im Anhang dieser Mail findest du neben der Micro-Degree-Datei ein PDF-Zertifikat, das deinen Lernerfolg ebenfalls ausweist.
 {% else %}
-Im Anhang dieser Mail findest du deine <span style="font-weight: bold;">Badge-Datei</span> und das zugehörige <span style="font-weight: bold;">PDF-Zertifikat</span> zum Herunterladen.
+Im Anhang dieser Mail findest du deine Badge-Datei und das zugehörige PDF-Zertifikat zum Herunterladen.
 
 Alle deine erhaltenen Badges kannst du auf Open Educational Badges
 in deinem Rucksack sammeln und mit anderen teilen.
