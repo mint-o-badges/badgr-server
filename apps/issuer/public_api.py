@@ -37,11 +37,19 @@ from rest_framework.views import APIView
 import openbadges
 
 from . import utils
-from .models import BadgeClass, BadgeInstance, Issuer, LearningPath, LearningPathBadge
+from .models import (
+    BadgeClass,
+    BadgeInstance,
+    Issuer,
+    LearningPath,
+    LearningPathBadge,
+    Network,
+)
 from .serializers_v1 import (
     BadgeClassSerializerV1,
     IssuerSerializerV1,
     LearningPathSerializerV1,
+    NetworkSerializerV1,
 )
 import logging
 
@@ -354,6 +362,47 @@ class IssuerJson(JSONComponentView):
         )
 
 
+class NetworkJson(JSONComponentView):
+    permission_classes = (permissions.AllowAny,)
+    model = Network
+
+    def log(self, obj):
+        logger.info("Retrieved network '%s'", obj)
+
+    def get_context_data(self, **kwargs):
+        image_url = "{}{}?type=png".format(
+            OriginSetting.HTTP,
+            reverse(
+                "network_image", kwargs={"entity_id": self.current_object.entity_id}
+            ),
+        )
+        if self.is_wide_bot():
+            image_url = "{}&fmt=wide".format(image_url)
+
+        return dict(
+            title=self.current_object.name,
+            description=self.current_object.description,
+            public_url=self.current_object.public_url,
+            image_url=image_url,
+        )
+
+
+class NetworkIssuersJson(JSONComponentView):
+    permission_classes = (permissions.AllowAny,)
+    model = Network
+
+    def log(self, obj):
+        logger.info("Retrieved network issuers '%s'", obj)
+
+    def get_json(self, request):
+        obi_version = self._get_request_obi_version(request)
+
+        return [
+            b.get_json(obi_version=obi_version)
+            for b in self.current_object.cached_partner_issuers()
+        ]
+
+
 class IssuerBadgesJson(JSONComponentView):
     permission_classes = (permissions.AllowAny,)
     model = Issuer
@@ -383,12 +432,36 @@ class IssuerLearningPathsJson(JSONComponentView):
         ]
 
 
+class IssuerNetworksJson(JSONComponentView):
+    permission_classes = (permissions.AllowAny,)
+    model = Issuer
+
+    def log(self, obj):
+        logger.info("Retrieved issuer networks '%s'", obj)
+
+    def get_json(self, request):
+        obi_version = self._get_request_obi_version(request)
+
+        return [
+            b.get_json(obi_version=obi_version)
+            for b in self.current_object.cached_networks()
+        ]
+
+
 class IssuerImage(ImagePropertyDetailView):
     model = Issuer
     prop = "image"
 
     def log(self, obj):
         logger.info("Issuer image retrieved event '%s'", obj)
+
+
+class NetworkImage(ImagePropertyDetailView):
+    model = Network
+    prop = "image"
+
+    def log(self, obj):
+        logger.info("Network image retrieved event '%s'", obj)
 
 
 class IssuerList(JSONListView):
@@ -415,6 +488,31 @@ class IssuerList(JSONListView):
 
     def get_json(self, request):
         return super(IssuerList, self).get_json(request)
+
+
+class NetworkList(JSONListView):
+    permission_classes = (permissions.AllowAny,)
+    model = Network
+    serializer_class = NetworkSerializerV1
+
+    def log(self, obj):
+        pass
+
+    def get_context_data(self, **kwargs):
+        context = super(NetworkList, self).get_context_data(**kwargs)
+
+        # some fields have to be excluded due to data privacy concerns
+        # in the get routes
+        if self.request.method == "GET":
+            context["exclude_fields"] = [
+                *context.get("exclude_fields", []),
+                "staff",
+                "created_by",
+            ]
+        return context
+
+    def get_json(self, request):
+        return super(NetworkList, self).get_json(request)
 
 
 class IssuerSearch(JSONListView):

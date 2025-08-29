@@ -14,6 +14,7 @@ from django.urls import resolve, Resolver404
 
 from issuer.utils import sanitize_id
 from mainsite.utils import fetch_remote_file_to_storage, list_of, OriginSetting
+from abc import ABC, abstractmethod
 
 
 def resolve_source_url_referencing_local_object(source_url):
@@ -35,7 +36,7 @@ class BaseOpenBadgeObjectManager(models.Manager):
                 return None
 
 
-class IssuerManager(BaseOpenBadgeObjectManager):
+class BaseIssuerManager(BaseOpenBadgeObjectManager, ABC):
     ALLOWED_MINE_TYPES = [
         "image/png",
         "image/gif",
@@ -43,51 +44,92 @@ class IssuerManager(BaseOpenBadgeObjectManager):
         "image/svg+xml",
     ]
 
-    def update_from_ob2(self, issuer_obo, original_json=None):
-        image = self.image_from_ob2(issuer_obo)
+    @property
+    @abstractmethod
+    def upload_to_path(self):
+        pass
+
+    @property
+    @abstractmethod
+    def entity_fields(self):
+        pass
+
+    def update_from_ob2(self, entity_obo, original_json=None):
+        image = self.image_from_ob2(entity_obo)
+        defaults = self._build_defaults(entity_obo, original_json, image)
+
         return self.update_or_create(
-            source_url=issuer_obo.get("id"),
-            defaults=dict(
-                name=issuer_obo.get("name"),
-                description=issuer_obo.get("description", None),
-                url=issuer_obo.get("url", None),
-                email=issuer_obo.get("email", None),
-                image=image,
-                original_json=original_json,
-            ),
+            source_url=entity_obo.get("id"),
+            defaults=defaults,
         )
 
-    def image_from_ob2(self, issuer_obo):
-        image_url = issuer_obo.get("image", None)
+    def image_from_ob2(self, entity_obo):
+        image_url = entity_obo.get("image", None)
         image = None
         if image_url:
             if isinstance(image_url, dict):
                 image_url = image_url.get("id")
             image = _fetch_image_and_get_file(
-                image_url, self.ALLOWED_MINE_TYPES, upload_to="remote/issuer"
+                image_url, self.ALLOWED_MINE_TYPES, upload_to=self.upload_to_path
             )
         return image
 
     def get_or_create_from_ob2(
-        self, issuer_obo, source=None, original_json=None, image=None
+        self, entity_obo, source=None, original_json=None, image=None
     ):
-        source_url = issuer_obo.get("id")
+        source_url = entity_obo.get("id")
         local_object = self.get_local_object(source_url)
         if local_object:
             return local_object, False
 
+        defaults = self._build_defaults(entity_obo, original_json, image, source)
         return self.get_or_create(
             source_url=source_url,
-            defaults=dict(
-                source=source if source is not None else "local",
-                name=issuer_obo.get("name"),
-                description=issuer_obo.get("description", None),
-                url=issuer_obo.get("url", None),
-                email=issuer_obo.get("email", None),
-                image=image,
-                original_json=original_json,
-            ),
+            defaults=defaults,
         )
+
+    def _build_defaults(self, entity_obo, original_json=None, image=None, source=None):
+        """Build the defaults dictionary for create/update operations"""
+        defaults = {
+            "name": entity_obo.get("name"),
+            "description": entity_obo.get("description", None),
+            "url": entity_obo.get("url", None),
+            "image": image,
+            "original_json": original_json,
+        }
+
+        if source is not None or hasattr(self, "_add_source_field"):
+            defaults["source"] = source if source is not None else "local"
+
+        for field in self.entity_fields:
+            if field in entity_obo:
+                defaults[field] = entity_obo.get(field)
+
+        return defaults
+
+
+class IssuerManager(BaseIssuerManager):
+    @property
+    def upload_to_path(self):
+        return "remote/issuer"
+
+    @property
+    def entity_fields(self):
+        return ["email"]
+
+    _add_source_field = True
+
+
+class NetworkManager(BaseIssuerManager):
+    @property
+    def upload_to_path(self):
+        return "remote/network"
+
+    @property
+    def entity_fields(self):
+        return []
+
+    _add_source_field = True
 
 
 class BadgeClassManager(BaseOpenBadgeObjectManager):
