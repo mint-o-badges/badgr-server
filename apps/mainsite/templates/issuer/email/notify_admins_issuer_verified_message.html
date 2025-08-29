@@ -1,3 +1,28 @@
-Hallo Admins,
-
-eine neue Institution ("{{ issuer_name }}") wurde erstellt und automatisch <a href="{{ HTTP_ORIGIN }}/staff/issuer/issuer/">verifiziert</a>.
+{% extends "email/base.html" %}
+{% load static %}
+{% load mjml %}
+{% mjml %}
+{% block main %}
+    <mj-section background-color="#ffffff">
+    <mj-column>
+    <mj-image src="{% static '/images/Logo-Oeb.png' %}" alt="Logo" href="https://openbadges.education" padding-left="25px" width="150px" align="left" fluid-on-mobile="true" />
+    <mj-text font-size="32px" font-weight="bold" padding-bottom="25px">
+    <span style="text-transform:capitalize;">Eine Institution wurde automatisch verifiziert!</span>
+    </mj-text>
+    <mj-text>
+    Hallo Admins,
+    eine neue Institution "{{ issuer_name }}" wurde erstellt und automatisch verifiziert.
+    </mj-text>
+    </mj-column>
+    </mj-section>
+{% endblock main %}
+{% block button_url %}
+    {{ HTTP_ORIGIN }}/staff/issuer/issuer/
+{% endblock button_url %}
+{% block button_text %}
+    Zur Admin Übersicht
+{% endblock button_text %}
+{% block button_url_copy %}
+    {{ HTTP_ORIGIN }}/staff/issuer/issuer/
+{% endblock button_url_copy %}
+{% endmjml %}
