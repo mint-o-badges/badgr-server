@@ -1,49 +1,25 @@
-***************************************************
-Herzlichen Glückwunsch, Du hast einen Badge erhalten!
-***************************************************
+Herzlichen Glückwunsch{% if name %} {{ name }}{% else %},
+du hast einen {% if badge_category == "learningpath" %}MICRO DEGREE{% else %}BADGE{% endif %}erhalten!
 
----------
-{{ badge_name }}
----------
+Vergeben von: {{ issuer_name }}
+{% if badge_category != "learningpath" %}
+Du hast erfolgreich an dem Lernangebot {{ badge_name }} teilgenommen.
+{% endif %}
+{% if badge_competencies %}
+Dabei hast du folgende Kompetenzen gestärkt:
+{% for item in badge_competencies %}
+    {{ item.name }} - {{ item.studyLoad }}
+{% endfor %}
+{% endif %}
+{% if badge_category == "learningpath" %}
+{{ call_to_action_label }}: {{ activate_url }}
 
-{{ badge_description }}
+Im Anhang dieser Mail findest du neben der Micro-Degree-Datei ein PDF-Zertifikat, das deinen Lernerfolg ebenfalls ausweist.
+{% else %}
+Im Anhang dieser Mail findest du deine <span style="font-weight: bold;">Badge-Datei</span> und das zugehörige <span style="font-weight: bold;">PDF-Zertifikat</span> zum Herunterladen.
 
----------
-Institution
----------
-
-{{ issuer_name }}
-{{ issuer_url }}
-
-----------
-Dein Badge ist fertig
-----------
-
-
-Dieses Badge wurde automatisch Deinem Konto {{ site_name }} ( {{ site_url }} )  hinzugefügt. Wo auch immer Du
-Dein Badge teilen oder zeigen möchtest, die Information über Deine Leistung wird darin kodiert sein.
-Bei Fragen zu diesem Badge wende Dich bitte unter {{ issuer_email }} an die ausstellende Institution.
-
-
-----------
-Download
-----------
-
-
-Du kannst diese Badge-Bilddatei auch für Deine Unterlagen speichern oder in einen beliebiges Open Badges 
-kompatiblen Service hochladen
-{{ download_url }}
-
------------
-Open Badges: Portable Digitale Abbildung Deiner Kompetenzen
------------
-
-Mit Open Badges kannst Du Deine erworbenen Kompetenzen von vielen Lernorten abrufen
-und kombinieren, um eine Story Deines Lernens zu erzählen.
-
-
-Erfahre mehr auf http://openbadges.org
-
-Abmelden: Wenn Du nicht mehr über zukünftigen Erwerb von Badges informiert werden möchtest, klicke auf den folgenden Link:
-
-{{ unsubscribe_url }}
+Alle deine erhaltenen Badges kannst du auf Open Educational Badges
+in deinem Rucksack sammeln und mit anderen teilen.
+Lege dafür einfach kostenlos einen Account an:
+{{ activate_url }}
+{% endif %}
