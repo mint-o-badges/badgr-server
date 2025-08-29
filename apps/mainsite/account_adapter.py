@@ -77,18 +77,30 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
             "issuer/email/notify_earner",
             "issuer/email/notify_micro_degree_earner",
         ):
-            pdf_document = context["pdf_document"]
-            badge_name = f"{context['badge_name']}.badge"
+            pdf_document = (
+                context["pdf_document"] if "pdf_document" in context.keys() else None
+            )
+            badge_name = (
+                f"{context['badge_name']}.badge"
+                if "badge_name" in context.keys()
+                else None
+            )
             img_path = os.path.join(
                 settings.MEDIA_ROOT,
                 "uploads",
                 "badges",
                 "assertion-{}.png".format(context.get("badge_id", None)),
             )
-            with open(img_path, "rb") as f:
-                badge_img = f.read()
-            msg.attach(badge_name + ".png", badge_img, "image/png")
-            msg.attach(badge_name + ".pdf", pdf_document, "application/pdf")
+
+            try:
+                with open(img_path, "rb") as f:
+                    badge_img = f.read()
+                if badge_img and badge_name:
+                    msg.attach(badge_name + ".png", badge_img, "image/png")
+            except FileNotFoundError:
+                pass
+            if pdf_document and badge_name:
+                msg.attach(badge_name + ".pdf", pdf_document, "application/pdf")
         logger.debug(
             "Rendered E-Mail with subject '%s' from '%s' to '%s'",
             msg.subject,
