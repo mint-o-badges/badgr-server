@@ -1,4 +1,9 @@
-{% load i18n %}
-{% autoescape off %}
-{% blocktrans %}Bestätigung deiner Mitgliedsanfrage{% endblocktrans %}
-{% endautoescape %}
+Bestätigung deiner Mitgliedsanfrage
+
+{{ issuer.name }} hat dich als Mitglied hinzugefügt.
+Du kannst nun im Namen der Institution Badges vergeben.
+
+Viel Spaß auf OEB!
+
+{{ call_to_action_label }}:
+{{ activate_url }}

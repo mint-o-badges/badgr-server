@@ -1,167 +1,30 @@
-{% extends "email/base.html" %} {% load static %} {% block main %}
-<div
-  style="
-    background: #ffffff;
-    background-color: #ffffff;
-    margin: 0px auto;
-    max-width: 600px;
-  "
->
-  <table
-    align="center"
-    border="0"
-    cellpadding="0"
-    cellspacing="0"
-    role="presentation"
-    style="background: #f5f5f5; background-color: #f5f5f5; width: 100%"
-  >
-    <tbody>
-      <tr>
-        <td
-          style="
-            border-left: 1px solid #dbd8df;
-            border-right: 1px solid #dbd8df;
-            direction: ltr;
-            font-size: 0px;
-            padding: 25px;
-            text-align: center;
-            vertical-align: top;
-          "
-        >
-          <!-- Logo Section -->
-          <table
-            border="0"
-            cellpadding="0"
-            cellspacing="0"
-            role="presentation"
-            style="vertical-align: top"
-            width="100%"
-          >
-            <tbody>
-              <tr>
-                <td
-                  align="right"
-                  style="
-                    font-size: 0px;
-                    padding: 10px 10px 10px 25px;
-                    word-break: break-word;
-                  "
-                >
-                  <a
-                    href="https://openbadges.education"
-                    target="_blank"
-                    style="display: inline-block"
-                  >
-                    <img
-                      src="{% static '/images/Logo-Oeb.png' %}"
-                      alt="Logo"
-                      style="
-                        width: auto;
-                        height: 60px;
-                        max-height: 60px;
-                        display: block;
-                        outline: none;
-                        text-decoration: none;
-                        border: 0;
-                      "
-                    />
-                  </a>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          <!-- Header Section -->
-          <table
-            border="0"
-            cellpadding="0"
-            cellspacing="0"
-            role="presentation"
-            style="width: 100%; margin-bottom: 25px"
-          >
-            <tbody>
-              <tr>
-                <td
-                  align="center"
-                  style="font-size: 0px; word-break: break-word"
-                >
-                  <div
-                    style="
-                      font-family: Rubik, Arial, sans-serif;
-                      font-size: 24px;
-                      font-weight: 500;
-                      line-height: 130%;
-                      text-align: left;
-                      color: #492e98;
-                      width: 520px;
-                      margin: auto;
-                    "
-                  >
-                    <p
-                      style="
-                        font-weight: 900;
-                        text-transform: capitalize;
-                        color: #323232;
-                        padding-top: 20px;
-                        padding-bottom: 20px;
-                      "
-                    >
-                      BESTÄTIGUNG DEINER MITGLIEDSANFRAGE
-                    </p>
-                    <p style="padding-bottom: 20px">
-                      <span style="font-weight: 900">{{issuer.name}}</span>
-                      hat dich als Mitglied hinzugefügt.
-                    </p>
-                    <p style="color: #323232; font-weight: 400">
-                      Du kannst nun im Namen der Institution Badges vergeben.
-                      Viel Spaß auf OEB!
-                    </p>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td align="left" style="direction: ltr">
-                  <table
-                    border="0"
-                    cellpadding="0"
-                    cellspacing="0"
-                    width="100%"
-                  >
-                    <tr>
-                      <td style="padding-left: 16px">
-                        <div>
-                          <a
-                            href="{{ activate_url }}"
-                            target="_blank"
-                            style="
-                              background: #492e98;
-                              color: #ffffff;
-                              font-family: Rubik, Arial, sans-serif;
-                              font-size: 25px;
-                              font-weight: 600;
-                              line-height: 150%;
-                              margin: 0;
-                              text-decoration: none;
-                              text-transform: none;
-                              display: inline-block;
-                              padding: 18px 75px;
-                              border-radius: 10px;
-                              text-align: center;
-                            "
-                          >
-                            {{ call_to_action_label }}
-                          </a>
-                        </div>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+{% extends "email/base.html" %}
+{% load static %}
+{% load mjml %}
+{% mjml %}
+{% block main %}
+    <mj-column>
+    <mj-image src="{% static '/images/Logo-Oeb.png' %}" alt="Logo" href="https://openbadges.education" padding-left="25px" width="150px" align="left" fluid-on-mobile="true" />
+    <mj-text font-size="32px" color="#492e98">
+    <span class="text-transform: capitalize;">Bestätigung deiner Mitgliedsanfrage</span>
+    </mj-text>
+    <mj-text>
+    <span style="font-weight: bold;">{{ issuer.name }}</span> hat dich als Mitglied hinzugefügt.
+    </mj-text>
+    <mj-text>
+    Du kannst nun im Namen der Institution Badges vergeben.
+    <br />
+    Viel Spaß auf OEB!
+    </mj-text>
+    </mj-column>
 {% endblock main %}
+{% block button_url %}
+    {{ activate_url }}
+{% endblock button_url %}
+{% block button_url_copy %}
+    {{ activate_url }}
+{% endblock button_url_copy %}
+{% block button_text %}
+    {{ call_to_action_label }}
+{% endblock button_text %}
+{% endmjml %}
