@@ -73,7 +73,6 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
         msg = self.render_mail(template_prefix, email, context)
         # badge_id is equal to the badge instance slug
         if template_prefix in (
-            "issuer/email/notify_account_holder",
             "issuer/email/notify_earner",
             "issuer/email/notify_micro_degree_earner",
         ):
