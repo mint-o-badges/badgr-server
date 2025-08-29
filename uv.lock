@@ -732,6 +732,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/94/02/8982ebfa74145ab6f5ad92358427c3a6d71150b9a60454455d86d7c90c92/django-markdownify-0.1.0.tar.gz", hash = "sha256:69f88aa569ea2f6379d56404215178008693ddf28068953423b40544030a9af3", size = 2975, upload-time = "2016-01-19T18:57:22.918Z" }
 
 [[package]]
+name = "django-mjml"
+version = "1.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/29/bb/681fe51fd595d0058cbae186d06b4cd2238708da48e013bd24931a9d9cde/django_mjml-1.4.tar.gz", hash = "sha256:a805b3721de92a4972bb6bd4a3bffa91579420e48297a55f3ffef6d8e926b0b4", size = 8561, upload-time = "2025-04-05T22:07:34.193Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bd/71/03c2d5bdeb156a557c14eef35fad799df9cb4fee8a64ac7b02d0ddbbd4b4/django_mjml-1.4-py3-none-any.whl", hash = "sha256:09dc440fcec64f3656b17646439336e6c15c5987103dfb6fe23eb1f1bf734d11", size = 7994, upload-time = "2025-04-05T22:07:32.812Z" },
+]
+
+[[package]]
 name = "django-mock-queries"
 version = "2.1.5"
 source = { registry = "https://pypi.org/simple" }
