@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = "==3.10.*"
 
 [manifest]
@@ -186,6 +186,7 @@ dependencies = [
     { name = "python-resize-image" },
     { name = "pytz" },
     { name = "qrcode" },
+    { name = "ratelimit" },
     { name = "redis" },
     { name = "reportlab" },
     { name = "requests" },
@@ -273,6 +274,7 @@ requires-dist = [
     { name = "python-resize-image", specifier = "==1.1.19" },
     { name = "pytz", specifier = ">=2021.1" },
     { name = "qrcode", specifier = ">=7.4.2" },
+    { name = "ratelimit", specifier = ">=2.2.1" },
     { name = "redis", specifier = "==4.5.0" },
     { name = "reportlab", specifier = ">=3.6.9" },
     { name = "requests", specifier = ">2.25.0" },
@@ -728,18 +730,6 @@ dependencies = [
     { name = "markdown" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/94/02/8982ebfa74145ab6f5ad92358427c3a6d71150b9a60454455d86d7c90c92/django-markdownify-0.1.0.tar.gz", hash = "sha256:69f88aa569ea2f6379d56404215178008693ddf28068953423b40544030a9af3", size = 2975, upload-time = "2016-01-19T18:57:22.918Z" }
-
-[[package]]
-name = "django-mjml"
-version = "1.4"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "django" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/29/bb/681fe51fd595d0058cbae186d06b4cd2238708da48e013bd24931a9d9cde/django_mjml-1.4.tar.gz", hash = "sha256:a805b3721de92a4972bb6bd4a3bffa91579420e48297a55f3ffef6d8e926b0b4", size = 8561, upload-time = "2025-04-05T22:07:34.193Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/bd/71/03c2d5bdeb156a557c14eef35fad799df9cb4fee8a64ac7b02d0ddbbd4b4/django_mjml-1.4-py3-none-any.whl", hash = "sha256:09dc440fcec64f3656b17646439336e6c15c5987103dfb6fe23eb1f1bf734d11", size = 7994, upload-time = "2025-04-05T22:07:32.812Z" },
-]
 
 [[package]]
 name = "django-mock-queries"
@@ -1438,6 +1428,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/8f/b2/7fc2931bfae0af02d
 wheels = [
     { url = "https://files.pythonhosted.org/packages/dd/b8/d2d6d731733f51684bbf76bf34dab3b70a9148e8f2cef2bb544fccec681a/qrcode-8.2-py3-none-any.whl", hash = "sha256:16e64e0716c14960108e85d853062c9e8bba5ca8252c0b4d0231b9df4060ff4f", size = 45986, upload-time = "2025-05-01T15:44:22.781Z" },
 ]
+
+[[package]]
+name = "ratelimit"
+version = "2.2.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ab/38/ff60c8fc9e002d50d48822cc5095deb8ebbc5f91a6b8fdd9731c87a147c9/ratelimit-2.2.1.tar.gz", hash = "sha256:af8a9b64b821529aca09ebaf6d8d279100d766f19e90b5059ac6a718ca6dee42", size = 5251, upload-time = "2018-12-17T18:55:49.675Z" }
 
 [[package]]
 name = "redis"

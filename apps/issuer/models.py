@@ -28,7 +28,6 @@ from django.urls import reverse
 from django.utils import timezone
 from apps.issuer.services.image_composer import ImageComposer
 from entity.models import BaseVersionedEntity
-from geopy.geocoders import Nominatim
 from issuer.managers import (
     BadgeClassManager,
     BadgeInstanceEvidenceManager,
@@ -58,6 +57,7 @@ from .utils import (
     get_obi_context,
     parse_original_datetime,
     generate_private_key_pem,
+    geocode,
 )
 import logging
 
@@ -617,8 +617,7 @@ class Issuer(BaseIssuer):
                 + (str(self.city) if self.city is not None else "")
                 + " Deutschland"
             )
-            nom = Nominatim(user_agent="...")
-            geoloc = nom.geocode(addr_string)
+            geoloc = geocode(addr_string)
             if geoloc:
                 self.lon = geoloc.longitude
                 self.lat = geoloc.latitude
