@@ -80,7 +80,6 @@ platformdirs==4.3.8
 pluggy==1.6.0
 prometheus-client==0.22.1
 puremagic==1.6
-py==1.11.0
 pyasn1==0.6.1
 pycparser==2.14
 pycryptodome==3.22.0
@@ -102,6 +101,7 @@ python3-openid==3.2.0
 pytz==2025.2
 pyyaml==6.0.2
 qrcode==8.2
+ratelimit==2.2.1
 redis==4.5.0
 reportlab==4.4.2
 requests==2.32.4
@@ -123,7 +123,6 @@ svg2rlg==0.3
 svglib==1.5.1
 tinycss==0.4
 tinycss2==1.4.0
-toml==0.10.2
 tomli==2.2.1
 tox==4.28.0
 tox-uv==1.26.2

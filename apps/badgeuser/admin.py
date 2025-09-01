@@ -5,7 +5,6 @@ from django.utils import timezone
 from django.utils.html import format_html
 from django_object_actions import DjangoObjectActions
 
-from externaltools.models import ExternalToolUserActivation
 from mainsite.admin import badgr_admin
 from mainsite.utils import backoff_cache_key
 from .models import (
@@ -17,13 +16,6 @@ from .models import (
     UserRecipientIdentifier,
 )
 from issuer.models import Issuer
-
-
-class ExternalToolInline(TabularInline):
-    model = ExternalToolUserActivation
-    fk_name = "user"
-    fields = ("externaltool",)
-    extra = 0
 
 
 class TermsAgreementInline(TabularInline):
@@ -117,7 +109,6 @@ class BadgeUserAdmin(DjangoObjectActions, ModelAdmin):
     inlines = [
         EmailAddressInline,
         UserRecipientIdentifierInline,
-        ExternalToolInline,
         TermsAgreementInline,
     ]
     change_actions = ["clear_login_backoff"]
