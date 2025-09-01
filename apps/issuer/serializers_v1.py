@@ -521,6 +521,8 @@ class BadgeClassSerializerV1(
                         f"Badge image generation failed: {e}"
                     )
 
+            else:
+                instance.save(force_resize=True)
         return instance
 
     def create(self, validated_data, **kwargs):
