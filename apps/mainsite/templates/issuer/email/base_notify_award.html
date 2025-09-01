@@ -28,7 +28,7 @@
     </mj-section>
     <mj-section padding="0px 41px">
     <mj-column background-color="#ffffff" padding="0">
-    <mj-image src="http://localhost:8000/public/badges/t1a1z6rNQbyzJsvVf8JquQ/image" alt="Badge Logo" href="{{ badge_instance_url }}" align="center" padding="0" padding-top="25px" width="125px" height="125px" css-class="foo" />
+    <mj-image src="{{ image_url }}" alt="Badge Logo" href="{{ badge_instance_url }}" align="center" padding="0" padding-top="25px" width="125px" height="125px" css-class="foo" />
     </mj-column>
     </mj-section>
     <mj-section padding="0px 41px">
@@ -37,9 +37,9 @@
     <mj-text font-weight="500" padding-top="0px"><a href="{{ issuer_detail }}"
    style="text-decoration: none;
           color: inherit">{{ issuer_name }}</a></mj-text>
-    {% if issuer_image_url %}
+    <!--{% if issuer_image_url %}
         <mj-image src="{{ issuer_image_url }}" alt="Logo" href="{{ badge_instance_url }}" width="80px" height="80px" align="left" />
-    {% endif %}
+    {% endif %}-->
     </mj-column>
     </mj-section>
     {% if badge_category != "learningpath" %}
