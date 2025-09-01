@@ -39,7 +39,7 @@ services:
 
     # this container runs memcached
     memcached:
-        image: "memcached:1.6.29-alpine"
+        image: "memcached:1.6.39-alpine"
         expose:
             - "11211"
         networks:
