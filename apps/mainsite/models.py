@@ -12,6 +12,7 @@ from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.db import models, transaction
 from django.utils import timezone
+from jsonfield import JSONField
 from oauthlib.common import generate_token
 
 import cachemodel
@@ -455,3 +456,22 @@ class AltchaChallenge(models.Model):
             models.Index(fields=["used"]),
             models.Index(fields=["created_at"]),
         ]
+
+
+class IframeUrl(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    params = JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        "badgeuser.BadgeUser",
+        blank=True,
+        null=True,
+        related_name="+",
+        on_delete=models.SET_NULL,
+    )
+
+    @property
+    def url(self):
+        baseUrl = getattr(settings, "HTTP_ORIGIN", "http://localhost:8000")
+        return f"{baseUrl}/iframes/{self.id}/"

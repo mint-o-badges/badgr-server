@@ -86,7 +86,7 @@ Set or adjust these values in your `settings_local.dev.py` and/or `settings_loca
     -   If you use [Pingdom](https://www.pingdom.com/) to monitor site performance, including this setting will embed Pingdom tracking script into the header.
 -   `CELERY_ALWAYS_EAGER`:
     -   Setting this value to `True` causes Celery to immediately run tasks synchronously. Setting this value to `False` enables asynchronous processing using Celery workers, which can be used e.g. in the
-    batch badge-awarding process. Celery is an asynchronous task runner built into Django and Badgr. Advanced deployments may separate celery workers from web nodes for improved performance. The default is `False`. When `CELERY_ALWAYS_EAGER=False`, ensure `CELERY_BROKER_URL` and `CELERY_RESULT_BACKEND` are properly configured (defaults to Redis at `redis://redis:6379/0`).
+        batch badge-awarding process. Celery is an asynchronous task runner built into Django and Badgr. Advanced deployments may separate celery workers from web nodes for improved performance. The default is `False`. When `CELERY_ALWAYS_EAGER=False`, ensure `CELERY_BROKER_URL` and `CELERY_RESULT_BACKEND` are properly configured (defaults to Redis at `redis://redis:6379/0`).
 -   `OPEN_FOR_SIGNUP`:
     -   Allows you to turn off signup through the API by setting to `False` if you would like to use Badgr for only single-account use or to manually create all users in `/staff`. The default is `True` (signup API is enabled). UX is not well-supported in the `/staff` interface.
 -   `DEFAULT_FILE_STORAGE` and `MEDIA_URL`:
@@ -111,6 +111,8 @@ Set or adjust these values in your `settings_local.dev.py` and/or `settings_loca
     -   Typically you don't need to change these if you used the example with `LOGIN_BASE_URL`
 -   `ALTCHA_API_KEY` and `ALTCHA_SECRET`:
     -   Set these values for captcha protection during the registration and issuer creation process. They can be obtained at [altcha.org](https://altcha.org/).
+-   `WEBCOMPONENTS_ASSETS_PATH`:
+    -   `badgr-ui` builds generate a range of web components that are used for our LTI integration. Set this to the URL of the folder that serves these webcomponents e.g. `https://mydomain.tld/webcomponents`
 
 ### Running the Django Server in Development
 

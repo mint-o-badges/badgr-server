@@ -17,6 +17,7 @@ from issuer.api import (
     LearningPathDetail,
     LearningPathParticipantsList,
     QRCodeDetail,
+    BadgeImageComposition,
 )
 from issuer.api_v1 import FindBadgeClassDetail, IssuerStaffList
 
@@ -125,5 +126,10 @@ urlpatterns = [
         r"^issuers/(?P<issuerSlug>[^/]+)/staffRequests/(?P<requestId>[^/]+)/confirm$",
         IssuerStaffRequestDetail.as_view(),
         name="v1_api_staffrequest_detail",
+    ),
+    url(
+        r"^issuers/(?P<issuerSlug>[^/]+)/badges/image/compose$",
+        BadgeImageComposition.as_view(),
+        name="v1_api_badge_image_composition",
     ),
 ]

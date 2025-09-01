@@ -409,6 +409,7 @@ class IssuerList(JSONListView):
                 *context.get("exclude_fields", []),
                 "staff",
                 "created_by",
+                "email",
             ]
         return context
 
