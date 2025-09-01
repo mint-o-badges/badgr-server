@@ -5,7 +5,7 @@
 {% block main %}
     <mj-section>
     <mj-column>
-    <mj-image src="{% static '/images/Logo-Oeb.png' %}" alt="Logo" href="https://openbadges.education" padding-right="25px" width="150px" align="right" />
+    <mj-image src="{% static '/images/Logo-Oeb.png' %}" alt="Logo" href="https://openbadges.education" padding-right="25px" width="150px" height="77px" align="right" />
     <mj-text font-size="24px">
     <span style="font-weight: bold;">Herzlichen Glückwunsch</span>
     {% if name %}
@@ -29,7 +29,7 @@
     <mj-section padding="0px 41px">
     <mj-group background-color="#ffffff" vertical-align="middle">
     <mj-column width="35%" border-radius="10px">
-    <mj-image src="{{ image_url }}" alt="Logo" href="{{ badge_instance_url }}" width="175px" align="left" />
+    <mj-image src="{{ image_url }}" alt="Badge Logo" href="{{ badge_instance_url }}" width="175px" height="175px" align="left" />
     </mj-column>
     <mj-column width="65%" padding="16px 0px">
     <mj-text font-style="italic" line-height="100%">Vergeben von:</mj-text>
@@ -37,7 +37,7 @@
    style="text-decoration: none;
           color: inherit">{{ issuer_name }}</a></mj-text>
     {% if issuer_image_url %}
-        <mj-image src="{{ issuer_image_url }}" alt="Logo" href="{{ badge_instance_url }}" width="80px" align="left" />
+        <mj-image src="{{ issuer_image_url }}" alt="Logo" href="{{ badge_instance_url }}" width="80px" height="80px" align="left" />
     {% endif %}
     </mj-column>
     </mj-group>
