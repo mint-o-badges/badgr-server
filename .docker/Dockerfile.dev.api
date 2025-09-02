@@ -51,6 +51,7 @@ RUN curl -fsSL https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linu
     && tar -xf node.tar.xz -C /usr/local --strip-components=1 \
     && rm node.tar.xz
 RUN npm install -g mjml
+ENV PATH="/usr/local/bin:${PATH}"
 
 # Add timestamp
 RUN date +"%d.%m.%y %T" > timestamp
