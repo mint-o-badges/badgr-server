@@ -12,7 +12,8 @@ RUN apt-get install -y default-libmysqlclient-dev \
                        libxmlsec1-dev \
                        pkg-config \
                        default-mysql-client \
-                       curl
+                       curl \
+                       xz-utils
 
 RUN pip install uwsgi
 
