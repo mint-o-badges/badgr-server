@@ -28,7 +28,8 @@ RUN apt-get install -y default-libmysqlclient-dev \
                        python3-cairo \
                        libxml2 \
                        curl \
-                       default-mysql-client
+                       default-mysql-client \
+                       xz-utils
 
 RUN groupadd -g 999 python && \
     useradd -r -u 999 -g python python
@@ -65,6 +66,11 @@ RUN touch /var/log/cron_qr_badgerequests.log && \
     chown python:python /var/log/cron_qr_badgerequests.log && \
     chmod 644 /var/log/cron_qr_badgerequests.log
 
+RUN touch /var/log/cron_clear_altcha.log \
+    && chmod 644 /var/log/cron_clear_altcha.log
+
+RUN touch /var/log/cron_clear_iframe_urls.log \
+    && chmod 644 /var/log/cron_clear_iframe_urls.log
 
 # Latest releases available at https://github.com/aptible/supercronic/releases
 ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.2.30/supercronic-linux-amd64 \
@@ -77,6 +83,14 @@ RUN curl -fsSLO "$SUPERCRONIC_URL" \
  && chmod +x "$SUPERCRONIC" \
  && mv "$SUPERCRONIC" "/usr/local/bin/${SUPERCRONIC}" \
  && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
+
+# Get node and install mjml for email templates
+ARG NODE_VERSION=v24.6.0
+RUN curl -fsSL https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-x64.tar.xz -o node.tar.xz \
+    && tar -xf node.tar.xz -C /usr/local --strip-components=1 \
+    && rm node.tar.xz
+ENV PATH="/usr/local/bin:${PATH}"
+RUN npm install -g mjml
 
 # Add timestamp
 RUN date +"%d.%m.%y %T" > timestamp && chown python:python timestamp
