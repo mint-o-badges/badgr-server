@@ -73,6 +73,7 @@ RUN curl -fsSL https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linu
     && rm node.tar.xz
 ENV PATH="/usr/local/bin:${PATH}"
 RUN npm install -g mjml
+ENV PATH="/usr/local/bin:${PATH}"
 
 # Add timestamp
 RUN date +"%d.%m.%y %T" > timestamp && chown python:python timestamp
