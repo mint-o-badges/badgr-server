@@ -48,7 +48,6 @@ INSTALLED_APPS = [
     "entity",
     "issuer",
     "backpack",
-    "externaltools",
     # api docs
     "apispec_drf",
     # deprecated
