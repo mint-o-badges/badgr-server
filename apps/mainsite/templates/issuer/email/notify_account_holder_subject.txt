@@ -1,1 +1,0 @@
-{% if renotify %}Erinnerung: {% endif %}Herzlichen Glückwunsch, Du hast einen Badge erhalten!

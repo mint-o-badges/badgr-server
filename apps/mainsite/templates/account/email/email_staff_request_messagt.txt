@@ -1,1 +1,7 @@
 Mitgliedsanfrage für deine Institution
+
+{{ user.first_name }} {{ user.last_name }} hat eine Mitgliedsanfrage
+für deine Institution {{ issuer.name }} gestellt.
+
+Du kannst die Anfrage über folgenden Button auf Open Educational Badges bestätigen:
+{{ activate_url }}
