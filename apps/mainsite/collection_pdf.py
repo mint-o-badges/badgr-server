@@ -136,7 +136,7 @@ class CollectionPDFCreator:
             self.used_space += ITEM_HEIGHT + 10
 
     def add_qrcode_section(
-        self, first_page_content, share_hash, origin: str, qrCodeImage=None
+        self, first_page_content, entity_id, origin: str, qrCodeImage=None
     ):
         issued_by_style = ParagraphStyle(
             name="IssuedBy",
@@ -195,7 +195,7 @@ class CollectionPDFCreator:
             <br/><p><font name="Rubik-Regular">
             Detaillierte Infos zu den <font name="Rubik-Bold">einzelnen Badges <br/>
             und den damit gestärkten Kompetenzen</font> erhalten Sie <br/> über den QR-Code oder diesen Link:
-            <a href="{origin}/public/collections/{share_hash}"
+            <a href="{origin}/public/collections/{entity_id}"
             color="#1400FF"
             underline="true">Digitale Badge-Sammlung</a></font></p>
             <br/>
@@ -254,7 +254,7 @@ class CollectionPDFCreator:
     def generate_qr_code(self, collection, origin):
         # build the qr code in the backend
 
-        qrCodeImageUrl = f"{origin}/public/collections/{collection.share_hash}"
+        qrCodeImageUrl = f"{origin}/public/collections/{collection.entity_id}"
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -288,7 +288,7 @@ class CollectionPDFCreator:
                 self.used_space = 0
             self.add_qrcode_section(
                 first_page_content,
-                collection.share_hash,
+                collection.entity_id,
                 origin,
                 self.generate_qr_code(collection, origin),
             )
