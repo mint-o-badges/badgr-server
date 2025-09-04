@@ -251,7 +251,7 @@ requires-dist = [
     { name = "markdown", specifier = "==2.6.8" },
     { name = "mock", specifier = "==5.1.0" },
     { name = "mozilla-django-oidc", specifier = ">=4.0.1" },
-    { name = "mysqlclient", specifier = ">=2.2.6" },
+    { name = "mysqlclient", specifier = "==1.4.6" },
     { name = "netaddr", specifier = ">=1.3.0" },
     { name = "oauthlib", specifier = "==3.1.0" },
     { name = "pillow", specifier = ">=8.3.2" },
@@ -1030,13 +1030,9 @@ wheels = [
 
 [[package]]
 name = "mysqlclient"
-version = "2.2.7"
+version = "1.4.6"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/61/68/810093cb579daae426794bbd9d88aa830fae296e85172d18cb0f0e5dd4bc/mysqlclient-2.2.7.tar.gz", hash = "sha256:24ae22b59416d5fcce7e99c9d37548350b4565baac82f95e149cac6ce4163845", size = 91383 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/0c/24/cdaaef42aac7d53c0a01bb638da64961c293b1b6d204efd47400a68029d4/mysqlclient-2.2.7-cp310-cp310-win_amd64.whl", hash = "sha256:2e3c11f7625029d7276ca506f8960a7fd3c5a0a0122c9e7404e6a8fe961b3d22", size = 207748 },
-    { url = "https://files.pythonhosted.org/packages/16/cc/5b1570be9f8597ee41e2a0bd7b62ba861ec2c81898d9449f3d6bfbe15d29/mysqlclient-2.2.7-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:92af368ed9c9144737af569c86d3b6c74a012a6f6b792eb868384787b52bb585", size = 207800 },
-]
+sdist = { url = "https://files.pythonhosted.org/packages/d0/97/7326248ac8d5049968bf4ec708a5d3d4806e412a42e74160d7f266a3e03a/mysqlclient-1.4.6.tar.gz", hash = "sha256:f3fdaa9a38752a3b214a6fe79d7cae3653731a53e577821f9187e67cbecb2e16", size = 85517 }
 
 [[package]]
 name = "netaddr"
