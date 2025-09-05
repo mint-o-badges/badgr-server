@@ -49,30 +49,34 @@
         </mj-text>
         </mj-column>
         </mj-section>
+        <mj-section padding="0px 41px">
+        <mj-column background-color="#ffffff" padding="10px 25px">
         {% for item in badge_competencies %}
-            <mj-section padding="0px 41px">
-            <mj-group background-color="#ffffff">
-            <mj-column width="70%" inner-background-color="#f5f6fa" padding="10px 0px 10px 25px" inner-border="1px solid #492e98" inner-border-right="0">
-            <mj-text font-weight="500">
-            {{ item.name }}
-            {% if item.framework == "esco" %}
-                <a href="{{ item.framework_identifier }}"
-                   style="color:#1400ff;
-                          text-decoration:none">[E]</a>
-            {% endif %}
-            </mj-text>
-            </mj-column>
-            <mj-column width="15%" inner-background-color="#f5f6fa" padding="10px 0px" inner-border="1px solid #492e98" inner-border-right="0" inner-border-left="0">
-            <mj-text color="#492e98" align="right" padding-right="0px" padding-left="0px">
-            {{ item.studyLoad }}
-            </mj-text>
-            </mj-column>
-            <mj-column width="15%" inner-background-color="#f5f6fa" padding="10px 25px 10px 0px" inner-border="1px solid #492e98" inner-border-left="0">
-            <mj-image src="{% static '/images/clock-icon.png' %}" alt="Clock" width="16px" height="16px" align="left" padding-right="10px" padding-left="10px" padding-top="14px" padding-bottom="14px" />
-            </mj-column>
-            </mj-group>
-            </mj-section>
+            <mj-table padding="0px" cellspacing="25px" cellpadding="10px" border="1px solid #492e98" padding-bottom="10px">
+            <tr style="background-color: #f5f6fa">
+                <td style="font-weight: 500;">
+                    {{ item.name }}
+                    {% if item.framework == "esco" %}
+                        <a href="{{ item.framework_identifier }}"
+                           style="color:#1400ff;
+                                  text-decoration:none">[E]</a>
+                    {% endif %}
+                </td>
+                <td align="right" style="color: #492e98; width: 96px;">
+                    <img src="{% static '/images/clock-icon.png' %}"
+                         alt="Clock"
+                         width="16px"
+                         height="16px"
+                         style="padding: 0px 4px;
+                                vertical-align: middle;
+                                margin-bottom: 2px" />
+                    {{ item.studyLoad }}
+                </td>
+            </tr>
+            </mj-table>
         {% endfor %}
+        </mj-column>
+        </mj-section>
     {% endif %}
     <mj-section text-align="left" padding-bottom="0px">
     {% if issuer_image_url %}
