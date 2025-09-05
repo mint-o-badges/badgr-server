@@ -681,8 +681,8 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
     created_by = BadgeUserIdentifierFieldV1(read_only=True)
     slug = serializers.CharField(max_length=255, read_only=True, source="entity_id")
     image = serializers.FileField(read_only=True)  # use_url=True, might be necessary
-    email = serializers.EmailField(max_length=1024, required=False, write_only=True)
-    recipient_identifier = serializers.CharField(max_length=1024, required=False)
+    email = serializers.EmailField(max_length=320, required=False, write_only=True)
+    recipient_identifier = serializers.CharField(max_length=320, required=False)
     recipient_type = serializers.CharField(default=RECIPIENT_TYPE_EMAIL)
     allow_uppercase = serializers.BooleanField(
         default=False, required=False, write_only=True
