@@ -13,7 +13,7 @@ services:
             [
                 "sh",
                 "-c",
-                "python3 -m debugpy --listen 0.0.0.0:5678 /badgr_server/manage.py runserver 0.0.0.0:8000",
+                "python3 -m debugpy --listen 0.0.0.0:5678 --wait-for-client /badgr_server/manage.py runserver 0.0.0.0:8000",
             ]
         volumes:
             - ./apps:/badgr_server/apps
@@ -39,11 +39,12 @@ services:
 
     # this container runs memcached
     memcached:
-        image: "bitnami/memcached:latest"
+        image: "memcached:1.6.39-alpine"
         expose:
             - "11211"
         networks:
             - badgr
+        command: ["memcached", "-m", "512", "-I", "10m", "-vv"]
         environment:
             - TZ=Europe/Berlin
 
@@ -86,7 +87,7 @@ services:
     celery_worker:
         build:
             context: .
-            dockerfile: .docker/Dockerfile.dev.api
+            dockerfile: .docker/Dockerfile.debug.api
         entrypoint: [] # Override the entrypoint from Dockerfile
         command: >
             bash -c "PYTHONPATH=/badgr_server/apps celery -A mainsite worker --loglevel=info"

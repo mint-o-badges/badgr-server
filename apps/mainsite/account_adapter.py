@@ -1,8 +1,3 @@
-import logging
-logger = logging.getLogger("Badgr.Events")
-import urllib.request
-import urllib.parse
-import urllib.error
 import urllib.parse
 import os
 
@@ -20,10 +15,14 @@ from issuer.models import BadgeClass, BadgeInstance
 from badgeuser.authcode import authcode_for_accesstoken
 from badgeuser.models import BadgeUser, CachedEmailAddress
 from badgrsocialauth.utils import set_session_badgr_app
-from mainsite.models import BadgrApp, EmailBlacklist, AccessTokenProxy
+from mainsite.models import BadgrApp, AccessTokenProxy
 from mainsite.utils import get_name, OriginSetting, set_url_query_params
 
 from mainsite.badge_pdf import BadgePDFCreator
+
+import logging
+
+logger = logging.getLogger("Badgr.Events")
 
 
 class BadgrAccountAdapter(DefaultAccountAdapter):
@@ -59,25 +58,12 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
     def send_mail(self, template_prefix, email, context, from_email=None):
         context["STATIC_URL"] = getattr(settings, "STATIC_URL")
         context["HTTP_ORIGIN"] = getattr(settings, "HTTP_ORIGIN")
-        context["PRIVACY_POLICY_URL"] = getattr(settings, "PRIVACY_POLICY_URL", None)
-        context["TERMS_OF_SERVICE_URL"] = getattr(
-            settings, "TERMS_OF_SERVICE_URL", None
-        )
         context["GDPR_INFO_URL"] = getattr(settings, "GDPR_INFO_URL", None)
         context["OPERATOR_STREET_ADDRESS"] = getattr(
             settings, "OPERATOR_STREET_ADDRESS", None
         )
         context["OPERATOR_NAME"] = getattr(settings, "OPERATOR_NAME", None)
         context["OPERATOR_URL"] = getattr(settings, "OPERATOR_URL", None)
-
-        if context.get("unsubscribe_url", None) is None:
-            try:
-                badgrapp_pk = context["badgr_app"].pk
-            except (KeyError, AttributeError):
-                badgrapp_pk = None
-            context["unsubscribe_url"] = getattr(
-                settings, "HTTP_ORIGIN"
-            ) + EmailBlacklist.generate_email_signature(email, badgrapp_pk)
 
         if from_email:
             self.EMAIL_FROM_STRING = from_email
@@ -87,24 +73,39 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
         msg = self.render_mail(template_prefix, email, context)
         # badge_id is equal to the badge instance slug
         if template_prefix in (
-            "issuer/email/notify_account_holder",
             "issuer/email/notify_earner",
             "issuer/email/notify_micro_degree_earner",
         ):
-            pdf_document = context["pdf_document"]
-            badge_name = f"{context['badge_name']}.badge"
+            pdf_document = (
+                context["pdf_document"] if "pdf_document" in context.keys() else None
+            )
+            badge_name = (
+                f"{context['badge_name']}.badge"
+                if "badge_name" in context.keys()
+                else None
+            )
             img_path = os.path.join(
                 settings.MEDIA_ROOT,
                 "uploads",
                 "badges",
                 "assertion-{}.png".format(context.get("badge_id", None)),
             )
-            with open(img_path, "rb") as f:
-                badge_img = f.read()
-            msg.attach(badge_name + ".png", badge_img, "image/png")
-            msg.attach(badge_name + ".pdf", pdf_document, "application/pdf")
-        logger.debug("Rendered E-Mail with subject '%s' from '%s' to '%s'",
-                     msg.subject, msg.from_email, msg.to)
+
+            try:
+                with open(img_path, "rb") as f:
+                    badge_img = f.read()
+                if badge_img and badge_name:
+                    msg.attach(badge_name + ".png", badge_img, "image/png")
+            except FileNotFoundError:
+                pass
+            if pdf_document and badge_name:
+                msg.attach(badge_name + ".pdf", pdf_document, "application/pdf")
+        logger.debug(
+            "Rendered E-Mail with subject '%s' from '%s' to '%s'",
+            msg.subject,
+            msg.from_email,
+            msg.to,
+        )
         msg.send()
 
     def set_email_string(self, context):

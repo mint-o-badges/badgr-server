@@ -48,10 +48,14 @@ from .models import (
     IssuerStaffRequest,
     LearningPath,
     LearningPathBadge,
+    Network,
+    NetworkInvite,
+    NetworkStaff,
     QrCode,
     RequestedBadge,
     RequestedLearningPath,
 )
+from django.db import transaction
 
 logger = logging.getLogger("Badgr.Events")
 
@@ -123,57 +127,51 @@ class IssuerStaffSerializerV1(serializers.Serializer):
         )
 
 
-class IssuerSerializerV1(
+class NetworkStaffSerializerV1(serializers.Serializer):
+    """A read_only serializer for staff roles"""
+
+    user = BadgeUserProfileSerializerV1(source="cached_user")
+    role = serializers.CharField(
+        validators=[ChoicesValidator(list(dict(NetworkStaff.ROLE_CHOICES).keys()))]
+    )
+
+    class Meta:
+        list_serializer_class = CachedListSerializer
+
+        apispec_definition = (
+            "NetworkStaff",
+            {
+                "properties": {
+                    "role": {"type": "string", "enum": ["staff", "editor", "owner"]}
+                }
+            },
+        )
+
+
+class BaseIssuerSerializerV1(
     OriginalJsonSerializerMixin, ExcludeFieldsMixin, serializers.Serializer
 ):
+    """Base serializer for issuers and networks"""
+
+    class Meta:
+        abstract = True
+
     created_at = DateTimeWithUtcZAtEndField(read_only=True)
     created_by = BadgeUserIdentifierFieldV1()
     name = StripTagsCharField(max_length=1024)
     slug = StripTagsCharField(max_length=255, source="entity_id", read_only=True)
     image = ValidImageField(required=False)
-    email = serializers.EmailField(max_length=255, required=True)
     description = StripTagsCharField(max_length=16384, required=False)
     url = serializers.URLField(max_length=1024, required=True)
-    staff = IssuerStaffSerializerV1(
-        read_only=True, source="cached_issuerstaff", many=True
-    )
     badgrapp = serializers.CharField(
         read_only=True, max_length=255, source="cached_badgrapp"
     )
-    verified = serializers.BooleanField(default=False)
-
-    category = serializers.CharField(max_length=255, required=True, allow_null=True)
     source_url = serializers.CharField(
-        max_length=255, required=False, allow_blank=True, allow_null=True
-    )
-
-    street = serializers.CharField(
-        max_length=255, required=False, allow_blank=True, allow_null=True
-    )
-    streetnumber = serializers.CharField(
-        max_length=255, required=False, allow_blank=True, allow_null=True
-    )
-    zip = serializers.CharField(
-        max_length=255, required=False, allow_blank=True, allow_null=True
-    )
-    city = serializers.CharField(
         max_length=255, required=False, allow_blank=True, allow_null=True
     )
     country = serializers.CharField(
         max_length=255, required=False, allow_blank=True, allow_null=True
     )
-
-    intendedUseVerified = serializers.BooleanField(default=False)
-
-    lat = serializers.CharField(
-        max_length=255, required=False, allow_blank=True, allow_null=True
-    )
-    lon = serializers.CharField(
-        max_length=255, required=False, allow_blank=True, allow_null=True
-    )
-
-    class Meta:
-        apispec_definition = ("Issuer", {})
 
     def get_fields(self):
         fields = super().get_fields()
@@ -189,6 +187,102 @@ class IssuerSerializerV1(
             img_name, img_ext = os.path.splitext(image.name)
             image.name = "issuer_logo_" + str(uuid.uuid4()) + img_ext
         return image
+
+
+class NetworkSerializerV1(BaseIssuerSerializerV1):
+    staff = NetworkStaffSerializerV1(
+        read_only=True, source="cached_networkstaff", many=True
+    )
+
+    state = serializers.CharField(
+        max_length=254, required=False, allow_blank=True, allow_null=True
+    )
+
+    partner_issuers = serializers.SerializerMethodField()
+
+    def get_partner_issuers(self, obj):
+        from .serializers_v1 import IssuerSerializerV1
+
+        # Exclude 'networks' field from nested issuer serialization to prevent circular reference
+        context = self.context.copy()
+        context["exclude_fields"] = context.get("exclude_fields", []) + ["networks"]
+
+        direct_issuers = obj.partner_issuers.all()
+
+        data = IssuerSerializerV1(direct_issuers, many=True, context=context).data
+        # print(f"data {data}")
+        # print(f"cached_issuers {obj.cached_partner_issuers()}")
+        # return IssuerSerializerV1(
+        #     obj.cached_partner_issuers(), many=True, context=context
+        # ).data
+        return data
+
+    def create(self, validated_data, **kwargs):
+        new_network = Network(**validated_data)
+
+        new_network.badgrapp = BadgrApp.objects.get_current(
+            self.context.get("request", None)
+        )
+
+        new_network.save()
+
+        return new_network
+
+    def to_representation(self, instance):
+        representation = super(NetworkSerializerV1, self).to_representation(instance)
+        representation["json"] = instance.get_json(
+            obi_version="1_1", use_canonical_id=True
+        )
+
+        return representation
+
+
+class IssuerSerializerV1(BaseIssuerSerializerV1):
+    email = serializers.EmailField(max_length=255, required=True)
+    staff = IssuerStaffSerializerV1(
+        read_only=True, source="cached_issuerstaff", many=True
+    )
+    networks = serializers.SerializerMethodField()
+    verified = serializers.BooleanField(default=False)
+
+    category = serializers.CharField(max_length=255, required=True, allow_null=True)
+
+    street = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, allow_null=True
+    )
+    streetnumber = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, allow_null=True
+    )
+    zip = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, allow_null=True
+    )
+    city = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, allow_null=True
+    )
+
+    intendedUseVerified = serializers.BooleanField(default=False)
+
+    lat = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, allow_null=True
+    )
+    lon = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, allow_null=True
+    )
+
+    def get_networks(self, obj):
+        from .serializers_v1 import NetworkSerializerV1
+
+        # Exclude 'partner_issuers' field from nested network serialization to prevent circular reference
+        context = self.context.copy()
+        context["exclude_fields"] = context.get("exclude_fields", []) + [
+            "partner_issuers"
+        ]
+        return NetworkSerializerV1(
+            obj.cached_networks(), many=True, context=context
+        ).data
+
+    class Meta:
+        apispec_definition = ("Issuer", {})
 
     def create(self, validated_data, **kwargs):
         user = validated_data["created_by"]
@@ -222,6 +316,7 @@ class IssuerSerializerV1(
         )
 
         new_issuer.save()
+
         return new_issuer
 
     def update(self, instance, validated_data):
@@ -470,64 +565,100 @@ class BadgeClassSerializerV1(
         logger.info("UPDATE BADGECLASS")
         logger.debug(validated_data)
 
-        force_image_resize = False
+        with transaction.atomic():
+            new_name = validated_data.get("name")
+            if new_name:
+                new_name = strip_tags(new_name)
+                instance.name = new_name
 
-        new_name = validated_data.get("name")
-        if new_name:
-            new_name = strip_tags(new_name)
-            instance.name = new_name
+            new_description = validated_data.get("description")
+            if new_description:
+                instance.description = strip_tags(new_description)
 
-        new_description = validated_data.get("description")
-        if new_description:
-            instance.description = strip_tags(new_description)
+            if "image" in validated_data:
+                instance.image = validated_data.get("image")
 
-        if "image" in validated_data:
-            instance.image = validated_data.get("image")
-            force_image_resize = True
+            if "criteria" in validated_data:
+                instance.criteria = validated_data.get("criteria")
 
-        if "criteria" in validated_data:
-            instance.criteria = validated_data.get("criteria")
+            instance.alignment_items = validated_data.get("alignment_items")
+            instance.tag_items = validated_data.get("tag_items")
 
-        instance.alignment_items = validated_data.get("alignment_items")
-        instance.tag_items = validated_data.get("tag_items")
+            instance.expires_amount = validated_data.get("expires_amount", None)
+            instance.expires_duration = validated_data.get("expires_duration", None)
 
-        instance.expires_amount = validated_data.get("expires_amount", None)
-        instance.expires_duration = validated_data.get("expires_duration", None)
+            instance.imageFrame = validated_data.get("imageFrame", True)
 
-        instance.imageFrame = validated_data.get("imageFrame", True)
+            instance.copy_permissions_list = validated_data.get(
+                "copy_permissions_list", ["issuer"]
+            )
 
-        instance.copy_permissions_list = validated_data.get(
-            "copy_permissions_list", ["issuer"]
-        )
+            logger.debug("SAVING EXTENSION")
+            self.save_extensions(validated_data, instance)
 
-        logger.debug("SAVING EXTENSION")
-        self.save_extensions(validated_data, instance)
+            if instance.imageFrame:
+                extensions = instance.cached_extensions()
+                try:
+                    category_ext = extensions.get(name="extensions:CategoryExtension")
+                    category = json.loads(category_ext.original_json)["Category"]
+                    org_img_ext = extensions.get(name="extensions:OrgImageExtension")
+                    original_image = json.loads(org_img_ext.original_json)["OrgImage"]
 
-        instance.save(force_resize=force_image_resize)
+                    instance.generate_badge_image(
+                        instance.issuer.image, category, original_image
+                    )
+                    instance.save(update_fields=["image"])
+                except BadgeClassExtension.DoesNotExist as e:
+                    raise serializers.ValidationError({"extensions": str(e)})
+                except Exception as e:
+                    raise serializers.ValidationError(
+                        f"Badge image generation failed: {e}"
+                    )
 
+            else:
+                instance.save(force_resize=True)
         return instance
 
     def create(self, validated_data, **kwargs):
         logger.info("CREATE NEW BADGECLASS")
         logger.debug(validated_data)
 
-        if "image" not in validated_data:
-            raise serializers.ValidationError({"image": ["This field is required"]})
+        with transaction.atomic():
+            if "image" not in validated_data:
+                raise serializers.ValidationError({"image": ["This field is required"]})
 
-        if "issuer" in self.context:
-            validated_data["issuer"] = self.context.get("issuer")
+            if "issuer" in self.context:
+                validated_data["issuer"] = self.context.get("issuer")
 
-        # criteria_text is now created at runtime
-        # if (
-        #     validated_data.get("criteria_text", None) is None
-        #     and validated_data.get("criteria_url", None) is None
-        # ):
-        #     raise serializers.ValidationError(
-        #         "One or both of the criteria_text and criteria_url fields must be provided"
-        #     )
+            # criteria_text is now created at runtime
+            # if (
+            #     validated_data.get("criteria_text", None) is None
+            #     and validated_data.get("criteria_url", None) is None
+            # ):
+            #     raise serializers.ValidationError(
+            #         "One or both of the criteria_text and criteria_url fields must be provided"
+            #     )
 
-        new_badgeclass = BadgeClass.objects.create(**validated_data)
-        return new_badgeclass
+            new_badgeclass = BadgeClass.objects.create(**validated_data)
+
+            extensions = new_badgeclass.cached_extensions()
+
+            try:
+                categoryExtension = extensions.get(name="extensions:CategoryExtension")
+                category = json.loads(categoryExtension.original_json)["Category"]
+                orgImage = extensions.get(name="extensions:OrgImageExtension")
+                original_image = json.loads(orgImage.original_json)["OrgImage"]
+            except BadgeClassExtension.DoesNotExist as e:
+                raise serializers.ValidationError({"extensions": str(e)})
+
+            try:
+                new_badgeclass.generate_badge_image(
+                    new_badgeclass.issuer.image, category, original_image
+                )
+                new_badgeclass.save(update_fields=["image"])
+            except Exception as e:
+                raise serializers.ValidationError(f"Badge image generation failed: {e}")
+            return new_badgeclass
 
 
 class EvidenceItemSerializer(serializers.Serializer):
@@ -550,8 +681,8 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
     created_by = BadgeUserIdentifierFieldV1(read_only=True)
     slug = serializers.CharField(max_length=255, read_only=True, source="entity_id")
     image = serializers.FileField(read_only=True)  # use_url=True, might be necessary
-    email = serializers.EmailField(max_length=1024, required=False, write_only=True)
-    recipient_identifier = serializers.CharField(max_length=1024, required=False)
+    email = serializers.EmailField(max_length=320, required=False, write_only=True)
+    recipient_identifier = serializers.CharField(max_length=320, required=False)
     recipient_type = serializers.CharField(default=RECIPIENT_TYPE_EMAIL)
     allow_uppercase = serializers.BooleanField(
         default=False, required=False, write_only=True
@@ -803,6 +934,15 @@ class IssuerStaffRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = IssuerStaffRequest
+        fields = "__all__"
+
+
+class NetworkInviteSerializer(serializers.ModelSerializer):
+    network = NetworkSerializerV1(read_only=True)
+    issuer = IssuerSerializerV1(read_only=True)
+
+    class Meta:
+        model = NetworkInvite
         fields = "__all__"
 
 

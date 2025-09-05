@@ -1,6 +1,7 @@
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic.base import RedirectView, TemplateView
 from django.conf.urls.static import static
+from apps.mainsite.views_iframes import iframe
 from mainsite.views import (
     badgeRequestsByBadgeClass,
     downloadQrCode,
@@ -37,6 +38,12 @@ from mainsite.views import (
     call_cms_api,
 )
 
+from mainsite.views_lti import (
+    ApplicationLaunchView,
+    LtiProfile,
+    XFrameExemptOIDCLoginInitView,
+)
+
 from django.apps import apps
 from django.conf import settings
 from django.conf.urls import include, url
@@ -56,6 +63,8 @@ from mainsite.oauth2_api import (
     PublicRegisterApiView,
 )
 from oidc.oidc_views import OidcView
+
+from lti_tool.views import jwks
 
 badgr_admin.autodiscover()
 # make sure that any view/model/form imports occur AFTER admin.autodiscover
@@ -187,17 +196,6 @@ urlpatterns = [
     url(r"^v2/", include("badgeuser.v2_api_urls"), kwargs={"version": "v2"}),
     url(r"^v2/", include("badgrsocialauth.v2_api_urls"), kwargs={"version": "v2"}),
     url(r"^v2/backpack/", include("backpack.v2_api_urls"), kwargs={"version": "v2"}),
-    # External Tools
-    url(
-        r"^v1/externaltools/",
-        include("externaltools.v1_api_urls"),
-        kwargs={"version": "v1"},
-    ),
-    url(
-        r"^v2/externaltools/",
-        include("externaltools.v2_api_urls"),
-        kwargs={"version": "v2"},
-    ),
     url(r"^upload", upload, name="image_upload"),
     url(
         r"^nounproject/(?P<searchterm>[^/]+)/(?P<page>[^/]+)$",
@@ -241,6 +239,17 @@ urlpatterns = [
     url(r"^cms/style/?$", cms_api_style, name="cms_api_style"),
     url(r"^cms/script/?$", cms_api_script, name="cms_api_script"),
     url(r"^cms/(?P<path>.+)$", call_cms_api, name="call_cms_api"),
+    # iframes
+    path("iframes/<uuid:iframe_uuid>/", iframe, name="iframe"),
+    # LTI
+    path(".well-known/jwks.json", jwks, name="jwks"),
+    path(
+        "lti/<uuid:registration_uuid>/",
+        XFrameExemptOIDCLoginInitView.as_view(),
+        name="init",
+    ),
+    path("lti/launch/", ApplicationLaunchView.as_view()),
+    path("lti/tools/profile/", LtiProfile),
     # Prometheus endpoint
     path("", include("django_prometheus.urls")),
 ]

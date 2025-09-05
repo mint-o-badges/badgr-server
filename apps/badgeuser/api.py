@@ -2,9 +2,6 @@ from collections import OrderedDict
 import datetime
 import json
 import re
-import urllib.request
-import urllib.parse
-import urllib.error
 import urllib.parse
 
 from jsonschema import ValidationError
@@ -38,6 +35,7 @@ from issuer.models import (
     LearningPath,
     LearningPathBadge,
     RequestedBadge,
+    NetworkInvite,
 )
 from issuer.serializers_v1 import IssuerStaffRequestSerializer, LearningPathSerializerV1
 from rest_framework import permissions, serializers, status
@@ -69,8 +67,6 @@ from badgeuser.serializers_v2 import (
 )
 from badgeuser.tasks import process_email_verification
 from badgrsocialauth.utils import redirect_to_frontend_error_toast
-import logging
-logger = logging.getLogger("Badgr.Events")
 from entity.api import BaseEntityDetailView, BaseEntityListView
 from entity.serializers import BaseSerializerV2
 from issuer.permissions import BadgrOAuthTokenHasScope
@@ -85,6 +81,9 @@ from mainsite.utils import (
 from mainsite.serializers import ApplicationInfoSerializer
 
 from django.core.signing import TimestampSigner
+import logging
+
+logger = logging.getLogger("Badgr.Events")
 
 RATE_LIMIT_DELTA = datetime.timedelta(minutes=5)
 
@@ -567,8 +566,10 @@ class BadgeUserEmailConfirm(BaseUserRecoveryView, BaseRedirectView):
         # Get EmailConfirmation instance
         emailconfirmation = EmailConfirmationHMAC.from_key(kwargs.get("confirm_id"))
         if emailconfirmation is None:
-            logger.warning("No email confirmation found for confirm id '%s'",
-                           kwargs.get("confirm_id"))
+            logger.warning(
+                "No email confirmation found for confirm id '%s'",
+                kwargs.get("confirm_id"),
+            )
             return redirect_to_frontend_error_toast(
                 request,
                 "Your email confirmation link is invalid. Please attempt to "
@@ -581,8 +582,10 @@ class BadgeUserEmailConfirm(BaseUserRecoveryView, BaseRedirectView):
                     pk=emailconfirmation.email_address.pk
                 )
             except CachedEmailAddress.DoesNotExist:
-                logger.warning("No email confirmation email address found for confirm id '%s'",
-                               kwargs.get("confirm_id"))
+                logger.warning(
+                    "No email confirmation email address found for confirm id '%s'",
+                    kwargs.get("confirm_id"),
+                )
                 return redirect_to_frontend_error_toast(
                     request,
                     "Your email confirmation link is invalid. Please attempt "
@@ -590,8 +593,10 @@ class BadgeUserEmailConfirm(BaseUserRecoveryView, BaseRedirectView):
                 )  # 202
 
         if email_address.verified:
-            logger.info("Email address for confirm id '%s' was already verified",
-                        kwargs.get("confirm_id"))
+            logger.info(
+                "Email address for confirm id '%s' was already verified",
+                kwargs.get("confirm_id"),
+            )
             return redirect_to_frontend_error_toast(
                 request, "Your email address is already verified. You may now log in."
             )
@@ -599,8 +604,11 @@ class BadgeUserEmailConfirm(BaseUserRecoveryView, BaseRedirectView):
         # Validate 'token' syntax from query param
         matches = re.search(r"([0-9A-Za-z]+)-(.*)", token)
         if not matches:
-            logger.warning("The token '%s' for the email confirmation id '%s' is invalid",
-                           token, kwargs.get("confirm_id"))
+            logger.warning(
+                "The token '%s' for the email confirmation id '%s' is invalid",
+                token,
+                kwargs.get("confirm_id"),
+            )
             email_address.send_confirmation(request=request, signup=False)
             return redirect_to_frontend_error_toast(
                 request,
@@ -610,8 +618,11 @@ class BadgeUserEmailConfirm(BaseUserRecoveryView, BaseRedirectView):
         uidb36 = matches.group(1)
         key = matches.group(2)
         if not (uidb36 and key):
-            logger.warning("The token '%s' for the email confirmation id '%s' is invalid",
-                           token, kwargs.get("confirm_id"))
+            logger.warning(
+                "The token '%s' for the email confirmation id '%s' is invalid",
+                token,
+                kwargs.get("confirm_id"),
+            )
             email_address.send_confirmation(request=request, signup=False)
             return redirect_to_frontend_error_toast(
                 request,
@@ -622,8 +633,10 @@ class BadgeUserEmailConfirm(BaseUserRecoveryView, BaseRedirectView):
         # Get User instance from literal 'token' value
         user = self._get_user(uidb36)
         if user is None or not default_token_generator.check_token(user, key):
-            logger.warning("The confirmation link for the confirm id '%s' has expired or is invalid",
-                        kwargs.get("confirm_id"))
+            logger.warning(
+                "The confirmation link for the confirm id '%s' has expired or is invalid",
+                kwargs.get("confirm_id"),
+            )
             email_address.send_confirmation(request=request, signup=False)
             return redirect_to_frontend_error_toast(
                 request,
@@ -632,8 +645,11 @@ class BadgeUserEmailConfirm(BaseUserRecoveryView, BaseRedirectView):
             )
 
         if email_address.user != user:
-            logger.warning("The email confirmation token '%s' of confirm id '%s' belongs to another user",
-                           token, kwargs.get("confirm_id"))
+            logger.warning(
+                "The email confirmation token '%s' of confirm id '%s' belongs to another user",
+                token,
+                kwargs.get("confirm_id"),
+            )
             return redirect_to_frontend_error_toast(
                 request,
                 "Your email confirmation token is associated with an unexpected "
@@ -1206,5 +1222,29 @@ class BadgeUserConfirmStaffRequest(BaseEntityDetailView, BaseRedirectView):
 
         issuer_id = kwargs.get("entity_id")
         intended_redirect = f"/issuer/issuers/{issuer_id}/staff"
+
+        return self._prepare_redirect(request, badgrapp, intended_redirect)
+
+
+class ConfirmNetworkInvitation(BaseEntityDetailView, BaseRedirectView):
+    permission_classes = (permissions.AllowAny,)
+    v1_serializer_class = BaseSerializer
+    v2_serializer_class = BaseSerializerV2
+
+    def get(self, request, **kwargs):
+        """
+        Redirect to frontend to confirm network invitation
+        """
+        badgrapp_id = request.query_params.get("a")
+        badgrapp = BadgrApp.objects.get_by_id_or_default(badgrapp_id)
+        inviteSlug = kwargs.get("inviteSlug")
+        try:
+            invitation = NetworkInvite.objects.get(entity_id=inviteSlug)
+        except NetworkInvite.DoesNotExist:
+            pass
+        if invitation.status == invitation.Status.APPROVED:
+            intended_redirect = f"/issuer/networks/invite/{inviteSlug}?confirmed=true"
+        else:
+            intended_redirect = f"/issuer/networks/invite/{inviteSlug}"
 
         return self._prepare_redirect(request, badgrapp, intended_redirect)

@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = "==3.10.*"
 
 [manifest]
@@ -150,7 +150,9 @@ dependencies = [
     { name = "django-cors-headers" },
     { name = "django-dbbackup" },
     { name = "django-filter" },
+    { name = "django-lti" },
     { name = "django-markdownify" },
+    { name = "django-mjml" },
     { name = "django-mock-queries" },
     { name = "django-oauth-toolkit" },
     { name = "django-object-actions" },
@@ -184,6 +186,7 @@ dependencies = [
     { name = "python-resize-image" },
     { name = "pytz" },
     { name = "qrcode" },
+    { name = "ratelimit" },
     { name = "redis" },
     { name = "reportlab" },
     { name = "requests" },
@@ -235,7 +238,9 @@ requires-dist = [
     { name = "django-cors-headers", specifier = "==3.3.0" },
     { name = "django-dbbackup", specifier = ">=4.2.1" },
     { name = "django-filter", specifier = "==23.5" },
+    { name = "django-lti", specifier = ">=0.5.1" },
     { name = "django-markdownify", specifier = "==0.1.0" },
+    { name = "django-mjml", specifier = ">=1.4" },
     { name = "django-mock-queries", specifier = "==2.1.5" },
     { name = "django-oauth-toolkit", specifier = "==1.3.2" },
     { name = "django-object-actions", specifier = "==1.1.0" },
@@ -269,6 +274,7 @@ requires-dist = [
     { name = "python-resize-image", specifier = "==1.1.19" },
     { name = "pytz", specifier = ">=2021.1" },
     { name = "qrcode", specifier = ">=7.4.2" },
+    { name = "ratelimit", specifier = ">=2.2.1" },
     { name = "redis", specifier = "==4.5.0" },
     { name = "reportlab", specifier = ">=3.6.9" },
     { name = "requests", specifier = ">2.25.0" },
@@ -702,6 +708,19 @@ wheels = [
 ]
 
 [[package]]
+name = "django-lti"
+version = "0.5.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+    { name = "pylti1p3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/88/21/e6afa93f3aab71418b41c90f10ed47631c3cd1311dcfaea6d037ee3b2579/django-lti-0.5.1.tar.gz", hash = "sha256:11b23b86950c1a6d0d7e5e26d6268d8e444353265607c2e5a6cfaab39012eab7", size = 21132, upload-time = "2024-03-26T14:10:36.897Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8d/c4/7b0701af10cd639188e68f467023e21a5159f6889358dc7699b462779d1c/django_lti-0.5.1-py3-none-any.whl", hash = "sha256:649552e193a4ff4994e132796dd12ae7964a0efa62029cf4c33d2d56d7c210f5", size = 23125, upload-time = "2024-03-26T14:10:33.172Z" },
+]
+
+[[package]]
 name = "django-markdownify"
 version = "0.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -711,6 +730,18 @@ dependencies = [
     { name = "markdown" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/94/02/8982ebfa74145ab6f5ad92358427c3a6d71150b9a60454455d86d7c90c92/django-markdownify-0.1.0.tar.gz", hash = "sha256:69f88aa569ea2f6379d56404215178008693ddf28068953423b40544030a9af3", size = 2975, upload-time = "2016-01-19T18:57:22.918Z" }
+
+[[package]]
+name = "django-mjml"
+version = "1.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/29/bb/681fe51fd595d0058cbae186d06b4cd2238708da48e013bd24931a9d9cde/django_mjml-1.4.tar.gz", hash = "sha256:a805b3721de92a4972bb6bd4a3bffa91579420e48297a55f3ffef6d8e926b0b4", size = 8561, upload-time = "2025-04-05T22:07:34.193Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bd/71/03c2d5bdeb156a557c14eef35fad799df9cb4fee8a64ac7b02d0ddbbd4b4/django_mjml-1.4-py3-none-any.whl", hash = "sha256:09dc440fcec64f3656b17646439336e6c15c5987103dfb6fe23eb1f1bf734d11", size = 7994, upload-time = "2025-04-05T22:07:32.812Z" },
+]
 
 [[package]]
 name = "django-mock-queries"
@@ -921,6 +952,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/58/b9/171dbb07e18c6346090a37f03c7e74410a1a56123f847efed59af260a298/jsonschema-2.6.0.tar.gz", hash = "sha256:6ff5f3180870836cae40f06fa10419f557208175f13ad7bc26caa77beb1f6e02", size = 53252, upload-time = "2017-02-05T12:23:22.377Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/77/de/47e35a97b2b05c2fadbec67d44cfcdcd09b8086951b331d82de90d2912da/jsonschema-2.6.0-py2.py3-none-any.whl", hash = "sha256:000e68abd33c972a5248544925a0cae7d1125f9bf6c58280d37546b946769a08", size = 39524, upload-time = "2017-02-05T12:23:20.391Z" },
+]
+
+[[package]]
+name = "jwcrypto"
+version = "1.5.6"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cryptography" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e1/db/870e5d5fb311b0bcf049630b5ba3abca2d339fd5e13ba175b4c13b456d08/jwcrypto-1.5.6.tar.gz", hash = "sha256:771a87762a0c081ae6166958a954f80848820b2ab066937dc8b8379d65b1b039", size = 87168, upload-time = "2024-03-06T19:58:31.831Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cd/58/4a1880ea64032185e9ae9f63940c9327c6952d5584ea544a8f66972f2fda/jwcrypto-1.5.6-py3-none-any.whl", hash = "sha256:150d2b0ebbdb8f40b77f543fb44ffd2baeff48788be71f67f03566692fd55789", size = 92520, upload-time = "2024-03-06T19:58:29.765Z" },
 ]
 
 [[package]]
@@ -1213,6 +1257,21 @@ wheels = [
 ]
 
 [[package]]
+name = "pylti1p3"
+version = "2.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "jwcrypto" },
+    { name = "pyjwt" },
+    { name = "requests" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/97/14/56eed10e98dc38a0ce376dfcebd079d3c6692e609ba1bb553116aba9d9db/PyLTI1p3-2.0.0.tar.gz", hash = "sha256:ebb95ff1397c21190f63cf47427e3b57cdc80e0fc524f2e35e68d78c603cae5a", size = 49730, upload-time = "2022-11-20T23:53:22.089Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0f/bb/09247495a87dfabcab069309b6b44b0d5b72109076ff49a6a25bc06e6c31/PyLTI1p3-2.0.0-py2.py3-none-any.whl", hash = "sha256:e0c6c53f8633abc3a20c20c71d7d26a4c946c9e8d33143dd8b1a5a1c3797e89a", size = 61452, upload-time = "2022-11-20T23:53:19.098Z" },
+]
+
+[[package]]
 name = "pymemcache"
 version = "4.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1381,6 +1440,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/8f/b2/7fc2931bfae0af02d
 wheels = [
     { url = "https://files.pythonhosted.org/packages/dd/b8/d2d6d731733f51684bbf76bf34dab3b70a9148e8f2cef2bb544fccec681a/qrcode-8.2-py3-none-any.whl", hash = "sha256:16e64e0716c14960108e85d853062c9e8bba5ca8252c0b4d0231b9df4060ff4f", size = 45986, upload-time = "2025-05-01T15:44:22.781Z" },
 ]
+
+[[package]]
+name = "ratelimit"
+version = "2.2.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ab/38/ff60c8fc9e002d50d48822cc5095deb8ebbc5f91a6b8fdd9731c87a147c9/ratelimit-2.2.1.tar.gz", hash = "sha256:af8a9b64b821529aca09ebaf6d8d279100d766f19e90b5059ac6a718ca6dee42", size = 5251, upload-time = "2018-12-17T18:55:49.675Z" }
 
 [[package]]
 name = "redis"

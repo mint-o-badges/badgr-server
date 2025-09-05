@@ -1,5 +1,4 @@
 from cryptography.fernet import Fernet
-import sys
 import os
 from datetime import datetime
 import pytz
@@ -49,12 +48,13 @@ INSTALLED_APPS = [
     "entity",
     "issuer",
     "backpack",
-    "externaltools",
     # api docs
     "apispec_drf",
     # deprecated
     "composition",
     "django_filters",
+    "lti_tool",
+    "mjml",
 ]
 
 MIDDLEWARE = [
@@ -75,6 +75,8 @@ MIDDLEWARE = [
     "badgeuser.middleware.InactiveUserMiddleware",
     # 'mainsite.middleware.TrailingSlashMiddleware',
     "django_prometheus.middleware.PrometheusAfterMiddleware",
+    "lti_tool.middleware.LtiLaunchMiddleware",
+    "mainsite.middleware.ExceptionLoggingMiddleware",
 ]
 
 DBBACKUP_STORAGE = "django.core.files.storage.FileSystemStorage"
@@ -217,11 +219,7 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_EXPOSE_HEADERS = ("link",)
 
-CORS_ALLOW_HEADERS = [
-    *default_headers,
-    'x-altcha-spam-filter',
-    'x-oeb-altcha'
-]
+CORS_ALLOW_HEADERS = [*default_headers, "x-altcha-spam-filter", "x-oeb-altcha"]
 
 ##
 #
@@ -255,40 +253,28 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "handlers": {
-        "mail_admins": {
-            "level": "ERROR",
-            "filters": [],
-            "class": "django.utils.log.AdminEmailHandler",
-        },
+        # Only logs to the console appear in the docker / grafana logs
         "console": {
-            "level": "DEBUG",
+            "level": "INFO",
+            "formatter": "default",
             "class": "logging.StreamHandler",
-            "stream": sys.stdout,
         },
     },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
     "loggers": {
-        "django.request": {
-            "handlers": ["mail_admins"],
-            "level": "ERROR",
-            "propagate": True,
-        },
         # Badgr.Events emits all badge related activity
         "Badgr.Events": {
             "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
+            "level": "DEBUG",
         },
     },
     "formatters": {
-        "default": {"format": "%(asctime)s %(levelname)s %(module)s %(message)s"},
-        "json": {
-            "()": "mainsite.formatters.JsonFormatter",
-            "format": "%(asctime)s",
-            "datefmt": "%Y-%m-%dT%H:%M:%S%z",
-        },
+        "default": {"format": "%(asctime)s %(levelname)s %(module)s %(message)s"}
     },
 }
-
 
 ##
 #
@@ -494,8 +480,6 @@ GDPR_COMPLIANCE_NOTIFY_ON_FIRST_AWARD = (
 BADGR_APPROVED_ISSUERS_ONLY = False
 
 # Email footer operator information
-PRIVACY_POLICY_URL = None
-TERMS_OF_SERVICE_URL = None
 GDPR_INFO_URL = None
 OPERATOR_STREET_ADDRESS = None
 OPERATOR_NAME = None
@@ -568,6 +552,14 @@ ALTCHA_MINNUMBER = 10000
 ALTCHA_MAXNUMBER = 100000
 
 # CMS contents
-CMS_API_BASE_URL = ''
-CMS_API_BASE_PATH = ''
-CMS_API_KEY = ''
+CMS_API_BASE_URL = ""
+CMS_API_BASE_PATH = ""
+CMS_API_KEY = ""
+
+# path to webcomponents assets build in badgr-ui
+WEBCOMPONENTS_ASSETS_PATH = "/"
+
+MJML_BACKEND_MODE = "cmd"
+# make sure to not load any fonts automatically
+MJML_EXEC_CMD = ["mjml", "--config.fonts", "{}"]
+# MJML_CHECK_CMD_ON_STARTUP = False

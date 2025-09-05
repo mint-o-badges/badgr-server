@@ -1,12 +1,7 @@
 # encoding: utf-8
-import json
-from urllib.parse import urlparse
-
-from django.conf import settings
 from django.http import Http404, JsonResponse
-from apps.mainsite.views import call_aiskills_api
+from apps.backpack.utils import get_skills_tree
 import logging
-logger = logging.getLogger("Badgr.Events")
 import datetime
 
 from django.utils import timezone
@@ -50,6 +45,8 @@ from apispec_drf.decorators import (
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAdmin
 
 from badgeuser.models import BadgeUser
+
+logger = logging.getLogger("Badgr.Events")
 
 _TRUE_VALUES = ["true", "t", "on", "yes", "y", "1", 1, 1.0, True]
 _FALSE_VALUES = ["false", "f", "off", "no", "n", "0", 0, 0.0, False]
@@ -215,8 +212,13 @@ class BackpackAssertionList(BaseEntityListView):
             error_name = e.get("name", "")
             error_result = e.get("result", "")
 
-        logger.warning("Invalid badge uploaded. Image data: '%s'; user_entity_id: '%s'; error_name: '%s'; error_result: '%s'",
-                       image_data, user_entity_id, error_name, error_result)
+        logger.warning(
+            "Invalid badge uploaded. Image data: '%s'; user_entity_id: '%s'; error_name: '%s'; error_result: '%s'",
+            image_data,
+            user_entity_id,
+            error_name,
+            error_result,
+        )
 
     def get_context_data(self, **kwargs):
         context = super(BackpackAssertionList, self).get_context_data(**kwargs)
@@ -336,39 +338,9 @@ class BackpackSkillList(BackpackAssertionList):
         except Exception:
             lang = "de"
 
-        # sum up studyloads by esco uri, removing esco uri host part
-        # because the ai skills api does not use it
-        skill_studyloads = {}
-        for instance in instances:
-            if len(instance.badgeclass.cached_extensions()) > 0:
-                for extension in instance.badgeclass.cached_extensions():
-                    if extension.name == "extensions:CompetencyExtension":
-                        extension_json = json.loads(extension.original_json)
-                        for competency in extension_json:
-                            if competency["framework_identifier"]:
-                                esco_uri = competency["framework_identifier"]
-                                parsed_uri = urlparse(esco_uri)
-                                uri_path = parsed_uri.path
-                                studyload = competency["studyLoad"]
-                                try:
-                                    skill_studyloads[uri_path] += studyload
-                                except KeyError:
-                                    skill_studyloads[uri_path] = studyload
+        skills = get_skills_tree(instances, lang)
 
-        if not len(skill_studyloads.keys()) > 0:
-            return JsonResponse({"skills": []})
-
-        # get esco trees from ai skills api
-        endpoint = getattr(settings, "AISKILLS_ENDPOINT_TREE")
-        payload = {"concept_uris": list(skill_studyloads.keys()), "lang": lang}
-        tree_json = call_aiskills_api(endpoint, "POST", payload)
-        tree = json.loads(tree_json.content.decode())
-
-        # extend with our studyloads
-        for skill in tree["skills"]:
-            skill["studyLoad"] = skill_studyloads[skill["concept_uri"]]
-
-        return JsonResponse(tree)
+        return JsonResponse(skills)
 
 
 class BadgesFromUser(BaseEntityListView):
@@ -565,8 +537,13 @@ class ShareBackpackAssertion(BaseEntityDetailView):
             )
 
         share.save()
-        logger.info("Badge '%s' shared by '%s' at '%s' from '%s'",
-                    badge.entity_id, provider, datetime.datetime.now(), source)
+        logger.info(
+            "Badge '%s' shared by '%s' at '%s' from '%s'",
+            badge.entity_id,
+            provider,
+            datetime.datetime.now(),
+            source,
+        )
 
         if redirect:
             headers = {"Location": share_url}

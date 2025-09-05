@@ -1,562 +1,122 @@
-{% extends "email/base.html" %} {% load static %} {% block main %}
-<div
-  style="
-    background: #ffffff;
-    background-color: #ffffff;
-    margin: 0px auto;
-    max-width: 600px;
-  "
->
-  <table
-    align="center"
-    border="0"
-    cellpadding="0"
-    cellspacing="0"
-    role="presentation"
-    style="background: #f5f5f5; background-color: #f5f5f5; width: 100%"
-  >
-    <tbody>
-      <tr>
-        <td
-          style="
-            border-left: 1px solid #dbd8df;
-            border-right: 1px solid #dbd8df;
-            direction: ltr;
-            font-size: 0px;
-            padding: 25px;
-            text-align: center;
-            vertical-align: top;
-          "
-        >
-          <!-- Logo Section -->
-          <table
-            border="0"
-            cellpadding="0"
-            cellspacing="0"
-            role="presentation"
-            style="vertical-align: top"
-            width="100%"
-          >
-            <tbody>
-              <tr>
-                <td
-                  align="right"
-                  style="
-                    font-size: 0px;
-                    padding: 10px 10px 10px 25px;
-                    word-break: break-word;
-                  "
-                >
-                  <a
-                    href="https://openbadges.education"
-                    target="_blank"
-                    style="display: inline-block"
-                  >
-                    <img
-                      src="{% static '/images/Logo-Oeb.png' %}"
-                      alt="Logo"
-                      style="
-                        width: auto;
-                        height: 60px;
-                        max-height: 60px;
-                        display: block;
-                        outline: none;
-                        text-decoration: none;
-                        border: 0;
-                      "
-                    />
-                  </a>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          <!-- Header Section -->
-          <table
-            border="0"
-            cellpadding="0"
-            cellspacing="0"
-            role="presentation"
-            style="width: 100%; margin-bottom: 25px"
-          >
-            <tbody>
-              <tr>
-                <td
-                  align="center"
-                  style="font-size: 0px; word-break: break-word"
-                >
-                  <div
-                    style="
-                      font-family: Rubik, Arial, sans-serif;
-                      font-size: 24px;
-                      font-weight: 500;
-                      line-height: 130%;
-                      text-align: left;
-                      color: #323232;
-                      width: 520px;
-                      margin: auto;
-                    "
-                  >
-                    <span style="font-weight: 900">
-                      Herzlichen Glückwunsch
-                    </span>
-                    {% if name %}
-                    <br />
-                    <span> {{ name }}, </span>
-                    {% else %} , {% endif %}
-                    <br />
-                    <span
-                      >du hast einen
-                      <span style="font-weight: 800">
-                        {%if badge_category == "learningpath" %} MICRO DEGREE
-                        {%else %} BADGE {% endif %}
-                      </span>
-                      erhalten!</span
-                    >
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          <!-- Badge Info Section -->
-          <table
-            align="center"
-            border="0"
-            cellpadding="0"
-            cellspacing="0"
-            role="presentation"
-            style="
-              width: 520px;
-              background-color: #ffffff;
-              border-radius: 10px;
-              margin: auto;
-            "
-          >
-            <tbody>
-              <tr>
-                <td style="padding: 0">
-                  <table
-                    align="center"
-                    border="0"
-                    cellpadding="0"
-                    cellspacing="0"
-                    role="presentation"
-                    style="
-                      width: 100%;
-                      background-color: #ffffff;
-                      border-radius: 10px;
-                    "
-                  >
-                    <tbody>
-                      <tr>
-                        <td align="left" width="175" style="padding: 20px">
-                          <a
-                            href="{{ badge_instance_url }}"
-                            target="_blank"
-                            style="text-decoration: none; display: inline-block"
-                          >
-                            <img
-                              alt="Badge Image"
-                              src="{{ image_url }}"
-                              style="
-                                border: 0;
-                                display: block;
-                                outline: none;
-                                text-decoration: none;
-                                height: auto;
-                                width: 175px;
-                              "
-                            />
-                          </a>
-                        </td>
-                        <td
-                          align="left"
-                          style="
-                            padding: 20px 20px 20px 0;
-                            vertical-align: middle;
-                          "
-                        >
-                          <span
-                            style="
-                              font-family: Rubik, Arial, sans-serif;
-                              font-size: 18px;
-                              font-weight: 400;
-                              line-height: 120%;
-                              color: #323232;
-                              font-style: italic;
-                              display: block;
-                            "
-                          >
-                            Vergeben von:
-                          </span>
-                          <div
-                            style="
-                              font-family: Rubik, Arial, sans-serif;
-                              font-size: 16px;
-                              font-weight: 600;
-                              line-height: 24px;
-                              color: #323232;
-                              margin-top: 5px;
-                            "
-                          >
-                            <a
-                              href="{{ issuer_detail }}"
-                              style="
-                                color: #323232;
-                                font-weight: 600;
-                                font-size: 18px;
-                                text-decoration: none;
-                                font-style: italic;
-                              "
-                            >
-                              {{ issuer_name }}
-                            </a>
-                          </div>
-                          {% if issuer_image_url %}
-                          <img
-                            alt="Issuer Logo"
-                            src="{{ issuer_image_url }}"
-                            style="
-                              border: 0;
-                              display: block;
-                              outline: none;
-                              text-decoration: none;
-                              width: 80px;
-                              height: auto;
-                              margin-top: 10px;
-                            "
-                          />
-                          {% endif %}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </td>
-              </tr>
-
-              {% if badge_category != "learningpath" %}
-
-              <tr>
-                <td style="padding: 0 25px 0px 25px">
-                  <div
-                    style="
-                      font-family: Rubik, Arial, sans-serif;
-                      font-size: 18px;
-                      font-weight: 400;
-                      line-height: 130%;
-                      text-align: left;
-                      color: #323232;
-                    "
-                  >
-                    <p style="margin: 0 0 15px 0">
-                      Du hast erfolgreich an dem Lernangebot
-                      <span style="font-weight: 600">{{ badge_name }}</span>
-                      teilgenommen.
-                    </p>
-                  </div>
-                </td>
-              </tr>
-
-              {% endif %}
-
-              <!-- Competencies Section -->
-              {% if badge_competencies %}
-              <tr>
-                <td style="padding: 0 25px">
-                  <p
-                    style="
-                      font-family: Rubik, Arial, sans-serif;
-                      font-weight: 400;
-                      font-size: 18px;
-                      line-height: 120%;
-                      color: #323232;
-                      text-align: left;
-                      margin: 0 0 15px 0;
-                    "
-                  >
-                    Dabei hast du folgende
-                    <span style="font-weight: 600">Kompetenzen</span> gestärkt:
-                  </p>
-                </td>
-              </tr>
-
-              {% for item in badge_competencies %}
-              <tr>
-                <td style="padding: 0 25px 16px 25px">
-                  <div
-                    style="
-                      border-radius: 10px;
-                      border: 1px solid #492e98;
-                      background-color: #f5f5f5;
-                    "
-                  >
-                    <table
-                      border="0"
-                      cellpadding="0"
-                      cellspacing="0"
-                      width="100%"
-                    >
-                      <tr>
-                        <td
-                          align="left"
-                          style="padding: 16px; vertical-align: middle"
-                        >
-                          <span
-                            style="
-                              font-family: Rubik, Arial, sans-serif;
-                              font-size: 14px;
-                              font-weight: 500;
-                              line-height: 15.6px;
-                              color: #323232;
-                              display: block;
-                            "
-                          >
-                            {{ item.name }} {% if item.framework == "esco" %}
-                            <a
-                              href="{{ item.framework_identifier }}"
-                              style="color: #1400ff"
-                            >
-                              [E]
-                            </a>
-                            {% endif %}
-                          </span>
-                        </td>
-                        <td
-                          align="right"
-                          style="
-                            padding: 16px;
-                            text-align: right;
-                            vertical-align: middle;
-                            width: 100px;
-                          "
-                        >
-                          <table
-                            border="0"
-                            cellpadding="0"
-                            cellspacing="0"
-                            style="margin-left: auto"
-                          >
-                            <tr>
-                              <td
-                                align="right"
-                                style="width: 14px; vertical-align: middle"
-                              >
-                                <img
-                                  src="{% static '/images/clock-icon.png' %}"
-                                  alt="Clock"
-                                  width="14"
-                                  style="
-                                    display: inline-block;
-                                    vertical-align: middle;
-                                    border: 0;
-                                  "
-                                />
-                              </td>
-                              <td
-                                align="right"
-                                style="
-                                  padding-left: 5px;
-                                  vertical-align: middle;
-                                "
-                              >
-                                <span
-                                  style="
-                                    font-family: Rubik, Arial, sans-serif;
-                                    font-size: 11px;
-                                    font-weight: 300;
-                                    line-height: 15px;
-                                    color: #492e98;
-                                    display: inline-block;
-                                    vertical-align: middle;
-                                  "
-                                >
-                                  {{item.studyLoad}}
-                                </span>
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                    </table>
-                  </div>
-                </td>
-              </tr>
-              {% endfor %} {% endif %}
-            </tbody>
-          </table>
-
-          {% if badge_category == "learningpath" %}
-          <tr>
-            <td
-              align="left"
-              style="
-                border-left: 1px solid #dbd8df;
-                border-right: 1px solid #dbd8df;
-                direction: ltr;
-                padding-left: 25px;
-                padding-bottom: 10px;
-              "
-            >
-              <table border="0" cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                  <td style="padding-left: 16px">
-                    <div>
-                      <a
-                        href="{{ activate_url }}"
-                        target="_blank"
-                        style="
-                          background: #492e98;
-                          color: #ffffff;
-                          font-family: Rubik, Arial, sans-serif;
-                          font-size: 16px;
-                          font-weight: 600;
-                          line-height: 120%;
-                          margin: 0;
-                          text-decoration: none;
-                          text-transform: none;
-                          display: inline-block;
-                          padding: 15px 40px;
-                          border-radius: 10px;
-                        "
-                      >
-                        {{ call_to_action_label }}
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td align="left" style="padding: 16px">
-                    <p
-                      style="
-                        font-family: Rubik, Arial, sans-serif;
-                        font-size: 18px;
-                        font-weight: 400;
-                        line-height: 130%;
-                        text-align: left;
-                        color: #323232;
-                        margin: 0;
-                        font-style: italic;
-                        width: 520px;
-                      "
-                    >
-                      Im Anhang dieser Mail findest du neben der
-                      <span style="font-weight: 600"> Micro-Degree-Datei </span>
-                      ein <span style="font-weight: 600">PDF-Zertifikat</span>,
-                      <span>das deinen Lernerfolg ebenfalls ausweist</span>.
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          {% else %}
-          <tr>
-            <td
-              align="center"
-              style="
-                border-left: 1px solid #dbd8df;
-                border-right: 1px solid #dbd8df;
-              "
-            >
-              <p
-                style="
-                  font-family: Rubik, Arial, sans-serif;
-                  font-size: 18px;
-                  font-weight: 400;
-                  line-height: 130%;
-                  text-align: left;
-                  color: #492e98;
-                  margin: 0;
-                  width: 520px;
-                "
-              >
-                Im Anhang dieser Mail findest du deine
-                <span style="font-weight: 600"> Badge-Datei </span> und das
-                zugehörige
-                <span style="font-weight: 600">PDF-Zertifikat</span>
-                <span>zum Herunterladen</span>.
-              </p>
-            </td>
-          </tr>
-
-          <tr>
-            <td
-              align="center"
-              style="
-                padding: 25px;
-                padding-top: 35px;
-                border-left: 1px solid #dbd8df;
-                border-right: 1px solid #dbd8df;
-              "
-            >
-              <table
-                border="0"
-                cellpadding="0"
-                cellspacing="0"
-                width="100%"
-                style="
-                  background-color: #ccd7ff;
-                  border-radius: 10px;
-                  width: 520px;
-                "
-              >
-                <tr>
-                  <td style="padding: 16px">
-                    <p
-                      style="
-                        font-family: Rubik, Arial, sans-serif;
-                        font-size: 14px;
-                        font-weight: 400;
-                        line-height: 20.8px;
-                        text-align: left;
-                        color: #323232;
-                        margin: 0 0 15px 0;
-                      "
-                    >
-                      Alle deine erhaltenen Badges kannst du auf
-                      <a
-                        href="https://openbadges.education/recipient/badges"
-                        target="_blank"
-                        style="color: #1400ff; text-decoration: underline"
-                      >
-                        Open Educational Badges</a
-                      >
-                      in deinem Rucksack sammeln und mit anderen teilen. Lege
-                      dafür einfach kostenlos einen Account an:
-                    </p>
-                    <div style="text-align: center">
-                      <a
-                        href="{{ activate_url }}"
-                        target="_blank"
-                        style="
-                          background: #492e98;
-                          color: #ffffff;
-                          font-family: Rubik, Arial, sans-serif;
-                          font-size: 16px;
-                          font-weight: 600;
-                          line-height: 120%;
-                          margin: 0;
-                          text-decoration: none;
-                          text-transform: none;
-                          display: block;
-                          padding: 15px 40px;
-                          border-radius: 10px;
-                        "
-                      >
-                        {{ call_to_action_label }}
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          {% endif %}
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+{% extends "email/base.html" %}
+{% load static %}
+{% load mjml %}
+{% mjml %}
+{% block main %}
+    <mj-section>
+    <mj-column>
+    <mj-image src="{% static '/images/Logo-Oeb.png' %}" alt="Logo" href="https://openbadges.education" padding-right="25px" width="150px" height="77px" align="right" />
+    <mj-text font-size="24px">
+    <span style="font-weight: bold;">Herzlichen Glückwunsch</span>
+    {% if name %}
+        <br />
+        <span>{{ name }},</span>
+    {% else %}
+        ,
+    {% endif %}
+    <br />
+    du hast einen
+    <span style="font-weight: bold;">
+        {% if badge_category == "learningpath" %}
+            MICRO DEGREE
+        {% else %}
+            BADGE
+        {% endif %}
+    </span> erhalten!
+    </mj-text>
+    </mj-column>
+    </mj-section>
+    <mj-section padding="0px 41px">
+    <mj-column background-color="#ffffff" padding="0px 10px">
+    <mj-image src="{{ image_url }}" alt="Badge Logo" href="{{ badge_instance_url }}" align="center" padding="32px 0px" width="175px" height="175px" />
+    </mj-column>
+    </mj-section>
+    {% if badge_category != "learningpath" %}
+        <mj-section padding="0px 41px">
+        <mj-column background-color="#ffffff">
+        <mj-text padding-top="0px">
+        Du hast erfolgreich an dem Lernangebot
+        <span style="font-weight: 500;">{{ badge_name }}</span> teilgenommen.
+        </mj-text>
+        </mj-column>
+        </mj-section>
+    {% endif %}
+    {% if badge_competencies %}
+        <mj-section padding="0px 41px">
+        <mj-column background-color="#ffffff">
+        <mj-text>
+        Dabei hast du folgende <span style="font-weight: 500;">Kompetenzen</span> gestärkt:
+        </mj-text>
+        </mj-column>
+        </mj-section>
+        <mj-section padding="0px 41px" padding-bottom="16px">
+        {% for item in badge_competencies %}
+            <mj-group background-color="#ffffff">
+            <mj-column width="70%" inner-background-color="#f5f6fa" padding="10px 0px 10px 25px" inner-border="1px solid #492e98" inner-border-right="0">
+            <mj-text font-weight="500">
+            {{ item.name }}
+            {% if item.framework == "esco" %}
+                <a href="{{ item.framework_identifier }}"
+                   style="color:#1400ff;
+                          text-decoration:none">[E]</a>
+            {% endif %}
+            </mj-text>
+            </mj-column>
+            <mj-column width="15%" inner-background-color="#f5f6fa" padding="10px 0px" inner-border="1px solid #492e98" inner-border-right="0" inner-border-left="0">
+            <mj-text color="#492e98" align="right" padding-right="0px" padding-left="0px">
+            {{ item.studyLoad }}
+            </mj-text>
+            </mj-column>
+            <mj-column width="15%" inner-background-color="#f5f6fa" padding="10px 25px 10px 0px" inner-border="1px solid #492e98" inner-border-left="0">
+            <mj-image src="{% static '/images/clock-icon.png' %}" alt="Clock" width="24px" height="24px" align="left" padding-right="10px" padding-left="10px" />
+            </mj-column>
+            </mj-group>
+        {% endfor %}
+        </mj-section>
+    {% endif %}
+    <mj-section text-align="left" padding-bottom="0px">
+    {% if issuer_image_url %}
+        <mj-column vertical-align="middle" width="107px">
+        <mj-image src="{{ issuer_image_url }}" alt="Logo" href="{{ badge_instance_url }}" width="80px" height="80px" padding-right="0px" padding-bottom="0px" align="left" border="1px solid #ffffff" />
+        </mj-column>
+    {% endif %}
+    <mj-column vertical-align="middle">
+    <mj-text font-style="italic" padding-bottom="0px">Vergeben von:</mj-text>
+    <mj-text font-weight="500" padding-top="0px"><a href="{{ issuer_detail }}"
+   style="text-decoration: none;
+          color: inherit">{{ issuer_name }}</a></mj-text>
+    </mj-column>
+    </mj-section>
+    {% if badge_category == "learningpath" %}
+        <mj-section background-color="#f5f5f5">
+        <mj-column>
+        <mj-button align="left" href="{{ activate_url }}">{{ call_to_action_label }}</mj-button>
+        <mj-text font-style="italic">
+        Im Anhang dieser Mail findest du neben der <span style="font-weight: bold;">Micro-Degree-Datei</span> ein <span style="font-weight: bold;">PDF-Zertifikat</span>, das deinen Lernerfolg ebenfalls ausweist.
+        </mj-text>
+        </mj-column>
+        </mj-section>
+    {% else %}
+        <mj-section>
+        <mj-column>
+        <mj-text>
+        Im Anhang dieser Mail findest du deine <span style="font-weight: bold;">Badge-Datei</span> und das zugehörige <span style="font-weight: bold;">PDF-Zertifikat</span> zum Herunterladen.
+        </mj-text>
+        </mj-column>
+        </mj-section>
+        <mj-section padding="0px 41px 32px 41px">
+        <mj-column border-radius="10px" background-color="#ccd7ff">
+        <mj-text>Alle deine erhaltenen Badges kannst du auf
+        <a href="https://openbadges.education/recipient/badges?tab=badges"
+           target="_blank"
+           style="color:#1400ff;
+                  text-decoration:underline">Open Educational Badges</a>
+        in deinem Rucksack sammeln und mit anderen teilen. Lege dafür einfach kostenlos einen Account an:</mj-text>
+        <mj-button width="100%" href="{{ activate_url }}">{{ call_to_action_label }}</mj-button>
+        </mj-column>
+        </mj-section>
+    {% endif %}
 {% endblock main %}
+{% block button %}
+{% endblock button %}
+{% endmjml %}
