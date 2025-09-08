@@ -52,7 +52,7 @@
         <mj-section padding="0px 41px">
         <mj-column background-color="#ffffff" padding="10px 25px">
         {% for item in badge_competencies %}
-            <mj-table padding="0px" cellspacing="25px" cellpadding="10px" border="1px solid #492e98" padding-bottom="10px">
+            <mj-table padding="0" cellspacing="10" cellpadding="10" border="1px solid #492e98" padding-bottom="10px">
             <tr style="background-color: #f5f6fa">
                 <td style="font-weight: 500;">
                     {{ item.name }}
@@ -62,15 +62,20 @@
                                   text-decoration:none">[E]</a>
                     {% endif %}
                 </td>
-                <td align="right" style="color: #492e98; width: 96px;">
+                <td align="right"
+                    width="96"
+                    style="padding-left: 0;
+                           color: #492e98;
+                           width: 96px">{{ item.studyLoad }}</td>
+                <td align="left" width="16" style="padding-left: 0;">
                     <img src="{% static '/images/clock-icon.png' %}"
                          alt="Clock"
-                         width="16px"
-                         height="16px"
-                         style="padding: 0px 4px;
+                         width="16"
+                         height="16"
+                         style="width: 16px;
+                                height: 16px;
                                 vertical-align: middle;
                                 margin-bottom: 2px" />
-                    {{ item.studyLoad }}
                 </td>
             </tr>
             </mj-table>

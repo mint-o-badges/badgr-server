@@ -6,6 +6,9 @@
 {% mjml %}
 <mjml lang="{{ LANGUAGE_CODE }}">
 <mj-head>
+<mj-raw>
+<meta charset="UTF-8">
+</mj-raw>
 <mj-title>
 {% firstof email_title 'openbadges.education' %}
 </mj-title>
@@ -32,7 +35,7 @@
     {% block button_text %}
     {% endblock button_text %}
     </mj-button>
-    <mj-text color="#aaaaaa" font-size="12px" align="center">
+    <mj-text color="#323232" font-size="12px" align="center">
     Alternativ kannst du diesen Link kopieren und in deinen Browser einfügen:
     <br />
     <b>
