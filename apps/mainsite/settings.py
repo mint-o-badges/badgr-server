@@ -48,13 +48,13 @@ INSTALLED_APPS = [
     "entity",
     "issuer",
     "backpack",
-    "externaltools",
     # api docs
     "apispec_drf",
     # deprecated
     "composition",
     "django_filters",
     "lti_tool",
+    "mjml",
 ]
 
 MIDDLEWARE = [
@@ -219,11 +219,7 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_EXPOSE_HEADERS = ("link",)
 
-CORS_ALLOW_HEADERS = [
-    *default_headers,
-    'x-altcha-spam-filter',
-    'x-oeb-altcha'
-]
+CORS_ALLOW_HEADERS = [*default_headers, "x-altcha-spam-filter", "x-oeb-altcha"]
 
 ##
 #
@@ -254,31 +250,29 @@ FIXTURE_DIRS = [
 ##
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
         # Only logs to the console appear in the docker / grafana logs
-        'console': {
-            'level': 'INFO',
-            'formatter': 'default',
-            'class': 'logging.StreamHandler'
+        "console": {
+            "level": "INFO",
+            "formatter": "default",
+            "class": "logging.StreamHandler",
         },
     },
     "root": {
         "handlers": ["console"],
         "level": "INFO",
     },
-    'loggers': {
+    "loggers": {
         # Badgr.Events emits all badge related activity
-        'Badgr.Events': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
+        "Badgr.Events": {
+            "handlers": ["console"],
+            "level": "DEBUG",
         },
     },
-    'formatters': {
-        'default': {
-            'format': '%(asctime)s %(levelname)s %(module)s %(message)s'
-        }
+    "formatters": {
+        "default": {"format": "%(asctime)s %(levelname)s %(module)s %(message)s"}
     },
 }
 
@@ -486,8 +480,6 @@ GDPR_COMPLIANCE_NOTIFY_ON_FIRST_AWARD = (
 BADGR_APPROVED_ISSUERS_ONLY = False
 
 # Email footer operator information
-PRIVACY_POLICY_URL = None
-TERMS_OF_SERVICE_URL = None
 GDPR_INFO_URL = None
 OPERATOR_STREET_ADDRESS = None
 OPERATOR_NAME = None
@@ -560,9 +552,14 @@ ALTCHA_MINNUMBER = 10000
 ALTCHA_MAXNUMBER = 100000
 
 # CMS contents
-CMS_API_BASE_URL = ''
-CMS_API_BASE_PATH = ''
-CMS_API_KEY = ''
+CMS_API_BASE_URL = ""
+CMS_API_BASE_PATH = ""
+CMS_API_KEY = ""
 
 # path to webcomponents assets build in badgr-ui
-WEBCOMPONENTS_ASSETS_PATH = '/'
+WEBCOMPONENTS_ASSETS_PATH = "/"
+
+MJML_BACKEND_MODE = "cmd"
+# make sure to not load any fonts automatically
+MJML_EXEC_CMD = ["mjml", "--config.fonts", "{}"]
+# MJML_CHECK_CMD_ON_STARTUP = False

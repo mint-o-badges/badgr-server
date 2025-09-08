@@ -1,0 +1,7 @@
+Netzwerk-Einladung
+
+  Deine Institution {{ issuer.name }} wurde zum Netzwerk {{ network.name }} eingeladen.
+
+  Bitte bestätige die Anfrage auf Open Educational Badges über den folgenden Button.
+
+  {{ call_to_action_label }}: {{ activate_url }}

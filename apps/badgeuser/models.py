@@ -555,13 +555,6 @@ class BadgeUser(BaseVersionedEntity, AbstractUser, cachemodel.CacheModel):
         )
 
     @cachemodel.cached_method(auto_publish=True)
-    def cached_externaltools(self):
-        return [
-            a.cached_externaltool
-            for a in self.externaltooluseractivation_set.filter(is_active=True)
-        ]
-
-    @cachemodel.cached_method(auto_publish=True)
     def cached_token(self):
         user_token, created = Token.objects.get_or_create(user=self)
         return user_token.key

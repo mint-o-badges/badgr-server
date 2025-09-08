@@ -1,1 +1,6 @@
-Badge-Anfragen per QR-Code
+QR-Code-Anfragen für deinen Badge
+
+Du hast {{ number_of_open_requests }} offene QR-Code-Anfrage(n) für deinen Badge {{ badge_name }}.
+
+Bestätige die Anfragen auf Open Educational Badges über den folgenden Button:
+{{ activate_url }}
