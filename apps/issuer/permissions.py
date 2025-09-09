@@ -3,7 +3,7 @@ from django.conf import settings
 from rest_framework import permissions
 import rules
 
-from issuer.models import IssuerStaff, NetworkStaff
+from issuer.models import IssuerStaff
 
 SAFE_METHODS = ["GET", "HEAD", "OPTIONS"]
 
@@ -54,63 +54,6 @@ try:
     rules.add_perm("issuer.is_staff", is_on_staff)
 except KeyError:
     pass
-
-
-@rules.predicate
-def is_network_owner(user, network):
-    if not hasattr(network, "cached_networkstaff"):
-        return False
-    for staff_record in network.cached_networkstaff():
-        if (
-            staff_record.user_id == user.id
-            and staff_record.role == NetworkStaff.ROLE_OWNER
-        ):
-            return True
-    return False
-
-
-@rules.predicate
-def is_network_editor(user, network):
-    if not hasattr(network, "cached_networkstaff"):
-        return False
-    for staff_record in network.cached_networkstaff():
-        if staff_record.user_id == user.id and staff_record.role in (
-            NetworkStaff.ROLE_OWNER,
-            NetworkStaff.ROLE_EDITOR,
-        ):
-            return True
-    return False
-
-
-@rules.predicate
-def is_network_staff(user, network):
-    if not hasattr(network, "cached_networkstaff"):
-        return False
-    for staff_record in network.cached_networkstaff():
-        if staff_record.user_id == user.id:
-            return True
-    return False
-
-
-is_on_network_staff = is_network_owner | is_network_staff
-is_staff_editor = is_network_owner | is_network_editor
-
-
-class IsNetworkEditor(permissions.BasePermission):
-    """
-    Request.user is authorized to perform safe operations if they are staff or
-    perform unsafe operations if they are owner or editor of a network.
-    ---
-    model: Network
-    """
-
-    def has_object_permission(self, request, view, network):
-        if _is_server_admin(request):
-            return True
-        if request.method in SAFE_METHODS:
-            return request.user.has_perm("network.is_network_staff", network)
-        else:
-            return request.user.has_perm("network.is_network_editor", network)
 
 
 @rules.predicate
