@@ -1769,7 +1769,7 @@ class ImportedBadgeAssertion(
         (RECIPIENT_TYPE_URL, "url"),
     )
 
-    recipient_identifier = models.CharField(max_length=768, db_index=True)
+    recipient_identifier = models.CharField(max_length=320, db_index=True)
     recipient_type = models.CharField(
         max_length=255, choices=RECIPIENT_TYPE_CHOICES, default=RECIPIENT_TYPE_EMAIL
     )
@@ -1849,7 +1849,7 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
         (RECIPIENT_TYPE_URL, "url"),
     )
     recipient_identifier = models.CharField(
-        max_length=768, blank=False, null=False, db_index=True
+        max_length=320, blank=False, null=False, db_index=True
     )
     recipient_type = models.CharField(
         max_length=255,

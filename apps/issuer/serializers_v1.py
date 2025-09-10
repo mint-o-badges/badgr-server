@@ -643,21 +643,26 @@ class BadgeClassSerializerV1(
 
             extensions = new_badgeclass.cached_extensions()
 
-            try:
-                categoryExtension = extensions.get(name="extensions:CategoryExtension")
-                category = json.loads(categoryExtension.original_json)["Category"]
-                orgImage = extensions.get(name="extensions:OrgImageExtension")
-                original_image = json.loads(orgImage.original_json)["OrgImage"]
-            except BadgeClassExtension.DoesNotExist as e:
-                raise serializers.ValidationError({"extensions": str(e)})
+            if new_badgeclass.imageFrame:
+                try:
+                    categoryExtension = extensions.get(
+                        name="extensions:CategoryExtension"
+                    )
+                    category = json.loads(categoryExtension.original_json)["Category"]
+                    orgImage = extensions.get(name="extensions:OrgImageExtension")
+                    original_image = json.loads(orgImage.original_json)["OrgImage"]
+                except BadgeClassExtension.DoesNotExist as e:
+                    raise serializers.ValidationError({"extensions": str(e)})
 
-            try:
-                new_badgeclass.generate_badge_image(
-                    new_badgeclass.issuer.image, category, original_image
-                )
-                new_badgeclass.save(update_fields=["image"])
-            except Exception as e:
-                raise serializers.ValidationError(f"Badge image generation failed: {e}")
+                try:
+                    new_badgeclass.generate_badge_image(
+                        new_badgeclass.issuer.image, category, original_image
+                    )
+                    new_badgeclass.save(update_fields=["image"])
+                except Exception as e:
+                    raise serializers.ValidationError(
+                        f"Badge image generation failed: {e}"
+                    )
             return new_badgeclass
 
 
@@ -681,8 +686,8 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
     created_by = BadgeUserIdentifierFieldV1(read_only=True)
     slug = serializers.CharField(max_length=255, read_only=True, source="entity_id")
     image = serializers.FileField(read_only=True)  # use_url=True, might be necessary
-    email = serializers.EmailField(max_length=1024, required=False, write_only=True)
-    recipient_identifier = serializers.CharField(max_length=1024, required=False)
+    email = serializers.EmailField(max_length=320, required=False, write_only=True)
+    recipient_identifier = serializers.CharField(max_length=320, required=False)
     recipient_type = serializers.CharField(default=RECIPIENT_TYPE_EMAIL)
     allow_uppercase = serializers.BooleanField(
         default=False, required=False, write_only=True
