@@ -291,6 +291,7 @@ class Issuer(
     zip = models.CharField(max_length=255, null=True, blank=True)
     city = models.CharField(max_length=255, null=True, blank=True)
     country = models.CharField(max_length=255, null=True, blank=True)
+    state = models.CharField(max_length=255, null=True, blank=True)
 
     intendedUseVerified = models.BooleanField(null=False, default=False)
 
@@ -825,6 +826,37 @@ class NetworkMembership(models.Model):
 
     class Meta:
         unique_together = ("network", "issuer")
+
+
+class NetworkInvite(BaseVersionedEntity):
+    class Status(models.TextChoices):
+        PENDING = "Pending", "Pending"
+        APPROVED = "Approved", "Approved"
+        REJECTED = "Rejected", "Rejected"
+        REVOKED = "Revoked", "Revoked"
+
+    network = models.ForeignKey(
+        Issuer,
+        blank=False,
+        null=False,
+        on_delete=models.CASCADE,
+        related_name="invites",
+    )
+    issuer = models.ForeignKey(Issuer, blank=True, null=True, on_delete=models.CASCADE)
+    invitedOn = models.DateTimeField(blank=False, null=False, default=timezone.now)
+    acceptedOn = models.DateTimeField(blank=True, null=True, default=None)
+    status = models.CharField(
+        max_length=254, choices=Status.choices, default=Status.PENDING
+    )
+    revoked = models.BooleanField(default=False, db_index=True)
+
+    def revoke(self):
+        if self.revoked:
+            raise ValidationError("Invitation is already revoked")
+
+        self.revoked = True
+        self.status = self.Status.REVOKED
+        self.save()
 
 
 class IssuerStaff(cachemodel.CacheModel):

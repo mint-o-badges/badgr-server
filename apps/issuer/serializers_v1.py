@@ -48,6 +48,7 @@ from .models import (
     IssuerStaffRequest,
     LearningPath,
     LearningPathBadge,
+    NetworkInvite,
     QrCode,
     RequestedBadge,
     RequestedLearningPath,
@@ -124,57 +125,39 @@ class IssuerStaffSerializerV1(serializers.Serializer):
         )
 
 
-class IssuerSerializerV1(
+class BaseIssuerSerializerV1(
     OriginalJsonSerializerMixin, ExcludeFieldsMixin, serializers.Serializer
 ):
+    """Base serializer for issuers and networks"""
+
+    class Meta:
+        abstract = True
+
     created_at = DateTimeWithUtcZAtEndField(read_only=True)
     created_by = BadgeUserIdentifierFieldV1()
     name = StripTagsCharField(max_length=1024)
     slug = StripTagsCharField(max_length=255, source="entity_id", read_only=True)
     image = ValidImageField(required=False)
-    email = serializers.EmailField(max_length=255, required=True)
     description = StripTagsCharField(max_length=16384, required=False)
     url = serializers.URLField(max_length=1024, required=True)
-    staff = IssuerStaffSerializerV1(
-        read_only=True, source="cached_issuerstaff", many=True
-    )
     badgrapp = serializers.CharField(
         read_only=True, max_length=255, source="cached_badgrapp"
     )
-    verified = serializers.BooleanField(default=False)
-
-    category = serializers.CharField(max_length=255, required=True, allow_null=True)
+    staff = IssuerStaffSerializerV1(
+        read_only=True, source="cached_issuerstaff", many=True
+    )
     source_url = serializers.CharField(
-        max_length=255, required=False, allow_blank=True, allow_null=True
-    )
-
-    street = serializers.CharField(
-        max_length=255, required=False, allow_blank=True, allow_null=True
-    )
-    streetnumber = serializers.CharField(
-        max_length=255, required=False, allow_blank=True, allow_null=True
-    )
-    zip = serializers.CharField(
-        max_length=255, required=False, allow_blank=True, allow_null=True
-    )
-    city = serializers.CharField(
         max_length=255, required=False, allow_blank=True, allow_null=True
     )
     country = serializers.CharField(
         max_length=255, required=False, allow_blank=True, allow_null=True
     )
 
-    intendedUseVerified = serializers.BooleanField(default=False)
-
-    lat = serializers.CharField(
-        max_length=255, required=False, allow_blank=True, allow_null=True
-    )
-    lon = serializers.CharField(
-        max_length=255, required=False, allow_blank=True, allow_null=True
+    state = serializers.CharField(
+        max_length=254, required=False, allow_blank=True, allow_null=True
     )
 
-    class Meta:
-        apispec_definition = ("Issuer", {})
+    is_network = serializers.BooleanField(default=False)
 
     def get_fields(self):
         fields = super().get_fields()
@@ -190,6 +173,96 @@ class IssuerSerializerV1(
             img_name, img_ext = os.path.splitext(image.name)
             image.name = "issuer_logo_" + str(uuid.uuid4()) + img_ext
         return image
+
+
+class NetworkSerializerV1(BaseIssuerSerializerV1):
+    # partner_issuers = serializers.SerializerMethodField()
+
+    # def get_partner_issuers(self, obj):
+    #     from .serializers_v1 import IssuerSerializerV1
+
+    #     # Exclude 'networks' field from nested issuer serialization to prevent circular reference
+    #     context = self.context.copy()
+    #     context["exclude_fields"] = context.get("exclude_fields", []) + ["networks"]
+
+    #     direct_issuers = obj.partner_issuers.all()
+
+    #     data = IssuerSerializerV1(direct_issuers, many=True, context=context).data
+    #     # print(f"data {data}")
+    #     # print(f"cached_issuers {obj.cached_partner_issuers()}")
+    #     # return IssuerSerializerV1(
+    #     #     obj.cached_partner_issuers(), many=True, context=context
+    #     # ).data
+    #     return data
+
+    def create(self, validated_data, **kwargs):
+        new_network = Issuer(**validated_data)
+
+        new_network.is_network = True
+        # verify network as only verified issuers can create badges
+        new_network.verified = True
+
+        new_network.badgrapp = BadgrApp.objects.get_current(
+            self.context.get("request", None)
+        )
+
+        new_network.save()
+
+        return new_network
+
+    def to_representation(self, instance):
+        representation = super(NetworkSerializerV1, self).to_representation(instance)
+        representation["json"] = instance.get_json(
+            obi_version="1_1", use_canonical_id=True
+        )
+
+        return representation
+
+
+class IssuerSerializerV1(BaseIssuerSerializerV1):
+    email = serializers.EmailField(max_length=255, required=True)
+    networks = serializers.SerializerMethodField()
+    verified = serializers.BooleanField(default=False)
+
+    category = serializers.CharField(max_length=255, required=True, allow_null=True)
+
+    street = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, allow_null=True
+    )
+    streetnumber = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, allow_null=True
+    )
+    zip = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, allow_null=True
+    )
+    city = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, allow_null=True
+    )
+
+    intendedUseVerified = serializers.BooleanField(default=False)
+
+    lat = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, allow_null=True
+    )
+    lon = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, allow_null=True
+    )
+
+    def get_networks(self, obj):
+        return None
+        # from .serializers_v1 import NetworkSerializerV1
+
+        # # Exclude 'partner_issuers' field from nested network serialization to prevent circular reference
+        # context = self.context.copy()
+        # context["exclude_fields"] = context.get("exclude_fields", []) + [
+        #     "partner_issuers"
+        # ]
+        # return NetworkSerializerV1(
+        #     obj.cached_networks(), many=True, context=context
+        # ).data
+
+    class Meta:
+        apispec_definition = ("Issuer", {})
 
     def create(self, validated_data, **kwargs):
         user = validated_data["created_by"]
@@ -223,6 +296,7 @@ class IssuerSerializerV1(
         )
 
         new_issuer.save()
+
         return new_issuer
 
     def update(self, instance, validated_data):
@@ -840,6 +914,15 @@ class IssuerStaffRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = IssuerStaffRequest
+        fields = "__all__"
+
+
+class NetworkInviteSerializer(serializers.ModelSerializer):
+    network = NetworkSerializerV1(read_only=True)
+    issuer = IssuerSerializerV1(read_only=True)
+
+    class Meta:
+        model = NetworkInvite
         fields = "__all__"
 
 

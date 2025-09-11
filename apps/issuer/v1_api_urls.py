@@ -4,6 +4,9 @@ from issuer.api import (
     BadgeRequestList,
     IssuerLearningPathList,
     IssuerList,
+    NetworkInvitation,
+    NetworkInvitationList,
+    NetworkList,
     IssuerDetail,
     IssuerBadgeClassList,
     BadgeClassDetail,
@@ -34,6 +37,7 @@ urlpatterns = [
         name="v1_api_find_badgeclass_by_identifier",
     ),
     url(r"^issuers$", IssuerList.as_view(), name="v1_api_issuer_list"),
+    url(r"^networks$", NetworkList.as_view(), name="v1_api_network_list"),
     url(
         r"^issuers/(?P<slug>[^/]+)$",
         IssuerDetail.as_view(),
@@ -131,5 +135,25 @@ urlpatterns = [
         r"^issuers/(?P<issuerSlug>[^/]+)/badges/image/compose$",
         BadgeImageComposition.as_view(),
         name="v1_api_badge_image_composition",
+    ),
+    url(
+        r"^networks/(?P<networkSlug>[^/]+)/invite$",
+        NetworkInvitation.as_view(),
+        name="v1_api_network_invite_detail",
+    ),
+    url(
+        r"^networks/(?P<networkSlug>[^/]+)/invites$",
+        NetworkInvitationList.as_view(),
+        name="v1_api_network_invite_list",
+    ),
+    url(
+        r"^networks/invites/(?P<slug>[^/]+)$",
+        NetworkInvitation.as_view(),
+        name="v1_api_network_invite_detail",
+    ),
+    url(
+        r"^networks/(?P<networkSlug>[^/]+)/invite/(?P<slug>[^/]+)/confirm$",
+        NetworkInvitation.as_view(),
+        name="v1_api_network_invite_detail",
     ),
 ]
