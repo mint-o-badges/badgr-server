@@ -1,0 +1,30 @@
+{% extends "email/base.html" %}
+{% load static %}
+{% load mjml %}
+{% mjml %}
+{% block main %}
+    <mj-section background-color="#ffffff">
+    <mj-column>
+    <mj-image src="{% static '/images/Logo-Oeb.png' %}" alt="Logo" href="https://openbadges.education" padding-left="25px" width="150px" height="77px" align="left" />
+    <mj-text font-size="32px" font-weight="bold" padding-bottom="25px">
+    <span style="text-transform:capitalize;">Netzwerk-Einladung</span>
+    </mj-text>
+    <mj-text color="#492e98">
+    Deine Institution {{ issuer.name }} wurde zum Netzwerk <span style="font-weight: bold;">{{ network.name }}</span> eingeladen.
+    </mj-text>
+    <mj-text>
+    Bitte bestätige die Anfrage auf Open Educational Badges über den folgenden Button.
+    </mj-text>
+    </mj-column>
+    </mj-section>
+{% endblock main %}
+{% block button_url %}
+    {{ activate_url }}
+{% endblock button_url %}
+{% block button_url_copy %}
+    {{ activate_url }}
+{% endblock button_url_copy %}
+{% block button_text %}
+    {{ call_to_action_label }}
+{% endblock button_text %}
+{% endmjml %}

@@ -3,6 +3,8 @@ from django.views.generic.base import RedirectView, TemplateView
 from django.conf.urls.static import static
 from apps.mainsite.views_iframes import iframe
 from mainsite.views import (
+    AdminIssuer,
+    AdminUser,
     badgeRequestsByBadgeClass,
     downloadQrCode,
     upload,
@@ -38,7 +40,11 @@ from mainsite.views import (
     call_cms_api,
 )
 
-from mainsite.views_lti import ApplicationLaunchView, LtiProfile, XFrameExemptOIDCLoginInitView
+from mainsite.views_lti import (
+    ApplicationLaunchView,
+    LtiProfile,
+    XFrameExemptOIDCLoginInitView,
+)
 
 from django.apps import apps
 from django.conf import settings
@@ -192,17 +198,6 @@ urlpatterns = [
     url(r"^v2/", include("badgeuser.v2_api_urls"), kwargs={"version": "v2"}),
     url(r"^v2/", include("badgrsocialauth.v2_api_urls"), kwargs={"version": "v2"}),
     url(r"^v2/backpack/", include("backpack.v2_api_urls"), kwargs={"version": "v2"}),
-    # External Tools
-    url(
-        r"^v1/externaltools/",
-        include("externaltools.v1_api_urls"),
-        kwargs={"version": "v1"},
-    ),
-    url(
-        r"^v2/externaltools/",
-        include("externaltools.v2_api_urls"),
-        kwargs={"version": "v2"},
-    ),
     url(r"^upload", upload, name="image_upload"),
     url(
         r"^nounproject/(?P<searchterm>[^/]+)/(?P<page>[^/]+)$",
@@ -231,6 +226,9 @@ urlpatterns = [
     url(r"^v3/", include("issuer.v3_api_urls"), kwargs={"version": "v3"}),
     url(r"^v3/backpack/", include("backpack.v3_api_urls"), kwargs={"version": "v3"}),
     url(r"^v3/issuer/", include("issuer.v3_api_urls"), kwargs={"version": "v3"}),
+    url(r"^v3/admin/users", AdminUser.as_view({'get': 'list'})),
+    url(r"^v3/admin/issuers", AdminIssuer.as_view({'get': 'list'})),
+
     # meinBildungsraum OIDC connection
     path("oidc/", include("mozilla_django_oidc.urls")),
     url(
@@ -246,19 +244,19 @@ urlpatterns = [
     url(r"^cms/style/?$", cms_api_style, name="cms_api_style"),
     url(r"^cms/script/?$", cms_api_script, name="cms_api_script"),
     url(r"^cms/(?P<path>.+)$", call_cms_api, name="call_cms_api"),
-
     # iframes
     path("iframes/<uuid:iframe_uuid>/", iframe, name="iframe"),
-
     # LTI
     path(".well-known/jwks.json", jwks, name="jwks"),
-    path("lti/<uuid:registration_uuid>/", XFrameExemptOIDCLoginInitView.as_view(), name="init"),
+    path(
+        "lti/<uuid:registration_uuid>/",
+        XFrameExemptOIDCLoginInitView.as_view(),
+        name="init",
+    ),
     path("lti/launch/", ApplicationLaunchView.as_view()),
     path("lti/tools/profile/", LtiProfile),
-
     # Prometheus endpoint
     path("", include("django_prometheus.urls")),
-
 ]
 # add to serve files
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

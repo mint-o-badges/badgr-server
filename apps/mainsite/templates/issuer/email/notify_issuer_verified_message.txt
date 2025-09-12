@@ -1,0 +1,7 @@
+  Deine Institution {{ issuer_name }} wurde verifiziert!
+
+  Du kannst direkt loslegen, Badges zu erstellen und zu vergeben.
+  Hier zeigen wir dir, wie du in minutenschnelle deinen ersten Badge anlegst:
+  https://www.youtube.com/watch?v=hL8SBqpTAag
+
+  Zur OEB-Plattform: https://openbadges.education/auth/login

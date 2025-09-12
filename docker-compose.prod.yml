@@ -37,17 +37,18 @@ services:
 
   # this container runs memcached
   memcached:
-    image: "bitnami/memcached:latest"
+    image: "memcached:1.6.39-alpine"
     expose:
       - "11211"
     networks:
       - badgr
+    command: ["memcached", "-m", "512", "-I", "10m", "-v"]
     environment:
       - TZ=Europe/Berlin
 
   # this container runs mysql (database)
   db:
-    image: mysql:5.7.31
+    image: mysql:8.0.36
     volumes:
       - badgr_server_prod_db:/var/lib/mysql:rw
       - ./.docker/etc/init.sql:/docker-entrypoint-initdb.d/init.sql

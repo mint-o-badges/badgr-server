@@ -13,11 +13,6 @@ def set_required_badges_count(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    replaces = [
-        ("issuer", "0078_learningpath_required_badges_count"),
-        ("issuer", "0079_learningpath_activated"),
-    ]
-
     dependencies = [
         ("issuer", "0077_auto_20250513_1031"),
     ]

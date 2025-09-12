@@ -1,0 +1,20 @@
+{% extends "email/base.html" %}
+{% load static %}
+{% load mjml %}
+{% mjml %}
+{% block main %}
+    <mj-section background-color="#ffffff">
+    <mj-column>
+    <mj-image src="{% static '/images/Logo-Oeb.png' %}" alt="Logo" href="https://openbadges.education" padding-left="25px" width="150px" height="77px" align="left" />
+    <mj-text font-size="32px" font-weight="bold" padding-bottom="25px">
+    <span style="text-transform:capitalize;">Netzwerk-Update</span>
+    </mj-text>
+    <mj-text>
+    Deine Institution {{ issuer.name }} wurde aus dem Netzwerk <span style="font-weight: bold;">{{ network.name }}</span> entfernt.
+    </mj-text>
+    </mj-column>
+    </mj-section>
+{% endblock main %}
+{% block button %}
+{% endblock button %}
+{% endmjml %}

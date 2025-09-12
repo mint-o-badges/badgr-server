@@ -23,6 +23,8 @@ from .models import (
     LearningPath,
     LearningPathBadge,
     LearningPathTag,
+    Network,
+    NetworkInvite,
     RequestedBadge,
     QrCode,
     RequestedLearningPath,
@@ -52,6 +54,12 @@ class IssuerStaffInline(TabularInline):
     raw_id_fields = ("user",)
 
 
+class IssuerNetworks(ReadOnlyInline):
+    model = Network.partner_issuers.through
+    extra = 0
+    fields = ("network",)
+
+
 class IssuerExtensionInline(TabularInline):
     model = IssuerExtension
     extra = 0
@@ -67,10 +75,11 @@ class IssuerBadgeclasses(ReadOnlyInline):
         qs = super(IssuerBadgeclasses, self).get_queryset(request)
         qs = qs.annotate(
             number_of_assertions=models.Count(
-                "badgeinstances", filter=models.Q(badgeinstances__revoked=False)
+                "badgeinstances", filter=models.Q(badgeinstances__revoked=False),
+                distinct=True
             )
         )
-        qs = qs.annotate(number_of_qrcodes=models.Count("qrcodes"))
+        qs = qs.annotate(number_of_qrcodes=models.Count("qrcodes", distinct=True))
         return qs
 
     def assertion_count(self, obj):
@@ -135,7 +144,12 @@ class IssuerAdmin(DjangoObjectActions, ModelAdmin):
         ),
         ("JSON", {"fields": ("old_json",)}),
     )
-    inlines = [IssuerStaffInline, IssuerExtensionInline, IssuerBadgeclasses]
+    inlines = [
+        IssuerStaffInline,
+        IssuerExtensionInline,
+        IssuerBadgeclasses,
+        IssuerNetworks,
+    ]
     change_actions = ["redirect_badgeclasses"]
 
     def get_queryset(self, request):
@@ -174,6 +188,84 @@ class IssuerAdmin(DjangoObjectActions, ModelAdmin):
 
 
 badgr_admin.register(Issuer, IssuerAdmin)
+
+
+class NetworkStaffInline(TabularInline):
+    model = Network.staff.through
+    extra = 0
+    raw_id_fields = ("user",)
+
+
+class NetworkPartnerIssuers(ReadOnlyInline):
+    model = Network.partner_issuers.through
+    extra = 0
+    fields = ("issuer",)
+
+
+class NetworkAdmin(DjangoObjectActions, ModelAdmin):
+    readonly_fields = (
+        "created_by",
+        "created_at",
+        "updated_at",
+        "source",
+        "source_url",
+        "entity_id",
+        "slug",
+    )
+    list_display = ("img", "name", "created_by", "created_at")
+    list_display_links = ("img", "name")
+    list_filter = ("created_at",)
+    search_fields = ("name", "entity_id")
+    fieldsets = (
+        (
+            "Metadata",
+            {
+                "fields": (
+                    "created_by",
+                    "created_at",
+                    "updated_at",
+                    "source",
+                    "source_url",
+                    "entity_id",
+                    "slug",
+                ),
+                "classes": ("collapse",),
+            },
+        ),
+        (
+            None,
+            {
+                "fields": (
+                    "image",
+                    "name",
+                    "url",
+                    "description",
+                    "badgrapp",
+                    "country",
+                    "state",
+                )
+            },
+        ),
+    )
+    inlines = [NetworkStaffInline, NetworkPartnerIssuers]
+
+    def save_model(self, request, obj, form, change):
+        force_resize = False
+        if "image" in form.changed_data:
+            force_resize = True
+        obj.save(force_resize=force_resize)
+
+    def img(self, obj):
+        try:
+            return mark_safe('<img src="{}" width="32"/>'.format(obj.image.url))
+        except ValueError:
+            return obj.image
+
+    img.short_description = "Image"
+    img.allow_tags = True
+
+
+badgr_admin.register(Network, NetworkAdmin)
 
 
 class BadgeClassAlignmentInline(TabularInline):
@@ -588,6 +680,14 @@ class IssuerStaffRequestAdmin(ModelAdmin):
 
 
 badgr_admin.register(IssuerStaffRequest, IssuerStaffRequestAdmin)
+
+
+class NetworkInviteAdmin(ModelAdmin):
+    list_display = ("network", "issuer", "invitedOn", "status")
+    readonly_fields = ("invitedOn", "status")
+
+
+badgr_admin.register(NetworkInvite, NetworkInviteAdmin)
 
 
 class QrCodeAdmin(ModelAdmin):

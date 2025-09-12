@@ -21,7 +21,7 @@ services:
             - ./openbadges_bakery:/badgr_server/openbadges_bakery
             - ./manage.py:/badgr_server/manage.py
             - ./.docker/etc/settings_local.dev.py:/badgr_server/apps/mainsite/settings_local.py
-              # The following is needed for tox to run
+            # The following is needed for tox to run
             - ./pyproject.toml:/badgr_server/pyproject.toml
             - ./setup.py:/badgr_server/setup.py
             - ./README.md:/badgr_server/README.md
@@ -39,22 +39,22 @@ services:
 
     # this container runs memcached
     memcached:
-        image: "bitnami/memcached:latest"
+        image: "memcached:1.6.39-alpine"
         expose:
             - "11211"
         networks:
             - badgr
+        command: ["memcached", "-m", "512", "-I", "10m", "-vv"]
         environment:
             - TZ=Europe/Berlin
 
     # this container runs mysql (database)
     db:
-        image: mysql:5.7.31
+        image: mysql:8.0.36
         # platform: linux/amd64 comment in if you are on Apple Silicon
         volumes:
             - badgr_server_dev_db:/var/lib/mysql:rw
             - ./.docker/etc/init.sql:/docker-entrypoint-initdb.d/init.sql
-
         environment:
             - "MYSQL_PASSWORD=password"
             - "MYSQL_HOST=db"
