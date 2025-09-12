@@ -73,7 +73,7 @@ from issuer.serializers_v2 import (
     IssuerAccessTokenSerializerV2,
     IssuerSerializerV2,
 )
-from mainsite.models import AccessTokenProxy
+from mainsite.models import AccessTokenProxy, BadgrApp
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAdmin
 from mainsite.serializers import CursorPaginatedListSerializer
 from oauthlib.oauth2.rfc6749.tokens import random_token_generator
@@ -1527,6 +1527,8 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
                 entity_id=kwargs.get("requestId")
             )
 
+            badgrapp = BadgrApp.objects.get_by_id_or_default()
+
             if staff_request.status != IssuerStaffRequest.Status.PENDING:
                 return Response(
                     {"detail": "Only pending requests can be confirmed"},
@@ -1540,11 +1542,7 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
 
             email_context = {
                 "issuer": staff_request.issuer,
-                "activate_url": OriginSetting.HTTP
-                + reverse(
-                    "v1_api_user_confirm_staffrequest",
-                    kwargs={"entity_id": staff_request.entity_id},
-                ),
+                "activate_url": badgrapp.ui_login_redirect.rstrip("/"),
                 "call_to_action_label": "Jetzt loslegen",
             }
             get_adapter().send_mail(
