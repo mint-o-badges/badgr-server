@@ -75,10 +75,11 @@ class IssuerBadgeclasses(ReadOnlyInline):
         qs = super(IssuerBadgeclasses, self).get_queryset(request)
         qs = qs.annotate(
             number_of_assertions=models.Count(
-                "badgeinstances", filter=models.Q(badgeinstances__revoked=False)
+                "badgeinstances", filter=models.Q(badgeinstances__revoked=False),
+                distinct=True
             )
         )
-        qs = qs.annotate(number_of_qrcodes=models.Count("qrcodes"))
+        qs = qs.annotate(number_of_qrcodes=models.Count("qrcodes", distinct=True))
         return qs
 
     def assertion_count(self, obj):

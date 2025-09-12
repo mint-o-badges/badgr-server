@@ -35,10 +35,14 @@ class IsServerAdmin(permissions.BasePermission):
     def check_permission(self, request):
         token = request.auth
 
+        if not token and request.user.is_superuser:
+            return True
+
         if token is None or not isinstance(token, oauth2_provider.models.AccessToken):
             return False
 
         token_scopes = set(token.scope.split())
+
         return "rw:serverAdmin" in token_scopes
 
     def has_permission(self, request, view):
