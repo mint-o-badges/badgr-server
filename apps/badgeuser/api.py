@@ -28,6 +28,7 @@ from django.http import Http404
 from django.utils import timezone
 from django.views.generic import RedirectView
 from django.conf import settings
+from apps.badgeuser.utils import notify_on_password_change
 from issuer.models import (
     Issuer,
     IssuerStaff,
@@ -494,6 +495,8 @@ class BadgeUserForgotPassword(BaseUserRecoveryView):
 
         user.set_password(password)
         user.save()
+        notify_on_password_change(user)
+
         return self.get_response()
 
 
