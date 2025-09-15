@@ -262,6 +262,8 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
 
     intendedUseVerified = serializers.BooleanField(default=False)
 
+    linkedinId = serializers.CharField(max_length=255, required=False, allow_blank=True)
+
     lat = serializers.CharField(
         max_length=255, required=False, allow_blank=True, allow_null=True
     )
@@ -304,6 +306,9 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
         new_issuer.country = validated_data.get("country")
         new_issuer.intendedUseVerified = validated_data.get("intendedUseVerified")
 
+        if "linkedinId" in validated_data:
+            new_issuer.linkedinId = validated_data.get("linkedinId")
+
         # Check whether issuer email domain matches institution website domain to verify it automatically
         if verifyIssuerAutomatically(
             validated_data.get("url"), validated_data.get("email")
@@ -337,6 +342,9 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
         instance.zip = validated_data.get("zip")
         instance.city = validated_data.get("city")
         instance.country = validated_data.get("country")
+
+        if "linkedinId" in validated_data:
+            instance.linkedinId = validated_data.get("linkedinId")
 
         # set badgrapp
         if not instance.badgrapp_id:
