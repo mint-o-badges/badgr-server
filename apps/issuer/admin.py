@@ -1,11 +1,12 @@
 from django.db import models
 from django.contrib.admin import ModelAdmin, StackedInline, TabularInline
 from django.urls import reverse
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 
 from django_object_actions import DjangoObjectActions
 from django.utils.safestring import mark_safe
 from django import forms
+from django.contrib import admin
 
 from mainsite.admin import badgr_admin
 
@@ -20,6 +21,7 @@ from .models import (
     BadgeClassExtension,
     IssuerExtension,
     BadgeInstanceExtension,
+    IssuerStaff,
     LearningPath,
     LearningPathBadge,
     LearningPathTag,
@@ -32,6 +34,42 @@ from .models import (
     ImportedBadgeAssertion,
 )
 from .tasks import resend_notifications
+import csv
+
+
+@admin.action(description="Export selected institutions to CSV")
+def export_institutions_csv(queryset):
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="institutions.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(["Institution", "Member", "Badges", "Assertions"])
+
+    for issuer in queryset:
+        staff_entries = IssuerStaff.objects.filter(issuer=issuer).select_related("user")
+
+        staff_list = [
+            f"{staff.user.get_full_name()} – {staff.role}" for staff in staff_entries
+        ]
+
+        badge_count = issuer.badgeclasses.count() if issuer.badgeclasses else 0
+
+        assertion_count = (
+            BadgeClass.objects.filter(issuer=issuer)
+            .annotate(
+                number_of_assertions=models.Count(
+                    "badgeinstances", filter=models.Q(badgeinstances__revoked=False)
+                )
+            )
+            .aggregate(total=models.Sum("number_of_assertions"))["total"]
+            or 0
+        )
+
+        writer.writerow(
+            [issuer.name, "\n".join(staff_list), badge_count, assertion_count]
+        )
+
+    return response
 
 
 class ReadOnlyInline(TabularInline):
@@ -75,8 +113,9 @@ class IssuerBadgeclasses(ReadOnlyInline):
         qs = super(IssuerBadgeclasses, self).get_queryset(request)
         qs = qs.annotate(
             number_of_assertions=models.Count(
-                "badgeinstances", filter=models.Q(badgeinstances__revoked=False),
-                distinct=True
+                "badgeinstances",
+                filter=models.Q(badgeinstances__revoked=False),
+                distinct=True,
             )
         )
         qs = qs.annotate(number_of_qrcodes=models.Count("qrcodes", distinct=True))
@@ -151,6 +190,7 @@ class IssuerAdmin(DjangoObjectActions, ModelAdmin):
         IssuerNetworks,
     ]
     change_actions = ["redirect_badgeclasses"]
+    actions = [export_institutions_csv]
 
     def get_queryset(self, request):
         qs = super(IssuerAdmin, self).get_queryset(request)
