@@ -226,9 +226,9 @@ urlpatterns = [
     url(r"^v3/", include("issuer.v3_api_urls"), kwargs={"version": "v3"}),
     url(r"^v3/backpack/", include("backpack.v3_api_urls"), kwargs={"version": "v3"}),
     url(r"^v3/issuer/", include("issuer.v3_api_urls"), kwargs={"version": "v3"}),
-    url(r"^v3/admin/users", AdminUser.as_view({'get': 'list'})),
-    url(r"^v3/admin/issuers", AdminIssuer.as_view({'get': 'list'})),
-
+    url(r"^v3/user/", include("badgeuser.v3_api_urls"), kwargs={"version": "v3"}),
+    url(r"^v3/admin/users", AdminUser.as_view({"get": "list"})),
+    url(r"^v3/admin/issuers", AdminIssuer.as_view({"get": "list"})),
     # meinBildungsraum OIDC connection
     path("oidc/", include("mozilla_django_oidc.urls")),
     url(
