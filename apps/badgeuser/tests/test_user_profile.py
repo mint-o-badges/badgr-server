@@ -1,5 +1,6 @@
 from mainsite.tests.base import BadgrTestCase
 from badgeuser.models import EmailAddressVariant
+import json
 
 
 class UserProfileTests(BadgrTestCase):
@@ -23,11 +24,13 @@ class UserProfileTests(BadgrTestCase):
         self.setup_user(email="bobby@example.com", authenticate=True)
 
         post_response = self.client.post(
-            "v3/users/preference/", {"key": "bar", "value": "[1,2,3]"}
+            "/v3/users/preference/",
+            data=json.dumps({"key": "bar", "value": "[1,2,3]"}),
+            content_type="application/json",
         )
-        get_response = self.client.get("v3/users/preference/bar/")
-        delete_response = self.client.delete("v3/users/preference/bar/")
-        get2_response = self.client.get("v3/users/preference/bar/")
+        get_response = self.client.get("/v3/users/preference/bar/")
+        delete_response = self.client.delete("/v3/users/preference/bar/")
+        get2_response = self.client.get("/v3/users/preference/bar/")
 
         self.assertEqual(post_response.status_code, 201)
         self.assertEqual(get_response.status_code, 200)
