@@ -1,11 +1,15 @@
 from django.conf.urls import url
 
 from issuer.api import (
+    BadgeClassPartnerInstanceList,
     BadgeRequestList,
+    IssuerAwardableBadgeClassList,
     IssuerLearningPathList,
     IssuerList,
+    NetworkBadgeInstanceList,
     NetworkInvitation,
     NetworkInvitationList,
+    NetworkIssuerDetail,
     NetworkList,
     IssuerDetail,
     IssuerBadgeClassList,
@@ -54,6 +58,16 @@ urlpatterns = [
         name="v1_api_badgeclass_list",
     ),
     url(
+        r"^issuers/(?P<slug>[^/]+)/awardable-badges$",
+        IssuerAwardableBadgeClassList.as_view(),
+        name="v1_issuer_awardable_badgeclasses",
+    ),
+    url(
+        r"^issuers/(?P<slug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/partner-awards$",
+        BadgeClassPartnerInstanceList.as_view(),
+        name="v1_api_badgeclass_partner_awards",
+    ),
+    url(
         r"^qrcode/(?P<slug>[^/]+)$", QRCodeDetail.as_view(), name="v1_api_qrcode_detail"
     ),
     url(
@@ -92,6 +106,11 @@ urlpatterns = [
         name="v1_api_badgeinstance_list",
     ),
     url(
+        r"^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<slug>[^/]+)/network-assertions$",
+        NetworkBadgeInstanceList.as_view(),
+        name="v1_api_network_badgeinstance_list",
+    ),
+    url(
         r"^issuers/(?P<slug>[^/]+)/assertions$",
         IssuerBadgeInstanceList.as_view(),
         name="v1_api_issuer_instance_list",
@@ -105,6 +124,11 @@ urlpatterns = [
         r"^issuers/(?P<slug>[^/]+)/learningpath$",
         IssuerLearningPathList.as_view(),
         name="v1_api_learningpath_list",
+    ),
+    url(
+        r"^networks/(?P<slug>[^/]+)/issuer/(?P<issuer_slug>[^/]+)$",
+        NetworkIssuerDetail.as_view(),
+        name="v1_api_network_issuer_detail",
     ),
     url(
         r"^issuers/(?P<issuerSlug>[^/]+)/learningpath/(?P<slug>[^/]+)$",

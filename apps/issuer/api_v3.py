@@ -28,6 +28,7 @@ from .serializers_v1 import (
     BadgeClassSerializerV1,
     IssuerSerializerV1,
     LearningPathSerializerV1,
+    NetworkSerializerV1,
 )
 from .models import BadgeClass, BadgeClassTag, BadgeInstance, Issuer, LearningPath
 
@@ -85,6 +86,24 @@ class Issuers(EntityViewSet):
         return context
 
 
+class Networks(EntityViewSet):
+    queryset = Issuer.objects.filter(is_network=True)
+    serializer_class = NetworkSerializerV1
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        # some fields have to be excluded due to data privacy concerns
+        # in the get routes
+        if self.request.method == "GET":
+            context["exclude_fields"] = [
+                *context.get("exclude_fields", []),
+                "staff",
+                "created_by",
+                "partner_issuers",
+            ]
+        return context
+
+
 class LearningPathFilter(EntityFilter):
     tags = filters.CharFilter(
         field_name="learningpathtag__name", lookup_expr="icontains"
@@ -111,8 +130,7 @@ class LearnersProfile(View):
             request.POST = request.GET
             return self.post(request, **kwargs)
         else:
-            return HttpResponse(b'', status=405)
-
+            return HttpResponse(b"", status=405)
 
     def post(self, request, **kwargs):
         try:

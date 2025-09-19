@@ -264,7 +264,6 @@ class Issuer(
         "self",
         through="NetworkMembership",
         related_name="partner_issuers",
-        limit_choices_to={"is_network": True},
     )
 
     is_network = models.BooleanField(default=False)
@@ -769,6 +768,13 @@ class Issuer(
         id = self.badgrapp_id if self.badgrapp_id else None
         return BadgrApp.objects.get_by_id_or_default(badgrapp_id=id)
 
+    @property
+    def partner_issuers(self):
+        """Get all issuers that are partners of this network"""
+        if not self.is_network:
+            return Issuer.objects.none()
+        return Issuer.objects.filter(network_memberships__network=self)
+
     def notify_admins(self, badgr_app=None, renotify=False):
         """
         Sends an email notification to the badge recipient.
@@ -815,13 +821,11 @@ class NetworkMembership(models.Model):
         Issuer,
         on_delete=models.CASCADE,
         related_name="memberships",
-        limit_choices_to={"is_network": True},
     )
     issuer = models.ForeignKey(
         Issuer,
         on_delete=models.CASCADE,
         related_name="network_memberships",
-        limit_choices_to={"is_network": False},
     )
 
     class Meta:
@@ -1038,15 +1042,14 @@ class BadgeClass(
     # issuer should always be set
     COPY_PERMISSIONS_ISSUER = 0b1  # 1
     COPY_PERMISSIONS_OTHERS = 0b10  # 2
-    # COPY_PERMISSIONS_THIRD = 0b100 # 4
+    COPY_PERMISSIONS_NONE = 0b100  # 4
+
     COPY_PERMISSIONS_CHOICES = (
         (COPY_PERMISSIONS_ISSUER, "Issuer"),
         (COPY_PERMISSIONS_OTHERS, "Everyone"),
+        (COPY_PERMISSIONS_NONE, "None"),
     )
-    COPY_PERMISSIONS_KEYS = (
-        "issuer",
-        "others",
-    )
+    COPY_PERMISSIONS_KEYS = ("issuer", "others", "none")
     copy_permissions = models.PositiveSmallIntegerField(default=COPY_PERMISSIONS_ISSUER)
 
     criteria = models.JSONField(blank=True, null=True)
@@ -1072,12 +1075,16 @@ class BadgeClass(
                 "Only verified issuers can create / update badges", code="invalid"
             )
 
-    def generate_badge_image(self, issuer_image, category, badgeImage):
+    def generate_badge_image(
+        self, category, badge_image, issuer_image=None, network_image=None
+    ):
         """Generate composed badge image from original image"""
 
         composer = ImageComposer(category=category)
 
-        image_b64 = composer.compose_badge_from_uploaded_image(badgeImage, issuer_image)
+        image_b64 = composer.compose_badge_from_uploaded_image(
+            badge_image, issuer_image, network_image
+        )
 
         if not image_b64:
             raise ValueError("Badge image generation failed")
@@ -1272,6 +1279,7 @@ class BadgeClass(
         badgr_app=None,
         recipient_type=RECIPIENT_TYPE_EMAIL,
         microdegree_id=None,
+        issuerSlug=None,
         **kwargs,
     ):
         return BadgeInstance.objects.create(
@@ -1285,6 +1293,7 @@ class BadgeClass(
             allow_uppercase=allow_uppercase,
             badgr_app=badgr_app,
             microdegree_id=microdegree_id,
+            issuerSlug=issuerSlug,
             user=get_user_or_none(recipient_id, recipient_type),
             **kwargs,
         )
@@ -1509,7 +1518,7 @@ class BadgeClass(
         else:
             # turn string[] of KEYS into db value
             binary_map = [
-                pow((1 if x in value else 0) * 2, i)
+                (1 if x in value else 0) << i
                 for i, x in enumerate(self.COPY_PERMISSIONS_KEYS)
             ]
             print(binary_map)

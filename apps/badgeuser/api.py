@@ -35,6 +35,7 @@ from issuer.models import (
     IssuerStaffRequest,
     LearningPath,
     LearningPathBadge,
+    NetworkInvite,
     RequestedBadge,
 )
 from issuer.serializers_v1 import IssuerStaffRequestSerializer, LearningPathSerializerV1
@@ -1224,5 +1225,29 @@ class BadgeUserConfirmStaffRequest(BaseEntityDetailView, BaseRedirectView):
 
         issuer_id = kwargs.get("entity_id")
         intended_redirect = f"/issuer/issuers/{issuer_id}/staff"
+
+        return self._prepare_redirect(request, badgrapp, intended_redirect)
+
+
+class ConfirmNetworkInvitation(BaseEntityDetailView, BaseRedirectView):
+    permission_classes = (permissions.AllowAny,)
+    v1_serializer_class = BaseSerializer
+    v2_serializer_class = BaseSerializerV2
+
+    def get(self, request, **kwargs):
+        """
+        Redirect to frontend to confirm network invitation
+        """
+        badgrapp_id = request.query_params.get("a")
+        badgrapp = BadgrApp.objects.get_by_id_or_default(badgrapp_id)
+        inviteSlug = kwargs.get("inviteSlug")
+        try:
+            invitation = NetworkInvite.objects.get(entity_id=inviteSlug)
+        except NetworkInvite.DoesNotExist:
+            pass
+        if invitation.status == invitation.Status.APPROVED:
+            intended_redirect = f"/issuer/networks/invite/{inviteSlug}?confirmed=true"
+        else:
+            intended_redirect = f"/issuer/networks/invite/{inviteSlug}"
 
         return self._prepare_redirect(request, badgrapp, intended_redirect)

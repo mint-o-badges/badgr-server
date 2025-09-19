@@ -1,11 +1,12 @@
 from django.db import models
 from django.contrib.admin import ModelAdmin, StackedInline, TabularInline
 from django.urls import reverse
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 
 from django_object_actions import DjangoObjectActions
 from django.utils.safestring import mark_safe
 from django import forms
+from django.contrib import admin
 
 from mainsite.admin import badgr_admin
 
@@ -20,9 +21,12 @@ from .models import (
     BadgeClassExtension,
     IssuerExtension,
     BadgeInstanceExtension,
+    IssuerStaff,
     LearningPath,
     LearningPathBadge,
     LearningPathTag,
+    NetworkInvite,
+    NetworkMembership,
     RequestedBadge,
     QrCode,
     RequestedLearningPath,
@@ -30,6 +34,48 @@ from .models import (
     ImportedBadgeAssertion,
 )
 from .tasks import resend_notifications
+import csv
+
+
+@admin.action(description="Export selected institutions to CSV")
+def export_institutions_csv(modeladmin, request, queryset):
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="institutions.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(["Institution", "Member", "Badges", "Assertions"])
+
+    for issuer in queryset:
+        staff_entries = IssuerStaff.objects.filter(issuer=issuer).select_related("user")
+
+        staff_list = [
+            f"{staff.user.get_full_name()} – {staff.role}" for staff in staff_entries
+        ]
+
+        badges_list = (
+            [badge.name for badge in issuer.badgeclasses.all()]
+            if issuer.badgeclasses
+            else []
+        )
+
+        badge_count = issuer.badgeclasses.count() if issuer.badgeclasses else 0
+
+        assertion_count = (
+            BadgeClass.objects.filter(issuer=issuer)
+            .annotate(
+                number_of_assertions=models.Count(
+                    "badgeinstances", filter=models.Q(badgeinstances__revoked=False)
+                )
+            )
+            .aggregate(total=models.Sum("number_of_assertions"))["total"]
+            or 0
+        )
+
+        writer.writerow(
+            [issuer.name, "\n".join(staff_list), badge_count, assertion_count]
+        )
+
+    return response
 
 
 class ReadOnlyInline(TabularInline):
@@ -78,6 +124,67 @@ class IssuerBadgeclasses(ReadOnlyInline):
 
     def qrcode_count(self, obj):
         return obj.number_of_qrcodes
+
+
+class NetworkMembershipsInline(ReadOnlyInline):
+    """Inline to show which networks this issuer is a member of"""
+
+    model = NetworkMembership
+    fk_name = "issuer"
+    extra = 0
+    fields = ("network_name", "network_link")
+
+    def network_name(self, obj):
+        return obj.network.name if obj.network else "N/A"
+
+    network_name.short_description = "Network Name"
+
+    def network_link(self, obj):
+        if obj.network:
+            return mark_safe(
+                '<a href="{}">{}</a>'.format(
+                    reverse("admin:issuer_issuer_change", args=(obj.network.id,)),
+                    obj.network.name,
+                )
+            )
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("network")
+
+
+class PartnerIssuersInline(ReadOnlyInline):
+    """Inline to show partner issuers for networks"""
+
+    model = NetworkMembership
+    fk_name = "network"
+    extra = 0
+    fields = ("issuer_name", "issuer_link", "badge_count")
+
+    def issuer_name(self, obj):
+        return obj.issuer.name if obj.issuer else "N/A"
+
+    issuer_name.short_description = "Partner Issuer"
+
+    def issuer_link(self, obj):
+        if obj.issuer:
+            return mark_safe(
+                '<a href="{}">{}</a>'.format(
+                    reverse("admin:issuer_issuer_change", args=(obj.issuer.id,)),
+                    obj.issuer.name,
+                )
+            )
+
+    def badge_count(self, obj):
+        if obj.issuer:
+            return obj.issuer.badgeclasses.count()
+        return 0
+
+    badge_count.short_description = "Badge Classes"
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("issuer")
 
 
 class IssuerAdmin(DjangoObjectActions, ModelAdmin):
@@ -136,8 +243,20 @@ class IssuerAdmin(DjangoObjectActions, ModelAdmin):
         ),
         ("JSON", {"fields": ("old_json",)}),
     )
-    inlines = [IssuerStaffInline, IssuerExtensionInline, IssuerBadgeclasses]
+
+    def get_inlines(self, request, obj):
+        inlines = [IssuerStaffInline, IssuerExtensionInline, IssuerBadgeclasses]
+
+        if obj:
+            if obj.is_network:
+                inlines.extend([PartnerIssuersInline])
+            else:
+                inlines.extend([NetworkMembershipsInline])
+
+        return inlines
+
     change_actions = ["redirect_badgeclasses"]
+    actions = [export_institutions_csv]
 
     def get_queryset(self, request):
         qs = super(IssuerAdmin, self).get_queryset(request)
@@ -589,6 +708,14 @@ class IssuerStaffRequestAdmin(ModelAdmin):
 
 
 badgr_admin.register(IssuerStaffRequest, IssuerStaffRequestAdmin)
+
+
+class NetworkInviteAdmin(ModelAdmin):
+    list_display = ("network", "issuer", "invitedOn", "status")
+    readonly_fields = ("invitedOn", "status")
+
+
+badgr_admin.register(NetworkInvite, NetworkInviteAdmin)
 
 
 class QrCodeAdmin(ModelAdmin):
