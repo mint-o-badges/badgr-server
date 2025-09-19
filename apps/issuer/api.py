@@ -1,5 +1,6 @@
 import datetime
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
+import json
 
 import dateutil.parser
 from allauth.account.adapter import get_adapter
@@ -35,6 +36,7 @@ from issuer.models import (
     IssuerStaffRequest,
     LearningPath,
     NetworkInvite,
+    NetworkMembership,
     QrCode,
     RequestedBadge,
 )
@@ -59,6 +61,7 @@ from issuer.serializers_v1 import (
     IssuerStaffRequestSerializer,
     LearningPathParticipantSerializerV1,
     LearningPathSerializerV1,
+    NetworkBadgeInstanceSerializerV1,
     NetworkInviteSerializer,
     NetworkSerializerV1,
     QrCodeSerializerV1,
@@ -159,13 +162,10 @@ class NetworkList(BaseEntityListView):
     valid_scopes = ["rw:issuer"]
 
     def get_objects(self, request, **kwargs):
-        # return self.request.user.cached_issuers()
-        # Note: The issue with the commented line above is that When deleting an entity using the delete method,
-        # it is removed from the database, but the cache is not invalidated. So this is a temporary workaround
-        # till figuring out how to invalidate/refresh cache.
-        # Force fresh data from the database
         return Issuer.objects.filter(
-            staff__id=request.user.id, is_network=True
+            Q(staff__id=request.user.id)
+            | Q(memberships__issuer__staff__id=request.user.id),
+            is_network=True,
         ).distinct()
 
     @apispec_list_operation(
@@ -223,6 +223,66 @@ class IssuerDetail(BaseEntityDetailView):
     )
     def delete(self, request, **kwargs):
         return super(IssuerDetail, self).delete(request, **kwargs)
+
+
+class NetworkIssuerDetail(BaseEntityDetailView):
+    model = Issuer
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsEditor & BadgrOAuthTokenHasScope)
+    ]
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    def get_object(self, network, issuer_slug):
+        try:
+            return network.partner_issuers.get(entity_id=issuer_slug)
+        except Issuer.DoesNotExist:
+            raise Http404("Issuer not found in this network")
+
+    @apispec_delete_operation(
+        "Issuer",
+        summary="Remove an issuer from a network",
+        description="Authenticated user must have owner, editor, or staff status on the Network",
+        tags=["Issuers", "Network"],
+    )
+    def delete(self, request, slug, issuer_slug, **kwargs):
+        try:
+            network = Issuer.objects.get(entity_id=slug, is_network=True)
+        except Issuer.DoesNotExist:
+            raise Exception("Network not found")
+
+        if not is_editor(request.user, network):
+            return Response(
+                {"error": "You are not authorized to remove this issuer."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        issuer = self.get_object(network, issuer_slug)
+
+        try:
+            membership = NetworkMembership.objects.get(network=network, issuer=issuer)
+            membership.delete()
+
+        except NetworkMembership.DoesNotExist:
+            return Response(
+                {"error": "Membership not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        owners = issuer.cached_issuerstaff().filter(role=IssuerStaff.ROLE_OWNER)
+
+        email_context = {"issuer": issuer, "network": network}
+
+        adapter = get_adapter()
+
+        for owner in owners:
+            adapter.send_mail(
+                "issuer/email/notify_issuer_network_update",
+                owner.user.email,
+                email_context,
+            )
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class AllBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListView):
@@ -329,6 +389,59 @@ class IssuerBadgeClassList(
     def post(self, request, **kwargs):
         self.get_object(request, **kwargs)  # trigger a has_object_permissions() check
         return super(IssuerBadgeClassList, self).post(request, **kwargs)
+
+
+class IssuerAwardableBadgeClassList(
+    UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEntityListView
+):
+    """
+    GET a list of badgeclasses that this issuer can award (own badges + network badges if partner)
+    """
+
+    model = Issuer  # used by get_object()
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsEditor & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    v1_serializer_class = BadgeClassSerializerV1
+    v2_serializer_class = BadgeClassSerializerV2
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    def get_queryset(self, request=None, **kwargs):
+        issuer = self.get_object(request, **kwargs)
+
+        own_badges = BadgeClass.objects.filter(issuer=issuer)
+
+        network_badges = BadgeClass.objects.filter(
+            issuer__is_network=True, issuer__memberships__issuer=issuer
+        )
+
+        awardable_badges = own_badges.union(network_badges)
+
+        return awardable_badges
+
+    def get_context_data(self, **kwargs):
+        context = super(IssuerAwardableBadgeClassList, self).get_context_data(**kwargs)
+        context["issuer"] = self.get_object(self.request, **kwargs)
+        return context
+
+    @apispec_list_operation(
+        "BadgeClass",
+        summary="Get a list of BadgeClasses that this Issuer can award",
+        description="Returns own BadgeClasses plus BadgeClasses from networks where this issuer is a partner. Authenticated user must have owner, editor, or staff status on the Issuer",
+        tags=["Issuers", "BadgeClasses"],
+        parameters=[
+            {
+                "in": "query",
+                "name": "num",
+                "type": "string",
+                "description": "Request pagination of results",
+            },
+        ],
+    )
+    def get(self, request, **kwargs):
+        return super(IssuerAwardableBadgeClassList, self).get(request, **kwargs)
 
 
 class IssuerLearningPathList(
@@ -837,6 +950,141 @@ class IssuerBadgeInstanceList(
             request, **kwargs
         )  # trigger a has_object_permissions() check
         return super(IssuerBadgeInstanceList, self).post(request, **kwargs)
+
+
+class NetworkBadgeInstanceList(
+    UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEntityListView
+):
+    """
+    GET a list of assertions for a badgeclass across all network partner issuers
+    """
+
+    model = BadgeClass
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsStaff & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    v1_serializer_class = NetworkBadgeInstanceSerializerV1
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    def get_object(self, request=None, **kwargs):
+        badgeSlug = kwargs.get("slug")
+        badgeclass = BadgeClass.objects.get(entity_id=badgeSlug)
+        if not badgeclass.issuer.is_network:
+            raise ValidationError(
+                "This endpoint is only available for badges created by networks"
+            )
+        return badgeclass
+
+    def get_queryset(self, request=None, **kwargs):
+        badgeclass = self.get_object(request, **kwargs)
+        network = badgeclass.issuer
+
+        queryset = BadgeInstance.objects.filter(
+            badgeclass=badgeclass, issuer__network_memberships__network=network
+        ).select_related("issuer", "user")
+
+        if request.query_params.get("include_expired", "").lower() not in ["1", "true"]:
+            queryset = queryset.filter(
+                Q(expires_at__gte=timezone.now()) | Q(expires_at__isnull=True)
+            )
+
+        if request.query_params.get("include_revoked", "").lower() not in ["1", "true"]:
+            queryset = queryset.filter(revoked=False)
+
+        return queryset
+
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        ctx["user"] = self.request.user
+        return ctx
+
+    def get(self, request, **kwargs):
+        response = super().get(request, **kwargs)
+        instances = response.data
+        badgeclass = self.get_object(request, **kwargs)
+
+        grouped_data = self.group_instances_by_issuer(instances, request, badgeclass)
+
+        response.data = {"grouped_results": grouped_data}
+        return response
+
+    def _extract_slug_from_issuer_url(self, url):
+        if not url:
+            return None
+        return url.rstrip("/").split("/")[-1]
+
+    def group_instances_by_issuer(self, instances, request, badgeclass):
+        grouped = {}
+        request_user = request.user
+        network_issuer = badgeclass.issuer
+        partner_issuers = network_issuer.partner_issuers.all()
+
+        for partner in partner_issuers:
+            user_has_access = self.user_has_access_to_issuer(request_user, partner)
+            grouped[partner.entity_id] = {
+                "issuer": {
+                    "slug": partner.entity_id,
+                    "name": partner.name,
+                    "image": partner.image.url if partner.image else None,
+                },
+                "has_access": user_has_access,
+                "instances": [],
+                "instance_count": 0,
+            }
+
+        for instance_data in instances:
+            issuer_url = instance_data.get("issuer")
+            issuer_slug = self._extract_slug_from_issuer_url(issuer_url)
+            if issuer_slug and issuer_slug in grouped:
+                if grouped[issuer_slug]["has_access"]:
+                    grouped[issuer_slug]["instances"].append(instance_data)
+                grouped[issuer_slug]["instance_count"] += 1
+
+        for slug, group_data in grouped.items():
+            if not group_data["has_access"]:
+                partner = partner_issuers.get(entity_id=slug)
+                count = self.get_instance_count_for_partner(
+                    partner, badgeclass, request
+                )
+                group_data["instance_count"] = count
+                group_data["instances"] = []
+
+        return list(grouped.values())
+
+    def user_has_access_to_issuer(self, user, issuer):
+        return user in issuer.staff.all()
+
+    def get_instance_count_for_partner(
+        self, partner_issuer, network_badgeclass, request
+    ):
+        """Get count of badge instances for a specific partner"""
+        try:
+            partner_badgeclass = BadgeClass.objects.get(
+                issuer=partner_issuer,
+                slug=network_badgeclass.slug,
+            )
+
+            queryset = BadgeInstance.objects.filter(badgeclass=partner_badgeclass)
+
+            if request.query_params.get("include_expired", "").lower() not in [
+                "1",
+                "true",
+            ]:
+                queryset = queryset.filter(
+                    Q(expires_at__gte=timezone.now()) | Q(expires_at__isnull=True)
+                )
+            if request.query_params.get("include_revoked", "").lower() not in [
+                "1",
+                "true",
+            ]:
+                queryset = queryset.filter(revoked=False)
+
+            return queryset.count()
+
+        except BadgeClass.DoesNotExist:
+            return 0
 
 
 class BadgeInstanceDetail(BaseEntityDetailView):
@@ -1503,14 +1751,16 @@ class BadgeImageComposition(APIView):
 
     def post(self, request, *args, **kwargs):
         try:
-            badgeImage = request.data.get("image")
+            badgeSlug = request.data.get("badgeSlug")
             issuerSlug = request.data.get("issuerSlug")
             category = request.data.get("category")
             useIssuerImage = request.data.get("useIssuerImage", True)
 
-            if not badgeImage:
+            try:
+                badge = BadgeClass.objects.get(entity_id=badgeSlug)
+            except Issuer.DoesNotExist:
                 return JsonResponse(
-                    {"error": "Missing required field: image"}, status=400
+                    {"error": f"Badgeclass with slug {badgeSlug} not found"}, status=404
                 )
 
             if not issuerSlug:
@@ -1532,10 +1782,19 @@ class BadgeImageComposition(APIView):
 
             issuer_image = issuer.image if (useIssuerImage and issuer.image) else None
 
+            network_image = None
+
             composer = ImageComposer(category=category)
 
+            extensions = badge.cached_extensions()
+            org_img_ext = extensions.get(name="extensions:OrgImageExtension")
+            original_image = json.loads(org_img_ext.original_json)["OrgImage"]
+
+            if badge.cached_issuer.is_network:
+                network_image = badge.cached_issuer.image
+
             image_url = composer.compose_badge_from_uploaded_image(
-                badgeImage, issuer_image
+                original_image, issuer_image, network_image
             )
 
             if not image_url:
@@ -1591,7 +1850,7 @@ class NetworkInvitation(BaseEntityDetailView):
     def post(self, request, **kwargs):
         try:
             network_slug = kwargs.get("networkSlug")
-            network = Issuer.objects.get(entity_id=network_slug)
+            network = Issuer.objects.get(entity_id=network_slug, is_network=True)
         except Issuer.DoesNotExist:
             return Response(
                 {"response": "Network not found"}, status=status.HTTP_404_NOT_FOUND
@@ -1619,7 +1878,7 @@ class NetworkInvitation(BaseEntityDetailView):
                 )
             slugs.append(slug)
 
-        issuers = Issuer.objects.filter(entity_id__in=slugs)
+        issuers = Issuer.objects.filter(entity_id__in=slugs, is_network=False)
         found_slugs = set(issuers.values_list("entity_id", flat=True))
 
         missing_slugs = set(slugs) - found_slugs
@@ -1648,20 +1907,20 @@ class NetworkInvitation(BaseEntityDetailView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # existing_invitations = NetworkInvite.objects.filter(
-        #     issuer__entity_id__in=slugs,
-        #     network=network,
-        #     status=NetworkInvite.Status.PENDING,
-        # ).select_related("issuer")
+        existing_invitations = NetworkInvite.objects.filter(
+            issuer__entity_id__in=slugs,
+            network=network,
+            status=NetworkInvite.Status.PENDING,
+        ).select_related("issuer")
 
-        # if existing_invitations.exists():
-        #     pending_names = [inv.issuer.name for inv in existing_invitations]
-        #     return Response(
-        #         {
-        #             "response": f"Für diese Institutionen liegen bereits offene Einladungen vor: {', '.join(pending_names)}"
-        #         },
-        #         status=status.HTTP_400_BAD_REQUEST,
-        #     )
+        if existing_invitations.exists():
+            pending_names = [inv.issuer.name for inv in existing_invitations]
+            return Response(
+                {
+                    "response": f"Für diese Institutionen liegen bereits offene Einladungen vor: {', '.join(pending_names)}"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             with transaction.atomic():
@@ -1745,7 +2004,9 @@ class NetworkInvitation(BaseEntityDetailView):
                 invitation.save()
 
                 if invitation.issuer:
-                    invitation.network.partner_issuers.add(invitation.issuer)
+                    NetworkMembership.objects.get_or_create(
+                        network=invitation.network, issuer=invitation.issuer
+                    )
 
             serializer = self.v1_serializer_class(invitation)
             return Response(serializer.data)

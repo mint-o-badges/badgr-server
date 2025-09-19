@@ -176,25 +176,6 @@ class BaseIssuerSerializerV1(
 
 
 class NetworkSerializerV1(BaseIssuerSerializerV1):
-    # partner_issuers = serializers.SerializerMethodField()
-
-    # def get_partner_issuers(self, obj):
-    #     from .serializers_v1 import IssuerSerializerV1
-
-    #     # Exclude 'networks' field from nested issuer serialization to prevent circular reference
-    #     context = self.context.copy()
-    #     context["exclude_fields"] = context.get("exclude_fields", []) + ["networks"]
-
-    #     direct_issuers = obj.partner_issuers.all()
-
-    #     data = IssuerSerializerV1(direct_issuers, many=True, context=context).data
-    #     # print(f"data {data}")
-    #     # print(f"cached_issuers {obj.cached_partner_issuers()}")
-    #     # return IssuerSerializerV1(
-    #     #     obj.cached_partner_issuers(), many=True, context=context
-    #     # ).data
-    #     return data
-
     def create(self, validated_data, **kwargs):
         new_network = Issuer(**validated_data)
 
@@ -215,8 +196,33 @@ class NetworkSerializerV1(BaseIssuerSerializerV1):
         representation["json"] = instance.get_json(
             obi_version="1_1", use_canonical_id=True
         )
+        partner_issuers = instance.partner_issuers
+        representation["partner_issuers"] = IssuerSerializerV1(
+            partner_issuers, many=True, context=self.context
+        ).data
+
+        request = self.context.get("request")
+        if request and request.user:
+            representation["current_user_network_role"] = self._get_user_network_role(
+                instance, request.user
+            )
 
         return representation
+
+    def _get_user_network_role(self, network, user):
+        """Get user's role within this network (either direct or through partner issuer)"""
+        direct_staff = network.cached_issuerstaff().filter(user=user).first()
+        if direct_staff:
+            return direct_staff.role
+
+        for membership in network.memberships.all():
+            partner_staff = (
+                membership.issuer.cached_issuerstaff().filter(user=user).first()
+            )
+            if partner_staff:
+                return partner_staff.role
+
+        return None
 
 
 class IssuerSerializerV1(BaseIssuerSerializerV1):
@@ -585,7 +591,7 @@ class BadgeClassSerializerV1(
                     original_image = json.loads(org_img_ext.original_json)["OrgImage"]
 
                     instance.generate_badge_image(
-                        instance.issuer.image, category, original_image
+                        category, original_image, instance.issuer.image
                     )
                     instance.save(update_fields=["image"])
                 except BadgeClassExtension.DoesNotExist as e:
@@ -623,21 +629,38 @@ class BadgeClassSerializerV1(
 
             extensions = new_badgeclass.cached_extensions()
 
-            try:
-                categoryExtension = extensions.get(name="extensions:CategoryExtension")
-                category = json.loads(categoryExtension.original_json)["Category"]
-                orgImage = extensions.get(name="extensions:OrgImageExtension")
-                original_image = json.loads(orgImage.original_json)["OrgImage"]
-            except BadgeClassExtension.DoesNotExist as e:
-                raise serializers.ValidationError({"extensions": str(e)})
+            if new_badgeclass.imageFrame:
+                try:
+                    categoryExtension = extensions.get(
+                        name="extensions:CategoryExtension"
+                    )
+                    category = json.loads(categoryExtension.original_json)["Category"]
+                    orgImage = extensions.get(name="extensions:OrgImageExtension")
+                    original_image = json.loads(orgImage.original_json)["OrgImage"]
+                except BadgeClassExtension.DoesNotExist as e:
+                    raise serializers.ValidationError({"extensions": str(e)})
 
-            try:
-                new_badgeclass.generate_badge_image(
-                    new_badgeclass.issuer.image, category, original_image
-                )
-                new_badgeclass.save(update_fields=["image"])
-            except Exception as e:
-                raise serializers.ValidationError(f"Badge image generation failed: {e}")
+                try:
+                    issuer_image = None
+                    network_image = None
+
+                    if new_badgeclass.issuer.is_network:
+                        network_image = new_badgeclass.issuer.image
+                    else:
+                        issuer_image = new_badgeclass.issuer.image
+
+                    new_badgeclass.generate_badge_image(
+                        category,
+                        original_image,
+                        issuer_image,
+                        network_image,
+                    )
+                    new_badgeclass.save(update_fields=["image"])
+                except Exception as e:
+                    raise serializers.ValidationError(
+                        f"Badge image generation failed: {e}"
+                    )
+
             return new_badgeclass
 
 
@@ -780,6 +803,8 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
         """
         evidence_items = []
 
+        issuer_slug = self.context["request"].parser_context["kwargs"].get("issuerSlug")
+
         # ob1 evidence url
         evidence_url = validated_data.get("evidence")
         if evidence_url:
@@ -804,6 +829,7 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
                 badgr_app=BadgrApp.objects.get_current(self.context.get("request")),
                 expires_at=validated_data.get("expires_at", None),
                 extensions=validated_data.get("extension_items", None),
+                issuerSlug=issuer_slug,
             )
         except DjangoValidationError as e:
             raise serializers.ValidationError(e.message)
@@ -1171,3 +1197,7 @@ class LearningPathParticipantSerializerV1(serializers.Serializer):
         data = super().to_representation(instance)
         data["participationBadgeAssertion"] = BadgeInstanceSerializerV1(instance).data
         return data
+
+
+class NetworkBadgeInstanceSerializerV1(BadgeInstanceSerializerV1):
+    pass
