@@ -90,9 +90,6 @@ class IssuerManager(BaseOpenBadgeObjectManager):
         )
 
 
-# class NetworkManager():
-
-
 class BadgeClassManager(BaseOpenBadgeObjectManager):
     ALLOWED_MINE_TYPES = [
         "image/png",
@@ -333,6 +330,7 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
         allow_uppercase=False,
         badgr_app=None,
         microdegree_id=None,
+        issuerSlug=None,
         **kwargs,
     ):
         """
@@ -350,8 +348,13 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
             allow_uppercase=allow_uppercase,
         )
 
+        from issuer.models import Issuer
+
         badgeclass = kwargs.pop("badgeclass", None)
-        issuer = kwargs.pop("issuer", badgeclass.issuer)
+        if issuerSlug:
+            issuer = Issuer.objects.get(entity_id=issuerSlug)
+        else:
+            issuer = kwargs.pop("issuer", badgeclass.issuer)
 
         # self.model would be a BadgeInstance
         new_instance = self.model(
