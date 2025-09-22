@@ -664,3 +664,12 @@ class TermsAgreement(BaseAuditedModelDeletedWithUser, cachemodel.CacheModel):
     class Meta:
         ordering = ("-terms_version",)
         unique_together = ("user", "terms_version")
+
+
+class UserPreference(BaseAuditedModelDeletedWithUser, cachemodel.CacheModel):
+    user = models.ForeignKey("badgeuser.BadgeUser", on_delete=models.CASCADE)
+    key = models.CharField(max_length=255, db_index=True)
+    value = models.TextField()
+
+    class Meta:
+        unique_together = ("user", "key")

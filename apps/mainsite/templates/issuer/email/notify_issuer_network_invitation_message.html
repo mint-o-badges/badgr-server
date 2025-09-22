@@ -5,7 +5,7 @@
 {% block main %}
     <mj-section background-color="#ffffff">
     <mj-column>
-    <mj-image src="{% static '/images/Logo-Oeb.png' %}" alt="Logo" href="https://openbadges.education" padding-left="25px" width="150px" height="77px" align="left" />
+    <mj-image src="{% static '/images/Logo-Oeb.png' %}" alt="Logo" href="https://openbadges.education" padding-left="25px" padding-bottom="60px" width="150px" height="77px" align="left" />
     <mj-text font-size="32px" font-weight="bold" padding-bottom="25px">
     <span style="text-transform:capitalize;">Netzwerk-Einladung</span>
     </mj-text>
@@ -21,9 +21,9 @@
 {% block button_url %}
     {{ activate_url }}
 {% endblock button_url %}
-{% block button_url_copy %}
-    {{ activate_url }}
-{% endblock button_url_copy %}
+{% block button_alt_link %}
+    <a href="{{ activate_url }}">{{ activate_url }}</a>
+{% endblock button_alt_link %}
 {% block button_text %}
     {{ call_to_action_label }}
 {% endblock button_text %}
