@@ -57,9 +57,7 @@
                 <td style="font-weight: 500;">
                     {{ item.name }}
                     {% if item.framework == "esco" %}
-                        <a href="{{ item.framework_identifier }}"
-                           style="color:#1400ff;
-                                  text-decoration:none">[E]</a>
+                        <a href="{{ item.framework_identifier }}" style="text-decoration:none">[E]</a>
                     {% endif %}
                 </td>
                 <td align="right"
@@ -118,8 +116,7 @@
         <mj-text>Alle deine erhaltenen Badges kannst du auf
         <a href="https://openbadges.education/recipient/badges?tab=badges"
            target="_blank"
-           style="color:#1400ff;
-                  text-decoration:underline">Open Educational Badges</a>
+           style="text-decoration:underline">Open Educational Badges</a>
         in deinem Rucksack sammeln und mit anderen teilen. Lege dafür einfach kostenlos einen Account an:</mj-text>
         <mj-button width="100%" href="{{ activate_url }}">{{ call_to_action_label }}</mj-button>
         </mj-column>
