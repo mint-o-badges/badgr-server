@@ -34,6 +34,7 @@ class TestCollections(BadgrTestCase):
             url="example.com",
             email="issuer@example.com",
             verified=True,
+            linkedinId="",
         )
 
         self.badge_class = BadgeClass.objects.create(
