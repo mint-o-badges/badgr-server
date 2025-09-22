@@ -383,6 +383,84 @@ class IssuerLearningPathsJson(JSONComponentView):
         ]
 
 
+class NetworkIssuersJson(JSONComponentView):
+    permission_classes = (permissions.AllowAny,)
+    model = Issuer
+
+    def log(self, obj):
+        logger.info("Retrieved network issuers '%s'", obj)
+
+    def get(self, request, **kwargs):
+        """
+        Retrieves networks for a given issuer identified by its slug.
+        """
+        network_slug = kwargs.get("entity_id")
+        try:
+            network = Issuer.objects.get(entity_id=network_slug)
+        except Issuer.DoesNotExist:
+            return Response({"detail": "Issuer not found."}, status=404)
+
+        self.log(network)
+
+        json_data = self.get_json(request=request, network=network)
+
+        return Response(json_data)
+
+    def get_json(self, request, network):
+        """
+        Get the list of issuers for a given network.
+        """
+        issuers = Issuer.objects.filter(network_memberships__network=network)
+
+        return [
+            {
+                "slug": issuer.entity_id,
+                "name": issuer.name,
+                "image": issuer.image,
+            }
+            for issuer in issuers
+        ]
+
+
+class IssuerNetworksJson(JSONComponentView):
+    permission_classes = (permissions.AllowAny,)
+    model = Issuer
+
+    def log(self, obj):
+        logger.info("Retrieved networks for issuer '%s'", obj)
+
+    def get_json(self, request, issuer):
+        """
+        Get the list of networks for a given issuer.
+        """
+        networks = Issuer.objects.filter(memberships__issuer=issuer, is_network=True)
+
+        return [
+            {
+                "slug": network.entity_id,
+                "name": network.name,
+                "image": network.image,
+            }
+            for network in networks
+        ]
+
+    def get(self, request, **kwargs):
+        """
+        Retrieves networks for a given issuer identified by its slug.
+        """
+        issuer_slug = kwargs.get("entity_id")
+        try:
+            issuer = Issuer.objects.get(entity_id=issuer_slug)
+        except Issuer.DoesNotExist:
+            return Response({"detail": "Issuer not found."}, status=404)
+
+        self.log(issuer)
+
+        json_data = self.get_json(request=request, issuer=issuer)
+
+        return Response(json_data)
+
+
 class IssuerImage(ImagePropertyDetailView):
     model = Issuer
     prop = "image"

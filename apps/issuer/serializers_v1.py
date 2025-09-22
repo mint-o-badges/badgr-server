@@ -202,7 +202,8 @@ class NetworkSerializerV1(BaseIssuerSerializerV1):
         ).data
 
         request = self.context.get("request")
-        if request and request.user:
+
+        if request and request.user and not request.user.is_anonymous:
             representation["current_user_network_role"] = self._get_user_network_role(
                 instance, request.user
             )

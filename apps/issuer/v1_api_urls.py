@@ -1,12 +1,13 @@
 from django.conf.urls import url
 
 from issuer.api import (
-    BadgeClassPartnerInstanceList,
     BadgeRequestList,
     IssuerAwardableBadgeClassList,
     IssuerLearningPathList,
     IssuerList,
+    NetworkBadgeClassesList,
     NetworkBadgeInstanceList,
+    NetworkBadgeQRCodeList,
     NetworkInvitation,
     NetworkInvitationList,
     NetworkIssuerDetail,
@@ -23,6 +24,7 @@ from issuer.api import (
     IssuerStaffRequestList,
     LearningPathDetail,
     LearningPathParticipantsList,
+    NetworkUserIssuersList,
     QRCodeDetail,
     BadgeImageComposition,
 )
@@ -58,14 +60,14 @@ urlpatterns = [
         name="v1_api_badgeclass_list",
     ),
     url(
+        r"^networks/(?P<slug>[^/]+)/badges$",
+        NetworkBadgeClassesList.as_view(),
+        name="v1_api_network_badgeclass_list",
+    ),
+    url(
         r"^issuers/(?P<slug>[^/]+)/awardable-badges$",
         IssuerAwardableBadgeClassList.as_view(),
         name="v1_issuer_awardable_badgeclasses",
-    ),
-    url(
-        r"^issuers/(?P<slug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/partner-awards$",
-        BadgeClassPartnerInstanceList.as_view(),
-        name="v1_api_badgeclass_partner_awards",
     ),
     url(
         r"^qrcode/(?P<slug>[^/]+)$", QRCodeDetail.as_view(), name="v1_api_qrcode_detail"
@@ -74,6 +76,16 @@ urlpatterns = [
         r"^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/qrcodes$",
         QRCodeDetail.as_view(),
         name="v1_api_qrcode_detail",
+    ),
+    url(
+        r"^networks/(?P<networkSlug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/qrcodes$",
+        NetworkBadgeQRCodeList.as_view(),
+        name="v1_api_network_badge_qrcode_list",
+    ),
+    url(
+        r"^networks/(?P<networkSlug>[^/]+)/issuers$",
+        NetworkUserIssuersList.as_view(),
+        name="v1_api_network_issuer_list",
     ),
     url(
         r"^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/qrcodes/(?P<slug>[^/]+)$",
@@ -108,7 +120,7 @@ urlpatterns = [
     url(
         r"^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<slug>[^/]+)/network-assertions$",
         NetworkBadgeInstanceList.as_view(),
-        name="v1_api_network_badgeinstance_list",
+        name="v1_api_badgeinstance_list",
     ),
     url(
         r"^issuers/(?P<slug>[^/]+)/assertions$",

@@ -18,9 +18,11 @@ from .public_api import (
     IssuerJson,
     IssuerLearningPathsJson,
     IssuerList,
+    IssuerNetworksJson,
     IssuerSearch,
     LearningPathJson,
     LearningPathList,
+    NetworkIssuersJson,
     OEmbedAPIEndpoint,
     VerifyBadgeAPIEndpoint,
 )
@@ -47,6 +49,16 @@ json_patterns = [
             IssuerLearningPathsJson.as_view(slugToEntityIdRedirect=True)
         ),
         name="issuer_learningpaths_json",
+    ),
+    url(
+        r"^issuers/(?P<entity_id>[^/.]+)/networks$",
+        xframe_options_exempt(IssuerNetworksJson.as_view(slugToEntityIdRedirect=True)),
+        name="issuer_networks_json",
+    ),
+    url(
+        r"^networks/(?P<entity_id>[^/.]+)/issuers$",
+        xframe_options_exempt(NetworkIssuersJson.as_view(slugToEntityIdRedirect=True)),
+        name="network_issuers_json",
     ),
     url(
         r"^all-issuers$",
@@ -85,7 +97,9 @@ json_patterns = [
     ),
     url(
         r"^assertions/(?P<entity_id>[^/.]+)/revocations$",
-        xframe_options_exempt(BadgeInstanceRevocations.as_view(slugToEntityIdRedirect=False)),
+        xframe_options_exempt(
+            BadgeInstanceRevocations.as_view(slugToEntityIdRedirect=False)
+        ),
         name="badgeinstance_revocations",
     ),
     url(

@@ -3,7 +3,7 @@ from django.conf import settings
 from rest_framework import permissions
 import rules
 
-from issuer.models import IssuerStaff
+from issuer.models import Issuer, IssuerStaff, NetworkMembership
 
 SAFE_METHODS = ["GET", "HEAD", "OPTIONS"]
 
@@ -108,6 +108,23 @@ def is_learningpath_owner(user, learningpath):
     )
 
 
+@rules.predicate
+def is_network_member(user, network):
+    """
+    Check if user is staff of any issuer that is a member of the given network
+    """
+    if not network or not network.is_network:
+        return False
+
+    user_staff_issuer_ids = IssuerStaff.objects.filter(user=user).values_list(
+        "issuer_id", flat=True
+    )
+
+    return NetworkMembership.objects.filter(
+        network=network, issuer_id__in=user_staff_issuer_ids
+    ).exists()
+
+
 can_issue_badgeclass = is_badgeclass_owner | is_badgeclass_staff
 can_edit_badgeclass = is_badgeclass_owner | is_badgeclass_editor
 
@@ -120,6 +137,7 @@ try:
     rules.add_perm("issuer.can_edit_badgeclass", can_edit_badgeclass)
     rules.add_perm("issuer.can_issue_learningpath", can_issue_learningpath)
     rules.add_perm("issuer.can_edit_learningpath", can_edit_learningpath)
+    rules.add_perm("network.is_member", is_network_member)
 except KeyError:
     pass
 
@@ -229,6 +247,38 @@ class IsStaff(permissions.BasePermission):
         return _is_server_admin(request) or request.user.has_perm(
             "issuer.is_staff", issuer
         )
+
+
+class IsNetworkMember(permissions.BasePermission):
+    """
+    Request.user is authorized to access network resources if they are staff
+    of an issuer that is a member of the network.
+    ---
+    model: Issuer (Network)
+    """
+
+    def has_object_permission(self, request, view, network):
+        if not network.is_network:
+            return False
+
+        return request.user.has_perm("network.is_member", network)
+
+    def has_permission(self, request, view):
+        """
+        For list views where we need to check network membership
+        based on URL parameters or query parameters
+        """
+
+        network_id = view.kwargs.get("network_id") or request.GET.get("network_id")
+
+        if not network_id:
+            return False
+
+        try:
+            network = Issuer.objects.get(id=network_id, is_network=True)
+            return request.user.has_perm("network.is_member", network)
+        except Issuer.DoesNotExist:
+            return False
 
 
 class ApprovedIssuersOnly(permissions.BasePermission):
