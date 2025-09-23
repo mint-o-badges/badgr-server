@@ -5,6 +5,7 @@ from issuer.api import (
     IssuerAwardableBadgeClassList,
     IssuerLearningPathList,
     IssuerList,
+    IssuerNetworkBadgeClassList,
     NetworkBadgeClassesList,
     NetworkBadgeInstanceList,
     NetworkBadgeQRCodeList,
@@ -118,9 +119,14 @@ urlpatterns = [
         name="v1_api_badgeinstance_list",
     ),
     url(
+        r"^issuers/(?P<issuerSlug>[^/]+)/network/badges$",
+        IssuerNetworkBadgeClassList.as_view(),
+        name="v1_api_issuer_network_badgeclass_list",
+    ),
+    url(
         r"^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<slug>[^/]+)/network-assertions$",
         NetworkBadgeInstanceList.as_view(),
-        name="v1_api_badgeinstance_list",
+        name="v1_api_network_badgeinstance_list",
     ),
     url(
         r"^issuers/(?P<slug>[^/]+)/assertions$",

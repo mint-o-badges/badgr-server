@@ -16,7 +16,7 @@ from celery.result import AsyncResult
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.http import Http404
 from django.urls import reverse
 from django.utils import timezone
@@ -959,6 +959,300 @@ class BadgeInstanceList(
     def post(self, request, **kwargs):
         self.get_object(request, **kwargs)
         return super(BadgeInstanceList, self).post(request, **kwargs)
+
+
+class IssuerNetworkBadgeClassList(
+    UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEntityListView
+):
+    """
+    GET a list of badge classes that this issuer has awarded
+    where the badgeclass belongs to a network issuer,
+    grouped by network issuer
+    """
+
+    model = Issuer
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    v1_serializer_class = BadgeClassSerializerV1
+    v2_serializer_class = BadgeClassSerializerV2
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    def get_object(self, request=None, **kwargs):
+        """
+        Get the issuer by entity_id from the URL slug
+        """
+        issuer_slug = kwargs.get("issuerSlug")
+        try:
+            issuer = Issuer.objects.get(entity_id=issuer_slug)
+            return issuer
+        except Issuer.DoesNotExist:
+            raise ValidationError(f"Issuer with slug '{issuer_slug}' not found")
+
+    def get_queryset(self, request=None, **kwargs):
+        """
+        Get badge classes that this issuer has awarded instances of,
+        where the badgeclass belongs to a network issuer
+        """
+        issuer = self.get_object(request, **kwargs)
+
+        queryset = BadgeClass.objects.filter(
+            issuer__is_network=True,
+            badgeinstances__issuer=issuer,
+        ).distinct()
+
+        queryset = queryset.annotate(
+            awarded_count=Count(
+                "badgeinstances", filter=Q(badgeinstances__issuer=issuer)
+            )
+        )
+
+        return queryset
+
+    @apispec_list_operation(
+        "BadgeClass",
+        summary="Get badge classes awarded by this issuer from network issuers, grouped by network",
+        tags=["BadgeClasses", "Issuers", "Networks"],
+    )
+    def get(self, request, **kwargs):
+        queryset = self.get_queryset(request, **kwargs)
+
+        # Group by network issuer
+        grouped_data = defaultdict(list)
+
+        for badge_class in queryset:
+            network_issuer = badge_class.issuer
+            badge_data = self.get_serializer_class()(badge_class).data
+
+            badge_data["awarded_count"] = getattr(badge_class, "awarded_count", 0)
+
+            grouped_data[network_issuer.entity_id].append(badge_data)
+
+        response_data = []
+        for network_issuer_slug, badge_classes in grouped_data.items():
+            try:
+                network_issuer = Issuer.objects.get(entity_id=network_issuer_slug)
+                network_data = {
+                    "network_issuer": {
+                        "slug": network_issuer.entity_id,
+                        "name": network_issuer.name,
+                        "image": network_issuer.image.url
+                        if network_issuer.image
+                        else None,
+                        "description": network_issuer.description,
+                    },
+                    "badge_classes": badge_classes,
+                    "total_badges": len(badge_classes),
+                    "total_instances_awarded": sum(
+                        badge["awarded_count"] for badge in badge_classes
+                    ),
+                }
+                response_data.append(network_data)
+            except Issuer.DoesNotExist:
+                continue
+
+        response_data.sort(key=lambda x: x["network_issuer"]["name"])
+
+        return Response(response_data)
+
+
+class IssuerNetworkBadgeInstanceList(
+    UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEntityListView
+):
+    """
+    GET a list of badge instances issued by this issuer
+    where the badgeclass belongs to a network issuer
+    """
+
+    model = Issuer
+    permission_classes = [
+        IsServerAdmin
+        | (
+            AuthenticatedWithVerifiedIdentifier
+            # & MayIssueBadgeClass  # You might want to add appropriate permissions here
+            & BadgrOAuthTokenHasScope
+        )
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    v1_serializer_class = BadgeInstanceSerializerV1
+    v2_serializer_class = BadgeInstanceSerializerV2
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    def get_object(self, request=None, **kwargs):
+        """
+        Get the issuer by entity_id from the URL slug
+        """
+        issuer_slug = kwargs.get("issuerSlug")
+        try:
+            issuer = Issuer.objects.get(entity_id=issuer_slug)
+            return issuer
+        except Issuer.DoesNotExist:
+            raise ValidationError(f"Issuer with slug '{issuer_slug}' not found")
+
+    def get_queryset(self, request=None, **kwargs):
+        """
+        Get badge instances issued by this issuer where the badgeclass
+        belongs to a network issuer (issuer.is_network=True)
+        """
+        issuer = self.get_object(request, **kwargs)
+
+        queryset = BadgeInstance.objects.filter(
+            issuer=issuer,
+            badgeclass__issuer__is_network=True,
+        )
+
+        recipients = request.query_params.getlist("recipient", None)
+        if recipients:
+            queryset = queryset.filter(recipient_identifier__in=recipients)
+
+        if request.query_params.get("include_expired", "").lower() not in ["1", "true"]:
+            queryset = queryset.filter(
+                Q(expires_at__gte=timezone.now()) | Q(expires_at__isnull=True)
+            )
+
+        if request.query_params.get("include_revoked", "").lower() not in ["1", "true"]:
+            queryset = queryset.filter(revoked=False)
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super(IssuerNetworkBadgeInstanceList, self).get_context_data(**kwargs)
+        context["issuer"] = self.get_object(self.request, **kwargs)
+        return context
+
+    def get_serializer_context(self):
+        """
+        Add user context for serializer, similar to your existing class
+        """
+        ctx = super(IssuerNetworkBadgeInstanceList, self).get_serializer_context()
+        ctx["user"] = self.request.user
+        return ctx
+
+    @apispec_list_operation(
+        "Assertion",
+        summary="Get badge instances issued by this issuer from network badge classes",
+        tags=["Assertions", "Issuers", "Networks"],
+        parameters=[
+            {
+                "in": "query",
+                "name": "recipient",
+                "type": "string",
+                "description": "A recipient identifier to filter by",
+            },
+            {
+                "in": "query",
+                "name": "num",
+                "type": "string",
+                "description": "Request pagination of results",
+            },
+            {
+                "in": "query",
+                "name": "include_expired",
+                "type": "boolean",
+                "description": "Include expired assertions",
+            },
+            {
+                "in": "query",
+                "name": "include_revoked",
+                "type": "boolean",
+                "description": "Include revoked assertions",
+            },
+        ],
+    )
+    def get(self, request, **kwargs):
+        self.get_object(request, **kwargs)
+        return super(IssuerNetworkBadgeInstanceList, self).get(request, **kwargs)
+
+
+class NetworkIssuedBadgeInstanceList(
+    UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEntityListView
+):
+    """
+    GET badge instances where:
+    - The badgeclass belongs to a network that this issuer is a member of
+    - The instances were issued by the network issuer
+    """
+
+    model = Issuer
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    v1_serializer_class = BadgeInstanceSerializerV1
+    v2_serializer_class = BadgeInstanceSerializerV2
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    def get_queryset(self, request=None, **kwargs):
+        """
+        Get badge instances from networks that this issuer is a member of
+        """
+        issuer = self.get_object(request, **kwargs)
+
+        # Get networks this issuer is a member of
+        network_ids = issuer.network_memberships.values_list("network_id", flat=True)
+
+        # Get badge instances issued by those networks
+        queryset = BadgeInstance.objects.filter(
+            badgeclass__issuer__id__in=network_ids, badgeclass__issuer__is_network=True
+        )
+
+        # Apply the same filters
+        recipients = request.query_params.getlist("recipient", None)
+        if recipients:
+            queryset = queryset.filter(recipient_identifier__in=recipients)
+
+        if request.query_params.get("include_expired", "").lower() not in ["1", "true"]:
+            queryset = queryset.filter(
+                Q(expires_at__gte=timezone.now()) | Q(expires_at__isnull=True)
+            )
+
+        if request.query_params.get("include_revoked", "").lower() not in ["1", "true"]:
+            queryset = queryset.filter(revoked=False)
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super(NetworkIssuedBadgeInstanceList, self).get_context_data(**kwargs)
+        context["issuer"] = self.get_object(self.request, **kwargs)
+        return context
+
+    @apispec_list_operation(
+        "Assertion",
+        summary="Get badge instances from networks this issuer is a member of",
+        tags=["Assertions", "Issuers", "Networks"],
+        parameters=[
+            {
+                "in": "query",
+                "name": "recipient",
+                "type": "string",
+                "description": "A recipient identifier to filter by",
+            },
+            {
+                "in": "query",
+                "name": "num",
+                "type": "string",
+                "description": "Request pagination of results",
+            },
+            {
+                "in": "query",
+                "name": "include_expired",
+                "type": "boolean",
+                "description": "Include expired assertions",
+            },
+            {
+                "in": "query",
+                "name": "include_revoked",
+                "type": "boolean",
+                "description": "Include revoked assertions",
+            },
+        ],
+    )
+    def get(self, request, **kwargs):
+        self.get_object(request, **kwargs)
+        return super(NetworkIssuedBadgeInstanceList, self).get(request, **kwargs)
 
 
 class IssuerBadgeInstanceList(
