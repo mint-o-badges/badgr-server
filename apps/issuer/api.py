@@ -1774,6 +1774,18 @@ class QRCodeDetail(BaseEntityView):
     def get_objects(self, request, **kwargs):
         badgeSlug = kwargs.get("badgeSlug")
         issuerSlug = kwargs.get("issuerSlug")
+
+        try:
+            issuer = Issuer.objects.get(entity_id=issuerSlug)
+        except Issuer.DoesNotExist:
+            return None
+
+        if issuer.is_network:
+            return QrCode.objects.filter(
+                badgeclass__entity_id=badgeSlug,
+                issuer__network_memberships__network=issuer,
+            )
+
         return QrCode.objects.filter(
             badgeclass__entity_id=badgeSlug, issuer__entity_id=issuerSlug
         )
@@ -1801,6 +1813,7 @@ class QRCodeDetail(BaseEntityView):
                 )
         else:
             objects = self.get_objects(request, **kwargs)
+            print(f"objects {objects}")
             serializer = serializer_class(objects, many=True)
 
             return Response(serializer.data)
