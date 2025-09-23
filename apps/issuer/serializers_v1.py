@@ -159,6 +159,8 @@ class BaseIssuerSerializerV1(
 
     is_network = serializers.BooleanField(default=False)
 
+    linkedinId = serializers.CharField(max_length=255, required=False, allow_blank=True)
+
     def get_fields(self):
         fields = super().get_fields()
 
@@ -291,6 +293,9 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
         new_issuer.country = validated_data.get("country")
         new_issuer.intendedUseVerified = validated_data.get("intendedUseVerified")
 
+        if "linkedinId" in validated_data:
+            new_issuer.linkedinId = validated_data.get("linkedinId")
+
         # Check whether issuer email domain matches institution website domain to verify it automatically
         if verifyIssuerAutomatically(
             validated_data.get("url"), validated_data.get("email")
@@ -324,6 +329,9 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
         instance.zip = validated_data.get("zip")
         instance.city = validated_data.get("city")
         instance.country = validated_data.get("country")
+
+        if "linkedinId" in validated_data:
+            instance.linkedinId = validated_data.get("linkedinId")
 
         # set badgrapp
         if not instance.badgrapp_id:
@@ -917,8 +925,11 @@ class QrCodeSerializerV1(serializers.Serializer):
     def update(self, instance, validated_data):
         instance.title = validated_data.get("title", instance.title)
         instance.createdBy = validated_data.get("createdBy", instance.createdBy)
-        instance.valid_from = validated_data.get("valid_from", instance.valid_from)
-        instance.expires_at = validated_data.get("expires_at", instance.expires_at)
+        if "valid_from" in validated_data:
+            instance.valid_from = validated_data["valid_from"]
+        if "expires_at" in validated_data:
+            print(f"expires {validated_data['expires_at']}")
+            instance.expires_at = validated_data["expires_at"]
         instance.notifications = validated_data.get(
             "notifications", instance.notifications
         )

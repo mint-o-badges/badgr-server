@@ -293,7 +293,7 @@ class Issuer(
     state = models.CharField(max_length=255, null=True, blank=True)
 
     intendedUseVerified = models.BooleanField(null=False, default=False)
-
+    linkedinId = models.CharField(max_length=255, default=None)
     lat = models.FloatField(null=True, blank=True)
     lon = models.FloatField(null=True, blank=True)
 

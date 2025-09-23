@@ -43,20 +43,15 @@ def export_institutions_csv(modeladmin, request, queryset):
     response["Content-Disposition"] = 'attachment; filename="institutions.csv"'
 
     writer = csv.writer(response)
-    writer.writerow(["Institution", "Member", "Badges", "Assertions"])
+    writer.writerow(["Institution", "Email", "Member", "Badges", "Assertions"])
 
     for issuer in queryset:
         staff_entries = IssuerStaff.objects.filter(issuer=issuer).select_related("user")
 
         staff_list = [
-            f"{staff.user.get_full_name()} – {staff.role}" for staff in staff_entries
+            f"{staff.user.get_full_name()} – {staff.role} - {staff.user.email}"
+            for staff in staff_entries
         ]
-
-        badges_list = (
-            [badge.name for badge in issuer.badgeclasses.all()]
-            if issuer.badgeclasses
-            else []
-        )
 
         badge_count = issuer.badgeclasses.count() if issuer.badgeclasses else 0
 
@@ -72,7 +67,13 @@ def export_institutions_csv(modeladmin, request, queryset):
         )
 
         writer.writerow(
-            [issuer.name, "\n".join(staff_list), badge_count, assertion_count]
+            [
+                issuer.name,
+                issuer.email,
+                "\n".join(staff_list),
+                badge_count,
+                assertion_count,
+            ]
         )
 
     return response
@@ -113,10 +114,12 @@ class IssuerBadgeclasses(ReadOnlyInline):
         qs = super(IssuerBadgeclasses, self).get_queryset(request)
         qs = qs.annotate(
             number_of_assertions=models.Count(
-                "badgeinstances", filter=models.Q(badgeinstances__revoked=False)
+                "badgeinstances",
+                filter=models.Q(badgeinstances__revoked=False),
+                distinct=True,
             )
         )
-        qs = qs.annotate(number_of_qrcodes=models.Count("qrcodes"))
+        qs = qs.annotate(number_of_qrcodes=models.Count("qrcodes", distinct=True))
         return qs
 
     def assertion_count(self, obj):

@@ -14,10 +14,15 @@
 </mj-title>
 <mj-font name="Rubik" href="{% static '/fonts/Rubik.css' %}" />
 <mj-attributes>
-<mj-all font-family="Rubik, 'Open Sans', sans-serif" font-size="16px" line-height="150%" />
+<mj-all font-family="Rubik, 'Open Sans', sans-serif" font-size="16px" line-height="115%" />
 <mj-button background-color="#492e98" color="#ffffff" border-radius="10px" font-weight="bold" padding="16px 32px" />
 <mj-section padding="32px 16px" />
 </mj-attributes>
+<mj-style>
+a {
+color: #1400FF;
+}
+</mj-style>
 </mj-head>
 <mj-body background-color="#f5f6fa">
 <mj-wrapper background-color="#f3f3f3" border-left="1px solid #dbd8df" border-right="1px solid #dbd8df" padding="0">
@@ -39,8 +44,8 @@
     Alternativ kannst du diesen Link kopieren und in deinen Browser einfügen:
     <br />
     <b>
-        {% block button_url_copy %}
-        {% endblock button_url_copy %}
+        {% block button_alt_link %}
+        {% endblock button_alt_link %}
     </b>
     </mj-text>
     </mj-column>
@@ -52,8 +57,8 @@
 <mj-image src="{% static '/images/logo-square.png' %}" href="https://openbadges.education" width="80px" height="80px" align="center" />
 </mj-column>
 <mj-column width="60%" vertical-align="middle">
-<mj-text>Du hast Fragen?</mj-text>
-<mj-text color="#1400ff" font-weight="bold" text-decoration="underline">
+<mj-text padding-bottom="0">Du hast Fragen?</mj-text>
+<mj-text padding-top="0" color="#1400ff" font-weight="bold" text-decoration="underline">
 <a href="https://openbadges.education/public/faq">Hier geht es zu unseren FAQ.</a>
 </mj-text>
 </mj-column>

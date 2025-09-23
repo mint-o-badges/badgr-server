@@ -52,14 +52,12 @@
         <mj-section padding="0px 41px">
         <mj-column background-color="#ffffff" padding="10px 25px">
         {% for item in badge_competencies %}
-            <mj-table padding="0" cellspacing="10" cellpadding="10" border="1px solid #492e98" padding-bottom="10px">
+            <mj-table padding="0" cellspacing="10" cellpadding="10" border="1px solid #492e98" padding-bottom="10px" font-size="14px">
             <tr style="background-color: #f5f6fa">
                 <td style="font-weight: 500;">
                     {{ item.name }}
                     {% if item.framework == "esco" %}
-                        <a href="{{ item.framework_identifier }}"
-                           style="color:#1400ff;
-                                  text-decoration:none">[E]</a>
+                        <a href="{{ item.framework_identifier }}" style="text-decoration:none">[E]</a>
                     {% endif %}
                 </td>
                 <td align="right"
@@ -118,8 +116,7 @@
         <mj-text>Alle deine erhaltenen Badges kannst du auf
         <a href="https://openbadges.education/recipient/badges?tab=badges"
            target="_blank"
-           style="color:#1400ff;
-                  text-decoration:underline">Open Educational Badges</a>
+           style="text-decoration:underline">Open Educational Badges</a>
         in deinem Rucksack sammeln und mit anderen teilen. Lege dafür einfach kostenlos einen Account an:</mj-text>
         <mj-button width="100%" href="{{ activate_url }}">{{ call_to_action_label }}</mj-button>
         </mj-column>
