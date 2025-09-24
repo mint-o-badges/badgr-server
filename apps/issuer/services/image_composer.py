@@ -358,7 +358,8 @@ class ImageComposer:
 
             try:
                 font = ImageFont.truetype(font_path_rubik_bold, font_size)
-            except:
+            except Exception as e:
+                logger.error(f"Error loading rubik font {e}")
                 font = ImageFont.load_default()
 
             text = "Teil von"
