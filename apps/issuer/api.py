@@ -188,7 +188,7 @@ class NetworkList(BaseEntityListView):
 
 class NetworkUserIssuersList(BaseEntityListView):
     """
-    List of issuers within a specific network that the authenticated user has access to
+    List of issuers within a specific network that the authenticated user is editor or owner in
     """
 
     model = Issuer
@@ -1069,11 +1069,7 @@ class IssuerNetworkBadgeInstanceList(
     model = Issuer
     permission_classes = [
         IsServerAdmin
-        | (
-            AuthenticatedWithVerifiedIdentifier
-            # & MayIssueBadgeClass  # You might want to add appropriate permissions here
-            & BadgrOAuthTokenHasScope
-        )
+        | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope)
         | BadgrOAuthTokenHasEntityScope
     ]
     v1_serializer_class = BadgeInstanceSerializerV1
@@ -1094,7 +1090,7 @@ class IssuerNetworkBadgeInstanceList(
     def get_queryset(self, request=None, **kwargs):
         """
         Get badge instances issued by this issuer where the badgeclass
-        belongs to a network issuer (issuer.is_network=True)
+        belongs to a network issuer
         """
         issuer = self.get_object(request, **kwargs)
 
@@ -1102,18 +1098,6 @@ class IssuerNetworkBadgeInstanceList(
             issuer=issuer,
             badgeclass__issuer__is_network=True,
         )
-
-        recipients = request.query_params.getlist("recipient", None)
-        if recipients:
-            queryset = queryset.filter(recipient_identifier__in=recipients)
-
-        if request.query_params.get("include_expired", "").lower() not in ["1", "true"]:
-            queryset = queryset.filter(
-                Q(expires_at__gte=timezone.now()) | Q(expires_at__isnull=True)
-            )
-
-        if request.query_params.get("include_revoked", "").lower() not in ["1", "true"]:
-            queryset = queryset.filter(revoked=False)
 
         return queryset
 
@@ -1134,125 +1118,10 @@ class IssuerNetworkBadgeInstanceList(
         "Assertion",
         summary="Get badge instances issued by this issuer from network badge classes",
         tags=["Assertions", "Issuers", "Networks"],
-        parameters=[
-            {
-                "in": "query",
-                "name": "recipient",
-                "type": "string",
-                "description": "A recipient identifier to filter by",
-            },
-            {
-                "in": "query",
-                "name": "num",
-                "type": "string",
-                "description": "Request pagination of results",
-            },
-            {
-                "in": "query",
-                "name": "include_expired",
-                "type": "boolean",
-                "description": "Include expired assertions",
-            },
-            {
-                "in": "query",
-                "name": "include_revoked",
-                "type": "boolean",
-                "description": "Include revoked assertions",
-            },
-        ],
     )
     def get(self, request, **kwargs):
         self.get_object(request, **kwargs)
         return super(IssuerNetworkBadgeInstanceList, self).get(request, **kwargs)
-
-
-class NetworkIssuedBadgeInstanceList(
-    UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEntityListView
-):
-    """
-    GET badge instances where:
-    - The badgeclass belongs to a network that this issuer is a member of
-    - The instances were issued by the network issuer
-    """
-
-    model = Issuer
-    permission_classes = [
-        IsServerAdmin
-        | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope)
-        | BadgrOAuthTokenHasEntityScope
-    ]
-    v1_serializer_class = BadgeInstanceSerializerV1
-    v2_serializer_class = BadgeInstanceSerializerV2
-    valid_scopes = ["rw:issuer", "rw:issuer:*"]
-
-    def get_queryset(self, request=None, **kwargs):
-        """
-        Get badge instances from networks that this issuer is a member of
-        """
-        issuer = self.get_object(request, **kwargs)
-
-        # Get networks this issuer is a member of
-        network_ids = issuer.network_memberships.values_list("network_id", flat=True)
-
-        # Get badge instances issued by those networks
-        queryset = BadgeInstance.objects.filter(
-            badgeclass__issuer__id__in=network_ids, badgeclass__issuer__is_network=True
-        )
-
-        # Apply the same filters
-        recipients = request.query_params.getlist("recipient", None)
-        if recipients:
-            queryset = queryset.filter(recipient_identifier__in=recipients)
-
-        if request.query_params.get("include_expired", "").lower() not in ["1", "true"]:
-            queryset = queryset.filter(
-                Q(expires_at__gte=timezone.now()) | Q(expires_at__isnull=True)
-            )
-
-        if request.query_params.get("include_revoked", "").lower() not in ["1", "true"]:
-            queryset = queryset.filter(revoked=False)
-
-        return queryset
-
-    def get_context_data(self, **kwargs):
-        context = super(NetworkIssuedBadgeInstanceList, self).get_context_data(**kwargs)
-        context["issuer"] = self.get_object(self.request, **kwargs)
-        return context
-
-    @apispec_list_operation(
-        "Assertion",
-        summary="Get badge instances from networks this issuer is a member of",
-        tags=["Assertions", "Issuers", "Networks"],
-        parameters=[
-            {
-                "in": "query",
-                "name": "recipient",
-                "type": "string",
-                "description": "A recipient identifier to filter by",
-            },
-            {
-                "in": "query",
-                "name": "num",
-                "type": "string",
-                "description": "Request pagination of results",
-            },
-            {
-                "in": "query",
-                "name": "include_expired",
-                "type": "boolean",
-                "description": "Include expired assertions",
-            },
-            {
-                "in": "query",
-                "name": "include_revoked",
-                "type": "boolean",
-                "description": "Include revoked assertions",
-            },
-        ],
-    )
-    def get(self, request, **kwargs):
-        self.get_object(request, **kwargs)
-        return super(NetworkIssuedBadgeInstanceList, self).get(request, **kwargs)
 
 
 class IssuerBadgeInstanceList(
@@ -1364,14 +1233,6 @@ class NetworkBadgeInstanceList(
         queryset = BadgeInstance.objects.filter(
             badgeclass=badgeclass, issuer__network_memberships__network=network
         ).select_related("issuer", "user")
-
-        if request.query_params.get("include_expired", "").lower() not in ["1", "true"]:
-            queryset = queryset.filter(
-                Q(expires_at__gte=timezone.now()) | Q(expires_at__isnull=True)
-            )
-
-        if request.query_params.get("include_revoked", "").lower() not in ["1", "true"]:
-            queryset = queryset.filter(revoked=False)
 
         return queryset
 
@@ -1813,7 +1674,6 @@ class QRCodeDetail(BaseEntityView):
                 )
         else:
             objects = self.get_objects(request, **kwargs)
-            print(f"objects {objects}")
             serializer = serializer_class(objects, many=True)
 
             return Response(serializer.data)
