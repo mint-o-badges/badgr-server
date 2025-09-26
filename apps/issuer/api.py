@@ -1,5 +1,6 @@
 import datetime
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
+import json
 
 import dateutil.parser
 from allauth.account.adapter import get_adapter
@@ -15,11 +16,10 @@ from celery.result import AsyncResult
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.http import Http404
 from django.urls import reverse
 from django.utils import timezone
-
 from entity.api import (
     BaseEntityDetailView,
     BaseEntityListView,
@@ -35,8 +35,8 @@ from issuer.models import (
     IssuerStaff,
     IssuerStaffRequest,
     LearningPath,
-    Network,
     NetworkInvite,
+    NetworkMembership,
     QrCode,
     RequestedBadge,
 )
@@ -47,13 +47,13 @@ from issuer.permissions import (
     BadgrOAuthTokenHasScope,
     IsEditor,
     IsEditorButOwnerForDelete,
-    IsNetworkEditor,
+    IsNetworkMember,
     IsStaff,
     MayEditBadgeClass,
     MayIssueBadgeClass,
     MayIssueLearningPath,
     is_learningpath_editor,
-    is_network_editor,
+    is_editor,
 )
 from issuer.serializers_v1 import (
     BadgeClassSerializerV1,
@@ -62,6 +62,7 @@ from issuer.serializers_v1 import (
     IssuerStaffRequestSerializer,
     LearningPathParticipantSerializerV1,
     LearningPathSerializerV1,
+    NetworkBadgeInstanceSerializerV1,
     NetworkInviteSerializer,
     NetworkSerializerV1,
     QrCodeSerializerV1,
@@ -123,7 +124,9 @@ class IssuerList(BaseEntityListView):
         # it is removed from the database, but the cache is not invalidated. So this is a temporary workaround
         # till figuring out how to invalidate/refresh cache.
         # Force fresh data from the database
-        return Issuer.objects.filter(staff__id=request.user.id).distinct()
+        return Issuer.objects.filter(
+            staff__id=request.user.id, is_network=False
+        ).distinct()
 
     @apispec_list_operation(
         "Issuer",
@@ -140,6 +143,92 @@ class IssuerList(BaseEntityListView):
     )
     def post(self, request, **kwargs):
         return super(IssuerList, self).post(request, **kwargs)
+
+
+class NetworkList(BaseEntityListView):
+    """
+    Network list resource for the authenticated user
+    """
+
+    model = Issuer
+    v1_serializer_class = NetworkSerializerV1
+    permission_classes = [
+        IsServerAdmin
+        | (
+            AuthenticatedWithVerifiedIdentifier
+            & BadgrOAuthTokenHasScope
+            & ApprovedIssuersOnly
+        )
+    ]
+    valid_scopes = ["rw:issuer"]
+
+    def get_objects(self, request, **kwargs):
+        return Issuer.objects.filter(
+            Q(staff__id=request.user.id)
+            | Q(memberships__issuer__staff__id=request.user.id),
+            is_network=True,
+        ).distinct()
+
+    @apispec_list_operation(
+        "Network",
+        summary="Get a list of Networks for authenticated user",
+        tags=["Networks"],
+    )
+    def get(self, request, **kwargs):
+        return super(NetworkList, self).get(request, **kwargs)
+
+    @apispec_post_operation(
+        "Network",
+        summary="Create a new Network",
+        tags=["Networks"],
+    )
+    def post(self, request, **kwargs):
+        return super(NetworkList, self).post(request, **kwargs)
+
+
+class NetworkUserIssuersList(BaseEntityListView):
+    """
+    List of issuers within a specific network that the authenticated user is editor or owner in
+    """
+
+    model = Issuer
+    v1_serializer_class = IssuerSerializerV1
+    v2_serializer_class = IssuerSerializerV2
+    permission_classes = [
+        IsServerAdmin
+        | (
+            AuthenticatedWithVerifiedIdentifier
+            & BadgrOAuthTokenHasScope
+            & ApprovedIssuersOnly
+        )
+    ]
+    valid_scopes = ["rw:issuer"]
+
+    def get_objects(self, request, **kwargs):
+        networkSlug = kwargs.get("networkSlug")
+
+        if not networkSlug:
+            return Issuer.objects.none()
+
+        try:
+            network = Issuer.objects.get(entity_id=networkSlug, is_network=True)
+        except Issuer.DoesNotExist:
+            return Issuer.objects.none()
+
+        return Issuer.objects.filter(
+            issuerstaff__user=request.user,
+            issuerstaff__role__in=[IssuerStaff.ROLE_OWNER, IssuerStaff.ROLE_EDITOR],
+            is_network=False,
+            network_memberships__network_id=network.id,
+        ).distinct()
+
+    @apispec_list_operation(
+        "Issuer",
+        summary="Get a list of Issuers within a network for authenticated user",
+        tags=["Networks", "Issuers"],
+    )
+    def get(self, request, **kwargs):
+        return super(NetworkUserIssuersList, self).get(request, **kwargs)
 
 
 class IssuerDetail(BaseEntityDetailView):
@@ -182,46 +271,64 @@ class IssuerDetail(BaseEntityDetailView):
         return super(IssuerDetail, self).delete(request, **kwargs)
 
 
-class NetworkList(BaseEntityListView):
-    """
-    Network list resource for the authenticated user
-    """
-
-    model = Network
-    v1_serializer_class = NetworkSerializerV1
+class NetworkIssuerDetail(BaseEntityDetailView):
+    model = Issuer
     permission_classes = [
         IsServerAdmin
-        | (
-            AuthenticatedWithVerifiedIdentifier
-            & BadgrOAuthTokenHasScope
-            & ApprovedIssuersOnly
-        )
+        | (AuthenticatedWithVerifiedIdentifier & IsEditor & BadgrOAuthTokenHasScope)
     ]
-    valid_scopes = ["rw:issuer"]
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
-    def get_objects(self, request, **kwargs):
-        # return self.request.user.cached_issuers()
-        # Note: The issue with the commented line above is that When deleting an entity using the delete method,
-        # it is removed from the database, but the cache is not invalidated. So this is a temporary workaround
-        # till figuring out how to invalidate/refresh cache.
-        # Force fresh data from the database
-        return Network.objects.filter(staff__id=request.user.id).distinct()
+    def get_object(self, network, issuer_slug):
+        try:
+            return network.partner_issuers.get(entity_id=issuer_slug)
+        except Issuer.DoesNotExist:
+            raise Http404("Issuer not found in this network")
 
-    @apispec_list_operation(
-        "Network",
-        summary="Get a list of Networks for authenticated user",
-        tags=["Networks"],
+    @apispec_delete_operation(
+        "Issuer",
+        summary="Remove an issuer from a network",
+        description="Authenticated user must have owner, editor, or staff status on the Network",
+        tags=["Issuers", "Network"],
     )
-    def get(self, request, **kwargs):
-        return super(NetworkList, self).get(request, **kwargs)
+    def delete(self, request, slug, issuer_slug, **kwargs):
+        try:
+            network = Issuer.objects.get(entity_id=slug, is_network=True)
+        except Issuer.DoesNotExist:
+            raise Exception("Network not found")
 
-    @apispec_post_operation(
-        "Network",
-        summary="Create a new Network",
-        tags=["Networks"],
-    )
-    def post(self, request, **kwargs):
-        return super(NetworkList, self).post(request, **kwargs)
+        if not is_editor(request.user, network):
+            return Response(
+                {"error": "You are not authorized to remove this issuer."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        issuer = self.get_object(network, issuer_slug)
+
+        try:
+            membership = NetworkMembership.objects.get(network=network, issuer=issuer)
+            membership.delete()
+
+        except NetworkMembership.DoesNotExist:
+            return Response(
+                {"error": "Membership not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        owners = issuer.cached_issuerstaff().filter(role=IssuerStaff.ROLE_OWNER)
+
+        email_context = {"issuer": issuer, "network": network}
+
+        adapter = get_adapter()
+
+        for owner in owners:
+            adapter.send_mail(
+                "issuer/email/notify_issuer_network_update",
+                owner.user.email,
+                email_context,
+            )
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class AllBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListView):
@@ -330,6 +437,100 @@ class IssuerBadgeClassList(
         return super(IssuerBadgeClassList, self).post(request, **kwargs)
 
 
+class NetworkBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListView):
+    """
+    GET a list of badgeclasses within a network context
+    """
+
+    model = BadgeClass
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsNetworkMember)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    v1_serializer_class = BadgeClassSerializerV1
+    v2_serializer_class = BadgeClassSerializerV2
+    valid_scopes = ["rw:issuer"]
+
+    def get_queryset(self, request, **kwargs):
+        network_slug = kwargs.get("slug") or request.GET.get("slug")
+        if not network_slug:
+            return BadgeClass.objects.none()
+
+        try:
+            return BadgeClass.objects.filter(
+                issuer__entity_id=network_slug, issuer__is_network=True
+            ).order_by("created_at")
+
+        except Issuer.DoesNotExist:
+            return BadgeClass.objects.none()
+
+    @apispec_list_operation(
+        "BadgeClass",
+        summary="Get a list of BadgeClasses for network members",
+        tags=["BadgeClasses"],
+    )
+    def get(self, request, **kwargs):
+        return super(NetworkBadgeClassesList, self).get(request, **kwargs)
+
+
+class IssuerAwardableBadgeClassList(
+    UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEntityListView
+):
+    """
+    GET a list of badgeclasses that this issuer can award (own badges + network badges if partner)
+    """
+
+    model = Issuer  # used by get_object()
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsEditor & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    v1_serializer_class = BadgeClassSerializerV1
+    v2_serializer_class = BadgeClassSerializerV2
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    def get_object(self, request, **kwargs):
+        issuerSlug = kwargs.get("slug")
+        return Issuer.objects.get(entity_id=issuerSlug)
+
+    def get_queryset(self, request=None, **kwargs):
+        issuer = self.get_object(request, **kwargs)
+
+        own_badges = BadgeClass.objects.filter(issuer=issuer)
+
+        network_badges = BadgeClass.objects.filter(
+            issuer__is_network=True, issuer__memberships__issuer=issuer
+        )
+
+        awardable_badges = own_badges.union(network_badges)
+
+        return awardable_badges
+
+    def get_context_data(self, **kwargs):
+        context = super(IssuerAwardableBadgeClassList, self).get_context_data(**kwargs)
+        context["issuer"] = self.get_object(self.request, **kwargs)
+        return context
+
+    @apispec_list_operation(
+        "BadgeClass",
+        summary="Get a list of BadgeClasses that this Issuer can award",
+        description="Returns own BadgeClasses plus BadgeClasses from networks where this issuer is a partner. Authenticated user must have owner, editor, or staff status on the Issuer",
+        tags=["Issuers", "BadgeClasses"],
+        parameters=[
+            {
+                "in": "query",
+                "name": "num",
+                "type": "string",
+                "description": "Request pagination of results",
+            },
+        ],
+    )
+    def get(self, request, **kwargs):
+        return super(IssuerAwardableBadgeClassList, self).get(request, **kwargs)
+
+
 class IssuerLearningPathList(
     UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEntityListView
 ):
@@ -382,105 +583,6 @@ class IssuerLearningPathList(
     def post(self, request, **kwargs):
         self.get_object(request, **kwargs)  # trigger a has_object_permissions() check
         return super(IssuerLearningPathList, self).post(request, **kwargs)
-
-
-class NetworkIssuerDetail(BaseEntityDetailView):
-    model = Network
-    permission_classes = [
-        IsServerAdmin
-        | (
-            AuthenticatedWithVerifiedIdentifier
-            & IsNetworkEditor
-            & BadgrOAuthTokenHasScope
-        )
-    ]
-    valid_scopes = ["rw:issuer", "rw:issuer:*"]
-
-    def get_object(self, network, issuer_slug):
-        try:
-            return network.partner_issuers.get(entity_id=issuer_slug)
-        except Issuer.DoesNotExist:
-            raise Http404("Issuer not found in this network")
-
-    @apispec_delete_operation(
-        "Issuer",
-        summary="Remove an issuer from a network",
-        description="Authenticated user must have owner, editor, or staff status on the Network",
-        tags=["Issuers", "Network"],
-    )
-    def delete(self, request, slug, issuer_slug, **kwargs):
-        try:
-            network = Network.objects.get(entity_id=slug)
-        except Network.DoesNotExist:
-            raise Exception("Network not found")
-
-        if not is_network_editor(request.user, network):
-            return Response(
-                {"error": "You are not authorized to remove this issuer."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        issuer = self.get_object(network, issuer_slug)
-
-        network.partner_issuers.remove(issuer)
-
-        owners = issuer.cached_issuerstaff().filter(role=IssuerStaff.ROLE_OWNER)
-
-        email_context = {"issuer": issuer, "network": network}
-
-        adapter = get_adapter()
-
-        for owner in owners:
-            adapter.send_mail(
-                "issuer/email/notify_issuer_network_update",
-                owner.user.email,
-                email_context,
-            )
-
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class NetworkIssuerList(
-    UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEntityListView
-):
-    """
-    GET a list of issuers within one network context
-    """
-
-    model = Network
-    permission_classes = [
-        IsServerAdmin
-        | (AuthenticatedWithVerifiedIdentifier & IsEditor & BadgrOAuthTokenHasScope)
-        | BadgrOAuthTokenHasEntityScope
-    ]
-    v1_serializer_class = IssuerSerializerV1
-    valid_scopes = ["rw:issuer", "rw:issuer:*"]
-
-    def get_queryset(self, request=None, **kwargs):
-        network = self.get_object(request, **kwargs)
-        return network.partner_issuers
-
-    def get_context_data(self, **kwargs):
-        context = super(NetworkIssuerList, self).get_context_data(**kwargs)
-        context["network"] = self.get_object(self.request, **kwargs)
-        return context
-
-    @apispec_list_operation(
-        "Issuer",
-        summary="Get a list of issuers for a single Network",
-        description="Authenticated user must have owner, editor, or staff status on the Network",
-        tags=["Issuers", "Network"],
-        parameters=[
-            {
-                "in": "query",
-                "name": "num",
-                "type": "string",
-                "description": "Request pagination of results",
-            },
-        ],
-    )
-    def get(self, request, **kwargs):
-        return super(NetworkIssuerList, self).get(request, **kwargs)
 
 
 class LearningPathParticipantsList(BaseEntityView):
@@ -784,7 +886,7 @@ class BadgeInstanceList(
         IsServerAdmin
         | (
             AuthenticatedWithVerifiedIdentifier
-            & MayIssueBadgeClass
+            # & MayIssueBadgeClass
             & BadgrOAuthTokenHasScope
         )
         | BadgrOAuthTokenHasEntityScope
@@ -855,9 +957,171 @@ class BadgeInstanceList(
         tags=["Assertions", "BadgeClasses"],
     )
     def post(self, request, **kwargs):
-        # verify the user has permission to the badgeclass
         self.get_object(request, **kwargs)
         return super(BadgeInstanceList, self).post(request, **kwargs)
+
+
+class IssuerNetworkBadgeClassList(
+    UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEntityListView
+):
+    """
+    GET a list of badge classes that this issuer has awarded
+    where the badgeclass belongs to a network issuer,
+    grouped by network issuer
+    """
+
+    model = Issuer
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    v1_serializer_class = BadgeClassSerializerV1
+    v2_serializer_class = BadgeClassSerializerV2
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    def get_object(self, request=None, **kwargs):
+        """
+        Get the issuer by entity_id from the URL slug
+        """
+        issuer_slug = kwargs.get("issuerSlug")
+        try:
+            issuer = Issuer.objects.get(entity_id=issuer_slug)
+            return issuer
+        except Issuer.DoesNotExist:
+            raise ValidationError(f"Issuer with slug '{issuer_slug}' not found")
+
+    def get_queryset(self, request=None, **kwargs):
+        """
+        Get badge classes that this issuer has awarded instances of,
+        where the badgeclass belongs to a network issuer
+        """
+        issuer = self.get_object(request, **kwargs)
+
+        queryset = BadgeClass.objects.filter(
+            issuer__is_network=True,
+            badgeinstances__issuer=issuer,
+        ).distinct()
+
+        queryset = queryset.annotate(
+            awarded_count=Count(
+                "badgeinstances", filter=Q(badgeinstances__issuer=issuer)
+            )
+        )
+
+        return queryset
+
+    @apispec_list_operation(
+        "BadgeClass",
+        summary="Get badge classes awarded by this issuer from network issuers, grouped by network",
+        tags=["BadgeClasses", "Issuers", "Networks"],
+    )
+    def get(self, request, **kwargs):
+        queryset = self.get_queryset(request, **kwargs)
+
+        # Group by network issuer
+        grouped_data = defaultdict(list)
+
+        for badge_class in queryset:
+            network_issuer = badge_class.issuer
+            badge_data = self.get_serializer_class()(badge_class).data
+
+            badge_data["awarded_count"] = getattr(badge_class, "awarded_count", 0)
+
+            grouped_data[network_issuer.entity_id].append(badge_data)
+
+        response_data = []
+        for network_issuer_slug, badge_classes in grouped_data.items():
+            try:
+                network_issuer = Issuer.objects.get(entity_id=network_issuer_slug)
+                network_data = {
+                    "network_issuer": {
+                        "slug": network_issuer.entity_id,
+                        "name": network_issuer.name,
+                        "image": network_issuer.image.url
+                        if network_issuer.image
+                        else None,
+                        "description": network_issuer.description,
+                    },
+                    "badge_classes": badge_classes,
+                    "total_badges": len(badge_classes),
+                    "total_instances_awarded": sum(
+                        badge["awarded_count"] for badge in badge_classes
+                    ),
+                }
+                response_data.append(network_data)
+            except Issuer.DoesNotExist:
+                continue
+
+        response_data.sort(key=lambda x: x["network_issuer"]["name"])
+
+        return Response(response_data)
+
+
+class IssuerNetworkBadgeInstanceList(
+    UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEntityListView
+):
+    """
+    GET a list of badge instances issued by this issuer
+    where the badgeclass belongs to a network issuer
+    """
+
+    model = Issuer
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    v1_serializer_class = BadgeInstanceSerializerV1
+    v2_serializer_class = BadgeInstanceSerializerV2
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    def get_object(self, request=None, **kwargs):
+        """
+        Get the issuer by entity_id from the URL slug
+        """
+        issuer_slug = kwargs.get("issuerSlug")
+        try:
+            issuer = Issuer.objects.get(entity_id=issuer_slug)
+            return issuer
+        except Issuer.DoesNotExist:
+            raise ValidationError(f"Issuer with slug '{issuer_slug}' not found")
+
+    def get_queryset(self, request=None, **kwargs):
+        """
+        Get badge instances issued by this issuer where the badgeclass
+        belongs to a network issuer
+        """
+        issuer = self.get_object(request, **kwargs)
+
+        queryset = BadgeInstance.objects.filter(
+            issuer=issuer,
+            badgeclass__issuer__is_network=True,
+        )
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super(IssuerNetworkBadgeInstanceList, self).get_context_data(**kwargs)
+        context["issuer"] = self.get_object(self.request, **kwargs)
+        return context
+
+    def get_serializer_context(self):
+        """
+        Add user context for serializer, similar to your existing class
+        """
+        ctx = super(IssuerNetworkBadgeInstanceList, self).get_serializer_context()
+        ctx["user"] = self.request.user
+        return ctx
+
+    @apispec_list_operation(
+        "Assertion",
+        summary="Get badge instances issued by this issuer from network badge classes",
+        tags=["Assertions", "Issuers", "Networks"],
+    )
+    def get(self, request, **kwargs):
+        self.get_object(request, **kwargs)
+        return super(IssuerNetworkBadgeInstanceList, self).get(request, **kwargs)
 
 
 class IssuerBadgeInstanceList(
@@ -935,6 +1199,100 @@ class IssuerBadgeInstanceList(
             request, **kwargs
         )  # trigger a has_object_permissions() check
         return super(IssuerBadgeInstanceList, self).post(request, **kwargs)
+
+
+class NetworkBadgeInstanceList(
+    UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEntityListView
+):
+    """
+    GET a list of assertions for a badgeclass across all network partner issuers
+    """
+
+    model = BadgeClass
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsStaff & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    v1_serializer_class = NetworkBadgeInstanceSerializerV1
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    def get_object(self, request=None, **kwargs):
+        badgeSlug = kwargs.get("slug")
+        badgeclass = BadgeClass.objects.get(entity_id=badgeSlug)
+        if not badgeclass.issuer.is_network:
+            raise ValidationError(
+                "This endpoint is only available for badges created by networks"
+            )
+        return badgeclass
+
+    def get_queryset(self, request=None, **kwargs):
+        badgeclass = self.get_object(request, **kwargs)
+        network = badgeclass.issuer
+
+        queryset = BadgeInstance.objects.filter(
+            badgeclass=badgeclass, issuer__network_memberships__network=network
+        ).select_related("issuer", "user")
+
+        return queryset
+
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        ctx["user"] = self.request.user
+        return ctx
+
+    def get(self, request, **kwargs):
+        response = super().get(request, **kwargs)
+        instances = response.data
+        badgeclass = self.get_object(request, **kwargs)
+
+        grouped_data = self.group_instances_by_issuer(instances, request, badgeclass)
+
+        response.data = {"grouped_results": grouped_data}
+        return response
+
+    def _extract_slug_from_issuer_url(self, url):
+        if not url:
+            return None
+        return url.rstrip("/").split("/")[-1]
+
+    def group_instances_by_issuer(self, instances, request, badgeclass):
+        grouped = {}
+        request_user = request.user
+        network_issuer = badgeclass.issuer
+        partner_issuers = network_issuer.partner_issuers.all()
+
+        for partner in partner_issuers:
+            user_has_access = self.user_has_access_to_issuer(request_user, partner)
+            grouped[partner.entity_id] = {
+                "issuer": {
+                    "slug": partner.entity_id,
+                    "name": partner.name,
+                    "image": partner.image.url if partner.image else None,
+                },
+                "has_access": user_has_access,
+                "instances": [],
+                "instance_count": 0,
+            }
+
+        for instance_data in instances:
+            issuer_url = instance_data.get("issuer")
+            issuer_slug = self._extract_slug_from_issuer_url(issuer_url)
+            if issuer_slug and issuer_slug in grouped:
+                if grouped[issuer_slug]["has_access"]:
+                    grouped[issuer_slug]["instances"].append(instance_data)
+                grouped[issuer_slug]["instance_count"] += 1
+
+        for slug, group_data in grouped.items():
+            if not group_data["has_access"]:
+                partner = partner_issuers.get(entity_id=slug)
+                group_data["instance_count"] = group_data["instance_count"]
+                group_data["instances"] = []
+
+        return list(grouped.values())
+
+    def user_has_access_to_issuer(self, user, issuer):
+        return user in issuer.staff.all()
 
 
 class BadgeInstanceDetail(BaseEntityDetailView):
@@ -1277,6 +1635,18 @@ class QRCodeDetail(BaseEntityView):
     def get_objects(self, request, **kwargs):
         badgeSlug = kwargs.get("badgeSlug")
         issuerSlug = kwargs.get("issuerSlug")
+
+        try:
+            issuer = Issuer.objects.get(entity_id=issuerSlug)
+        except Issuer.DoesNotExist:
+            return None
+
+        if issuer.is_network:
+            return QrCode.objects.filter(
+                badgeclass__entity_id=badgeSlug,
+                issuer__network_memberships__network=issuer,
+            )
+
         return QrCode.objects.filter(
             badgeclass__entity_id=badgeSlug, issuer__entity_id=issuerSlug
         )
@@ -1343,6 +1713,80 @@ class QRCodeDetail(BaseEntityView):
         qr_code = self.get_object(request, **kwargs)
         qr_code.delete()
         return Response(status=HTTP_204_NO_CONTENT)
+
+
+class NetworkBadgeQRCodeList(BaseEntityView):
+    """
+    QrCode list resource for a specific badge across all issuers in a network, grouped by issuer
+    """
+
+    model = QrCode
+    v1_serializer_class = QrCodeSerializerV1
+    permission_classes = (BadgrOAuthTokenHasScope,)
+    valid_scopes = ["rw:issuer"]
+
+    def get_network_badge_qrcodes(self, request, **kwargs):
+        network_slug = kwargs.get("networkSlug")
+        badge_slug = kwargs.get("badgeSlug")
+
+        try:
+            network = Issuer.objects.get(entity_id=network_slug, is_network=True)
+        except Issuer.DoesNotExist:
+            return None
+
+        member_issuers = Issuer.objects.filter(network_memberships__network=network)
+
+        qrcodes_by_issuer = {}
+        for issuer in member_issuers:
+            qrcodes = QrCode.objects.filter(
+                issuer__entity_id=issuer.entity_id, badgeclass__entity_id=badge_slug
+            )
+            if qrcodes.exists():
+                qrcodes_by_issuer[issuer.entity_id] = {
+                    "issuer": IssuerSerializerV1(issuer).data,
+                    "qrcodes": qrcodes,
+                    "staff": self.user_is_staff(request.user, issuer),
+                }
+
+        return qrcodes_by_issuer
+
+    @apispec_list_operation(
+        "QrCode",
+        summary="Get all QrCodes for a specific badge in a network grouped by issuer",
+        tags=["QrCodes"],
+    )
+    def get(self, request, **kwargs):
+        qrcodes_by_issuer = self.get_network_badge_qrcodes(request, **kwargs)
+
+        if qrcodes_by_issuer is None:
+            return Response(
+                {"detail": "Network not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        if not qrcodes_by_issuer:
+            return Response(
+                {"detail": "No QR codes found for this badge in the network"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer_class = self.get_serializer_class()
+        response_data = {}
+
+        for issuer_slug, issuer_data in qrcodes_by_issuer.items():
+            serializer = serializer_class(issuer_data["qrcodes"], many=True)
+            response_data[issuer_slug] = {
+                "issuer": issuer_data["issuer"],
+                "qrcodes": serializer.data,
+                "staff": issuer_data["staff"],
+            }
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
+    def user_is_staff(self, user, issuer):
+        if not user or not user.is_authenticated:
+            return False
+
+        return issuer.staff_items.filter(user=user).exists()
 
 
 class BadgeRequestList(BaseEntityListView):
@@ -1599,14 +2043,16 @@ class BadgeImageComposition(APIView):
 
     def post(self, request, *args, **kwargs):
         try:
-            badgeImage = request.data.get("image")
+            badgeSlug = request.data.get("badgeSlug")
             issuerSlug = request.data.get("issuerSlug")
             category = request.data.get("category")
             useIssuerImage = request.data.get("useIssuerImage", True)
 
-            if not badgeImage:
+            try:
+                badge = BadgeClass.objects.get(entity_id=badgeSlug)
+            except Issuer.DoesNotExist:
                 return JsonResponse(
-                    {"error": "Missing required field: image"}, status=400
+                    {"error": f"Badgeclass with slug {badgeSlug} not found"}, status=404
                 )
 
             if not issuerSlug:
@@ -1628,10 +2074,19 @@ class BadgeImageComposition(APIView):
 
             issuer_image = issuer.image if (useIssuerImage and issuer.image) else None
 
+            network_image = None
+
             composer = ImageComposer(category=category)
 
+            extensions = badge.cached_extensions()
+            org_img_ext = extensions.get(name="extensions:OrgImageExtension")
+            original_image = json.loads(org_img_ext.original_json)["OrgImage"]
+
+            if badge.cached_issuer.is_network:
+                network_image = badge.cached_issuer.image
+
             image_url = composer.compose_badge_from_uploaded_image(
-                badgeImage, issuer_image
+                original_image, issuer_image, network_image
             )
 
             if not image_url:
@@ -1687,13 +2142,13 @@ class NetworkInvitation(BaseEntityDetailView):
     def post(self, request, **kwargs):
         try:
             network_slug = kwargs.get("networkSlug")
-            network = Network.objects.get(entity_id=network_slug)
-        except Network.DoesNotExist:
+            network = Issuer.objects.get(entity_id=network_slug, is_network=True)
+        except Issuer.DoesNotExist:
             return Response(
                 {"response": "Network not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        if not is_network_editor(request.user, network):
+        if not is_editor(request.user, network):
             return Response(
                 {"error": "You are not authorized to invite issuers."},
                 status=status.HTTP_403_FORBIDDEN,
@@ -1715,7 +2170,7 @@ class NetworkInvitation(BaseEntityDetailView):
                 )
             slugs.append(slug)
 
-        issuers = Issuer.objects.filter(entity_id__in=slugs)
+        issuers = Issuer.objects.filter(entity_id__in=slugs, is_network=False)
         found_slugs = set(issuers.values_list("entity_id", flat=True))
 
         missing_slugs = set(slugs) - found_slugs
@@ -1744,20 +2199,20 @@ class NetworkInvitation(BaseEntityDetailView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # existing_invitations = NetworkInvite.objects.filter(
-        #     issuer__entity_id__in=slugs,
-        #     network=network,
-        #     status=NetworkInvite.Status.PENDING,
-        # ).select_related("issuer")
+        existing_invitations = NetworkInvite.objects.filter(
+            issuer__entity_id__in=slugs,
+            network=network,
+            status=NetworkInvite.Status.PENDING,
+        ).select_related("issuer")
 
-        # if existing_invitations.exists():
-        #     pending_names = [inv.issuer.name for inv in existing_invitations]
-        #     return Response(
-        #         {
-        #             "response": f"Für diese Institutionen liegen bereits offene Einladungen vor: {', '.join(pending_names)}"
-        #         },
-        #         status=status.HTTP_400_BAD_REQUEST,
-        #     )
+        if existing_invitations.exists():
+            pending_names = [inv.issuer.name for inv in existing_invitations]
+            return Response(
+                {
+                    "response": f"Für diese Institutionen liegen bereits offene Einladungen vor: {', '.join(pending_names)}"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             with transaction.atomic():
@@ -1841,7 +2296,9 @@ class NetworkInvitation(BaseEntityDetailView):
                 invitation.save()
 
                 if invitation.issuer:
-                    invitation.network.partner_issuers.add(invitation.issuer)
+                    NetworkMembership.objects.get_or_create(
+                        network=invitation.network, issuer=invitation.issuer
+                    )
 
             serializer = self.v1_serializer_class(invitation)
             return Response(serializer.data)
@@ -1898,8 +2355,8 @@ class NetworkInvitationList(BaseEntityListView):
         status_filter = request.GET.get("status", "").lower()
 
         try:
-            network = Network.objects.get(entity_id=kwargs.get("networkSlug"))
-        except Network.DoesNotExist:
+            network = Issuer.objects.get(entity_id=kwargs.get("networkSlug"))
+        except Issuer.DoesNotExist:
             Exception("Network not found")
 
         queryset = NetworkInvite.objects.filter(network=network)

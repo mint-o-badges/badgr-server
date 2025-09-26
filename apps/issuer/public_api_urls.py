@@ -16,16 +16,13 @@ from .public_api import (
     IssuerBadgesJson,
     IssuerImage,
     IssuerJson,
-    IssuerNetworksJson,
-    NetworkIssuersJson,
-    NetworkJson,
     IssuerLearningPathsJson,
     IssuerList,
-    NetworkList,
+    IssuerNetworksJson,
     IssuerSearch,
     LearningPathJson,
     LearningPathList,
-    NetworkImage,
+    NetworkIssuersJson,
     OEmbedAPIEndpoint,
     VerifyBadgeAPIEndpoint,
 )
@@ -35,16 +32,6 @@ json_patterns = [
         r"^issuers/(?P<entity_id>[^/.]+)$",
         xframe_options_exempt(IssuerJson.as_view(slugToEntityIdRedirect=True)),
         name="issuer_json",
-    ),
-    url(
-        r"^networks/(?P<entity_id>[^/.]+)$",
-        xframe_options_exempt(NetworkJson.as_view(slugToEntityIdRedirect=True)),
-        name="network_json",
-    ),
-    url(
-        r"^networks/(?P<entity_id>[^/.]+)/issuers$",
-        xframe_options_exempt(NetworkIssuersJson.as_view(slugToEntityIdRedirect=True)),
-        name="network_issuers_json",
     ),
     url(
         r"^issuers/search/(?P<searchterm>[^/]+)$",
@@ -69,14 +56,14 @@ json_patterns = [
         name="issuer_networks_json",
     ),
     url(
+        r"^networks/(?P<entity_id>[^/.]+)/issuers$",
+        xframe_options_exempt(NetworkIssuersJson.as_view(slugToEntityIdRedirect=True)),
+        name="network_issuers_json",
+    ),
+    url(
         r"^all-issuers$",
         xframe_options_exempt(IssuerList.as_view()),
         name="issuer_list_json",
-    ),
-    url(
-        r"^all-networks$",
-        xframe_options_exempt(NetworkList.as_view()),
-        name="network_list_json",
     ),
     url(
         r"^badges/(?P<entity_id>[^/.]+)$",
@@ -133,11 +120,6 @@ image_patterns = [
         r"^issuers/(?P<entity_id>[^/]+)/image$",
         IssuerImage.as_view(slugToEntityIdRedirect=True),
         name="issuer_image",
-    ),
-    url(
-        r"^networks/(?P<entity_id>[^/]+)/image$",
-        NetworkImage.as_view(slugToEntityIdRedirect=True),
-        name="network_image",
     ),
     url(
         r"^badges/(?P<entity_id>[^/]+)/image",
