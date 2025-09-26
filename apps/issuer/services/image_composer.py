@@ -11,19 +11,12 @@ logger = logging.getLogger(__name__)
 
 class ImageComposer:
     CANVAS_SIZES = {
-        "participation": (400, 400),
-        "competency": (412, 412),
-        "learningpath": (416, 416),
-    }
-
-    EXPANDED_CANVAS_SIZES = {
         "participation": (600, 600),
         "competency": (612, 612),
         "learningpath": (616, 616),
     }
 
-    DEFAULT_CANVAS_SIZE = (400, 400)
-    DEFAULT_EXPANDED_CANVAS_SIZE = (600, 600)
+    DEFAULT_CANVAS_SIZE = (600, 600)
 
     MAX_IMAGE_SIZE = 2 * 1024 * 1024  # 2MB
     MAX_DIMENSIONS = (512, 512)
@@ -32,37 +25,30 @@ class ImageComposer:
     def __init__(self, category=None):
         self.category = category
         self.CANVAS_SIZE = self.CANVAS_SIZES.get(category, self.DEFAULT_CANVAS_SIZE)
-        self.EXPANDED_CANVAS_SIZE = self.EXPANDED_CANVAS_SIZES.get(
-            category, self.DEFAULT_EXPANDED_CANVAS_SIZE
-        )
 
     def get_canvas_size(self, category):
         return self.CANVAS_SIZES.get(category, self.DEFAULT_CANVAS_SIZE)
-
-    def get_expanded_canvas_size(self, category):
-        return self.EXPANDED_CANVAS_SIZES.get(
-            category, self.DEFAULT_EXPANDED_CANVAS_SIZE
-        )
 
     def compose_badge_from_uploaded_image(self, image, issuerImage, networkImage):
         """
         Compose badge image with issuer logo from image upload
         """
         try:
-            canvas = Image.new("RGBA", self.EXPANDED_CANVAS_SIZE, (255, 255, 255, 0))
+            canvas = Image.new("RGBA", self.CANVAS_SIZE, (255, 255, 255, 0))
 
             ### Frame ###
             shape_image = self._get_colored_shape_svg()
             if shape_image:
-                frame_x = (self.EXPANDED_CANVAS_SIZE[0] - self.CANVAS_SIZE[0]) // 2
-                frame_y = (self.EXPANDED_CANVAS_SIZE[1] - self.CANVAS_SIZE[1]) // 2
+                # Center the frame on the canvas
+                frame_x = (self.CANVAS_SIZE[0] - shape_image.width) // 2
+                frame_y = (self.CANVAS_SIZE[1] - shape_image.height) // 2
                 canvas.paste(shape_image, (frame_x, frame_y), shape_image)
 
             ### badge image ###
             badge_img = self._prepare_uploaded_image(image)
             if badge_img:
-                x = (self.EXPANDED_CANVAS_SIZE[0] - badge_img.width) // 2
-                y = (self.EXPANDED_CANVAS_SIZE[1] - badge_img.height) // 2
+                x = (self.CANVAS_SIZE[0] - badge_img.width) // 2
+                y = (self.CANVAS_SIZE[1] - badge_img.height) // 2
                 canvas.paste(badge_img, (x, y), badge_img)
 
             if issuerImage:
@@ -103,12 +89,17 @@ class ImageComposer:
                     image_bytes = base64.b64decode(image_data)
 
                 img = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
+
             else:
                 raise ValueError("Expected base64 string for image data")
 
             target_size = (self.CANVAS_SIZE[0] // 2, self.CANVAS_SIZE[1] // 2)
 
-            img.thumbnail(target_size, Image.Resampling.LANCZOS)
+            if img.width < target_size[0] or img.height < target_size[1]:
+                # upscale (e.g. nounproject images are 200x200px)
+                img = img.resize(target_size, Image.Resampling.LANCZOS)
+            else:
+                img.thumbnail(target_size, Image.Resampling.LANCZOS)
 
             result = Image.new("RGBA", target_size, (0, 0, 0, 0))
             x = (target_size[0] - img.width) // 2
@@ -124,6 +115,7 @@ class ImageComposer:
     def _get_colored_shape_svg(self):
         """
         Load SVG and convert to PIL Image
+        Scale SVG to match new canvas size
         """
         try:
             svg_files = {
@@ -142,7 +134,13 @@ class ImageComposer:
                 png_buf = io.BytesIO()
                 f.seek(0)
                 try:
-                    cairosvg.svg2png(file_obj=f, write_to=png_buf)
+                    # Scale SVG to match canvas size
+                    cairosvg.svg2png(
+                        file_obj=f,
+                        write_to=png_buf,
+                        output_width=self.CANVAS_SIZE[0],
+                        output_height=self.CANVAS_SIZE[1],
+                    )
                 except IOError as e:
                     raise (f"IO error while converting svg2png {e}")
                 img = Image.open(png_buf)
@@ -154,18 +152,12 @@ class ImageComposer:
 
     def _add_issuer_logo(self, canvas, category, issuerImage):
         """
-        Add issuer logo with frame - adjusted for expanded canvas
+        Add issuer logo with frame
         """
         try:
-            offset_x = (self.EXPANDED_CANVAS_SIZE[0] - self.CANVAS_SIZE[0]) // 2
-            offset_y = (self.EXPANDED_CANVAS_SIZE[1] - self.CANVAS_SIZE[1]) // 2
-
             x_width = 55 if category == "participation" else 70
-            original_logo_x = self.CANVAS_SIZE[0] - self.CANVAS_SIZE[0] // 4 - x_width
-            original_logo_y = 10 if category == "learningpath" else 0
-
-            logo_x = original_logo_x + offset_x
-            logo_y = original_logo_y + offset_y
+            logo_x = self.CANVAS_SIZE[0] - self.CANVAS_SIZE[0] // 4 - x_width
+            logo_y = 10 if category == "learningpath" else 0
 
             logo_size = (self.CANVAS_SIZE[0] // 5, self.CANVAS_SIZE[1] // 5)
 
@@ -193,28 +185,24 @@ class ImageComposer:
 
     def _add_network_logo(self, canvas, category, networkImage):
         """
-        Add network image in bottom center, overlapping with the SVG frame border
-        Adjusted for expanded canvas
+        Add network image in bottom center
         """
         try:
-            offset_x = (self.EXPANDED_CANVAS_SIZE[0] - self.CANVAS_SIZE[0]) // 2
-            offset_y = (self.EXPANDED_CANVAS_SIZE[1] - self.CANVAS_SIZE[1]) // 2
-
             network_image_size = (self.CANVAS_SIZE[0] // 3, self.CANVAS_SIZE[1] // 4)
 
+            # Scale border positions proportionally for new canvas sizes
             border_positions = {
-                "participation": 387,  # Based on SVG path
-                "competency": 388,
-                "learningpath": 389,
+                "participation": int(387 * (self.CANVAS_SIZE[0] / 400)),
+                "competency": int(388 * (self.CANVAS_SIZE[0] / 412)),
+                "learningpath": int(389 * (self.CANVAS_SIZE[0] / 416)),
             }
 
-            original_border_y = border_positions.get(category, 387)
+            border_y = border_positions.get(
+                category, int(387 * (self.CANVAS_SIZE[0] / 400))
+            )
 
-            original_bottom_x = (self.CANVAS_SIZE[0] - network_image_size[0]) // 2
-            original_bottom_y = original_border_y - (network_image_size[1] // 2)
-
-            bottom_x = original_bottom_x + offset_x
-            bottom_y = original_bottom_y + offset_y
+            bottom_x = (self.CANVAS_SIZE[0] - network_image_size[0]) // 2
+            bottom_y = border_y - (network_image_size[1] // 2)
 
             frame_image = self._get_logo_frame_svg()
             if frame_image:
@@ -249,7 +237,6 @@ class ImageComposer:
 
     def _get_logo_frame_svg(self):
         """Load and convert the square frame SVG"""
-
         frame_path = finders.find("images/square.svg")
 
         if not os.path.exists(frame_path):
