@@ -11,6 +11,7 @@ from django.contrib import admin
 from mainsite.admin import badgr_admin
 
 from .models import (
+    BadgeClassNetworkShare,
     ImportedBadgeAssertionExtension,
     Issuer,
     BadgeClass,
@@ -755,3 +756,64 @@ class LearningPathAdmin(ModelAdmin):
 
 
 badgr_admin.register(LearningPath, LearningPathAdmin)
+
+
+class BadgeClassNetworkShareAdmin(ModelAdmin):
+    list_display = (
+        "badgeclass_name",
+        "issuer_name",
+        "network_name",
+        "shared_by_user",
+        "shared_at",
+        "is_active",
+    )
+    list_filter = (
+        "is_active",
+        "shared_at",
+        "network__name",
+    )
+    search_fields = (
+        "badgeclass__name",
+        "badgeclass__issuer__name",
+        "network__name",
+        "shared_by_user__email",
+        "shared_by_user__first_name",
+        "shared_by_user__last_name",
+    )
+    readonly_fields = (
+        "shared_at",
+        "shared_by_issuer_display",
+    )
+    date_hierarchy = "shared_at"
+
+    def badgeclass_name(self, obj):
+        """Display the badge class name"""
+        return obj.badgeclass.name
+
+    badgeclass_name.short_description = "Badge Class"
+    badgeclass_name.admin_order_field = "badgeclass__name"
+
+    def issuer_name(self, obj):
+        """Display the issuer name that owns the badge"""
+        return obj.badgeclass.issuer.name
+
+    issuer_name.short_description = "Issuer"
+    issuer_name.admin_order_field = "badgeclass__issuer__name"
+
+    def network_name(self, obj):
+        """Display the network name"""
+        return obj.network.name
+
+    network_name.short_description = "Network"
+    network_name.admin_order_field = "network__name"
+
+    def shared_by_issuer_display(self, obj):
+        """Display the issuer the sharing user was acting on behalf of"""
+        if obj.shared_by_issuer:
+            return obj.shared_by_issuer.name
+        return "N/A"
+
+    shared_by_issuer_display.short_description = "Shared by Issuer"
+
+
+badgr_admin.register(BadgeClassNetworkShare, BadgeClassNetworkShareAdmin)

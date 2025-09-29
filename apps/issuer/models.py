@@ -2555,6 +2555,50 @@ def _baked_badge_instance_filename_generator(instance, filename):
     )
 
 
+class BadgeClassNetworkShare(models.Model):
+    """
+    Represents a badge that has been shared with a network.
+    Partner issuers of this network can award this badge.
+    A badge cannot be removed from the network after it has been shared.
+    """
+
+    badgeclass = models.ForeignKey(
+        BadgeClass,
+        on_delete=models.CASCADE,
+        related_name="network_shares",
+    )
+    network = models.ForeignKey(
+        Issuer,
+        on_delete=models.CASCADE,
+        related_name="shared_badges",
+        limit_choices_to={"is_network": True},
+    )
+    shared_at = models.DateTimeField(auto_now_add=True)
+    shared_by_user = models.ForeignKey(
+        "badgeuser.BadgeUser",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="badge_shares",
+    )
+    is_active = models.BooleanField(default=True)
+
+    @property
+    def shared_by_issuer(self):
+        """Derive which issuer the sharing user was acting on behalf of"""
+        if self.shared_by_user:
+            return self.badgeclass.issuer
+        return None
+
+    class Meta:
+        unique_together = ("badgeclass", "network")
+        verbose_name = "Badge Class Network Share"
+        verbose_name_plural = "Badge Class Network Shares"
+
+    def __str__(self):
+        return f"{self.badgeclass} shared with {self.network}"
+
+
 class BadgeInstanceBakedImage(cachemodel.CacheModel):
     badgeinstance = models.ForeignKey("issuer.BadgeInstance", on_delete=models.CASCADE)
     obi_version = models.CharField(max_length=254)

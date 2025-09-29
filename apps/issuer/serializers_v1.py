@@ -42,6 +42,7 @@ from .models import (
     RECIPIENT_TYPE_URL,
     BadgeClass,
     BadgeClassExtension,
+    BadgeClassNetworkShare,
     BadgeInstance,
     Issuer,
     IssuerStaff,
@@ -198,10 +199,13 @@ class NetworkSerializerV1(BaseIssuerSerializerV1):
         representation["json"] = instance.get_json(
             obi_version="1_1", use_canonical_id=True
         )
-        partner_issuers = instance.partner_issuers
-        representation["partner_issuers"] = IssuerSerializerV1(
-            partner_issuers, many=True, context=self.context
-        ).data
+
+        exclude_fields = self.context.get("exclude_fields", [])
+        if "partner_issuers" not in exclude_fields:
+            partner_issuers = instance.partner_issuers.all()
+            representation["partner_issuers"] = IssuerSerializerV1(
+                partner_issuers, many=True, context=self.context
+            ).data
 
         request = self.context.get("request")
 
@@ -258,17 +262,23 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
     )
 
     def get_networks(self, obj):
-        return None
-        # from .serializers_v1 import NetworkSerializerV1
+        from .serializers_v1 import NetworkSerializerV1
 
-        # # Exclude 'partner_issuers' field from nested network serialization to prevent circular reference
-        # context = self.context.copy()
-        # context["exclude_fields"] = context.get("exclude_fields", []) + [
-        #     "partner_issuers"
-        # ]
-        # return NetworkSerializerV1(
-        #     obj.cached_networks(), many=True, context=context
-        # ).data
+        # Check if networks should be excluded to prevent circular reference
+        exclude_fields = self.context.get("exclude_fields", [])
+        if "networks" in exclude_fields:
+            return []
+
+        network_memberships = obj.network_memberships.select_related("network")
+        networks = [membership.network for membership in network_memberships]
+
+        # Exclude 'partner_issuers' field from nested network serialization to prevent circular reference
+        context = self.context.copy()
+        context["exclude_fields"] = context.get("exclude_fields", []) + [
+            "partner_issuers"
+        ]
+
+        return NetworkSerializerV1(networks, many=True, context=context).data
 
     class Meta:
         apispec_definition = ("Issuer", {})
@@ -624,15 +634,6 @@ class BadgeClassSerializerV1(
 
             if "issuer" in self.context:
                 validated_data["issuer"] = self.context.get("issuer")
-
-            # criteria_text is now created at runtime
-            # if (
-            #     validated_data.get("criteria_text", None) is None
-            #     and validated_data.get("criteria_url", None) is None
-            # ):
-            #     raise serializers.ValidationError(
-            #         "One or both of the criteria_text and criteria_url fields must be provided"
-            #     )
 
             new_badgeclass = BadgeClass.objects.create(**validated_data)
 
@@ -1213,3 +1214,39 @@ class LearningPathParticipantSerializerV1(serializers.Serializer):
 
 class NetworkBadgeInstanceSerializerV1(BadgeInstanceSerializerV1):
     pass
+
+
+class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
+    badgeclass = serializers.SerializerMethodField()
+    network = serializers.SerializerMethodField()
+    shared_by_issuer = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BadgeClassNetworkShare
+        fields = [
+            "id",
+            "badgeclass",
+            "network",
+            "shared_at",
+            "shared_by_user",
+            "shared_by_issuer",
+            "is_active",
+        ]
+        read_only_fields = ["id", "shared_at", "shared_by_user"]
+
+    def get_badgeclass(self, obj):
+        return BadgeClassSerializerV1(obj.badgeclass, context=self.context).data
+
+    def get_network(self, obj):
+        return {
+            "id": obj.network.entity_id,
+            "name": obj.network.name,
+        }
+
+    def get_shared_by_issuer(self, obj):
+        if obj.shared_by_issuer:
+            return {
+                "slug": obj.shared_by_issuer.entity_id,
+                "name": obj.shared_by_issuer.name,
+            }
+        return None

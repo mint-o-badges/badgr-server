@@ -1,11 +1,13 @@
 from django.conf.urls import url
 
 from issuer.api import (
+    BadgeClassNetworkShareView,
     BadgeRequestList,
     IssuerAwardableBadgeClassList,
     IssuerLearningPathList,
     IssuerList,
     IssuerNetworkBadgeClassList,
+    IssuerSharedNetworkBadgesView,
     NetworkBadgeClassesList,
     NetworkBadgeInstanceList,
     NetworkBadgeQRCodeList,
@@ -25,6 +27,7 @@ from issuer.api import (
     IssuerStaffRequestList,
     LearningPathDetail,
     LearningPathParticipantsList,
+    NetworkSharedBadgesView,
     NetworkUserIssuersList,
     QRCodeDetail,
     BadgeImageComposition,
@@ -69,6 +72,21 @@ urlpatterns = [
         r"^issuers/(?P<slug>[^/]+)/awardable-badges$",
         IssuerAwardableBadgeClassList.as_view(),
         name="v1_issuer_awardable_badgeclasses",
+    ),
+    url(
+        r"^networks/(?P<networkSlug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/share$",
+        BadgeClassNetworkShareView.as_view(),
+        name="v1_api_network_badge_share_detail",
+    ),
+    url(
+        r"^networks/(?P<entity_id>[^/]+)/shared-badges$",
+        NetworkSharedBadgesView.as_view(),
+        name="v1_api_network_shared_badges",
+    ),
+    url(
+        r"^issuers/(?P<entity_id>[^/]+)/networks/shared-badges$",
+        IssuerSharedNetworkBadgesView.as_view(),
+        name="v1_api_issuer_shared_network_badges",
     ),
     url(
         r"^qrcode/(?P<slug>[^/]+)$", QRCodeDetail.as_view(), name="v1_api_qrcode_detail"

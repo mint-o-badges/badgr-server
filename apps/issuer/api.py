@@ -18,6 +18,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.db.models import Q, Count
 from django.http import Http404
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
 from entity.api import (
@@ -30,6 +31,7 @@ from entity.api import (
 from entity.serializers import BaseSerializerV2, V2ErrorSerializer
 from issuer.models import (
     BadgeClass,
+    BadgeClassNetworkShare,
     BadgeInstance,
     Issuer,
     IssuerStaff,
@@ -67,6 +69,7 @@ from issuer.serializers_v1 import (
     NetworkSerializerV1,
     QrCodeSerializerV1,
     RequestedBadgeSerializer,
+    BadgeClassNetworkShareSerializerV1,
 )
 from issuer.serializers_v2 import (
     BadgeClassSerializerV2,
@@ -80,7 +83,7 @@ from mainsite.serializers import CursorPaginatedListSerializer
 from oauthlib.oauth2.rfc6749.tokens import random_token_generator
 from rest_framework import serializers, status
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.http import JsonResponse
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -443,17 +446,20 @@ class NetworkBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListView):
     """
 
     model = BadgeClass
-    permission_classes = [
-        IsServerAdmin
-        | (AuthenticatedWithVerifiedIdentifier & IsNetworkMember)
-        | BadgrOAuthTokenHasEntityScope
-    ]
+    # permission_classes = [
+
+    #     IsServerAdmin
+    #     | (AuthenticatedWithVerifiedIdentifier & IsNetworkMember)
+    #     | BadgrOAuthTokenHasEntityScope
+    # ]
     v1_serializer_class = BadgeClassSerializerV1
     v2_serializer_class = BadgeClassSerializerV2
     valid_scopes = ["rw:issuer"]
 
-    def get_queryset(self, request, **kwargs):
-        network_slug = kwargs.get("slug") or request.GET.get("slug")
+    allow_any_unauthenticated_access = True
+
+    def get_queryset(self, request=None, **kwargs):
+        network_slug = kwargs.get("slug")
         if not network_slug:
             return BadgeClass.objects.none()
 
@@ -2205,14 +2211,14 @@ class NetworkInvitation(BaseEntityDetailView):
             status=NetworkInvite.Status.PENDING,
         ).select_related("issuer")
 
-        if existing_invitations.exists():
-            pending_names = [inv.issuer.name for inv in existing_invitations]
-            return Response(
-                {
-                    "response": f"Für diese Institutionen liegen bereits offene Einladungen vor: {', '.join(pending_names)}"
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        # if existing_invitations.exists():
+        #     pending_names = [inv.issuer.name for inv in existing_invitations]
+        #     return Response(
+        #         {
+        #             "response": f"Für diese Institutionen liegen bereits offene Einladungen vor: {', '.join(pending_names)}"
+        #         },
+        #         status=status.HTTP_400_BAD_REQUEST,
+        #     )
 
         try:
             with transaction.atomic():
@@ -2392,3 +2398,171 @@ class NetworkInvitationList(BaseEntityListView):
     )
     def get(self, request, **kwargs):
         return super(NetworkInvitationList, self).get(request, **kwargs)
+
+
+class NetworkSharedBadgesView(BaseEntityListView):
+    """
+    Get all badges shared with a specific network
+    """
+
+    model = BadgeClassNetworkShare
+    v1_serializer_class = BadgeClassNetworkShareSerializerV1
+    permission_classes = [AllowAny]  # partner badges are shown on public network page
+    valid_scopes = ["rw:issuer"]
+
+    allow_any_unauthenticated_access = True
+
+    def get_objects(self, request, **kwargs):
+        """Get all badge shares for a specific network"""
+
+        entity_id = kwargs.get("entity_id")
+        network = get_object_or_404(Issuer, entity_id=entity_id, is_network=True)
+
+        return (
+            BadgeClassNetworkShare.objects.filter(network=network, is_active=True)
+            .select_related(
+                "badgeclass", "badgeclass__issuer", "network", "shared_by_user"
+            )
+            .order_by("-shared_at")
+        )
+
+    @apispec_get_operation(
+        "NetworkSharedBadges",
+        summary="Get all badges shared with a network",
+        tags=["Networks", "Badge Sharing"],
+    )
+    def get(self, request, **kwargs):
+        """
+        Get all badges that have been shared with a network.
+        """
+
+        return super(NetworkSharedBadgesView, self).get(request, **kwargs)
+
+
+class IssuerSharedNetworkBadgesView(BaseEntityListView):
+    """
+    Get all badges that a specific issuer has shared with networks
+    """
+
+    model = BadgeClassNetworkShare
+    v1_serializer_class = BadgeClassNetworkShareSerializerV1
+    permission_classes = [AllowAny]
+    valid_scopes = ["rw:issuer"]
+
+    allow_any_unauthenticated_access = True
+
+    def get_objects(self, request, **kwargs):
+        """Get all badge shares from an issuer to any network"""
+
+        entity_id = kwargs.get("entity_id")
+        issuer = get_object_or_404(Issuer, entity_id=entity_id)
+
+        return (
+            BadgeClassNetworkShare.objects.filter(
+                badgeclass__issuer=issuer, is_active=True
+            )
+            .select_related(
+                "badgeclass", "badgeclass__issuer", "network", "shared_by_user"
+            )
+            .order_by("-shared_at")
+        )
+
+    @apispec_get_operation(
+        "IssuerSharedNetworkBadges",
+        summary="Get all badges shared by a specific issuer with networks",
+        tags=["Issuers", "Badge Sharing"],
+    )
+    def get(self, request, **kwargs):
+        """
+        Get all badges that an issuer has shared with networks.
+        """
+
+        return super(IssuerSharedNetworkBadgesView, self).get(request, **kwargs)
+
+
+class BadgeClassNetworkShareView(BaseEntityDetailView):
+    """
+    Share a badge class with a network
+    """
+
+    model = BadgeClassNetworkShare
+    v1_serializer_class = BadgeClassNetworkShareSerializerV1
+    permission_classes = [
+        IsServerAdmin
+        | (
+            AuthenticatedWithVerifiedIdentifier
+            & BadgrOAuthTokenHasScope
+            & ApprovedIssuersOnly
+        )
+    ]
+    valid_scopes = ["rw:issuer"]
+
+    def get_objects(self, request, **kwargs):
+        """Get all badge shares for the authenticated user's issuers"""
+        user_issuers = Issuer.objects.filter(staff__id=request.user.id).values_list(
+            "id", flat=True
+        )
+
+        return BadgeClassNetworkShare.objects.filter(
+            badgeclass__issuer__id__in=user_issuers
+        ).distinct()
+
+    @apispec_post_operation(
+        "BadgeClassNetworkShare",
+        summary="Share a badge class with a network",
+        tags=["Badge Sharing"],
+    )
+    def post(self, request, **kwargs):
+        """
+        Share a badge class with a network
+        """
+        badgeclass_id = kwargs.get("badgeSlug")
+        network_id = kwargs.get("networkSlug")
+
+        if not badgeclass_id or not network_id:
+            return Response(
+                {"error": "Both badgeclass_id and network_id are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        badgeclass = get_object_or_404(
+            BadgeClass, entity_id=badgeclass_id, issuer__staff=request.user
+        )
+
+        network = get_object_or_404(Issuer, entity_id=network_id, is_network=True)
+
+        if not NetworkMembership.objects.filter(
+            network=network, issuer=badgeclass.issuer
+        ).exists():
+            return Response(
+                {"error": "Your issuer is not a member of this network"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if BadgeClassNetworkShare.objects.filter(
+            badgeclass=badgeclass, network=network
+        ).exists():
+            return Response(
+                {"error": "Badge is already shared with this network"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        share = BadgeClassNetworkShare.objects.create(
+            badgeclass=badgeclass, network=network, shared_by_user=request.user
+        )
+
+        extensions = badgeclass.cached_extensions()
+        category_ext = extensions.get(name="extensions:CategoryExtension")
+        category = json.loads(category_ext.original_json)["Category"]
+
+        org_img_ext = extensions.get(name="extensions:OrgImageExtension")
+        original_image = json.loads(org_img_ext.original_json)["OrgImage"]
+
+        badgeclass.generate_badge_image(
+            category, original_image, badgeclass.issuer.image, network.image
+        )
+
+        badgeclass.save(update_fields=["image"])
+
+        serializer = self.get_serializer_class()(share)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
