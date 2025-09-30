@@ -185,24 +185,31 @@ class ImageComposer:
 
     def _add_network_logo(self, canvas, category, networkImage):
         """
-        Add network image in bottom center
+        Add network image in bottom center, flush with canvas bottom
         """
         try:
-            network_image_size = (self.CANVAS_SIZE[0] // 3, self.CANVAS_SIZE[1] // 4)
-
-            # Scale border positions proportionally for new canvas sizes
-            border_positions = {
-                "participation": int(387 * (self.CANVAS_SIZE[0] / 400)),
-                "competency": int(388 * (self.CANVAS_SIZE[0] / 412)),
-                "learningpath": int(389 * (self.CANVAS_SIZE[0] / 416)),
+            original_dimensions = {
+                "participation": (397, 397, 387),  # width, height, border_y
+                "competency": (412, 411, 388),
+                "learningpath": (416, 416, 389),
             }
 
-            border_y = border_positions.get(
-                category, int(387 * (self.CANVAS_SIZE[0] / 400))
+            orig_width, orig_height, orig_border_y = original_dimensions.get(
+                category, (397, 397, 387)
+            )
+
+            scale_factor = self.CANVAS_SIZE[1] / orig_height
+
+            base_network_width = orig_width // 4
+            base_network_height = orig_height // 5
+
+            network_image_size = (
+                int(base_network_width * scale_factor),
+                int(base_network_height * scale_factor),
             )
 
             bottom_x = (self.CANVAS_SIZE[0] - network_image_size[0]) // 2
-            bottom_y = border_y - (network_image_size[1] // 2)
+            bottom_y = self.CANVAS_SIZE[1] - network_image_size[1]
 
             frame_image = self._get_logo_frame_svg()
             if frame_image:
@@ -211,7 +218,7 @@ class ImageComposer:
                 )
                 canvas.paste(frame_resized, (bottom_x, bottom_y), frame_resized)
 
-            border_padding = 6
+            border_padding = int(6 * scale_factor)
             inner_size = (
                 network_image_size[0] - border_padding * 2,
                 network_image_size[1] - border_padding * 2,
