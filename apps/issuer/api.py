@@ -2574,11 +2574,9 @@ class BadgeClassNetworkShareView(BaseEntityDetailView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        if BadgeClassNetworkShare.objects.filter(
-            badgeclass=badgeclass, network=network
-        ).exists():
+        if BadgeClassNetworkShare.objects.filter(badgeclass=badgeclass).exists():
             return Response(
-                {"error": "Badge is already shared with this network"},
+                {"error": "Badge is already shared with a network."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
