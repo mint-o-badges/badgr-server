@@ -509,6 +509,20 @@ class BadgeClassSerializerV1(
             user.agreed_terms_version == TermsVersion.cached.latest_version()
             for user in instance.cached_issuer.owners
         )
+        representation["isNetworkBadge"] = instance.cached_issuer.is_network
+
+        networkShare = instance.network_shares.filter(is_active=True).first()
+        if networkShare:
+            network = networkShare.network
+            representation["sharedOnNetwork"] = {
+                "slug": network.entity_id,
+                "name": network.name,
+                "image": network.image.url,
+                "description": network.description,
+            }
+        else:
+            representation["sharedOnNetwork"] = None
+
         representation["issuer"] = OriginSetting.HTTP + reverse(
             "issuer_json", kwargs={"entity_id": instance.cached_issuer.entity_id}
         )
@@ -1239,8 +1253,9 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
 
     def get_network(self, obj):
         return {
-            "id": obj.network.entity_id,
+            "slug": obj.network.entity_id,
             "name": obj.network.name,
+            "image": obj.network.image_url(),
         }
 
     def get_shared_by_issuer(self, obj):
@@ -1248,5 +1263,6 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
             return {
                 "slug": obj.shared_by_issuer.entity_id,
                 "name": obj.shared_by_issuer.name,
+                "image": obj.shared_by_issuer.image_url(),
             }
         return None
