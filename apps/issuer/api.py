@@ -484,7 +484,7 @@ class IssuerAwardableBadgeClassList(
     UncachedPaginatedViewMixin, VersionedObjectMixin, BaseEntityListView
 ):
     """
-    GET a list of badgeclasses that this issuer can award (own badges + network badges if partner)
+    GET a list of badgeclasses that this issuer can award (own badges + network badges + shared badges)
     """
 
     model = Issuer  # used by get_object()
@@ -510,7 +510,13 @@ class IssuerAwardableBadgeClassList(
             issuer__is_network=True, issuer__memberships__issuer=issuer
         )
 
-        awardable_badges = own_badges.union(network_badges)
+        # Badges shared with networks where this issuer is a partner
+        shared_badges = BadgeClass.objects.filter(
+            network_shares__network__memberships__issuer=issuer,
+            network_shares__is_active=True,
+        )
+
+        awardable_badges = own_badges.union(network_badges, shared_badges)
 
         return awardable_badges
 
@@ -522,7 +528,7 @@ class IssuerAwardableBadgeClassList(
     @apispec_list_operation(
         "BadgeClass",
         summary="Get a list of BadgeClasses that this Issuer can award",
-        description="Returns own BadgeClasses plus BadgeClasses from networks where this issuer is a partner. Authenticated user must have owner, editor, or staff status on the Issuer",
+        description="Returns own BadgeClasses plus BadgeClasses from networks where this issuer is a partner, plus BadgeClasses shared with those networks. Authenticated user must have owner, editor, or staff status on the Issuer",
         tags=["Issuers", "BadgeClasses"],
         parameters=[
             {
@@ -972,7 +978,8 @@ class IssuerNetworkBadgeClassList(
 ):
     """
     GET a list of badge classes that this issuer has awarded
-    where the badgeclass belongs to a network issuer,
+    where the badgeclass belongs to a network issuer
+    OR has been shared with a network issuer,
     grouped by network issuer
     """
 
@@ -1000,14 +1007,24 @@ class IssuerNetworkBadgeClassList(
     def get_queryset(self, request=None, **kwargs):
         """
         Get badge classes that this issuer has awarded instances of,
-        where the badgeclass belongs to a network issuer
+        where the badgeclass either:
+          - belongs to a network issuer, OR
+          - has been shared with a network
         """
         issuer = self.get_object(request, **kwargs)
 
-        queryset = BadgeClass.objects.filter(
+        owned_badges = BadgeClass.objects.filter(
             issuer__is_network=True,
             badgeinstances__issuer=issuer,
-        ).distinct()
+        )
+
+        shared_badges = BadgeClass.objects.filter(
+            network_shares__network__is_network=True,
+            badgeinstances__issuer=issuer,
+            network_shares__is_active=True,
+        )
+
+        queryset = (owned_badges | shared_badges).distinct()
 
         queryset = queryset.annotate(
             awarded_count=Count(
@@ -1019,19 +1036,24 @@ class IssuerNetworkBadgeClassList(
 
     @apispec_list_operation(
         "BadgeClass",
-        summary="Get badge classes awarded by this issuer from network issuers, grouped by network",
+        summary="Get badge classes awarded by this issuer from networks (owned or shared), grouped by network",
         tags=["BadgeClasses", "Issuers", "Networks"],
     )
     def get(self, request, **kwargs):
         queryset = self.get_queryset(request, **kwargs)
 
-        # Group by network issuer
         grouped_data = defaultdict(list)
 
         for badge_class in queryset:
-            network_issuer = badge_class.issuer
-            badge_data = self.get_serializer_class()(badge_class).data
+            if badge_class.issuer.is_network:
+                network_issuer = badge_class.issuer
+            else:
+                share = badge_class.network_shares.filter(is_active=True).first()
+                if not share:
+                    continue
+                network_issuer = share.network
 
+            badge_data = self.get_serializer_class()(badge_class).data
             badge_data["awarded_count"] = getattr(badge_class, "awarded_count", 0)
 
             grouped_data[network_issuer.entity_id].append(badge_data)
@@ -2090,6 +2112,19 @@ class BadgeImageComposition(APIView):
 
             if badge.cached_issuer.is_network:
                 network_image = badge.cached_issuer.image
+            else:
+                shared_network = (
+                    BadgeClassNetworkShare.objects.filter(
+                        badgeclass=badge,
+                        network__memberships__issuer=issuer,
+                        is_active=True,
+                    )
+                    .select_related("network")
+                    .first()
+                )
+
+                if shared_network and shared_network.network.image:
+                    network_image = shared_network.network.image
 
             image_url = composer.compose_badge_from_uploaded_image(
                 original_image, issuer_image, network_image
@@ -2562,7 +2597,8 @@ class BadgeClassNetworkShareView(BaseEntityDetailView):
             category, original_image, badgeclass.issuer.image, network.image
         )
 
-        badgeclass.save(update_fields=["image"])
+        badgeclass.copy_permissions = BadgeClass.COPY_PERMISSIONS_NONE
+        badgeclass.save(update_fields=["image", "copy_permissions"])
 
         serializer = self.get_serializer_class()(share)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
