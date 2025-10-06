@@ -2233,10 +2233,23 @@ class NetworkInvitation(BaseEntityDetailView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        existing_invitations = NetworkInvite.objects.filter(
+            issuer__entity_id__in=slugs,
+            network=network,
+            status=NetworkInvite.Status.PENDING,
+        ).select_related("issuer")
+
         try:
             with transaction.atomic():
                 created_invitations = []
                 for issuer in issuers:
+                    # existing and pending invitations for the issuer/network combination
+                    # should be revoked before creating a new one to prevent duplicates
+                    if existing_invitations.exists():
+                        existing_invitations.filter(
+                            issuer=issuer, network=network
+                        ).delete()
+
                     invitation = NetworkInvite.objects.create(
                         issuer=issuer, network=network
                     )
