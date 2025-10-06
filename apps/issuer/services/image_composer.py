@@ -200,8 +200,8 @@ class ImageComposer:
 
             scale_factor = self.CANVAS_SIZE[1] / orig_height
 
-            base_network_width = orig_width // 4
-            base_network_height = orig_height // 5
+            base_network_width = orig_width // 3
+            base_network_height = orig_height // 6
 
             network_image_size = (
                 int(base_network_width * scale_factor),
@@ -340,23 +340,19 @@ class ImageComposer:
         """
         try:
             from PIL import ImageFont, ImageDraw
-            import os
 
             composite = Image.new("RGBA", frame_inner_size, (0, 0, 0, 0))
             draw = ImageDraw.Draw(composite)
 
             font_size = 14
-            font_path_rubik_bold = os.path.join(
-                os.path.dirname(__file__), "static", "fonts", "Rubik-Bold.ttf"
-            )
-
-            try:
-                font = ImageFont.truetype(font_path_rubik_bold, font_size)
-            except Exception as e:
-                logger.error(f"Error loading rubik font {e}")
+            font_path_rubik_bold = finders.find("fonts/Rubik-Medium.ttf")
+            if not font_path_rubik_bold:
+                logger.error("Rubik-Medium.ttf not found via staticfiles")
                 font = ImageFont.load_default()
+            else:
+                font = ImageFont.truetype(font_path_rubik_bold, font_size)
 
-            text = "Teil von"
+            text = "TEIL VON"
             text_color = (0, 0, 0, 255)
 
             text_bbox = draw.textbbox((0, 0), text, font=font)
