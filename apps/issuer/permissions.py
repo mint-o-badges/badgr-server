@@ -83,6 +83,34 @@ def is_badgeclass_staff(user, badgeclass):
 
 
 @rules.predicate
+def is_partner_issuer_staff(user, badgeclass):
+    """
+    Check if user is staff of a partner issuer in a network where this badge has been shared.
+    Returns True if:
+    1. The badge has been shared with a network (via BadgeClassNetworkShare)
+    2. The user is staff of an issuer that is a member of that network
+    3. The share is active
+    """
+    network_shares = badgeclass.network_shares.filter(is_active=True).select_related(
+        "network"
+    )
+
+    for share in network_shares:
+        network = share.network
+        partner_memberships = network.memberships.select_related("issuer")
+
+        for membership in partner_memberships:
+            partner_issuer = membership.issuer
+            if any(
+                staff.user_id == user.id
+                for staff in partner_issuer.cached_issuerstaff()
+            ):
+                return True
+
+    return False
+
+
+@rules.predicate
 def is_learningpath_staff(user, learningpath):
     return any(
         staff.user_id == user.id
@@ -125,7 +153,9 @@ def is_network_member(user, network):
     ).exists()
 
 
-can_issue_badgeclass = is_badgeclass_owner | is_badgeclass_staff
+can_issue_badgeclass = (
+    is_badgeclass_owner | is_badgeclass_staff | is_partner_issuer_staff
+)
 can_edit_badgeclass = is_badgeclass_owner | is_badgeclass_editor
 
 can_issue_learningpath = is_learningpath_staff
