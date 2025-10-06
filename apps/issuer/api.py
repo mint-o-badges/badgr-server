@@ -49,7 +49,6 @@ from issuer.permissions import (
     BadgrOAuthTokenHasScope,
     IsEditor,
     IsEditorButOwnerForDelete,
-    IsNetworkMember,
     IsStaff,
     MayEditBadgeClass,
     MayIssueBadgeClass,
@@ -446,12 +445,6 @@ class NetworkBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListView):
     """
 
     model = BadgeClass
-    # permission_classes = [
-
-    #     IsServerAdmin
-    #     | (AuthenticatedWithVerifiedIdentifier & IsNetworkMember)
-    #     | BadgrOAuthTokenHasEntityScope
-    # ]
     v1_serializer_class = BadgeClassSerializerV1
     v2_serializer_class = BadgeClassSerializerV2
     valid_scopes = ["rw:issuer"]
@@ -898,7 +891,7 @@ class BadgeInstanceList(
         IsServerAdmin
         | (
             AuthenticatedWithVerifiedIdentifier
-            # & MayIssueBadgeClass
+            & MayIssueBadgeClass
             & BadgrOAuthTokenHasScope
         )
         | BadgrOAuthTokenHasEntityScope
@@ -2239,21 +2232,6 @@ class NetworkInvitation(BaseEntityDetailView):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        existing_invitations = NetworkInvite.objects.filter(
-            issuer__entity_id__in=slugs,
-            network=network,
-            status=NetworkInvite.Status.PENDING,
-        ).select_related("issuer")
-
-        # if existing_invitations.exists():
-        #     pending_names = [inv.issuer.name for inv in existing_invitations]
-        #     return Response(
-        #         {
-        #             "response": f"Für diese Institutionen liegen bereits offene Einladungen vor: {', '.join(pending_names)}"
-        #         },
-        #         status=status.HTTP_400_BAD_REQUEST,
-        #     )
 
         try:
             with transaction.atomic():
