@@ -831,7 +831,15 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
         """
         evidence_items = []
 
-        issuer_slug = self.context["request"].parser_context["kwargs"].get("issuerSlug")
+        issuer_slug = None
+
+        request = self.context.get("request")
+        if request and hasattr(request, "parser_context"):
+            issuer_slug = request.parser_context.get("kwargs", {}).get("issuerSlug")
+
+        # Fallback if no request available (e.g. running in Celery)
+        if issuer_slug is None:
+            issuer_slug = self.context.get("issuerSlug")
 
         # ob1 evidence url
         evidence_url = validated_data.get("evidence")
