@@ -11,6 +11,7 @@ from django.contrib import admin
 from mainsite.admin import badgr_admin
 
 from .models import (
+    BadgeClassNetworkShare,
     ImportedBadgeAssertionExtension,
     Issuer,
     BadgeClass,
@@ -25,8 +26,8 @@ from .models import (
     LearningPath,
     LearningPathBadge,
     LearningPathTag,
-    Network,
     NetworkInvite,
+    NetworkMembership,
     RequestedBadge,
     QrCode,
     RequestedLearningPath,
@@ -99,12 +100,6 @@ class IssuerStaffInline(TabularInline):
     raw_id_fields = ("user",)
 
 
-class IssuerNetworks(ReadOnlyInline):
-    model = Network.partner_issuers.through
-    extra = 0
-    fields = ("network",)
-
-
 class IssuerExtensionInline(TabularInline):
     model = IssuerExtension
     extra = 0
@@ -133,6 +128,67 @@ class IssuerBadgeclasses(ReadOnlyInline):
 
     def qrcode_count(self, obj):
         return obj.number_of_qrcodes
+
+
+class NetworkMembershipsInline(ReadOnlyInline):
+    """Inline to show which networks this issuer is a member of"""
+
+    model = NetworkMembership
+    fk_name = "issuer"
+    extra = 0
+    fields = ("network_name", "network_link")
+
+    def network_name(self, obj):
+        return obj.network.name if obj.network else "N/A"
+
+    network_name.short_description = "Network Name"
+
+    def network_link(self, obj):
+        if obj.network:
+            return mark_safe(
+                '<a href="{}">{}</a>'.format(
+                    reverse("admin:issuer_issuer_change", args=(obj.network.id,)),
+                    obj.network.name,
+                )
+            )
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("network")
+
+
+class PartnerIssuersInline(ReadOnlyInline):
+    """Inline to show partner issuers for networks"""
+
+    model = NetworkMembership
+    fk_name = "network"
+    extra = 0
+    fields = ("issuer_name", "issuer_link", "badge_count")
+
+    def issuer_name(self, obj):
+        return obj.issuer.name if obj.issuer else "N/A"
+
+    issuer_name.short_description = "Partner Issuer"
+
+    def issuer_link(self, obj):
+        if obj.issuer:
+            return mark_safe(
+                '<a href="{}">{}</a>'.format(
+                    reverse("admin:issuer_issuer_change", args=(obj.issuer.id,)),
+                    obj.issuer.name,
+                )
+            )
+
+    def badge_count(self, obj):
+        if obj.issuer:
+            return obj.issuer.badgeclasses.count()
+        return 0
+
+    badge_count.short_description = "Badge Classes"
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("issuer")
 
 
 class IssuerAdmin(DjangoObjectActions, ModelAdmin):
@@ -176,6 +232,7 @@ class IssuerAdmin(DjangoObjectActions, ModelAdmin):
                     "email",
                     "verified",
                     "intendedUseVerified",
+                    "is_network",
                     "description",
                     "category",
                     "street",
@@ -190,12 +247,18 @@ class IssuerAdmin(DjangoObjectActions, ModelAdmin):
         ),
         ("JSON", {"fields": ("old_json",)}),
     )
-    inlines = [
-        IssuerStaffInline,
-        IssuerExtensionInline,
-        IssuerBadgeclasses,
-        IssuerNetworks,
-    ]
+
+    def get_inlines(self, request, obj):
+        inlines = [IssuerStaffInline, IssuerExtensionInline, IssuerBadgeclasses]
+
+        if obj:
+            if obj.is_network:
+                inlines.extend([PartnerIssuersInline])
+            else:
+                inlines.extend([NetworkMembershipsInline])
+
+        return inlines
+
     change_actions = ["redirect_badgeclasses"]
     actions = [export_institutions_csv]
 
@@ -235,84 +298,6 @@ class IssuerAdmin(DjangoObjectActions, ModelAdmin):
 
 
 badgr_admin.register(Issuer, IssuerAdmin)
-
-
-class NetworkStaffInline(TabularInline):
-    model = Network.staff.through
-    extra = 0
-    raw_id_fields = ("user",)
-
-
-class NetworkPartnerIssuers(ReadOnlyInline):
-    model = Network.partner_issuers.through
-    extra = 0
-    fields = ("issuer",)
-
-
-class NetworkAdmin(DjangoObjectActions, ModelAdmin):
-    readonly_fields = (
-        "created_by",
-        "created_at",
-        "updated_at",
-        "source",
-        "source_url",
-        "entity_id",
-        "slug",
-    )
-    list_display = ("img", "name", "created_by", "created_at")
-    list_display_links = ("img", "name")
-    list_filter = ("created_at",)
-    search_fields = ("name", "entity_id")
-    fieldsets = (
-        (
-            "Metadata",
-            {
-                "fields": (
-                    "created_by",
-                    "created_at",
-                    "updated_at",
-                    "source",
-                    "source_url",
-                    "entity_id",
-                    "slug",
-                ),
-                "classes": ("collapse",),
-            },
-        ),
-        (
-            None,
-            {
-                "fields": (
-                    "image",
-                    "name",
-                    "url",
-                    "description",
-                    "badgrapp",
-                    "country",
-                    "state",
-                )
-            },
-        ),
-    )
-    inlines = [NetworkStaffInline, NetworkPartnerIssuers]
-
-    def save_model(self, request, obj, form, change):
-        force_resize = False
-        if "image" in form.changed_data:
-            force_resize = True
-        obj.save(force_resize=force_resize)
-
-    def img(self, obj):
-        try:
-            return mark_safe('<img src="{}" width="32"/>'.format(obj.image.url))
-        except ValueError:
-            return obj.image
-
-    img.short_description = "Image"
-    img.allow_tags = True
-
-
-badgr_admin.register(Network, NetworkAdmin)
 
 
 class BadgeClassAlignmentInline(TabularInline):
@@ -771,3 +756,64 @@ class LearningPathAdmin(ModelAdmin):
 
 
 badgr_admin.register(LearningPath, LearningPathAdmin)
+
+
+class BadgeClassNetworkShareAdmin(ModelAdmin):
+    list_display = (
+        "badgeclass_name",
+        "issuer_name",
+        "network_name",
+        "shared_by_user",
+        "shared_at",
+        "is_active",
+    )
+    list_filter = (
+        "is_active",
+        "shared_at",
+        "network__name",
+    )
+    search_fields = (
+        "badgeclass__name",
+        "badgeclass__issuer__name",
+        "network__name",
+        "shared_by_user__email",
+        "shared_by_user__first_name",
+        "shared_by_user__last_name",
+    )
+    readonly_fields = (
+        "shared_at",
+        "shared_by_issuer_display",
+    )
+    date_hierarchy = "shared_at"
+
+    def badgeclass_name(self, obj):
+        """Display the badge class name"""
+        return obj.badgeclass.name
+
+    badgeclass_name.short_description = "Badge Class"
+    badgeclass_name.admin_order_field = "badgeclass__name"
+
+    def issuer_name(self, obj):
+        """Display the issuer name that owns the badge"""
+        return obj.badgeclass.issuer.name
+
+    issuer_name.short_description = "Issuer"
+    issuer_name.admin_order_field = "badgeclass__issuer__name"
+
+    def network_name(self, obj):
+        """Display the network name"""
+        return obj.network.name
+
+    network_name.short_description = "Network"
+    network_name.admin_order_field = "network__name"
+
+    def shared_by_issuer_display(self, obj):
+        """Display the issuer the sharing user was acting on behalf of"""
+        if obj.shared_by_issuer:
+            return obj.shared_by_issuer.name
+        return "N/A"
+
+    shared_by_issuer_display.short_description = "Shared by Issuer"
+
+
+badgr_admin.register(BadgeClassNetworkShare, BadgeClassNetworkShareAdmin)

@@ -13,6 +13,7 @@ from .models import (
     TermsVersion,
     TermsAgreement,
     CachedEmailAddress,
+    UserPreference,
     UserRecipientIdentifier,
 )
 from issuer.models import Issuer
@@ -230,3 +231,11 @@ class RecipientIdentifierAdmin(ModelAdmin):
 
 
 badgr_admin.register(UserRecipientIdentifier, RecipientIdentifierAdmin)
+
+
+class UserPreferencesAdmin(ModelAdmin):
+    list_display = ("user",)
+    raw_id_fields = ("user",)
+
+
+badgr_admin.register(UserPreference, UserPreferencesAdmin)

@@ -35,8 +35,8 @@ from issuer.models import (
     IssuerStaffRequest,
     LearningPath,
     LearningPathBadge,
-    RequestedBadge,
     NetworkInvite,
+    RequestedBadge,
 )
 from issuer.serializers_v1 import IssuerStaffRequestSerializer, LearningPathSerializerV1
 from rest_framework import permissions, serializers, status
