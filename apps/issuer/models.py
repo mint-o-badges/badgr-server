@@ -2581,14 +2581,14 @@ class BadgeClassNetworkShare(models.Model):
         blank=True,
         related_name="badge_shares",
     )
+    shared_by_issuer = models.ForeignKey(
+        Issuer,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="network_shares_created",
+    )
     is_active = models.BooleanField(default=True)
-
-    @property
-    def shared_by_issuer(self):
-        """Derive which issuer the sharing user was acting on behalf of"""
-        if self.shared_by_user:
-            return self.badgeclass.issuer
-        return None
 
     class Meta:
         unique_together = ("badgeclass", "network")

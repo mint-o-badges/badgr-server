@@ -509,7 +509,6 @@ class BadgeClassSerializerV1(
             user.agreed_terms_version == TermsVersion.cached.latest_version()
             for user in instance.cached_issuer.owners
         )
-        representation["isNetworkBadge"] = instance.cached_issuer.is_network
 
         networkShare = instance.network_shares.filter(is_active=True).first()
         if networkShare:
@@ -522,6 +521,11 @@ class BadgeClassSerializerV1(
             }
         else:
             representation["sharedOnNetwork"] = None
+
+        representation["isNetworkBadge"] = (
+            instance.cached_issuer.is_network
+            and representation["sharedOnNetwork"] is None
+        )
 
         representation["issuer"] = OriginSetting.HTTP + reverse(
             "issuer_json", kwargs={"entity_id": instance.cached_issuer.entity_id}

@@ -2485,7 +2485,7 @@ class IssuerSharedNetworkBadgesView(BaseEntityListView):
 
         return (
             BadgeClassNetworkShare.objects.filter(
-                badgeclass__issuer=issuer, is_active=True
+                shared_by_issuer=issuer, is_active=True
             )
             .select_related(
                 "badgeclass", "badgeclass__issuer", "network", "shared_by_user"
@@ -2572,7 +2572,10 @@ class BadgeClassNetworkShareView(BaseEntityDetailView):
             )
 
         share = BadgeClassNetworkShare.objects.create(
-            badgeclass=badgeclass, network=network, shared_by_user=request.user
+            badgeclass=badgeclass,
+            network=network,
+            shared_by_user=request.user,
+            shared_by_issuer=badgeclass.issuer,
         )
 
         extensions = badgeclass.cached_extensions()
@@ -2587,7 +2590,8 @@ class BadgeClassNetworkShareView(BaseEntityDetailView):
         )
 
         badgeclass.copy_permissions = BadgeClass.COPY_PERMISSIONS_NONE
-        badgeclass.save(update_fields=["image", "copy_permissions"])
+        badgeclass.issuer = network
+        badgeclass.save(update_fields=["image", "copy_permissions", "issuer"])
 
         serializer = self.get_serializer_class()(share)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
