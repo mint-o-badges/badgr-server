@@ -443,7 +443,7 @@ class ImportedBadgeHelper:
             raise ValidationError(
                 [
                     {
-                        "name": "RECIPIENT_VERIFICATION",
+                        "name": "VERIFY_RECIPIENT_IDENTIFIER",
                         "description": "Recipients do not match",
                     }
                 ]
