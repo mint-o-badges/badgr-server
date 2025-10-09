@@ -764,7 +764,6 @@ class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
     def get(self, request, task_id, **kwargs):
         task_result = AsyncResult(task_id)
         result = task_result.result if task_result.ready() else None
-        print(f"result {result}")
 
         if result and not result.get("success"):
             return Response(
