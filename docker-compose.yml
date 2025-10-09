@@ -93,7 +93,7 @@ services:
             - ./openbadges_bakery:/badgr_server/openbadges_bakery
             - ./manage.py:/badgr_server/manage.py
             - ./.docker/etc/settings_local.dev.py:/badgr_server/apps/mainsite/settings_local.py
-            - badgr_server_mediafiles:/badgr_server/mediafiles
+            - ./badgr_server_mediafiles:/badgr_server/mediafiles
         environment:
             - CELERY_BROKER_URL=redis://redis:6379/0
             - CELERY_RESULT_BACKEND=redis://redis:6379/0

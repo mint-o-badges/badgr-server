@@ -195,6 +195,13 @@ class ImportedBadgeHelper:
                 "description": "This assertion has been revoked",
             },
         ),
+        (
+            ["VERIFY_EMAIL_VERIFIED"],
+            {
+                "name": "EMAIL_NOT_VERIFIED",
+                "description": "The email of this assertion is not yet verified.",
+            },
+        ),
     ]
 
     @classmethod
@@ -436,7 +443,7 @@ class ImportedBadgeHelper:
             raise ValidationError(
                 [
                     {
-                        "name": "RECIPIENT_VERIFICATION",
+                        "name": "VERIFY_RECIPIENT_IDENTIFIER",
                         "description": "Recipients do not match",
                     }
                 ]

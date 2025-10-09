@@ -3,7 +3,7 @@ from django.conf import settings
 from rest_framework import permissions
 import rules
 
-from issuer.models import IssuerStaff, NetworkStaff
+from issuer.models import Issuer, IssuerStaff, NetworkMembership
 
 SAFE_METHODS = ["GET", "HEAD", "OPTIONS"]
 
@@ -57,63 +57,6 @@ except KeyError:
 
 
 @rules.predicate
-def is_network_owner(user, network):
-    if not hasattr(network, "cached_networkstaff"):
-        return False
-    for staff_record in network.cached_networkstaff():
-        if (
-            staff_record.user_id == user.id
-            and staff_record.role == NetworkStaff.ROLE_OWNER
-        ):
-            return True
-    return False
-
-
-@rules.predicate
-def is_network_editor(user, network):
-    if not hasattr(network, "cached_networkstaff"):
-        return False
-    for staff_record in network.cached_networkstaff():
-        if staff_record.user_id == user.id and staff_record.role in (
-            NetworkStaff.ROLE_OWNER,
-            NetworkStaff.ROLE_EDITOR,
-        ):
-            return True
-    return False
-
-
-@rules.predicate
-def is_network_staff(user, network):
-    if not hasattr(network, "cached_networkstaff"):
-        return False
-    for staff_record in network.cached_networkstaff():
-        if staff_record.user_id == user.id:
-            return True
-    return False
-
-
-is_on_network_staff = is_network_owner | is_network_staff
-is_staff_editor = is_network_owner | is_network_editor
-
-
-class IsNetworkEditor(permissions.BasePermission):
-    """
-    Request.user is authorized to perform safe operations if they are staff or
-    perform unsafe operations if they are owner or editor of a network.
-    ---
-    model: Network
-    """
-
-    def has_object_permission(self, request, view, network):
-        if _is_server_admin(request):
-            return True
-        if request.method in SAFE_METHODS:
-            return request.user.has_perm("network.is_network_staff", network)
-        else:
-            return request.user.has_perm("network.is_network_editor", network)
-
-
-@rules.predicate
 def is_badgeclass_owner(user, badgeclass):
     return any(
         staff.role == IssuerStaff.ROLE_OWNER
@@ -137,6 +80,34 @@ def is_badgeclass_staff(user, badgeclass):
         staff.user_id == user.id
         for staff in badgeclass.cached_issuer.cached_issuerstaff()
     )
+
+
+@rules.predicate
+def is_partner_issuer_staff(user, badgeclass):
+    """
+    Check if user is staff of a partner issuer in a network where this badge has been shared.
+    Returns True if:
+    1. The badge has been shared with a network (via BadgeClassNetworkShare)
+    2. The user is staff of an issuer that is a member of that network
+    3. The share is active
+    """
+    network_shares = badgeclass.network_shares.filter(is_active=True).select_related(
+        "network"
+    )
+
+    for share in network_shares:
+        network = share.network
+        partner_memberships = network.memberships.select_related("issuer")
+
+        for membership in partner_memberships:
+            partner_issuer = membership.issuer
+            if any(
+                staff.user_id == user.id
+                for staff in partner_issuer.cached_issuerstaff()
+            ):
+                return True
+
+    return False
 
 
 @rules.predicate
@@ -165,7 +136,26 @@ def is_learningpath_owner(user, learningpath):
     )
 
 
-can_issue_badgeclass = is_badgeclass_owner | is_badgeclass_staff
+@rules.predicate
+def is_network_member(user, network):
+    """
+    Check if user is staff of any issuer that is a member of the given network
+    """
+    if not network or not network.is_network:
+        return False
+
+    user_staff_issuer_ids = IssuerStaff.objects.filter(user=user).values_list(
+        "issuer_id", flat=True
+    )
+
+    return NetworkMembership.objects.filter(
+        network=network, issuer_id__in=user_staff_issuer_ids
+    ).exists()
+
+
+can_issue_badgeclass = (
+    is_badgeclass_owner | is_badgeclass_staff | is_partner_issuer_staff
+)
 can_edit_badgeclass = is_badgeclass_owner | is_badgeclass_editor
 
 can_issue_learningpath = is_learningpath_staff
@@ -177,6 +167,7 @@ try:
     rules.add_perm("issuer.can_edit_badgeclass", can_edit_badgeclass)
     rules.add_perm("issuer.can_issue_learningpath", can_issue_learningpath)
     rules.add_perm("issuer.can_edit_learningpath", can_edit_learningpath)
+    rules.add_perm("network.is_member", is_network_member)
 except KeyError:
     pass
 
@@ -286,6 +277,38 @@ class IsStaff(permissions.BasePermission):
         return _is_server_admin(request) or request.user.has_perm(
             "issuer.is_staff", issuer
         )
+
+
+class IsNetworkMember(permissions.BasePermission):
+    """
+    Request.user is authorized to access network resources if they are staff
+    of an issuer that is a member of the network.
+    ---
+    model: Issuer (Network)
+    """
+
+    def has_object_permission(self, request, view, network):
+        if not network.is_network:
+            return False
+
+        return request.user.has_perm("network.is_member", network)
+
+    def has_permission(self, request, view):
+        """
+        For list views where we need to check network membership
+        based on URL parameters or query parameters
+        """
+
+        network_id = view.kwargs.get("network_id") or request.GET.get("network_id")
+
+        if not network_id:
+            return False
+
+        try:
+            network = Issuer.objects.get(id=network_id, is_network=True)
+            return request.user.has_perm("network.is_member", network)
+        except Issuer.DoesNotExist:
+            return False
 
 
 class ApprovedIssuersOnly(permissions.BasePermission):
