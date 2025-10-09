@@ -630,7 +630,7 @@ class BadgeClassSerializerV1(
                     instance.generate_badge_image(
                         category, original_image, instance.issuer.image
                     )
-                    instance.save(update_fields=["image"])
+                    instance.save()
                 except BadgeClassExtension.DoesNotExist as e:
                     raise serializers.ValidationError({"extensions": str(e)})
                 except Exception as e:
