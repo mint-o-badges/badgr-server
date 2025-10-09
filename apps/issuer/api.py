@@ -686,7 +686,7 @@ class BadgeClassDetail(BaseEntityDetailView):
 
 @shared_task
 def process_batch_assertions(
-    assertions, user_id, badgeclass_id, create_notification=False
+    assertions, user_id, badgeclass_id, issuerSlug, create_notification=False
 ):
     try:
         User = get_user_model()
@@ -699,7 +699,7 @@ def process_batch_assertions(
             for assertion in assertions
         ]
 
-        context = {"badgeclass": badgeclass, "user": user}
+        context = {"badgeclass": badgeclass, "user": user, "issuerSlug": issuerSlug}
         serializer = BadgeInstanceSerializerV1(
             many=True, data=assertions, context=context
         )
@@ -775,6 +775,7 @@ class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
         )
 
     def post(self, request, **kwargs):
+        issuerSlug = kwargs.get("issuerSlug")
         # verify the user has permission to the badgeclass
         badgeclass = self.get_object(request, **kwargs)
         assertions = request.data.get("assertions", [])
@@ -791,6 +792,7 @@ class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
             assertions=assertions,
             user_id=request.user.id,
             badgeclass_id=badgeclass.id,
+            issuerSlug=issuerSlug,
             create_notification=create_notification,
         )
 
