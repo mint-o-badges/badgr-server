@@ -527,6 +527,11 @@ class BadgeClassSerializerV1(
             and representation["sharedOnNetwork"] is None
         )
 
+        if representation["isNetworkBadge"]:
+            representation["networkImage"] = instance.cached_issuer.image.url
+        else:
+            representation["networkImage"] = None
+
         representation["issuer"] = OriginSetting.HTTP + reverse(
             "issuer_json", kwargs={"entity_id": instance.cached_issuer.entity_id}
         )
