@@ -213,6 +213,8 @@ class NetworkSerializerV1(BaseIssuerSerializerV1):
             representation["current_user_network_role"] = self._get_user_network_role(
                 instance, request.user
             )
+        else:
+            representation["current_user_network_role"] = None
 
         return representation
 
