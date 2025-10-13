@@ -42,15 +42,14 @@ from .models import (
     RECIPIENT_TYPE_URL,
     BadgeClass,
     BadgeClassExtension,
+    BadgeClassNetworkShare,
     BadgeInstance,
     Issuer,
     IssuerStaff,
     IssuerStaffRequest,
     LearningPath,
     LearningPathBadge,
-    Network,
     NetworkInvite,
-    NetworkStaff,
     QrCode,
     RequestedBadge,
     RequestedLearningPath,
@@ -127,27 +126,6 @@ class IssuerStaffSerializerV1(serializers.Serializer):
         )
 
 
-class NetworkStaffSerializerV1(serializers.Serializer):
-    """A read_only serializer for staff roles"""
-
-    user = BadgeUserProfileSerializerV1(source="cached_user")
-    role = serializers.CharField(
-        validators=[ChoicesValidator(list(dict(NetworkStaff.ROLE_CHOICES).keys()))]
-    )
-
-    class Meta:
-        list_serializer_class = CachedListSerializer
-
-        apispec_definition = (
-            "NetworkStaff",
-            {
-                "properties": {
-                    "role": {"type": "string", "enum": ["staff", "editor", "owner"]}
-                }
-            },
-        )
-
-
 class BaseIssuerSerializerV1(
     OriginalJsonSerializerMixin, ExcludeFieldsMixin, serializers.Serializer
 ):
@@ -166,12 +144,23 @@ class BaseIssuerSerializerV1(
     badgrapp = serializers.CharField(
         read_only=True, max_length=255, source="cached_badgrapp"
     )
+    staff = IssuerStaffSerializerV1(
+        read_only=True, source="cached_issuerstaff", many=True
+    )
     source_url = serializers.CharField(
         max_length=255, required=False, allow_blank=True, allow_null=True
     )
     country = serializers.CharField(
         max_length=255, required=False, allow_blank=True, allow_null=True
     )
+
+    state = serializers.CharField(
+        max_length=254, required=False, allow_blank=True, allow_null=True
+    )
+
+    is_network = serializers.BooleanField(default=False)
+
+    linkedinId = serializers.CharField(max_length=255, required=False, allow_blank=True)
 
     def get_fields(self):
         fields = super().get_fields()
@@ -190,35 +179,12 @@ class BaseIssuerSerializerV1(
 
 
 class NetworkSerializerV1(BaseIssuerSerializerV1):
-    staff = NetworkStaffSerializerV1(
-        read_only=True, source="cached_networkstaff", many=True
-    )
-
-    state = serializers.CharField(
-        max_length=254, required=False, allow_blank=True, allow_null=True
-    )
-
-    partner_issuers = serializers.SerializerMethodField()
-
-    def get_partner_issuers(self, obj):
-        from .serializers_v1 import IssuerSerializerV1
-
-        # Exclude 'networks' field from nested issuer serialization to prevent circular reference
-        context = self.context.copy()
-        context["exclude_fields"] = context.get("exclude_fields", []) + ["networks"]
-
-        direct_issuers = obj.partner_issuers.all()
-
-        data = IssuerSerializerV1(direct_issuers, many=True, context=context).data
-        # print(f"data {data}")
-        # print(f"cached_issuers {obj.cached_partner_issuers()}")
-        # return IssuerSerializerV1(
-        #     obj.cached_partner_issuers(), many=True, context=context
-        # ).data
-        return data
-
     def create(self, validated_data, **kwargs):
-        new_network = Network(**validated_data)
+        new_network = Issuer(**validated_data)
+
+        new_network.is_network = True
+        # verify network as only verified issuers can create badges
+        new_network.verified = True
 
         new_network.badgrapp = BadgrApp.objects.get_current(
             self.context.get("request", None)
@@ -234,14 +200,40 @@ class NetworkSerializerV1(BaseIssuerSerializerV1):
             obi_version="1_1", use_canonical_id=True
         )
 
+        exclude_fields = self.context.get("exclude_fields", [])
+        if "partner_issuers" not in exclude_fields:
+            partner_issuers = instance.partner_issuers.all()
+            representation["partner_issuers"] = IssuerSerializerV1(
+                partner_issuers, many=True, context=self.context
+            ).data
+
+        request = self.context.get("request")
+
+        if request and request.user and not request.user.is_anonymous:
+            representation["current_user_network_role"] = self._get_user_network_role(
+                instance, request.user
+            )
+
         return representation
+
+    def _get_user_network_role(self, network, user):
+        """Get user's role within this network (either direct or through partner issuer)"""
+        direct_staff = network.cached_issuerstaff().filter(user=user).first()
+        if direct_staff:
+            return direct_staff.role
+
+        for membership in network.memberships.all():
+            partner_staff = (
+                membership.issuer.cached_issuerstaff().filter(user=user).first()
+            )
+            if partner_staff:
+                return partner_staff.role
+
+        return None
 
 
 class IssuerSerializerV1(BaseIssuerSerializerV1):
     email = serializers.EmailField(max_length=255, required=True)
-    staff = IssuerStaffSerializerV1(
-        read_only=True, source="cached_issuerstaff", many=True
-    )
     networks = serializers.SerializerMethodField()
     verified = serializers.BooleanField(default=False)
 
@@ -262,8 +254,6 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
 
     intendedUseVerified = serializers.BooleanField(default=False)
 
-    linkedinId = serializers.CharField(max_length=255, required=False, allow_blank=True)
-
     lat = serializers.CharField(
         max_length=255, required=False, allow_blank=True, allow_null=True
     )
@@ -274,14 +264,21 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
     def get_networks(self, obj):
         from .serializers_v1 import NetworkSerializerV1
 
+        # Check if networks should be excluded to prevent circular reference
+        exclude_fields = self.context.get("exclude_fields", [])
+        if "networks" in exclude_fields:
+            return []
+
+        network_memberships = obj.network_memberships.select_related("network")
+        networks = [membership.network for membership in network_memberships]
+
         # Exclude 'partner_issuers' field from nested network serialization to prevent circular reference
         context = self.context.copy()
         context["exclude_fields"] = context.get("exclude_fields", []) + [
             "partner_issuers"
         ]
-        return NetworkSerializerV1(
-            obj.cached_networks(), many=True, context=context
-        ).data
+
+        return NetworkSerializerV1(networks, many=True, context=context).data
 
     class Meta:
         apispec_definition = ("Issuer", {})
@@ -512,6 +509,24 @@ class BadgeClassSerializerV1(
             user.agreed_terms_version == TermsVersion.cached.latest_version()
             for user in instance.cached_issuer.owners
         )
+
+        networkShare = instance.network_shares.filter(is_active=True).first()
+        if networkShare:
+            network = networkShare.network
+            representation["sharedOnNetwork"] = {
+                "slug": network.entity_id,
+                "name": network.name,
+                "image": network.image.url,
+                "description": network.description,
+            }
+        else:
+            representation["sharedOnNetwork"] = None
+
+        representation["isNetworkBadge"] = (
+            instance.cached_issuer.is_network
+            and representation["sharedOnNetwork"] is None
+        )
+
         representation["issuer"] = OriginSetting.HTTP + reverse(
             "issuer_json", kwargs={"entity_id": instance.cached_issuer.entity_id}
         )
@@ -613,9 +628,9 @@ class BadgeClassSerializerV1(
                     original_image = json.loads(org_img_ext.original_json)["OrgImage"]
 
                     instance.generate_badge_image(
-                        instance.issuer.image, category, original_image
+                        category, original_image, instance.issuer.image
                     )
-                    instance.save(update_fields=["image"])
+                    instance.save()
                 except BadgeClassExtension.DoesNotExist as e:
                     raise serializers.ValidationError({"extensions": str(e)})
                 except Exception as e:
@@ -638,15 +653,6 @@ class BadgeClassSerializerV1(
             if "issuer" in self.context:
                 validated_data["issuer"] = self.context.get("issuer")
 
-            # criteria_text is now created at runtime
-            # if (
-            #     validated_data.get("criteria_text", None) is None
-            #     and validated_data.get("criteria_url", None) is None
-            # ):
-            #     raise serializers.ValidationError(
-            #         "One or both of the criteria_text and criteria_url fields must be provided"
-            #     )
-
             new_badgeclass = BadgeClass.objects.create(**validated_data)
 
             extensions = new_badgeclass.cached_extensions()
@@ -663,14 +669,26 @@ class BadgeClassSerializerV1(
                     raise serializers.ValidationError({"extensions": str(e)})
 
                 try:
+                    issuer_image = None
+                    network_image = None
+
+                    if new_badgeclass.issuer.is_network:
+                        network_image = new_badgeclass.issuer.image
+                    else:
+                        issuer_image = new_badgeclass.issuer.image
+
                     new_badgeclass.generate_badge_image(
-                        new_badgeclass.issuer.image, category, original_image
+                        category,
+                        original_image,
+                        issuer_image,
+                        network_image,
                     )
                     new_badgeclass.save(update_fields=["image"])
                 except Exception as e:
                     raise serializers.ValidationError(
                         f"Badge image generation failed: {e}"
                     )
+
             return new_badgeclass
 
 
@@ -813,6 +831,16 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
         """
         evidence_items = []
 
+        issuer_slug = None
+
+        request = self.context.get("request")
+        if request and hasattr(request, "parser_context"):
+            issuer_slug = request.parser_context.get("kwargs", {}).get("issuerSlug")
+
+        # Fallback if no request available (e.g. running in Celery)
+        if issuer_slug is None:
+            issuer_slug = self.context.get("issuerSlug")
+
         # ob1 evidence url
         evidence_url = validated_data.get("evidence")
         if evidence_url:
@@ -837,6 +865,7 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
                 badgr_app=BadgrApp.objects.get_current(self.context.get("request")),
                 expires_at=validated_data.get("expires_at", None),
                 extensions=validated_data.get("extension_items", None),
+                issuerSlug=issuer_slug,
             )
         except DjangoValidationError as e:
             raise serializers.ValidationError(e.message)
@@ -1207,3 +1236,45 @@ class LearningPathParticipantSerializerV1(serializers.Serializer):
         data = super().to_representation(instance)
         data["participationBadgeAssertion"] = BadgeInstanceSerializerV1(instance).data
         return data
+
+
+class NetworkBadgeInstanceSerializerV1(BadgeInstanceSerializerV1):
+    pass
+
+
+class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
+    badgeclass = serializers.SerializerMethodField()
+    network = serializers.SerializerMethodField()
+    shared_by_issuer = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BadgeClassNetworkShare
+        fields = [
+            "id",
+            "badgeclass",
+            "network",
+            "shared_at",
+            "shared_by_user",
+            "shared_by_issuer",
+            "is_active",
+        ]
+        read_only_fields = ["id", "shared_at", "shared_by_user"]
+
+    def get_badgeclass(self, obj):
+        return BadgeClassSerializerV1(obj.badgeclass, context=self.context).data
+
+    def get_network(self, obj):
+        return {
+            "slug": obj.network.entity_id,
+            "name": obj.network.name,
+            "image": obj.network.image_url(),
+        }
+
+    def get_shared_by_issuer(self, obj):
+        if obj.shared_by_issuer:
+            return {
+                "slug": obj.shared_by_issuer.entity_id,
+                "name": obj.shared_by_issuer.name,
+                "image": obj.shared_by_issuer.image_url(),
+            }
+        return None

@@ -73,7 +73,7 @@ class ResizeUploadedImage(object):
                 return super(ResizeUploadedImage, self).save(*args, **kwargs)
 
             if image.format == "PNG":
-                max_square = getattr(settings, "IMAGE_FIELD_MAX_PX", 400)
+                max_square = getattr(settings, "IMAGE_FIELD_MAX_PX", 600)
 
                 smaller_than_canvas = (
                     image.width < max_square and image.height < max_square

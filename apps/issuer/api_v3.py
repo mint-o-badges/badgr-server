@@ -30,14 +30,7 @@ from .serializers_v1 import (
     LearningPathSerializerV1,
     NetworkSerializerV1,
 )
-from .models import (
-    BadgeClass,
-    BadgeClassTag,
-    BadgeInstance,
-    Issuer,
-    LearningPath,
-    Network,
-)
+from .models import BadgeClass, BadgeClassTag, BadgeInstance, Issuer, LearningPath
 
 
 class BadgeFilter(EntityFilter):
@@ -93,20 +86,8 @@ class Issuers(EntityViewSet):
         return context
 
 
-class LearningPathFilter(EntityFilter):
-    tags = filters.CharFilter(
-        field_name="learningpathtag__name", lookup_expr="icontains"
-    )
-
-
-class LearningPaths(EntityViewSet):
-    queryset = LearningPath.objects.all()
-    serializer_class = LearningPathSerializerV1
-    filterset_class = LearningPathFilter
-
-
 class Networks(EntityViewSet):
-    queryset = Network.objects.all()
+    queryset = Issuer.objects.filter(is_network=True)
     serializer_class = NetworkSerializerV1
 
     def get_serializer_context(self):
@@ -121,6 +102,18 @@ class Networks(EntityViewSet):
                 "partner_issuers",
             ]
         return context
+
+
+class LearningPathFilter(EntityFilter):
+    tags = filters.CharFilter(
+        field_name="learningpathtag__name", lookup_expr="icontains"
+    )
+
+
+class LearningPaths(EntityViewSet):
+    queryset = LearningPath.objects.all()
+    serializer_class = LearningPathSerializerV1
+    filterset_class = LearningPathFilter
 
 
 class LearnersProfile(View):
