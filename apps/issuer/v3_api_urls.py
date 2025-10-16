@@ -12,5 +12,6 @@ router.register(r"networks", api_v3.Networks, basename="networks")
 
 urlpatterns = [
     path("learnersprofile", api_v3.LearnersProfile.as_view()),
+    path("badge-edit", api_v3.BadgeEdit.as_view()),
     path("", include(router.urls)),
 ]
