@@ -42,6 +42,7 @@ from mainsite.views import (
 
 from mainsite.views_lti import (
     ApplicationLaunchView,
+    LtiBadgeEdit,
     LtiProfile,
     XFrameExemptOIDCLoginInitView,
 )
@@ -255,6 +256,7 @@ urlpatterns = [
     ),
     path("lti/launch/", ApplicationLaunchView.as_view()),
     path("lti/tools/profile/", LtiProfile),
+    path("lti/tools/badge-edit/", LtiBadgeEdit),
     # Prometheus endpoint
     path("", include("django_prometheus.urls")),
 ]

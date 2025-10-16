@@ -28,7 +28,10 @@ def iframe(request, *args, **kwargs):
             )
         if iframe.name == "badge-edit":
             return iframe_edit_badge(
-                request, iframe.params["token"], iframe.params["badge"], iframe.params["language"]
+                request,
+                iframe.params["token"],
+                iframe.params["badge"],
+                iframe.params["language"],
             )
     except Exception as e:
         # show errors while debug
@@ -45,13 +48,21 @@ def iframe_profile(request, skills, language):
     return render(
         request,
         "iframes/profile/index.html",
-        context={"asset_path": settings.WEBCOMPONENTS_ASSETS_PATH, "skill_json": skill_json, "language": language},
+        context={
+            "asset_path": settings.WEBCOMPONENTS_ASSETS_PATH,
+            "skill_json": skill_json,
+            "language": language,
+        },
     )
 
-def iframe_edit_badge(request, token, badge, language):
 
+def iframe_edit_badge(request, token, badge, language):
     return render(
         request,
         "iframes/badge-edit/index.html",
-        context={"asset_path": settings.WEBCOMPONENTS_ASSETS_PATH, "language": language, "token": token},
+        context={
+            "asset_path": settings.WEBCOMPONENTS_ASSETS_PATH,
+            "language": language,
+            "token": token,
+        },
     )
