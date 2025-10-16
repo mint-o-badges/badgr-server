@@ -53,7 +53,7 @@ from issuer.serializers_v1 import IssuerSerializerV1, RequestedBadgeSerializer
 from mainsite.admin_actions import clear_cache
 from mainsite.models import EmailBlacklist, BadgrApp, AltchaChallenge
 from mainsite.serializers import LegacyVerifiedAuthTokenSerializer
-from mainsite.utils import createHash, createHmac
+from mainsite.utils import createHash, createHmac, validate_qr_code_validity
 from random import randrange
 
 import mainsite
@@ -276,6 +276,12 @@ def requestBadge(req, qrCodeId):
         )
     qrCode = QrCode.objects.get(entity_id=qrCodeId)
 
+    validity_error = validate_qr_code_validity(qrCode)
+    if validity_error:
+        return JsonResponse(
+            {"error": validity_error}, status=status.HTTP_400_BAD_REQUEST
+        )
+
     if req.method == "GET":
         requestedBadges = RequestedBadge.objects.filter(qrcode=qrCode)
         serializer = RequestedBadgeSerializer(requestedBadges, many=True)
@@ -292,7 +298,19 @@ def requestBadge(req, qrCodeId):
         firstName = data.get("firstname")
         lastName = data.get("lastname")
         email = data.get("email")
-        qrCodeId = data.get("qrCodeId")
+        ageConfirmation = data.get("ageConfirmation")
+
+        if not all([firstName, lastName, email]):
+            return JsonResponse(
+                {"error": "Missing required fields: firstname, lastname, email"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not ageConfirmation or ageConfirmation is not True:
+            return JsonResponse(
+                {"error": "Age confirmation is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             qrCode = QrCode.objects.get(entity_id=qrCodeId)
@@ -890,16 +908,14 @@ class DocsAuthorizeRedirect(RedirectView):
             url = "{}?{}".format(url, query)
         return url
 
+
 class AdminUser(EntityViewSet):
-    permission_classes = [
-        IsServerAdmin
-    ]
+    permission_classes = [IsServerAdmin]
     queryset = BadgeUser.objects.all()
     serializer_class = BadgeUserProfileSerializerV1
 
+
 class AdminIssuer(EntityViewSet):
-    permission_classes = [
-        IsServerAdmin
-    ]
+    permission_classes = [IsServerAdmin]
     queryset = Issuer.objects.all()
     serializer_class = IssuerSerializerV1
