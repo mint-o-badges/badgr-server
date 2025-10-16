@@ -46,7 +46,7 @@ from apps.mainsite.permissions import IsServerAdmin
 from badgeuser.models import BadgeUser
 from badgeuser.serializers_v1 import BadgeUserProfileSerializerV1
 from entity.api_v3 import EntityViewSet
-from mainsite.authentication import ValidAltcha
+from mainsite.authentication import BadgrOAuth2Authentication, ValidAltcha
 from issuer.tasks import rebake_all_assertions, update_issuedon_all_assertions
 from issuer.models import BadgeClass, Issuer, QrCode, RequestedBadge
 from issuer.serializers_v1 import IssuerSerializerV1, RequestedBadgeSerializer
@@ -547,7 +547,12 @@ def extractErrorMessage500(response: Response):
 
 @api_view(["GET"])
 @authentication_classes(
-    [TokenAuthentication, SessionAuthentication, BasicAuthentication]
+    [
+        BadgrOAuth2Authentication,
+        TokenAuthentication,
+        SessionAuthentication,
+        BasicAuthentication,
+    ]
 )
 @permission_classes([IsAuthenticated])
 def nounproject(req, searchterm, page):
@@ -890,16 +895,14 @@ class DocsAuthorizeRedirect(RedirectView):
             url = "{}?{}".format(url, query)
         return url
 
+
 class AdminUser(EntityViewSet):
-    permission_classes = [
-        IsServerAdmin
-    ]
+    permission_classes = [IsServerAdmin]
     queryset = BadgeUser.objects.all()
     serializer_class = BadgeUserProfileSerializerV1
 
+
 class AdminIssuer(EntityViewSet):
-    permission_classes = [
-        IsServerAdmin
-    ]
+    permission_classes = [IsServerAdmin]
     queryset = Issuer.objects.all()
     serializer_class = IssuerSerializerV1
