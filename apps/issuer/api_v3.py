@@ -176,16 +176,16 @@ class LearnersProfile(RequestIframe):
 
         return JsonResponse({"url": iframe.url})
 
+
 class BadgeEdit(RequestIframe):
     permission_classes = [
         IsServerAdmin
         | (AuthenticatedWithVerifiedIdentifier & IsStaff & BadgrOAuthTokenHasScope)
         | BadgrOAuthTokenHasEntityScope
     ]
-    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+    valid_scopes = ["rw:issuer", "rw:issuer:*", "rw:profile"]
 
     def post(self, request, **kwargs):
-
         try:
             language = request.POST["lang"]
             assert language in ["de", "en"]
@@ -202,20 +202,19 @@ class BadgeEdit(RequestIframe):
             badge = ""
             pass
 
-
         if request.auth:
             application = request.auth.application
         else:
             # use public oauth app if not token auth
-            application = Application.objects.get(client_type='public')
+            application = Application.objects.get(client_type="public")
 
         # create short-lived oauth2 access token
         token = AccessToken.objects.create(
             user=request.user,
             application=application,
             token=random_token_generator(request, False),
-            scope="rw:issuer",
-            expires=(timezone.now() + timezone.timedelta(0, 3600))
+            scope="rw:issuer rw:profile",
+            expires=(timezone.now() + timezone.timedelta(0, 3600)),
         )
 
         iframe = IframeUrl.objects.create(
