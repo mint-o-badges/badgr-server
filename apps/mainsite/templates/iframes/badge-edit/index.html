@@ -1,16 +1,33 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en" data-beasties-container>
-  <head>
-    <meta charset="utf-8" />
-    <title>Open Educational Badges Badge editieren</title>
-    <script>
-        window.OEBWebComponentSettings = {
-            "language": "{{ language }}"
-        };
-    </script>
-  </head>
-  <body>
-        {{token}}
-  </body>
+    <head>
+        <meta charset="utf-8" />
+        <title>Open Educational Badges Badge editieren</title>
+        <link rel="stylesheet"
+              href="{{ asset_path }}oeb-badgeclass-edit-form/styles.css"
+              media="print"
+              onload="this.media='all'" />
+        <noscript>
+            <link rel="stylesheet"
+                  href="{{ asset_path }}oeb-badgeclass-edit-form/styles.css" />
+        </noscript>
+        <script>
+            window.OEBWebComponentSettings = {
+                language: "{{ language }}",
+            };
+        </script>
+    </head>
+    <body>
+        <oeb-badgeclass-edit-form id="edit-form" token="{{ token }}" />
+        <script src="{{ asset_path }}oeb-badgeclass-edit-form/polyfills.js"
+                type="module"></script>
+        <script src="{{ asset_path }}oeb-badgeclass-edit-form/main.js" type="module"></script>
+        <script type="text/javascript">
+            document.addEventListener("DOMContentLoaded", () => {
+                const issuer = JSON.parse("{{ issuer | escapejs }}");
+                document.getElementById("edit-form").issuer = issuer;
+            });
+        </script>
+    </body>
 </html>
