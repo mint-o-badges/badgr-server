@@ -9,6 +9,8 @@ from basic_models.models import CreatedUpdatedAt
 from django.urls import reverse
 from django.db import models, transaction
 from django.db.models import Q
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 
 from entity.models import BaseVersionedEntity
 from issuer.models import BaseAuditedModelDeletedWithUser, BadgeInstance
@@ -215,7 +217,20 @@ class BackpackCollectionBadgeInstance(cachemodel.CacheModel):
     badgeuser = models.ForeignKey(
         "badgeuser.BadgeUser", null=True, default=None, on_delete=models.CASCADE
     )
-    badgeinstance = models.ForeignKey("issuer.BadgeInstance", on_delete=models.CASCADE)
+
+    # Generic foreign key to support both BadgeInstance and ImportedBadgeAssertion
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.CharField(max_length=255)
+    badgeinstance = GenericForeignKey("content_type", "object_id")
+    # badgeinstance = models.ForeignKey("issuer.BadgeInstance", on_delete=models.CASCADE)
+
+    badgeinstance_fk = models.ForeignKey(
+        "issuer.BadgeInstance",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="collection_instances",
+    )
 
     def publish(self):
         super(BackpackCollectionBadgeInstance, self).publish()
@@ -227,11 +242,20 @@ class BackpackCollectionBadgeInstance(cachemodel.CacheModel):
 
     @property
     def cached_badgeinstance(self):
-        return BadgeInstance.cached.get(id=self.badgeinstance_id)
+        if isinstance(self.badgeinstance, BadgeInstance):
+            return BadgeInstance.cached.get(id=self.badgeinstance.id)
+        return self.badgeinstance
 
     @property
     def cached_collection(self):
         return BackpackCollection.cached.get(id=self.collection_id)
+
+    def save(self, *args, **kwargs):
+        """Automatically set content_type and object_id when saving"""
+        if self.badgeinstance:
+            self.content_type = ContentType.objects.get_for_model(self.badgeinstance)
+            self.object_id = str(self.badgeinstance.id)
+        super().save(*args, **kwargs)
 
 
 class BaseSharedModel(cachemodel.CacheModel, CreatedUpdatedAt):

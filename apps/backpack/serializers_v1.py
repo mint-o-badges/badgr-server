@@ -336,9 +336,12 @@ class CollectionBadgeSerializerV1(serializers.ModelSerializer):
                 badgeinstance=BadgeInstance.cached.get(entity_id=data.get("id"))
             )
 
-        try:
-            badgeinstance = BadgeInstance.cached.get(entity_id=data.get("id"))
-        except BadgeInstance.DoesNotExist:
+        badgeinstance = (
+            BadgeInstance.objects.filter(entity_id=data.get("id")).first()
+            or ImportedBadgeAssertion.objects.filter(entity_id=data.get("id")).first()
+        )
+
+        if not badgeinstance:
             raise RestframeworkValidationError("Assertion not found")
         if (
             badgeinstance.recipient_identifier

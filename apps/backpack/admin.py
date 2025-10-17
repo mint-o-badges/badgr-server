@@ -16,7 +16,7 @@ from .models import (
 class CollectionInstanceInline(TabularInline):
     model = BackpackCollection.assertions.through
     extra = 0
-    raw_id_fields = ("badgeinstance",)
+    raw_id_fields = ("badgeinstance_fk",)
 
 
 class CollectionAdmin(ModelAdmin):
