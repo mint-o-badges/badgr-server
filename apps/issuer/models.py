@@ -2982,6 +2982,8 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
 
         json["image"] = image
 
+        json["activated"] = self.activated
+
         return json
 
     def get_absolute_url(self):

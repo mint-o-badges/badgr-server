@@ -370,8 +370,27 @@ class ImportedBadgeHelper:
             original_json__contains=assertion_data.get("id", ""),
         ).first()
 
+        existing_instance = BadgeInstance.objects.filter(
+            user=user,
+            recipient_identifier=recipient_identifier,
+            recipient_type=recipient_type,
+            revoked=False,
+            badgeclass__name=badgeclass_data.get("name", ""),
+            issuer__url=issuer_data.get("url", ""),
+        ).first()
+
         if existing_badge:
             return existing_badge, False
+
+        if existing_instance:
+            raise ValidationError(
+                [
+                    {
+                        "name": "DUPLICATE_BADGE",
+                        "description": "You already have this badge in your backpack.",
+                    }
+                ]
+            )
 
         badge_image_url = badgeclass_data.get("image", "")
 
