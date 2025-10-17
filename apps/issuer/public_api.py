@@ -424,7 +424,7 @@ class NetworkIssuersJson(JSONComponentView):
             {
                 "slug": issuer.entity_id,
                 "name": issuer.name,
-                "image": issuer.image,
+                "image": issuer.image.url,
             }
             for issuer in issuers
         ]
@@ -447,7 +447,7 @@ class IssuerNetworksJson(JSONComponentView):
             {
                 "slug": network.entity_id,
                 "name": network.name,
-                "image": network.image,
+                "image": network.image.url,
             }
             for network in networks
         ]

@@ -85,10 +85,7 @@ class BadgrAccountAdapter(DefaultAccountAdapter):
                 else None
             )
             img_path = os.path.join(
-                settings.MEDIA_ROOT,
-                "uploads",
-                "badges",
-                "assertion-{}.png".format(context.get("badge_id", None)),
+                settings.MEDIA_ROOT, context["badge_instance_image"]
             )
 
             try:

@@ -576,7 +576,7 @@ class BadgePDFCreator:
         first_page_content = []
 
         self.add_recipient_name(first_page_content, name, badge_instance.issued_on)
-        self.add_badge_image(first_page_content, badge_class.image)
+        self.add_badge_image(first_page_content, badge_instance.image)
         self.add_title(first_page_content, badge_class.name)
         self.add_description(first_page_content, badge_class.description)
         self.add_narrative(first_page_content, badge_instance.narrative)

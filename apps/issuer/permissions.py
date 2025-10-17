@@ -12,12 +12,24 @@ SAFE_METHODS = ["GET", "HEAD", "OPTIONS"]
 def is_owner(user, issuer):
     if not hasattr(issuer, "cached_issuerstaff"):
         return False
+
     for staff_record in issuer.cached_issuerstaff():
         if (
             staff_record.user_id == user.id
             and staff_record.role == IssuerStaff.ROLE_OWNER
         ):
             return True
+
+    if hasattr(issuer, "is_network") and issuer.is_network:
+        for membership in issuer.memberships.all():
+            partner_issuer = membership.issuer
+            for staff_record in partner_issuer.cached_issuerstaff():
+                if (
+                    staff_record.user_id == user.id
+                    and staff_record.role == IssuerStaff.ROLE_OWNER
+                ):
+                    return True
+
     return False
 
 
@@ -25,12 +37,24 @@ def is_owner(user, issuer):
 def is_editor(user, issuer):
     if not hasattr(issuer, "cached_issuerstaff"):
         return False
+
     for staff_record in issuer.cached_issuerstaff():
         if staff_record.user_id == user.id and staff_record.role in (
             IssuerStaff.ROLE_OWNER,
             IssuerStaff.ROLE_EDITOR,
         ):
             return True
+
+    if hasattr(issuer, "is_network") and issuer.is_network:
+        for membership in issuer.memberships.all():
+            partner_issuer = membership.issuer
+            for staff_record in partner_issuer.cached_issuerstaff():
+                if staff_record.user_id == user.id and staff_record.role in (
+                    IssuerStaff.ROLE_OWNER,
+                    IssuerStaff.ROLE_EDITOR,
+                ):
+                    return True
+
     return False
 
 
@@ -38,9 +62,18 @@ def is_editor(user, issuer):
 def is_staff(user, issuer):
     if not hasattr(issuer, "cached_issuerstaff"):
         return False
+
     for staff_record in issuer.cached_issuerstaff():
         if staff_record.user_id == user.id:
             return True
+
+    if hasattr(issuer, "is_network") and issuer.is_network:
+        for membership in issuer.memberships.all():
+            partner_issuer = membership.issuer
+            for staff_record in partner_issuer.cached_issuerstaff():
+                if staff_record.user_id == user.id:
+                    return True
+
     return False
 
 
