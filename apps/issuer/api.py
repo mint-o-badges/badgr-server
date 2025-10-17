@@ -1651,7 +1651,7 @@ class QRCodeDetail(BaseEntityView):
     model = QrCode
     v1_serializer_class = QrCodeSerializerV1
     # v2_serializer_class = IssuerSerializerV2
-    permission_classes = (BadgrOAuthTokenHasScope,)
+    permission_classes = (BadgrOAuthTokenHasScope, AuthenticatedWithVerifiedIdentifier)
     valid_scopes = ["rw:issuer"]
 
     def get_objects(self, request, **kwargs):

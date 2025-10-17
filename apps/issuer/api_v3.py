@@ -22,7 +22,7 @@ from issuer.permissions import (
     IsStaff,
 )
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAdmin
-from entity.api_v3 import EntityFilter, EntityViewSet, TagFilter
+from entity.api_v3 import EntityFilter, EntityViewSet, TagFilter, TotalCountMixin
 
 from .serializers_v1 import (
     BadgeClassSerializerV1,
@@ -37,7 +37,7 @@ class BadgeFilter(EntityFilter):
     tags = TagFilter(field_name="badgeclasstag__name", lookup_expr="icontains")
 
 
-class Badges(EntityViewSet):
+class Badges(TotalCountMixin, EntityViewSet):
     queryset = BadgeClass.objects.all()
     serializer_class = BadgeClassSerializerV1
     filterset_class = BadgeFilter
@@ -69,7 +69,7 @@ class BadgeTags(viewsets.ViewSet):
         return Response(list(tag_names))
 
 
-class Issuers(EntityViewSet):
+class Issuers(TotalCountMixin, EntityViewSet):
     queryset = Issuer.objects.all()
     serializer_class = IssuerSerializerV1
 
@@ -86,7 +86,7 @@ class Issuers(EntityViewSet):
         return context
 
 
-class Networks(EntityViewSet):
+class Networks(TotalCountMixin, EntityViewSet):
     queryset = Issuer.objects.filter(is_network=True)
     serializer_class = NetworkSerializerV1
 
@@ -110,7 +110,7 @@ class LearningPathFilter(EntityFilter):
     )
 
 
-class LearningPaths(EntityViewSet):
+class LearningPaths(TotalCountMixin, EntityViewSet):
     queryset = LearningPath.objects.all()
     serializer_class = LearningPathSerializerV1
     filterset_class = LearningPathFilter
