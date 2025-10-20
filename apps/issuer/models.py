@@ -3001,7 +3001,13 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
 
         tags = self.learningpathtag_set.all()
         badges = self.learningpathbadge_set.all()
-        image = self.participationBadge.image.url
+        image = "{}{}?type=png".format(
+            OriginSetting.HTTP,
+            reverse(
+                "badgeclass_image",
+                kwargs={"entity_id": self.participationBadge.entity_id},
+            ),
+        )
 
         json["tags"] = list(t.name for t in tags)
 
