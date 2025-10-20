@@ -370,7 +370,9 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
             representation["badgeclasses"] = BadgeClassSerializerV1(
                 instance.badgeclasses.all(), many=True, context=self.context
             ).data
-        representation["badgeClassCount"] = len(instance.cached_badgeclasses())
+        representation["badgeClassCount"] = len(instance.cached_badgeclasses()) - len(
+            instance.cached_learningpaths().filter(activated=False)
+        )
         representation["learningPathCount"] = len(instance.cached_learningpaths())
         representation["recipientGroupCount"] = 0
         representation["recipientCount"] = 0
