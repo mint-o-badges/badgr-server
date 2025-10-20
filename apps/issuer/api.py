@@ -190,7 +190,7 @@ class NetworkList(BaseEntityListView):
 
 class NetworkUserIssuersList(BaseEntityListView):
     """
-    List of issuers within a specific network that the authenticated user is editor or owner in
+    List of issuers within a specific network that the authenticated user is a member in
     """
 
     model = Issuer
@@ -219,7 +219,6 @@ class NetworkUserIssuersList(BaseEntityListView):
 
         return Issuer.objects.filter(
             issuerstaff__user=request.user,
-            issuerstaff__role__in=[IssuerStaff.ROLE_OWNER, IssuerStaff.ROLE_EDITOR],
             is_network=False,
             network_memberships__network_id=network.id,
         ).distinct()
@@ -1652,7 +1651,7 @@ class QRCodeDetail(BaseEntityView):
     model = QrCode
     v1_serializer_class = QrCodeSerializerV1
     # v2_serializer_class = IssuerSerializerV2
-    permission_classes = (BadgrOAuthTokenHasScope,)
+    permission_classes = (BadgrOAuthTokenHasScope, AuthenticatedWithVerifiedIdentifier)
     valid_scopes = ["rw:issuer"]
 
     def get_objects(self, request, **kwargs):

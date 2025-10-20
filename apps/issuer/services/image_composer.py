@@ -161,7 +161,7 @@ class ImageComposer:
 
             logo_size = (self.CANVAS_SIZE[0] // 5, self.CANVAS_SIZE[1] // 5)
 
-            frame_image = self._get_logo_frame_svg()
+            frame_image = self._get_logo_frame_svg("square")
             if frame_image:
                 frame_resized = frame_image.resize(logo_size, Image.Resampling.LANCZOS)
                 canvas.paste(frame_resized, (logo_x, logo_y), frame_resized)
@@ -188,37 +188,25 @@ class ImageComposer:
         Add network image in bottom center, flush with canvas bottom
         """
         try:
-            original_dimensions = {
-                "participation": (397, 397, 387),  # width, height, border_y
-                "competency": (412, 411, 388),
-                "learningpath": (416, 416, 389),
-            }
-
-            orig_width, orig_height, orig_border_y = original_dimensions.get(
-                category, (397, 397, 387)
-            )
-
-            scale_factor = self.CANVAS_SIZE[1] / orig_height
-
-            base_network_width = orig_width // 3
-            base_network_height = orig_height // 6
+            base_canvas_size = 600
+            scale_factor = self.CANVAS_SIZE[0] / base_canvas_size
 
             network_image_size = (
-                int(base_network_width * scale_factor),
-                int(base_network_height * scale_factor),
+                int(240 * scale_factor),
+                int(120 * scale_factor),
             )
 
             bottom_x = (self.CANVAS_SIZE[0] - network_image_size[0]) // 2
             bottom_y = self.CANVAS_SIZE[1] - network_image_size[1]
 
-            frame_image = self._get_logo_frame_svg()
+            frame_image = self._get_logo_frame_svg("rectangle")
             if frame_image:
                 frame_resized = frame_image.resize(
                     network_image_size, Image.Resampling.LANCZOS
                 )
                 canvas.paste(frame_resized, (bottom_x, bottom_y), frame_resized)
 
-            border_padding = int(6 * scale_factor)
+            border_padding = int(12 * scale_factor)
             inner_size = (
                 network_image_size[0] - border_padding * 2,
                 network_image_size[1] - border_padding * 2,
@@ -242,12 +230,16 @@ class ImageComposer:
             logger.error(f"Error adding network image: {e}")
             return canvas
 
-    def _get_logo_frame_svg(self):
+    def _get_logo_frame_svg(self, shape="square"):
         """Load and convert the square frame SVG"""
-        frame_path = finders.find("images/square.svg")
+        if shape == "square":
+            frame_path = finders.find("images/square.svg")
+
+        elif shape == "rectangle":
+            frame_path = finders.find("images/rectangle.svg")
 
         if not os.path.exists(frame_path):
-            raise (f"Square frame SVG not found: {frame_path}")
+            raise (f"SVG frame not found: {frame_path}")
 
         try:
             with open(frame_path, "r", encoding="utf-8") as f:
@@ -360,14 +352,14 @@ class ImageComposer:
             text_height = text_bbox[3] - text_bbox[1]
 
             text_margin = 8
-            container_padding = 8
+            container_padding = 12
 
-            max_logo_width = frame_inner_size[0] * 0.4
-            max_logo_height = frame_inner_size[1] * 0.6
+            max_logo_width = frame_inner_size[0] * 0.6
+            max_logo_height = frame_inner_size[1] * 0.8
 
             logo_scale_x = max_logo_width / network_img.width
             logo_scale_y = max_logo_height / network_img.height
-            scale_factor = min(logo_scale_x, logo_scale_y, 0.5)
+            scale_factor = min(logo_scale_x, logo_scale_y)
 
             new_logo_size = (
                 int(network_img.width * scale_factor),

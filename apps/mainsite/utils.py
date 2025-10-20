@@ -605,3 +605,23 @@ def get_name(badgeinstance):
         return f"{first_name} {last_name}"
     except BadgeUser.DoesNotExist:
         return None
+
+
+def validate_qr_code_validity(qrCode):
+    """
+    Validates if a QR code is still valid based on its validity dates.
+    Returns None if valid, or an error message if invalid.
+    """
+    # If no validity dates set, consider it always valid
+    if not qrCode.valid_from or not qrCode.expires_at:
+        return None
+
+    now = timezone.now()
+
+    if now < qrCode.valid_from:
+        return "QR code is not yet valid"
+
+    if now > qrCode.expires_at:
+        return "QR code has expired"
+
+    return None
