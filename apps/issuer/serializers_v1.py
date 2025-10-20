@@ -1050,9 +1050,14 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
         apispec_definition = ("LearningPath", {})
 
     def get_participationBadge_image(self, obj):
-        return (
-            obj.participationBadge.image.url if obj.participationBadge.image else None
+        image = "{}{}?type=png".format(
+            OriginSetting.HTTP,
+            reverse(
+                "badgeclass_image",
+                kwargs={"entity_id": obj.participationBadge.entity_id},
+            ),
         )
+        return image if obj.participationBadge.image else None
 
     def get_participationBadge_id(self, obj):
         return (

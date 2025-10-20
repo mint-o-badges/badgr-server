@@ -3019,7 +3019,7 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
             for badge in badges
         ]
 
-        json["image"] = image
+        json["participationBadge_image"] = image
 
         json["activated"] = self.activated
 
