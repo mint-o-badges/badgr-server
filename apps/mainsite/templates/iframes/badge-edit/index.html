@@ -27,8 +27,10 @@
             document.addEventListener("DOMContentLoaded", () => {
                 const issuer = JSON.parse("{{ issuer | escapejs }}");
                 const badge = JSON.parse("{{ badge | escapejs }}");
-                document.getElementById("edit-form").issuer = issuer;
-                document.getElementById("edit-form").badge = badge;
+                document.getElementById("edit-form").config = {
+                    issuer: issuer,
+                    badge: badge,
+                };
             });
         </script>
     </body>

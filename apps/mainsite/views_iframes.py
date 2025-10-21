@@ -65,14 +65,16 @@ def iframe_profile(request, skills, language):
 def iframe_badge_create_or_edit(
     request, token: str, badge: BadgeClass | None, issuer: Issuer, language: str
 ):
+    badge_json = json.dumps(badge, ensure_ascii=False)
+    issuer_json = json.dumps(issuer, ensure_ascii=False)
     return render(
         request,
         "iframes/badge-edit/index.html",
         context={
             "asset_path": settings.WEBCOMPONENTS_ASSETS_PATH,
             "language": language,
-            "badge": badge,
+            "badge": badge_json,
             "token": token,
-            "issuer": issuer,
+            "issuer": issuer_json,
         },
     )
