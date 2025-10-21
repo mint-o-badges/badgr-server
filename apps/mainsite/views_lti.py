@@ -14,7 +14,7 @@ from pylti1p3.deep_link_resource import DeepLinkResource
 
 from backpack.utils import get_skills_tree
 from issuer.models import BadgeInstance
-from mainsite.views_iframes import iframe_edit_badge, iframe_profile
+from mainsite.views_iframes import iframe_profile
 
 
 @method_decorator(xframe_options_exempt, name="dispatch")
@@ -46,13 +46,6 @@ class ApplicationLaunchView(LtiLaunchBaseView):
             # if we don't set a custom parameter moodle throws an error
             .set_custom_params({"custom": ""})
             .set_title("Learners Profile")
-        )
-        resources.append(
-            DeepLinkResource()
-            .set_url(f"{baseUrl}/lti/tools/badge-edit/")
-            # if we don't set a custom parameter moodle throws an error
-            .set_custom_params({"custom": ""})
-            .set_title("Badge Creation & Edit")
         )
         return lti_launch.deep_link_response(resources)
 
@@ -94,32 +87,3 @@ def LtiProfile(request):
     tree = get_skills_tree(instances, locale)
 
     return iframe_profile(request, tree["skills"], locale)
-
-
-@xframe_options_exempt
-@csrf_exempt
-def LtiBadgeEdit(request):
-    if not request.lti_launch.is_present:
-        return HttpResponseNotFound(
-            "Error: no LTI context".encode(), content_type="text/html"
-        )
-
-    # check if the embedding tool provided an email adress
-    lti_user = request.lti_launch.user
-    try:
-        if not lti_user.email:
-            raise LtiUser.DoesNotExist
-    except LtiUser.DoesNotExist:
-        return render(request, "lti/not_logged_in.html")
-
-    # get language (locale) from lti_launch data
-    launch_data = request.lti_launch.get_launch_data()
-    launch_presentation = launch_data.get(
-        "https://purl.imsglobal.org/spec/lti/claim/launch_presentation", {}
-    )
-    locale = launch_presentation.get("locale", "de").lower()
-    if locale not in ["de", "en"]:
-        locale = "en"
-
-    # TODO add token and issuer info
-    return iframe_edit_badge(request, None, None, locale)
