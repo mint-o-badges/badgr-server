@@ -177,7 +177,7 @@ class LearnersProfile(RequestIframe):
         return JsonResponse({"url": iframe.url})
 
 
-class BadgeEdit(RequestIframe):
+class BadgeCreateEmbed(RequestIframe):
     permission_classes = [
         IsServerAdmin
         | (AuthenticatedWithVerifiedIdentifier & IsStaff & BadgrOAuthTokenHasScope)
@@ -192,15 +192,82 @@ class BadgeEdit(RequestIframe):
         except (KeyError, AssertionError):
             language = "en"
 
+        try:
+            given_issuer = request.POST["issuer"]
+        except KeyError:
+            return HttpResponseBadRequest("No issuer id to create the badge specified")
+
         issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
-        if issuers.count == 0:
+        if issuers.count() == 0 or issuers.filter(entity_id=given_issuer).count() == 0:
             return HttpResponseForbidden()
 
+        issuer = issuers.get(entity_id=given_issuer)
+
+        if request.auth:
+            application = request.auth.application
+        else:
+            # use public oauth app if not token auth
+            application = Application.objects.get(client_type="public")
+
+        # create short-lived oauth2 access token
+        token = AccessToken.objects.create(
+            user=request.user,
+            application=application,
+            token=random_token_generator(request, False),
+            scope="rw:issuer rw:profile",
+            expires=(timezone.now() + timezone.timedelta(0, 3600)),
+        )
+
+        iframe = IframeUrl.objects.create(
+            name="badge-create",
+            params={
+                "language": language,
+                "token": token.token,
+                "issuer": issuer.get_json(),
+            },
+            created_by=request.user,
+        )
+
+        return JsonResponse({"url": iframe.url})
+
+
+class BadgeEditEmbed(RequestIframe):
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsStaff & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    valid_scopes = ["rw:issuer", "rw:issuer:*", "rw:profile"]
+
+    def post(self, request, **kwargs):
         try:
-            badge = request.POST["badge"]
+            language = request.POST["lang"]
+            assert language in ["de", "en"]
+        except (KeyError, AssertionError):
+            language = "en"
+
+        try:
+            badge_id = request.POST["badge"]
         except KeyError:
-            badge = ""
-            pass
+            return HttpResponseBadRequest("No badge id to edit the badge")
+
+        issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
+        if issuers.count() == 0:
+            return HttpResponseForbidden()
+
+        badge = (
+            BadgeClass.objects.filter(
+                entity_id=badge_id, issuer__staff__id=request.user.id
+            )
+            .distinct()
+            .first()
+        )
+
+        if badge and not issuers.get(entity_id=badge.issuer.entity_id):
+            return HttpResponseForbidden()
+
+        if not badge:
+            return HttpResponseBadRequest("No badge found for given badge id")
 
         if request.auth:
             application = request.auth.application
@@ -219,7 +286,12 @@ class BadgeEdit(RequestIframe):
 
         iframe = IframeUrl.objects.create(
             name="badge-edit",
-            params={"language": language, "token": token.token, "badge": badge},
+            params={
+                "language": language,
+                "token": token.token,
+                "badge": badge.get_json(),
+                "issuer": badge.issuer.get_json(),
+            },
             created_by=request.user,
         )
 

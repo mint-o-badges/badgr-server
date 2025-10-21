@@ -6,6 +6,7 @@ from django.shortcuts import render
 from django.views.decorators.clickjacking import xframe_options_exempt
 from lti_tool.views import csrf_exempt
 
+from issuer.models import BadgeClass, Issuer
 from mainsite.models import IframeUrl
 
 
@@ -26,11 +27,16 @@ def iframe(request, *args, **kwargs):
             return iframe_profile(
                 request, iframe.params["skills"], iframe.params["language"]
             )
-        if iframe.name == "badge-edit":
-            return iframe_edit_badge(
+        if iframe.name == "badge-create":
+            try:
+                badge = iframe.params["badge"]
+            except KeyError:
+                badge = None
+            return iframe_badge_create_or_edit(
                 request,
                 iframe.params["token"],
-                iframe.params["badge"],
+                badge,
+                iframe.params["issuer"],
                 iframe.params["language"],
             )
     except Exception as e:
@@ -56,13 +62,17 @@ def iframe_profile(request, skills, language):
     )
 
 
-def iframe_edit_badge(request, token, badge, language):
+def iframe_badge_create_or_edit(
+    request, token: str, badge: BadgeClass | None, issuer: Issuer, language: str
+):
     return render(
         request,
         "iframes/badge-edit/index.html",
         context={
             "asset_path": settings.WEBCOMPONENTS_ASSETS_PATH,
             "language": language,
+            "badge": badge,
             "token": token,
+            "issuer": issuer,
         },
     )
