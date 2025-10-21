@@ -2024,6 +2024,7 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
                 "issuer_detail": self.issuer.public_url,
                 "issuer_image_url": issuer_image_url,
                 "badge_instance_url": self.public_url,
+                "badge_instance_image": self.image.path,
                 "pdf_download": data_url,
                 "pdf_document": pdf_document,
                 "image_url": self.public_url + "/image?type=png",
@@ -2115,6 +2116,7 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
                     json["badge"]["issuer"] = self.cached_issuer.get_json(
                         obi_version=obi_version
                     )
+                json["image"] = self.image.url
 
         # FIXME: 'support' 1_1 for v1 serializer classes
         if obi_version == "1_1":
@@ -2547,6 +2549,37 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             baked_image.save()
 
         return baked_image.image.url
+
+    def generate_assertion_image(self, issuer_image=None, network_image=None):
+        """Generate composed assertion image"""
+
+        if not self.badgeclass.imageFrame:
+            return
+
+        extensions = self.badgeclass.cached_extensions()
+        categoryExtension = extensions.get(name="extensions:CategoryExtension")
+        category = json_loads(categoryExtension.original_json)["Category"]
+        org_img_ext = extensions.get(name="extensions:OrgImageExtension")
+        original_image = json_loads(org_img_ext.original_json)["OrgImage"]
+
+        composer = ImageComposer(category=category)
+
+        image_b64 = composer.compose_badge_from_uploaded_image(
+            original_image, issuer_image, network_image
+        )
+
+        if not image_b64:
+            raise ValueError("Assertion image generation failed")
+
+        if image_b64.startswith("data:image/png;base64,"):
+            image_b64 = image_b64.split(",", 1)[1]
+
+        image_data = base64.b64decode(image_b64)
+
+        filename = f"assertion_{uuid.uuid4()}.png"
+        content_file = ContentFile(image_data, name=filename)
+
+        self.image.save(filename, content_file, save=False)
 
 
 def _baked_badge_instance_filename_generator(instance, filename):
@@ -2981,6 +3014,8 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
         ]
 
         json["image"] = image
+
+        json["activated"] = self.activated
 
         return json
 

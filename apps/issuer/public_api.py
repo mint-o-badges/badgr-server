@@ -37,11 +37,19 @@ from rest_framework.views import APIView
 import openbadges
 
 from . import utils
-from .models import BadgeClass, BadgeInstance, Issuer, LearningPath, LearningPathBadge
+from .models import (
+    BadgeClass,
+    BadgeInstance,
+    Issuer,
+    LearningPath,
+    LearningPathBadge,
+    QrCode,
+)
 from .serializers_v1 import (
     BadgeClassSerializerV1,
     IssuerSerializerV1,
     LearningPathSerializerV1,
+    QrCodeSerializerV1,
 )
 import logging
 
@@ -416,7 +424,7 @@ class NetworkIssuersJson(JSONComponentView):
             {
                 "slug": issuer.entity_id,
                 "name": issuer.name,
-                "image": issuer.image,
+                "image": issuer.image.url,
             }
             for issuer in issuers
         ]
@@ -439,7 +447,7 @@ class IssuerNetworksJson(JSONComponentView):
             {
                 "slug": network.entity_id,
                 "name": network.name,
-                "image": network.image,
+                "image": network.image.url,
             }
             for network in networks
         ]
@@ -1075,3 +1083,19 @@ class BadgeLearningPathList(JSONListView):
         )
 
         return Response(serialized_learning_paths.data)
+
+
+class QRCodeJson(BaseEntityDetailViewPublic, SlugToEntityIdRedirectMixin):
+    """
+    Public QRCode endpoint for badge requests
+    Allows unauthenticated users to fetch QR code details
+    """
+
+    permission_classes = (permissions.AllowAny,)
+    model = QrCode
+    serializer_class = QrCodeSerializerV1
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        return context
