@@ -1383,6 +1383,7 @@ class BadgeClass(
                         self.cached_issuer.jsonld_id, obi_version
                     )
                 ),
+                created_at=self.created_at,
             )
         )
 
@@ -2996,6 +2997,7 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
                 description=self.description,
                 slug=self.entity_id,
                 issuer_id=self.issuer.entity_id,
+                created_at=self.created_at,
             )
         )
 
