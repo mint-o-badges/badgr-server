@@ -27,7 +27,20 @@
             document.addEventListener("DOMContentLoaded", () => {
                 const issuer = JSON.parse("{{ issuer | escapejs }}");
                 const badge = JSON.parse("{{ badge | escapejs }}");
-                document.getElementById("edit-form").config = {
+                const editForm = document.getElementById("edit-form");
+
+                editForm.addEventListener("finished", (ev) => {
+                    try {
+                        window.parent.postMessage({
+                            type: "FinishedEvent",
+                            payload: ev.detail,
+                        });
+                    } catch (err) {
+                        console.log(err);
+                    }
+                });
+
+                editForm.config = {
                     issuer: issuer,
                     badge: badge,
                 };
