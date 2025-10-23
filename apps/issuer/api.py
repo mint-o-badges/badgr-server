@@ -2364,6 +2364,7 @@ class NetworkInvitation(BaseEntityDetailView):
                 )
 
             invite.status = IssuerStaffRequest.Status.REVOKED
+            invite.revoked = True
             invite.save()
 
             serializer = self.v1_serializer_class(invite)
