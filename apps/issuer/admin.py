@@ -558,6 +558,8 @@ class BadgeInstanceAdmin(DjangoObjectActions, ModelAdmin):
                     "image",
                     "issued_on",
                     "expires_at",
+                    "activity_start_date",
+                    "activity_end_date",
                     "narrative",
                 )
             },
