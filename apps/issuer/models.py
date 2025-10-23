@@ -1190,6 +1190,10 @@ class BadgeClass(
     def v1_api_recipient_count(self):
         return self.badgeinstances.filter(revoked=False).count()
 
+    @property
+    def v1_api_recipient_count_issuer(self):
+        return self.badgeinstances.filter(revoked=False, issuer=self.issuer).count()
+
     @cachemodel.cached_method(auto_publish=True)
     def cached_alignments(self):
         return self.badgeclassalignment_set.all()

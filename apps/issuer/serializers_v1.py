@@ -463,6 +463,11 @@ class BadgeClassSerializerV1(
     recipient_count = serializers.IntegerField(
         required=False, read_only=True, source="v1_api_recipient_count"
     )
+
+    recipient_count_issuer = serializers.IntegerField(
+        required=False, read_only=True, source="v1_api_recipient_count_issuer"
+    )
+
     description = StripTagsCharField(max_length=16384, required=True, convert_null=True)
 
     alignment = AlignmentItemSerializerV1(
