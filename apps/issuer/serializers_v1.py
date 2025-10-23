@@ -370,8 +370,12 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
             representation["badgeclasses"] = BadgeClassSerializerV1(
                 instance.badgeclasses.all(), many=True, context=self.context
             ).data
-        representation["badgeClassCount"] = len(instance.cached_badgeclasses())
-        representation["learningPathCount"] = len(instance.cached_learningpaths())
+        representation["badgeClassCount"] = len(instance.cached_badgeclasses()) - len(
+            instance.cached_learningpaths().filter(activated=False)
+        )
+        representation["learningPathCount"] = len(
+            instance.cached_learningpaths().filter(activated=True)
+        )
         representation["recipientGroupCount"] = 0
         representation["recipientCount"] = 0
         representation["pathwayCount"] = 0
@@ -1046,9 +1050,14 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
         apispec_definition = ("LearningPath", {})
 
     def get_participationBadge_image(self, obj):
-        return (
-            obj.participationBadge.image.url if obj.participationBadge.image else None
+        image = "{}{}?type=png".format(
+            OriginSetting.HTTP,
+            reverse(
+                "badgeclass_image",
+                kwargs={"entity_id": obj.participationBadge.entity_id},
+            ),
         )
+        return image if obj.participationBadge.image else None
 
     def get_participationBadge_id(self, obj):
         return (

@@ -372,9 +372,13 @@ class IssuerBadgesJson(JSONComponentView):
     def get_json(self, request):
         obi_version = self._get_request_obi_version(request)
 
+        lps = self.current_object.learningpaths.all()
+        ignore_classes = [i.participationBadge for i in lps if not i.activated]
+
         return [
             b.get_json(obi_version=obi_version)
             for b in self.current_object.cached_badgeclasses()
+            if b not in ignore_classes
         ]
 
 
