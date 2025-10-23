@@ -6,6 +6,7 @@ from django.shortcuts import render
 from django.views.decorators.clickjacking import xframe_options_exempt
 from lti_tool.views import csrf_exempt
 
+from issuer.models import BadgeClass, Issuer
 from mainsite.models import IframeUrl
 
 
@@ -26,6 +27,18 @@ def iframe(request, *args, **kwargs):
             return iframe_profile(
                 request, iframe.params["skills"], iframe.params["language"]
             )
+        if iframe.name == "badge-create-or-edit":
+            try:
+                badge = iframe.params["badge"]
+            except KeyError:
+                badge = None
+            return iframe_badge_create_or_edit(
+                request,
+                iframe.params["token"],
+                badge,
+                iframe.params["issuer"],
+                iframe.params["language"],
+            )
     except Exception as e:
         # show errors while debug
         if settings.DEBUG:
@@ -41,5 +54,27 @@ def iframe_profile(request, skills, language):
     return render(
         request,
         "iframes/profile/index.html",
-        context={"asset_path": settings.WEBCOMPONENTS_ASSETS_PATH, "skill_json": skill_json, "language": language},
+        context={
+            "asset_path": settings.WEBCOMPONENTS_ASSETS_PATH,
+            "skill_json": skill_json,
+            "language": language,
+        },
+    )
+
+
+def iframe_badge_create_or_edit(
+    request, token: str, badge: BadgeClass | None, issuer: Issuer, language: str
+):
+    badge_json = json.dumps(badge, ensure_ascii=False)
+    issuer_json = json.dumps(issuer, ensure_ascii=False)
+    return render(
+        request,
+        "iframes/badge-edit/index.html",
+        context={
+            "asset_path": settings.WEBCOMPONENTS_ASSETS_PATH,
+            "language": language,
+            "badge": badge_json,
+            "token": token,
+            "issuer": issuer_json,
+        },
     )
