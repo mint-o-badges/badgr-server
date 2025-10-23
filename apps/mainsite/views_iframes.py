@@ -27,7 +27,7 @@ def iframe(request, *args, **kwargs):
             return iframe_profile(
                 request, iframe.params["skills"], iframe.params["language"]
             )
-        if iframe.name == "badge-create":
+        if iframe.name == "badge-create-or-edit":
             try:
                 badge = iframe.params["badge"]
             except KeyError:

@@ -219,7 +219,7 @@ class BadgeCreateEmbed(RequestIframe):
         )
 
         iframe = IframeUrl.objects.create(
-            name="badge-create",
+            name="badge-create-or-edit",
             params={
                 "language": language,
                 "token": token.token,
@@ -285,7 +285,7 @@ class BadgeEditEmbed(RequestIframe):
         )
 
         iframe = IframeUrl.objects.create(
-            name="badge-edit",
+            name="badge-create-or-edit",
             params={
                 "language": language,
                 "token": token.token,
