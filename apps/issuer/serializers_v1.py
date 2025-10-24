@@ -140,7 +140,6 @@ class BaseIssuerSerializerV1(
     slug = StripTagsCharField(max_length=255, source="entity_id", read_only=True)
     image = ValidImageField(required=False)
     description = StripTagsCharField(max_length=16384, required=False)
-    url = serializers.URLField(max_length=1024, required=True)
     badgrapp = serializers.CharField(
         read_only=True, max_length=255, source="cached_badgrapp"
     )
@@ -179,6 +178,8 @@ class BaseIssuerSerializerV1(
 
 
 class NetworkSerializerV1(BaseIssuerSerializerV1):
+    url = serializers.URLField(max_length=1024, required=False, allow_blank=True)
+
     def create(self, validated_data, **kwargs):
         new_network = Issuer(**validated_data)
 
@@ -253,6 +254,8 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
     city = serializers.CharField(
         max_length=255, required=False, allow_blank=True, allow_null=True
     )
+
+    url = serializers.URLField(max_length=1024, required=True)
 
     intendedUseVerified = serializers.BooleanField(default=False)
 
@@ -462,10 +465,6 @@ class BadgeClassSerializerV1(
     )
     recipient_count = serializers.IntegerField(
         required=False, read_only=True, source="v1_api_recipient_count"
-    )
-
-    recipient_count_issuer = serializers.IntegerField(
-        required=False, read_only=True, source="v1_api_recipient_count_issuer"
     )
 
     description = StripTagsCharField(max_length=16384, required=True, convert_null=True)
