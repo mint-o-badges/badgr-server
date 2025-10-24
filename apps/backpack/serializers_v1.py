@@ -201,6 +201,34 @@ class LocalBadgeInstanceUploadSerializerV1(serializers.Serializer):
 
         representation["shareUrl"] = obj.share_url
 
+        networkShare = obj.cached_badgeclass.network_shares.filter(
+            is_active=True
+        ).first()
+        if networkShare:
+            network = networkShare.network
+            representation["sharedOnNetwork"] = {
+                "slug": network.entity_id,
+                "name": network.name,
+                "image": network.image.url,
+                "description": network.description,
+            }
+        else:
+            representation["sharedOnNetwork"] = None
+
+        representation["isNetworkBadge"] = (
+            obj.cached_badgeclass.cached_issuer.is_network
+            and representation["sharedOnNetwork"] is None
+        )
+
+        if representation["isNetworkBadge"]:
+            representation["networkName"] = obj.cached_badgeclass.cached_issuer.name
+            representation["networkImage"] = (
+                obj.cached_badgeclass.cached_issuer.image.url
+            )
+        else:
+            representation["networkImage"] = None
+            representation["networkName"] = None
+
         return representation
 
     def validate(self, data):

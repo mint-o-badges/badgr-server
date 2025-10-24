@@ -2364,6 +2364,7 @@ class NetworkInvitation(BaseEntityDetailView):
                 )
 
             invite.status = IssuerStaffRequest.Status.REVOKED
+            invite.revoked = True
             invite.save()
 
             serializer = self.v1_serializer_class(invite)
@@ -2591,7 +2592,6 @@ class BadgeClassNetworkShareView(BaseEntityDetailView):
         )
 
         badgeclass.copy_permissions = BadgeClass.COPY_PERMISSIONS_NONE
-        badgeclass.issuer = network
         badgeclass.save(update_fields=["image", "copy_permissions", "issuer"])
 
         serializer = self.get_serializer_class()(share)
