@@ -2592,7 +2592,6 @@ class BadgeClassNetworkShareView(BaseEntityDetailView):
         )
 
         badgeclass.copy_permissions = BadgeClass.COPY_PERMISSIONS_NONE
-        badgeclass.issuer = network
         badgeclass.save(update_fields=["image", "copy_permissions", "issuer"])
 
         serializer = self.get_serializer_class()(share)
