@@ -1664,10 +1664,18 @@ class QRCodeDetail(BaseEntityView):
             return None
 
         if issuer.is_network:
-            return QrCode.objects.filter(
+            qr_codes = QrCode.objects.filter(
                 badgeclass__entity_id=badgeSlug,
                 issuer__network_memberships__network=issuer,
-            )
+            ).select_related("issuer")
+
+            # permission check is done for every qr code
+            # TODO: check if this could become a performance problem
+            return [
+                qr_code
+                for qr_code in qr_codes
+                if request.user.has_perm("issuer.is_staff", qr_code.issuer)
+            ]
 
         return QrCode.objects.filter(
             badgeclass__entity_id=badgeSlug, issuer__entity_id=issuerSlug
