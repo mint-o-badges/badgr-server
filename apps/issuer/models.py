@@ -1190,6 +1190,10 @@ class BadgeClass(
     def v1_api_recipient_count(self):
         return self.badgeinstances.filter(revoked=False).count()
 
+    @property
+    def v1_api_recipient_count_issuer(self):
+        return self.badgeinstances.filter(revoked=False, issuer=self.issuer).count()
+
     @cachemodel.cached_method(auto_publish=True)
     def cached_alignments(self):
         return self.badgeclassalignment_set.all()
@@ -1383,6 +1387,7 @@ class BadgeClass(
                         self.cached_issuer.jsonld_id, obi_version
                     )
                 ),
+                created_at=self.created_at,
             )
         )
 
@@ -2996,12 +3001,19 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
                 description=self.description,
                 slug=self.entity_id,
                 issuer_id=self.issuer.entity_id,
+                created_at=self.created_at,
             )
         )
 
         tags = self.learningpathtag_set.all()
         badges = self.learningpathbadge_set.all()
-        image = self.participationBadge.image.url
+        image = "{}{}?type=png".format(
+            OriginSetting.HTTP,
+            reverse(
+                "badgeclass_image",
+                kwargs={"entity_id": self.participationBadge.entity_id},
+            ),
+        )
 
         json["tags"] = list(t.name for t in tags)
 
@@ -3013,7 +3025,7 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
             for badge in badges
         ]
 
-        json["image"] = image
+        json["participationBadge_image"] = image
 
         json["activated"] = self.activated
 
