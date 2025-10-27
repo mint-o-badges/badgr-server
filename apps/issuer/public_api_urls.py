@@ -24,6 +24,7 @@ from .public_api import (
     LearningPathList,
     NetworkIssuersJson,
     OEmbedAPIEndpoint,
+    QRCodeJson,
     VerifyBadgeAPIEndpoint,
 )
 
@@ -79,6 +80,11 @@ json_patterns = [
         r"^learningpaths/(?P<entity_id>[^/.]+)$",
         xframe_options_exempt(LearningPathJson.as_view(slugToEntityIdRedirect=True)),
         name="learningpath_json",
+    ),
+    url(
+        r"^qrcode/(?P<entity_id>[^/.]+)$",
+        xframe_options_exempt(QRCodeJson.as_view(slugToEntityIdRedirect=True)),
+        name="qrcode_json",
     ),
     url(
         r"^all-badges$",

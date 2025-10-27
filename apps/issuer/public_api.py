@@ -37,11 +37,19 @@ from rest_framework.views import APIView
 import openbadges
 
 from . import utils
-from .models import BadgeClass, BadgeInstance, Issuer, LearningPath, LearningPathBadge
+from .models import (
+    BadgeClass,
+    BadgeInstance,
+    Issuer,
+    LearningPath,
+    LearningPathBadge,
+    QrCode,
+)
 from .serializers_v1 import (
     BadgeClassSerializerV1,
     IssuerSerializerV1,
     LearningPathSerializerV1,
+    QrCodeSerializerV1,
 )
 import logging
 
@@ -364,9 +372,13 @@ class IssuerBadgesJson(JSONComponentView):
     def get_json(self, request):
         obi_version = self._get_request_obi_version(request)
 
+        lps = self.current_object.learningpaths.all()
+        ignore_classes = [i.participationBadge for i in lps if not i.activated]
+
         return [
             b.get_json(obi_version=obi_version)
             for b in self.current_object.cached_badgeclasses()
+            if b not in ignore_classes
         ]
 
 
@@ -416,7 +428,7 @@ class NetworkIssuersJson(JSONComponentView):
             {
                 "slug": issuer.entity_id,
                 "name": issuer.name,
-                "image": issuer.image,
+                "image": issuer.image.url,
             }
             for issuer in issuers
         ]
@@ -439,7 +451,7 @@ class IssuerNetworksJson(JSONComponentView):
             {
                 "slug": network.entity_id,
                 "name": network.name,
-                "image": network.image,
+                "image": network.image.url,
             }
             for network in networks
         ]
@@ -618,6 +630,36 @@ class BadgeInstanceJson(JSONComponentView):
             expand_badgeclass=("badge" in expands),
             expand_issuer=("badge.issuer" in expands),
         )
+
+        networkShare = self.current_object.cached_badgeclass.network_shares.filter(
+            is_active=True
+        ).first()
+        if networkShare:
+            network = networkShare.network
+            json["sharedOnNetwork"] = {
+                "slug": network.entity_id,
+                "name": network.name,
+                "image": network.image.url,
+                "description": network.description,
+            }
+        else:
+            json["sharedOnNetwork"] = None
+
+        json["isNetworkBadge"] = (
+            self.current_object.cached_badgeclass.cached_issuer.is_network
+            and json["sharedOnNetwork"] is None
+        )
+
+        if json["isNetworkBadge"]:
+            json["networkName"] = (
+                self.current_object.cached_badgeclass.cached_issuer.name
+            )
+            json["networkImage"] = (
+                self.current_object.cached_badgeclass.cached_issuer.image.url
+            )
+        else:
+            json["networkImage"] = None
+            json["networkName"] = None
 
         return json
 
@@ -1075,3 +1117,19 @@ class BadgeLearningPathList(JSONListView):
         )
 
         return Response(serialized_learning_paths.data)
+
+
+class QRCodeJson(BaseEntityDetailViewPublic, SlugToEntityIdRedirectMixin):
+    """
+    Public QRCode endpoint for badge requests
+    Allows unauthenticated users to fetch QR code details
+    """
+
+    permission_classes = (permissions.AllowAny,)
+    model = QrCode
+    serializer_class = QrCodeSerializerV1
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        return context

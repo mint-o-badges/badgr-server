@@ -12,12 +12,24 @@ SAFE_METHODS = ["GET", "HEAD", "OPTIONS"]
 def is_owner(user, issuer):
     if not hasattr(issuer, "cached_issuerstaff"):
         return False
+
     for staff_record in issuer.cached_issuerstaff():
         if (
             staff_record.user_id == user.id
             and staff_record.role == IssuerStaff.ROLE_OWNER
         ):
             return True
+
+    if hasattr(issuer, "is_network") and issuer.is_network:
+        for membership in issuer.memberships.all():
+            partner_issuer = membership.issuer
+            for staff_record in partner_issuer.cached_issuerstaff():
+                if (
+                    staff_record.user_id == user.id
+                    and staff_record.role == IssuerStaff.ROLE_OWNER
+                ):
+                    return True
+
     return False
 
 
@@ -25,12 +37,24 @@ def is_owner(user, issuer):
 def is_editor(user, issuer):
     if not hasattr(issuer, "cached_issuerstaff"):
         return False
+
     for staff_record in issuer.cached_issuerstaff():
         if staff_record.user_id == user.id and staff_record.role in (
             IssuerStaff.ROLE_OWNER,
             IssuerStaff.ROLE_EDITOR,
         ):
             return True
+
+    if hasattr(issuer, "is_network") and issuer.is_network:
+        for membership in issuer.memberships.all():
+            partner_issuer = membership.issuer
+            for staff_record in partner_issuer.cached_issuerstaff():
+                if staff_record.user_id == user.id and staff_record.role in (
+                    IssuerStaff.ROLE_OWNER,
+                    IssuerStaff.ROLE_EDITOR,
+                ):
+                    return True
+
     return False
 
 
@@ -38,9 +62,18 @@ def is_editor(user, issuer):
 def is_staff(user, issuer):
     if not hasattr(issuer, "cached_issuerstaff"):
         return False
+
     for staff_record in issuer.cached_issuerstaff():
         if staff_record.user_id == user.id:
             return True
+
+    if hasattr(issuer, "is_network") and issuer.is_network:
+        for membership in issuer.memberships.all():
+            partner_issuer = membership.issuer
+            for staff_record in partner_issuer.cached_issuerstaff():
+                if staff_record.user_id == user.id:
+                    return True
+
     return False
 
 
@@ -87,10 +120,19 @@ def is_partner_issuer_staff(user, badgeclass):
     """
     Check if user is staff of a partner issuer in a network where this badge has been shared.
     Returns True if:
-    1. The badge has been shared with a network (via BadgeClassNetworkShare)
+    1. The badge has been shared with a network (via BadgeClassNetworkShare) or is a network badge
     2. The user is staff of an issuer that is a member of that network
     3. The share is active
     """
+    issuer = badgeclass.issuer
+    if issuer.is_network:
+        for membership in issuer.memberships.all():
+            partner_staff = (
+                membership.issuer.cached_issuerstaff().filter(user=user).first()
+            )
+            if partner_staff:
+                return True
+
     network_shares = badgeclass.network_shares.filter(is_active=True).select_related(
         "network"
     )

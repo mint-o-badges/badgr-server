@@ -367,6 +367,30 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
         with transaction.atomic():
             new_instance.save()
 
+            if badgeclass and badgeclass.imageFrame:
+                try:
+                    issuer_image = None
+                    network_image = None
+
+                    if badgeclass.cached_issuer.is_network:
+                        issuer_image = issuer.image if issuer else None
+                        network_image = badgeclass.cached_issuer.image
+
+                    if issuer_image and network_image:
+                        new_instance.generate_assertion_image(
+                            issuer_image,
+                            network_image,
+                        )
+                        new_instance.save(update_fields=["image"])
+                except Exception as e:
+                    import logging
+
+                    logger = logging.getLogger(__name__)
+                    logger.error(
+                        f"Failed to generate badge instance image for {new_instance.entity_id}: {str(e)}",
+                        exc_info=True,
+                    )
+
             if evidence is not None:
                 from issuer.models import BadgeInstanceEvidence
 
