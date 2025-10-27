@@ -1269,6 +1269,7 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
     network = serializers.SerializerMethodField()
     shared_by_issuer = serializers.SerializerMethodField()
     awarded_count_original_issuer = serializers.SerializerMethodField()
+    recipient_count = serializers.SerializerMethodField()
 
     class Meta:
         model = BadgeClassNetworkShare
@@ -1281,6 +1282,7 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
             "shared_by_issuer",
             "is_active",
             "awarded_count_original_issuer",
+            "recipient_count",
         ]
         read_only_fields = ["id", "shared_at", "shared_by_user"]
 
@@ -1311,3 +1313,13 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
                 badgeclass=obj.badgeclass,
             ).count()
         return 0
+
+    def get_recipient_count(self, obj):
+        """
+        Count of badge instances issued after this badge was shared with the network.
+        """
+        return BadgeInstance.objects.filter(
+            badgeclass=obj.badgeclass,
+            revoked=False,
+            issued_on__gte=obj.shared_at,
+        ).count()
