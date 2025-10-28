@@ -545,11 +545,11 @@ class BadgeClassJson(JSONComponentView):
 
         if self.current_object.cached_issuer.is_network:
             json["isNetworkBadge"] = True
-            json["networkImage"] = self.current_object.cached_issuer.name
+            json["networkName"] = self.current_object.cached_issuer.name
             json["networkImage"] = self.current_object.cached_issuer.image.url
         else:
             json["isNetworkBadge"] = False
-            json["networkImage"] = None
+            json["networkName"] = None
             json["networkImage"] = None
 
         if "issuer" in expands:
