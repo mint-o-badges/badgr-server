@@ -140,7 +140,6 @@ class BaseIssuerSerializerV1(
     slug = StripTagsCharField(max_length=255, source="entity_id", read_only=True)
     image = ValidImageField(required=False)
     description = StripTagsCharField(max_length=16384, required=False)
-    url = serializers.URLField(max_length=1024, required=True)
     badgrapp = serializers.CharField(
         read_only=True, max_length=255, source="cached_badgrapp"
     )
@@ -179,6 +178,8 @@ class BaseIssuerSerializerV1(
 
 
 class NetworkSerializerV1(BaseIssuerSerializerV1):
+    url = serializers.URLField(max_length=1024, required=False, allow_blank=True)
+
     def create(self, validated_data, **kwargs):
         new_network = Issuer(**validated_data)
 
@@ -254,6 +255,8 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
     city = serializers.CharField(
         max_length=255, required=False, allow_blank=True, allow_null=True
     )
+
+    url = serializers.URLField(max_length=1024, required=True)
 
     intendedUseVerified = serializers.BooleanField(default=False)
 
@@ -371,8 +374,12 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
             representation["badgeclasses"] = BadgeClassSerializerV1(
                 instance.badgeclasses.all(), many=True, context=self.context
             ).data
-        representation["badgeClassCount"] = len(instance.cached_badgeclasses())
-        representation["learningPathCount"] = len(instance.cached_learningpaths())
+        representation["badgeClassCount"] = len(instance.cached_badgeclasses()) - len(
+            instance.cached_learningpaths().filter(activated=False)
+        )
+        representation["learningPathCount"] = len(
+            instance.cached_learningpaths().filter(activated=True)
+        )
         representation["recipientGroupCount"] = 0
         representation["recipientCount"] = 0
         representation["pathwayCount"] = 0
@@ -464,6 +471,7 @@ class BadgeClassSerializerV1(
     recipient_count = serializers.IntegerField(
         required=False, read_only=True, source="v1_api_recipient_count"
     )
+
     description = StripTagsCharField(max_length=16384, required=True, convert_null=True)
 
     alignment = AlignmentItemSerializerV1(
@@ -531,9 +539,11 @@ class BadgeClassSerializerV1(
         )
 
         if representation["isNetworkBadge"]:
+            representation["networkName"] = instance.cached_issuer.name
             representation["networkImage"] = instance.cached_issuer.image.url
         else:
             representation["networkImage"] = None
+            representation["networkName"] = None
 
         representation["issuer"] = OriginSetting.HTTP + reverse(
             "issuer_json", kwargs={"entity_id": instance.cached_issuer.entity_id}
@@ -1068,9 +1078,14 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
         apispec_definition = ("LearningPath", {})
 
     def get_participationBadge_image(self, obj):
-        return (
-            obj.participationBadge.image.url if obj.participationBadge.image else None
+        image = "{}{}?type=png".format(
+            OriginSetting.HTTP,
+            reverse(
+                "badgeclass_image",
+                kwargs={"entity_id": obj.participationBadge.entity_id},
+            ),
         )
+        return image if obj.participationBadge.image else None
 
     def get_participationBadge_id(self, obj):
         return (
@@ -1275,6 +1290,7 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
     badgeclass = serializers.SerializerMethodField()
     network = serializers.SerializerMethodField()
     shared_by_issuer = serializers.SerializerMethodField()
+    awarded_count_original_issuer = serializers.SerializerMethodField()
 
     class Meta:
         model = BadgeClassNetworkShare
@@ -1286,6 +1302,7 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
             "shared_by_user",
             "shared_by_issuer",
             "is_active",
+            "awarded_count_original_issuer",
         ]
         read_only_fields = ["id", "shared_at", "shared_by_user"]
 
@@ -1307,3 +1324,12 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
                 "image": obj.shared_by_issuer.image_url(),
             }
         return None
+
+    def get_awarded_count_original_issuer(self, obj):
+        if obj.shared_by_issuer:
+            return BadgeInstance.objects.filter(
+                revoked=False,
+                issuer=obj.badgeclass.cached_issuer,
+                badgeclass=obj.badgeclass,
+            ).count()
+        return 0

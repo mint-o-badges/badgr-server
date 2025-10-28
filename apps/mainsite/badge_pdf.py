@@ -672,17 +672,17 @@ class BadgePDFCreator:
         )
 
         try:
-            file_ext = badge_class.issuer.image.path.split(".")[-1].lower()
+            file_ext = badge_instance.issuer.image.path.split(".")[-1].lower()
             if file_ext == "svg":
                 storage = DefaultStorage()
                 bio = BytesIO()
-                file_path = badge_class.issuer.image.name
+                file_path = badge_instance.issuer.image.name
                 try:
                     with storage.open(file_path, "rb") as svg_file:
                         cairosvg.svg2png(file_obj=svg_file, write_to=bio)
                 except IOError:
                     raise ValueError(
-                        f"Failed to convert SVG to PNG: {badge_class.issuer.image}"
+                        f"Failed to convert SVG to PNG: {badge_instance.issuer.image}"
                     )
 
                 bio.seek(0)
@@ -690,15 +690,17 @@ class BadgePDFCreator:
                 aspect = dummy.imageHeight / dummy.imageWidth
                 imageContent = Image(bio, width=80, height=80 * aspect)
             elif file_ext in ["png", "jpg", "jpeg", "gif"]:
-                dummy = Image(badge_class.issuer.image)
+                dummy = Image(badge_instance.issuer.image)
                 aspect = dummy.imageHeight / dummy.imageWidth
                 try:
-                    badge_class.issuer.image.open()
-                    img_data = BytesIO(badge_class.issuer.image.read())
-                    badge_class.issuer.image.close()
+                    badge_instance.issuer.image.open()
+                    img_data = BytesIO(badge_instance.issuer.image.read())
+                    badge_instance.issuer.image.close()
                     imageContent = Image(img_data, width=80, height=80 * aspect)
                 except Exception as e:
-                    print(f"Unexpected error for image {badge_class.issuer.image}: {e}")
+                    print(
+                        f"Unexpected error for image {badge_instance.issuer.image}: {e}"
+                    )
             else:
                 raise ValueError(f"Unsupported file type: {file_ext}")
         except Exception:
