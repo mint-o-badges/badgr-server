@@ -1311,6 +1311,7 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
                 revoked=False,
                 issuer=obj.badgeclass.cached_issuer,
                 badgeclass=obj.badgeclass,
+                issued_on__gte=obj.shared_at,
             ).count()
         return 0
 

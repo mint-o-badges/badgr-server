@@ -16,7 +16,7 @@ from celery.result import AsyncResult
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
-from django.db.models import Q, Count
+from django.db.models import Q, Count, F
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -1022,7 +1022,12 @@ class IssuerNetworkBadgeClassList(
 
         queryset = queryset.annotate(
             awarded_count=Count(
-                "badgeinstances", filter=Q(badgeinstances__issuer=issuer)
+                "badgeinstances",
+                filter=Q(badgeinstances__issuer=issuer)
+                & (
+                    Q(issuer__is_network=True)
+                    | Q(badgeinstances__issued_on__gte=F("network_shares__shared_at"))
+                ),
             )
         )
 
