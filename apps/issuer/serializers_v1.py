@@ -200,6 +200,7 @@ class NetworkSerializerV1(BaseIssuerSerializerV1):
         representation["json"] = instance.get_json(
             obi_version="1_1", use_canonical_id=True
         )
+        representation["badgeClassCount"] = len(instance.cached_badgeclasses())
 
         exclude_fields = self.context.get("exclude_fields", [])
         if "partner_issuers" not in exclude_fields:
@@ -748,6 +749,13 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
         source="expires_at", required=False, allow_null=True, default_timezone=pytz.utc
     )
 
+    activity_start_date = DateTimeWithUtcZAtEndField(
+        required=False, allow_null=True, default_timezone=pytz.utc
+    )
+    activity_end_date = DateTimeWithUtcZAtEndField(
+        required=False, allow_null=True, default_timezone=pytz.utc
+    )
+
     create_notification = HumanReadableBooleanField(
         write_only=True, required=False, default=False
     )
@@ -881,6 +889,8 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
                 ),
                 badgr_app=BadgrApp.objects.get_current(self.context.get("request")),
                 expires_at=validated_data.get("expires_at", None),
+                activity_start_date=validated_data.get("activity_start_date", None),
+                activity_end_date=validated_data.get("activity_end_date", None),
                 extensions=validated_data.get("extension_items", None),
                 issuerSlug=issuer_slug,
             )
@@ -915,6 +925,13 @@ class QrCodeSerializerV1(serializers.Serializer):
     issuer_id = serializers.CharField(max_length=254)
     request_count = serializers.SerializerMethodField()
     notifications = serializers.BooleanField(default=False)
+
+    activity_start_date = DateTimeWithUtcZAtEndField(
+        required=False, allow_null=True, default_timezone=pytz.utc
+    )
+    activity_end_date = DateTimeWithUtcZAtEndField(
+        required=False, allow_null=True, default_timezone=pytz.utc
+    )
 
     valid_from = DateTimeWithUtcZAtEndField(
         required=False, allow_null=True, default_timezone=pytz.utc
@@ -961,6 +978,8 @@ class QrCodeSerializerV1(serializers.Serializer):
             created_by_user=created_by_user,
             valid_from=validated_data.get("valid_from"),
             expires_at=validated_data.get("expires_at"),
+            activity_start_date=validated_data.get("activity_start_date", None),
+            activity_end_date=validated_data.get("activity_end_date", None),
             notifications=notifications,
         )
 
@@ -972,8 +991,11 @@ class QrCodeSerializerV1(serializers.Serializer):
         if "valid_from" in validated_data:
             instance.valid_from = validated_data["valid_from"]
         if "expires_at" in validated_data:
-            print(f"expires {validated_data['expires_at']}")
             instance.expires_at = validated_data["expires_at"]
+        if "activity_start_date" in validated_data:
+            instance.activity_start_date = validated_data["activity_start_date"]
+        if "activity_end_date" in validated_data:
+            instance.activity_end_date = validated_data["activity_end_date"]
         instance.notifications = validated_data.get(
             "notifications", instance.notifications
         )
