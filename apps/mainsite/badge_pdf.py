@@ -68,7 +68,14 @@ class BadgePDFCreator:
         )
         self.used_space += image_height
 
-    def add_recipient_name(self, first_page_content, name, issuedOn):
+    def add_recipient_name(
+        self,
+        first_page_content,
+        name,
+        issuedOn,
+        activityStartDate=None,
+        activityEndDate=None,
+    ):
         first_page_content.append(Spacer(1, 58))
         self.used_space += 58
         recipient_style = ParagraphStyle(
@@ -87,7 +94,26 @@ class BadgePDFCreator:
 
         text_style = ParagraphStyle(name="Text_Style", fontSize=18, alignment=TA_CENTER)
 
-        text = "hat am " + issuedOn.strftime("%d.%m.%Y")
+        if activityStartDate and activityEndDate:
+            if activityStartDate.year == activityEndDate.year:
+                text = (
+                    "hat vom "
+                    + activityStartDate.strftime("%-d.%m.")
+                    + " - "
+                    + activityEndDate.strftime("%-d.%m.%Y")
+                )
+            else:
+                text = (
+                    "hat vom "
+                    + activityStartDate.strftime("%-d.%m.%Y")
+                    + " - "
+                    + activityEndDate.strftime("%-d.%m.%Y")
+                )
+        elif activityStartDate:
+            text = "hat am " + activityStartDate.strftime("%-d.%m.%Y")
+        else:
+            text = "hat am " + issuedOn.strftime("%-d.%m.%Y")
+
         first_page_content.append(Paragraph(text, text_style))
         first_page_content.append(Spacer(1, 10))
         self.used_space += 28  # spacer and paragraph
@@ -575,7 +601,13 @@ class BadgePDFCreator:
 
         first_page_content = []
 
-        self.add_recipient_name(first_page_content, name, badge_instance.issued_on)
+        self.add_recipient_name(
+            first_page_content,
+            name,
+            badge_instance.issued_on,
+            activityStartDate=badge_instance.activity_start_date,
+            activityEndDate=badge_instance.activity_end_date,
+        )
         self.add_badge_image(first_page_content, badge_instance.image)
         self.add_title(first_page_content, badge_class.name)
         self.add_description(first_page_content, badge_class.description)
