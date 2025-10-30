@@ -55,7 +55,7 @@ class ImageComposer:
                 canvas = self._add_issuer_logo(canvas, self.category, issuerImage)
 
             if networkImage:
-                canvas = self._add_network_logo(canvas, self.category, networkImage)
+                canvas = self._add_network_logo(canvas, networkImage)
 
             return self._get_image_as_base64(canvas)
 
@@ -151,19 +151,16 @@ class ImageComposer:
 
     def _add_issuer_logo(self, canvas, category, issuerImage):
         """
-        Add issuer logo with frame
+        Add issuer logo in square container
         """
         try:
-            base_logo_height = 96  # same as network logo
+            base_logo_height = 96  # base container height for 600px canvas
             scale_factor = self.CANVAS_SIZE[0] / 600
-
             logo_height = int(base_logo_height * scale_factor)
             logo_size = (logo_height, logo_height)
 
-            logo_x = self.CANVAS_SIZE[0] - logo_size[0]
-
             if category == "participation":
-                offset_ratio = 115 / 600
+                offset_ratio = 125 / 600
             else:
                 offset_ratio = 135 / 600
 
@@ -172,22 +169,28 @@ class ImageComposer:
                 - logo_size[0]
                 - int(self.CANVAS_SIZE[0] * offset_ratio)
             )
-            logo_y = int(20 * scale_factor)
+
+            # Vertical centering relative to the main frame
+            shape_image = self._get_colored_shape_svg()
+            frame_y = (self.CANVAS_SIZE[1] - shape_image.height) // 2
 
             frame_image = self._get_logo_frame_svg("square")
             if frame_image:
                 frame_resized = frame_image.resize(logo_size, Image.Resampling.LANCZOS)
-                canvas.paste(frame_resized, (logo_x, logo_y), frame_resized)
+                canvas.paste(frame_resized, (logo_x, frame_y), frame_resized)
 
-            border_padding = int(logo_size[0] * 0.2)
-            logo_img = self._prepare_issuer_logo(
-                issuerImage,
-                (logo_size[0] - border_padding * 2, logo_size[1] - border_padding * 2),
+            PADDING_RATIO = 4 / 34  # Figma: 4px padding in 34px frame
+            PADDING = int(round(logo_size[0] * PADDING_RATIO))
+
+            inner_size = (
+                logo_size[0] - PADDING * 2,
+                logo_size[1] - PADDING * 2,
             )
 
+            logo_img = self._prepare_issuer_logo(issuerImage, inner_size)
             if logo_img:
-                final_logo_x = logo_x + border_padding
-                final_logo_y = logo_y + border_padding
+                final_logo_x = logo_x + PADDING
+                final_logo_y = frame_y + PADDING
                 canvas.paste(logo_img, (final_logo_x, final_logo_y), logo_img)
 
             return canvas
@@ -196,7 +199,7 @@ class ImageComposer:
             logger.error(f"Error adding issuer logo: {e}")
             return canvas
 
-    def _add_network_logo(self, canvas, category, networkImage):
+    def _add_network_logo(self, canvas, networkImage):
         """
         Add network image in bottom center, flush with canvas bottom
         """
@@ -219,7 +222,8 @@ class ImageComposer:
                 )
                 canvas.paste(frame_resized, (bottom_x, bottom_y), frame_resized)
 
-            border_padding = int(12 * scale_factor)
+            border_padding = int(4 * scale_factor)
+
             inner_size = (
                 network_image_size[0] - border_padding * 2,
                 network_image_size[1] - border_padding * 2,
@@ -242,6 +246,71 @@ class ImageComposer:
         except Exception as e:
             logger.error(f"Error adding network image: {e}")
             return canvas
+
+    def _create_network_logo_with_text(self, network_img, frame_inner_size):
+        """
+        Create the 'TEIL VON' + network logo composite inside the inner rectangle frame.
+        """
+        from PIL import Image, ImageDraw, ImageFont
+
+        composite = Image.new("RGBA", frame_inner_size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(composite)
+
+        figma_inner_width = 56.561
+        figma_inner_height = 31.561
+        figma_logo_size = 23.561
+        figma_font_size = 5.2259
+        figma_gap = 2
+
+        text_color = (50, 50, 50, 255)  # #323232
+
+        # Use the smaller scale to ensure everything fits
+        scale = min(
+            frame_inner_size[0] / figma_inner_width,
+            frame_inner_size[1] / figma_inner_height,
+        )
+
+        logo_height = int(round(figma_logo_size * scale))
+        font_size = max(
+            int(round(figma_font_size * scale)), 8
+        )  # Minimum 8px for readability
+        gap = int(round(figma_gap * scale))
+
+        font_path = finders.find("fonts/Rubik-SemiBold.ttf")
+        try:
+            font = ImageFont.truetype(font_path, font_size)
+        except:
+            font = ImageFont.load_default()
+
+        text = "TEIL VON"
+        text_bbox = draw.textbbox((0, 0), text, font=font)
+        text_width = text_bbox[2] - text_bbox[0]
+        text_height = text_bbox[3] - text_bbox[1]
+        text_offset_y = -text_bbox[1]  # Offset to align text baseline properly
+
+        network_img = self._trim_transparency(network_img)
+
+        aspect = network_img.width / network_img.height
+        logo_width = int(logo_height * aspect)
+
+        network_img = network_img.resize(
+            (logo_width, logo_height), Image.Resampling.LANCZOS
+        )
+
+        total_content_width = text_width + gap + logo_width
+
+        start_x = (frame_inner_size[0] - total_content_width) // 2
+
+        text_x = start_x
+        text_y = (frame_inner_size[1] - text_height) // 2 + text_offset_y
+
+        logo_x = start_x + text_width + gap
+        logo_y = (frame_inner_size[1] - logo_height) // 2
+
+        draw.text((text_x, text_y), text, fill=text_color, font=font)
+        composite.paste(network_img, (logo_x, logo_y), network_img)
+
+        return composite
 
     def _get_logo_frame_svg(self, shape="square"):
         """Load and convert the square frame SVG"""
@@ -339,76 +408,99 @@ class ImageComposer:
             logger.error(f"Error preparing SVG logo: {e}")
             raise e
 
-    def _create_network_logo_with_text(self, network_img, frame_inner_size):
-        """
-        Create a composite image with text and the network logo,
-        """
-        try:
-            from PIL import ImageFont, ImageDraw
+    # def _create_network_logo_with_text(self, network_img, frame_inner_size):
+    #     """
+    #     Create the 'TEIL VON' + network logo composite inside the inner rectangle frame.
+    #     Matches Figma design proportions exactly.
+    #     """
+    #     from PIL import Image, ImageDraw, ImageFont
 
-            composite = Image.new("RGBA", frame_inner_size, (0, 0, 0, 0))
-            draw = ImageDraw.Draw(composite)
+    #     composite = Image.new("RGBA", frame_inner_size, (0, 0, 0, 0))
+    #     draw = ImageDraw.Draw(composite)
 
-            font_size = 16
-            font_path_rubik_bold = finders.find("fonts/Rubik-Medium.ttf")
-            font = (
-                ImageFont.truetype(font_path_rubik_bold, font_size)
-                if font_path_rubik_bold
-                else ImageFont.load_default()
-            )
+    #     # === Figma reference dimensions ===
+    #     # These are the actual dimensions from your Figma design
+    #     figma_total_width = 136  # Total width of the outer frame
+    #     figma_total_height = 72  # Total height of the outer frame
 
-            text = "TEIL VON"
-            text_color = (0, 0, 0, 255)
+    #     # Inner content area (after border padding)
+    #     figma_inner_width = 136  # Adjust based on your actual Figma inner dimensions
+    #     figma_inner_height = 72  # Adjust based on your actual Figma inner dimensions
 
-            text_bbox = draw.textbbox((0, 0), text, font=font)
-            text_width = text_bbox[2] - text_bbox[0]
-            text_height = text_bbox[3] - text_bbox[1]
+    #     # === Figma design specs for content ===
+    #     figma_text_size = 12  # Font size in Figma
+    #     figma_logo_height = 48  # Network logo height in Figma
+    #     figma_gap = 8  # Gap between text and logo
 
-            # Figma specifications scaled to the frame size
-            design_width = 63
-            design_left_padding = 4
-            design_gap = 2
-            design_image_padding = 4
+    #     text_color = (50, 50, 50, 255)  # #323232
 
-            scale = frame_inner_size[0] / design_width
+    #     # === Calculate scale factor ===
+    #     scale = min(
+    #         frame_inner_size[0] / figma_inner_width,
+    #         frame_inner_size[1] / figma_inner_height,
+    #     )
 
-            left_padding = int(design_left_padding * scale)
-            text_logo_gap = int(design_gap * scale)
-            image_padding = int(design_image_padding * scale)
+    #     # === Scale all elements ===
+    #     font_size = max(int(round(figma_text_size * scale)), 8)  # Minimum 8px
+    #     logo_height = int(round(figma_logo_height * scale))
+    #     gap = int(round(figma_gap * scale))
 
-            available_width = frame_inner_size[0] - left_padding - image_padding
-            available_height = frame_inner_size[1] - (image_padding * 2)
+    #     # === Load font ===
+    #     font_path = finders.find("fonts/Rubik-Medium.ttf")
+    #     try:
+    #         font = ImageFont.truetype(font_path, font_size)
+    #     except:
+    #         font = ImageFont.load_default()
 
-            network_img = self._trim_transparency(network_img)
+    #     # === Measure text ===
+    #     text = "TEIL VON"
+    #     text_bbox = draw.textbbox((0, 0), text, font=font)
+    #     text_width = text_bbox[2] - text_bbox[0]
+    #     text_height = text_bbox[3] - text_bbox[1]
+    #     text_offset_y = -text_bbox[1]  # Offset to align text baseline properly
 
-            max_logo_width = available_width - text_width - text_logo_gap
-            max_logo_height = available_height
+    #     # === Prepare network logo ===
+    #     network_img = self._trim_transparency(network_img)
 
-            logo_scale = min(
-                max_logo_width / network_img.width, max_logo_height / network_img.height
-            )
+    #     # Maintain aspect ratio of the network logo
+    #     aspect = network_img.width / network_img.height
+    #     if aspect > 1:
+    #         # Wider than tall
+    #         logo_width = logo_height
+    #         logo_height = int(logo_height / aspect)
+    #     else:
+    #         # Taller than wide or square
+    #         logo_width = int(logo_height * aspect)
 
-            new_logo_size = (
-                int(network_img.width * logo_scale),
-                int(network_img.height * logo_scale),
-            )
-            network_img = network_img.resize(new_logo_size, Image.Resampling.LANCZOS)
+    #     network_img = network_img.resize(
+    #         (logo_width, logo_height), Image.Resampling.LANCZOS
+    #     )
 
-            text_x = left_padding
-            # Subtract text_bbox[1] to correct for the font’s baseline offset
-            text_y = (frame_inner_size[1] - text_height) // 2 - text_bbox[1]
-            draw.text((text_x, text_y), text, fill=text_color, font=font)
+    #     # === Calculate total content width ===
+    #     total_content_width = text_width + gap + logo_width
 
-            logo_x = text_x + text_width + text_logo_gap
-            logo_y = (frame_inner_size[1] - new_logo_size[1]) // 2
+    #     # === Center the entire group horizontally ===
+    #     start_x = (frame_inner_size[0] - total_content_width) // 2
 
-            composite.paste(network_img, (logo_x, logo_y), network_img)
+    #     # === Position text ===
+    #     text_x = start_x
+    #     # Center text vertically with proper baseline alignment
+    #     text_y = (frame_inner_size[1] - text_height) // 2 + text_offset_y
 
-            return composite
+    #     # === Position logo ===
+    #     logo_x = start_x + text_width + gap
+    #     # Center logo vertically
+    #     logo_y = (frame_inner_size[1] - logo_height) // 2
 
-        except Exception as e:
-            logger.error(f"Error creating network logo with text: {e}")
-            return network_img
+    #     # === Alternative: Align text baseline with logo center ===
+    #     # Uncomment this if you want the text baseline to align with logo's vertical center
+    #     # text_y = (frame_inner_size[1] - logo_height) // 2 + (logo_height // 2) - (text_height // 2) + text_offset_y
+
+    #     # === Draw text and logo ===
+    #     draw.text((text_x, text_y), text, fill=text_color, font=font)
+    #     composite.paste(network_img, (logo_x, logo_y), network_img)
+
+    #     return composite
 
     def _trim_transparency(self, img):
         """
