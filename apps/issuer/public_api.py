@@ -543,6 +543,15 @@ class BadgeClassJson(JSONComponentView):
         json = super(BadgeClassJson, self).get_json(request)
         obi_version = self._get_request_obi_version(request)
 
+        if self.current_object.cached_issuer.is_network:
+            json["isNetworkBadge"] = True
+            json["networkName"] = self.current_object.cached_issuer.name
+            json["networkImage"] = self.current_object.cached_issuer.image.url
+        else:
+            json["isNetworkBadge"] = False
+            json["networkName"] = None
+            json["networkImage"] = None
+
         if "issuer" in expands:
             json["issuer"] = self.current_object.cached_issuer.get_json(
                 obi_version=obi_version

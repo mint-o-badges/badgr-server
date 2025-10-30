@@ -11,9 +11,9 @@ logger = logging.getLogger(__name__)
 
 class ImageComposer:
     CANVAS_SIZES = {
-        "participation": (600, 600),
-        "competency": (612, 612),
-        "learningpath": (616, 616),
+        "participation": (600, 620),
+        "competency": (612, 660),
+        "learningpath": (616, 670),
     }
 
     DEFAULT_CANVAS_SIZE = (600, 600)
@@ -93,7 +93,7 @@ class ImageComposer:
             else:
                 raise ValueError("Expected base64 string for image data")
 
-            target_size = (self.CANVAS_SIZE[0] // 2, self.CANVAS_SIZE[1] // 2)
+            target_size = (self.CANVAS_SIZE[0] // 2, self.CANVAS_SIZE[0] // 2)
 
             if img.width < target_size[0] or img.height < target_size[1]:
                 # upscale (e.g. nounproject images are 200x200px)
@@ -139,7 +139,6 @@ class ImageComposer:
                         file_obj=f,
                         write_to=png_buf,
                         output_width=self.CANVAS_SIZE[0],
-                        output_height=self.CANVAS_SIZE[1],
                     )
                 except IOError as e:
                     raise (f"IO error while converting svg2png {e}")
@@ -155,18 +154,32 @@ class ImageComposer:
         Add issuer logo with frame
         """
         try:
-            x_width = 55 if category == "participation" else 70
-            logo_x = self.CANVAS_SIZE[0] - self.CANVAS_SIZE[0] // 4 - x_width
-            logo_y = 10 if category == "learningpath" else 0
+            base_logo_height = 96  # same as network logo
+            scale_factor = self.CANVAS_SIZE[0] / 600
 
-            logo_size = (self.CANVAS_SIZE[0] // 5, self.CANVAS_SIZE[1] // 5)
+            logo_height = int(base_logo_height * scale_factor)
+            logo_size = (logo_height, logo_height)
+
+            logo_x = self.CANVAS_SIZE[0] - logo_size[0]
+
+            if category == "participation":
+                offset_ratio = 115 / 600
+            else:
+                offset_ratio = 135 / 600
+
+            logo_x = (
+                self.CANVAS_SIZE[0]
+                - logo_size[0]
+                - int(self.CANVAS_SIZE[0] * offset_ratio)
+            )
+            logo_y = int(20 * scale_factor)
 
             frame_image = self._get_logo_frame_svg("square")
             if frame_image:
                 frame_resized = frame_image.resize(logo_size, Image.Resampling.LANCZOS)
                 canvas.paste(frame_resized, (logo_x, logo_y), frame_resized)
 
-            border_padding = 12
+            border_padding = int(logo_size[0] * 0.2)
             logo_img = self._prepare_issuer_logo(
                 issuerImage,
                 (logo_size[0] - border_padding * 2, logo_size[1] - border_padding * 2),
@@ -192,8 +205,8 @@ class ImageComposer:
             scale_factor = self.CANVAS_SIZE[0] / base_canvas_size
 
             network_image_size = (
-                int(200 * scale_factor),
-                int(120 * scale_factor),
+                int(160 * scale_factor),
+                int(96 * scale_factor),
             )
 
             bottom_x = (self.CANVAS_SIZE[0] - network_image_size[0]) // 2
@@ -351,41 +364,39 @@ class ImageComposer:
             text_width = text_bbox[2] - text_bbox[0]
             text_height = text_bbox[3] - text_bbox[1]
 
-            padding = 12
-            text_logo_gap = 8
+            # Figma specifications scaled to the frame size
+            design_width = 63
+            design_left_padding = 4
+            design_gap = 2
+            design_image_padding = 4
 
-            available_width = frame_inner_size[0] - 2 * padding
-            available_height = frame_inner_size[1] - 2 * padding
+            scale = frame_inner_size[0] / design_width
+
+            left_padding = int(design_left_padding * scale)
+            text_logo_gap = int(design_gap * scale)
+            image_padding = int(design_image_padding * scale)
+
+            available_width = frame_inner_size[0] - left_padding - image_padding
+            available_height = frame_inner_size[1] - (image_padding * 2)
 
             network_img = self._trim_transparency(network_img)
 
-            target_logo_height = available_height
-            logo_scale = target_logo_height / network_img.height
+            max_logo_width = available_width - text_width - text_logo_gap
+            max_logo_height = available_height
+
+            logo_scale = min(
+                max_logo_width / network_img.width, max_logo_height / network_img.height
+            )
+
             new_logo_size = (
                 int(network_img.width * logo_scale),
                 int(network_img.height * logo_scale),
             )
             network_img = network_img.resize(new_logo_size, Image.Resampling.LANCZOS)
 
-            total_content_width = text_width + text_logo_gap + new_logo_size[0]
-
-            # If the combined text+logo block doesn't fit, shrink the logo slightly
-            if total_content_width > available_width:
-                shrink_ratio = available_width / total_content_width
-                new_logo_size = (
-                    int(new_logo_size[0] * shrink_ratio),
-                    int(new_logo_size[1] * shrink_ratio),
-                )
-                network_img = network_img.resize(
-                    new_logo_size, Image.Resampling.LANCZOS
-                )
-                total_content_width = text_width + text_logo_gap + new_logo_size[0]
-
-            # --- Center the combined block within available space ---
-            start_x = padding + (available_width - total_content_width) // 2
-            text_x = start_x
-            text_y = (frame_inner_size[1] - text_height) // 2
-
+            text_x = left_padding
+            # Subtract text_bbox[1] to correct for the font’s baseline offset
+            text_y = (frame_inner_size[1] - text_height) // 2 - text_bbox[1]
             draw.text((text_x, text_y), text, fill=text_color, font=font)
 
             logo_x = text_x + text_width + text_logo_gap
