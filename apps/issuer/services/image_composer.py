@@ -395,8 +395,8 @@ class ImageComposer:
             network_img = network_img.resize(new_logo_size, Image.Resampling.LANCZOS)
 
             text_x = left_padding
-            text_y = (frame_inner_size[1] - text_height) // 2
-
+            # Subtract text_bbox[1] to correct for the font’s baseline offset
+            text_y = (frame_inner_size[1] - text_height) // 2 - text_bbox[1]
             draw.text((text_x, text_y), text, fill=text_color, font=font)
 
             logo_x = text_x + text_width + text_logo_gap
