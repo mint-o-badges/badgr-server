@@ -690,10 +690,13 @@ class BadgeClassSerializerV1(
                     issuer_image = None
                     network_image = None
 
-                    if new_badgeclass.issuer.is_network:
-                        network_image = new_badgeclass.issuer.image
-                    else:
-                        issuer_image = new_badgeclass.issuer.image
+                    if not (
+                        new_badgeclass.issuer.is_network and category == "learningpath"
+                    ):
+                        if new_badgeclass.issuer.is_network:
+                            network_image = new_badgeclass.issuer.image
+                        else:
+                            issuer_image = new_badgeclass.issuer.image
 
                     new_badgeclass.generate_badge_image(
                         category,
