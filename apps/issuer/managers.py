@@ -368,15 +368,25 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
             new_instance.save()
 
             if badgeclass and badgeclass.imageFrame:
+                badge_extensions = badgeclass.cached_extensions()
+                categoryExtension = badge_extensions.get(
+                    name="extensions:CategoryExtension"
+                )
+                category = json.loads(categoryExtension.original_json)["Category"]
+
                 try:
                     issuer_image = None
                     network_image = None
 
                     if badgeclass.cached_issuer.is_network:
-                        issuer_image = issuer.image if issuer else None
+                        issuer_image = (
+                            issuer.image
+                            if issuer and category != "learningpath"
+                            else None
+                        )
                         network_image = badgeclass.cached_issuer.image
 
-                    if issuer_image and network_image:
+                    if issuer_image and network_image and category != "learningpath":
                         new_instance.generate_assertion_image(
                             issuer_image,
                             network_image,
