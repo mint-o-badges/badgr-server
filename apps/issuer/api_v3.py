@@ -54,7 +54,6 @@ class Badges(TotalCountMixin, EntityViewSet):
         pass
 
     def get_queryset(self):
-        print(self.request.user)
         queryset = super().get_queryset()
         return queryset.distinct()
 
