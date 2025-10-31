@@ -279,7 +279,7 @@ class ImageComposer:
         font_path = finders.find("fonts/Rubik-SemiBold.ttf")
         try:
             font = ImageFont.truetype(font_path, font_size)
-        except:
+        except Exception:
             font = ImageFont.load_default()
 
         text = "TEIL VON"
