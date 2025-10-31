@@ -140,7 +140,6 @@ class BaseIssuerSerializerV1(
     slug = StripTagsCharField(max_length=255, source="entity_id", read_only=True)
     image = ValidImageField(required=False)
     description = StripTagsCharField(max_length=16384, required=False)
-    url = serializers.URLField(max_length=1024, required=True)
     badgrapp = serializers.CharField(
         read_only=True, max_length=255, source="cached_badgrapp"
     )
@@ -179,6 +178,8 @@ class BaseIssuerSerializerV1(
 
 
 class NetworkSerializerV1(BaseIssuerSerializerV1):
+    url = serializers.URLField(max_length=1024, required=False, allow_blank=True)
+
     def create(self, validated_data, **kwargs):
         new_network = Issuer(**validated_data)
 
@@ -199,6 +200,7 @@ class NetworkSerializerV1(BaseIssuerSerializerV1):
         representation["json"] = instance.get_json(
             obi_version="1_1", use_canonical_id=True
         )
+        representation["badgeClassCount"] = len(instance.cached_badgeclasses())
 
         exclude_fields = self.context.get("exclude_fields", [])
         if "partner_issuers" not in exclude_fields:
@@ -253,6 +255,8 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
     city = serializers.CharField(
         max_length=255, required=False, allow_blank=True, allow_null=True
     )
+
+    url = serializers.URLField(max_length=1024, required=True)
 
     intendedUseVerified = serializers.BooleanField(default=False)
 
@@ -370,8 +374,12 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
             representation["badgeclasses"] = BadgeClassSerializerV1(
                 instance.badgeclasses.all(), many=True, context=self.context
             ).data
-        representation["badgeClassCount"] = len(instance.cached_badgeclasses())
-        representation["learningPathCount"] = len(instance.cached_learningpaths())
+        representation["badgeClassCount"] = len(instance.cached_badgeclasses()) - len(
+            instance.cached_learningpaths().filter(activated=False)
+        )
+        representation["learningPathCount"] = len(
+            instance.cached_learningpaths().filter(activated=True)
+        )
         representation["recipientGroupCount"] = 0
         representation["recipientCount"] = 0
         representation["pathwayCount"] = 0
@@ -463,6 +471,7 @@ class BadgeClassSerializerV1(
     recipient_count = serializers.IntegerField(
         required=False, read_only=True, source="v1_api_recipient_count"
     )
+
     description = StripTagsCharField(max_length=16384, required=True, convert_null=True)
 
     alignment = AlignmentItemSerializerV1(
@@ -530,9 +539,11 @@ class BadgeClassSerializerV1(
         )
 
         if representation["isNetworkBadge"]:
+            representation["networkName"] = instance.cached_issuer.name
             representation["networkImage"] = instance.cached_issuer.image.url
         else:
             representation["networkImage"] = None
+            representation["networkName"] = None
 
         representation["issuer"] = OriginSetting.HTTP + reverse(
             "issuer_json", kwargs={"entity_id": instance.cached_issuer.entity_id}
@@ -738,6 +749,13 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
         source="expires_at", required=False, allow_null=True, default_timezone=pytz.utc
     )
 
+    activity_start_date = DateTimeWithUtcZAtEndField(
+        required=False, allow_null=True, default_timezone=pytz.utc
+    )
+    activity_end_date = DateTimeWithUtcZAtEndField(
+        required=False, allow_null=True, default_timezone=pytz.utc
+    )
+
     create_notification = HumanReadableBooleanField(
         write_only=True, required=False, default=False
     )
@@ -871,6 +889,8 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
                 ),
                 badgr_app=BadgrApp.objects.get_current(self.context.get("request")),
                 expires_at=validated_data.get("expires_at", None),
+                activity_start_date=validated_data.get("activity_start_date", None),
+                activity_end_date=validated_data.get("activity_end_date", None),
                 extensions=validated_data.get("extension_items", None),
                 issuerSlug=issuer_slug,
             )
@@ -905,6 +925,13 @@ class QrCodeSerializerV1(serializers.Serializer):
     issuer_id = serializers.CharField(max_length=254)
     request_count = serializers.SerializerMethodField()
     notifications = serializers.BooleanField(default=False)
+
+    activity_start_date = DateTimeWithUtcZAtEndField(
+        required=False, allow_null=True, default_timezone=pytz.utc
+    )
+    activity_end_date = DateTimeWithUtcZAtEndField(
+        required=False, allow_null=True, default_timezone=pytz.utc
+    )
 
     valid_from = DateTimeWithUtcZAtEndField(
         required=False, allow_null=True, default_timezone=pytz.utc
@@ -951,6 +978,8 @@ class QrCodeSerializerV1(serializers.Serializer):
             created_by_user=created_by_user,
             valid_from=validated_data.get("valid_from"),
             expires_at=validated_data.get("expires_at"),
+            activity_start_date=validated_data.get("activity_start_date", None),
+            activity_end_date=validated_data.get("activity_end_date", None),
             notifications=notifications,
         )
 
@@ -962,8 +991,11 @@ class QrCodeSerializerV1(serializers.Serializer):
         if "valid_from" in validated_data:
             instance.valid_from = validated_data["valid_from"]
         if "expires_at" in validated_data:
-            print(f"expires {validated_data['expires_at']}")
             instance.expires_at = validated_data["expires_at"]
+        if "activity_start_date" in validated_data:
+            instance.activity_start_date = validated_data["activity_start_date"]
+        if "activity_end_date" in validated_data:
+            instance.activity_end_date = validated_data["activity_end_date"]
         instance.notifications = validated_data.get(
             "notifications", instance.notifications
         )
@@ -1046,9 +1078,14 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
         apispec_definition = ("LearningPath", {})
 
     def get_participationBadge_image(self, obj):
-        return (
-            obj.participationBadge.image.url if obj.participationBadge.image else None
+        image = "{}{}?type=png".format(
+            OriginSetting.HTTP,
+            reverse(
+                "badgeclass_image",
+                kwargs={"entity_id": obj.participationBadge.entity_id},
+            ),
         )
+        return image if obj.participationBadge.image else None
 
     def get_participationBadge_id(self, obj):
         return (
@@ -1253,6 +1290,8 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
     badgeclass = serializers.SerializerMethodField()
     network = serializers.SerializerMethodField()
     shared_by_issuer = serializers.SerializerMethodField()
+    awarded_count_original_issuer = serializers.SerializerMethodField()
+    recipient_count = serializers.SerializerMethodField()
 
     class Meta:
         model = BadgeClassNetworkShare
@@ -1264,6 +1303,8 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
             "shared_by_user",
             "shared_by_issuer",
             "is_active",
+            "awarded_count_original_issuer",
+            "recipient_count",
         ]
         read_only_fields = ["id", "shared_at", "shared_by_user"]
 
@@ -1285,3 +1326,22 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
                 "image": obj.shared_by_issuer.image_url(),
             }
         return None
+
+    def get_awarded_count_original_issuer(self, obj):
+        if obj.shared_by_issuer:
+            return BadgeInstance.objects.filter(
+                revoked=False,
+                issuer=obj.badgeclass.cached_issuer,
+                badgeclass=obj.badgeclass,
+            ).count()
+        return 0
+
+    def get_recipient_count(self, obj):
+        """
+        Count of badge instances issued after this badge was shared with the network.
+        """
+        return BadgeInstance.objects.filter(
+            badgeclass=obj.badgeclass,
+            revoked=False,
+            issued_on__gte=obj.shared_at,
+        ).count()

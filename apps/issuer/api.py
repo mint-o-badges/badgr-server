@@ -16,7 +16,7 @@ from celery.result import AsyncResult
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
-from django.db.models import Q, Count
+from django.db.models import Q, Count, F
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -1022,7 +1022,12 @@ class IssuerNetworkBadgeClassList(
 
         queryset = queryset.annotate(
             awarded_count=Count(
-                "badgeinstances", filter=Q(badgeinstances__issuer=issuer)
+                "badgeinstances",
+                filter=Q(badgeinstances__issuer=issuer)
+                & (
+                    Q(issuer__is_network=True)
+                    | Q(badgeinstances__issued_on__gte=F("network_shares__shared_at"))
+                ),
             )
         )
 
@@ -1664,10 +1669,18 @@ class QRCodeDetail(BaseEntityView):
             return None
 
         if issuer.is_network:
-            return QrCode.objects.filter(
+            qr_codes = QrCode.objects.filter(
                 badgeclass__entity_id=badgeSlug,
                 issuer__network_memberships__network=issuer,
-            )
+            ).select_related("issuer")
+
+            # permission check is done for every qr code
+            # TODO: check if this could become a performance problem
+            return [
+                qr_code
+                for qr_code in qr_codes
+                if request.user.has_perm("issuer.is_staff", qr_code.issuer)
+            ]
 
         return QrCode.objects.filter(
             badgeclass__entity_id=badgeSlug, issuer__entity_id=issuerSlug
@@ -2364,6 +2377,7 @@ class NetworkInvitation(BaseEntityDetailView):
                 )
 
             invite.status = IssuerStaffRequest.Status.REVOKED
+            invite.revoked = True
             invite.save()
 
             serializer = self.v1_serializer_class(invite)
@@ -2591,7 +2605,6 @@ class BadgeClassNetworkShareView(BaseEntityDetailView):
         )
 
         badgeclass.copy_permissions = BadgeClass.COPY_PERMISSIONS_NONE
-        badgeclass.issuer = network
         badgeclass.save(update_fields=["image", "copy_permissions", "issuer"])
 
         serializer = self.get_serializer_class()(share)

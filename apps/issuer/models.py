@@ -1190,6 +1190,10 @@ class BadgeClass(
     def v1_api_recipient_count(self):
         return self.badgeinstances.filter(revoked=False).count()
 
+    @property
+    def v1_api_recipient_count_issuer(self):
+        return self.badgeinstances.filter(revoked=False, issuer=self.issuer).count()
+
     @cachemodel.cached_method(auto_publish=True)
     def cached_alignments(self):
         return self.badgeclassalignment_set.all()
@@ -1280,6 +1284,8 @@ class BadgeClass(
         recipient_type=RECIPIENT_TYPE_EMAIL,
         microdegree_id=None,
         issuerSlug=None,
+        activity_start_date=None,
+        activity_end_date=None,
         **kwargs,
     ):
         return BadgeInstance.objects.create(
@@ -1295,6 +1301,8 @@ class BadgeClass(
             microdegree_id=microdegree_id,
             issuerSlug=issuerSlug,
             user=get_user_or_none(recipient_id, recipient_type),
+            activity_start_date=activity_start_date,
+            activity_end_date=activity_end_date,
             **kwargs,
         )
 
@@ -1383,6 +1391,7 @@ class BadgeClass(
                         self.cached_issuer.jsonld_id, obi_version
                     )
                 ),
+                created_at=self.created_at,
             )
         )
 
@@ -1690,6 +1699,19 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
     objects = BadgeInstanceManager()
     cached = SlugOrJsonIdCacheModelManager(
         slug_kwarg_name="entity_id", slug_field_name="entity_id"
+    )
+
+    activity_start_date = models.DateTimeField(
+        blank=True,
+        null=True,
+        default=None,
+        help_text="The datetime the activity/course started",
+    )
+    activity_end_date = models.DateTimeField(
+        blank=True,
+        null=True,
+        default=None,
+        help_text="The datetime the activity/course ended",
     )
 
     ob_json_2_0 = models.TextField(blank=True, null=True, default=None)
@@ -2244,6 +2266,42 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             self.recipient_identifier, self.salt
         )
 
+        credential_subject = {
+            "type": ["AchievementSubject"],
+            "identifier": [
+                {
+                    "type": "IdentityObject",
+                    "identityHash": hashed_recipient,
+                    "identityType": "emailAddress",
+                    "hashed": True,
+                    "salt": self.salt,
+                }
+            ],
+            "achievement": {
+                "id": add_obi_version_ifneeded(
+                    self.cached_badgeclass.jsonld_id, obi_version
+                ),
+                "type": ["Achievement"],
+                "name": self.cached_badgeclass.name,
+                "description": self.cached_badgeclass.description,
+                "achievementType": "Badge",
+                "criteria": {
+                    "narrative": self.narrative or "",
+                },
+                "image": {
+                    "id": self.image_url(public=True),
+                    "type": "Image",
+                },
+            },
+        }
+
+        if self.activity_start_date:
+            credential_subject["activityStartDate"] = (
+                self.activity_start_date.isoformat()
+            )
+        if self.activity_end_date:
+            credential_subject["activityEndDate"] = self.activity_end_date.isoformat()
+
         json = OrderedDict(
             [
                 (
@@ -2271,37 +2329,7 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
                     },
                 ),
                 ("validFrom", self.issued_on.isoformat()),
-                (
-                    "credentialSubject",
-                    {
-                        "type": ["AchievementSubject"],
-                        "identifier": [
-                            {
-                                "type": "IdentityObject",
-                                "identityHash": hashed_recipient,
-                                "identityType": "emailAddress",
-                                "hashed": True,
-                                "salt": self.salt,
-                            }
-                        ],
-                        "achievement": {
-                            "id": add_obi_version_ifneeded(
-                                self.cached_badgeclass.jsonld_id, obi_version
-                            ),
-                            "type": ["Achievement"],
-                            "name": self.cached_badgeclass.name,
-                            "description": self.cached_badgeclass.description,
-                            "achievementType": "Badge",
-                            "criteria": {
-                                "narrative": self.narrative or "",
-                            },
-                            "image": {
-                                "id": self.image_url(public=True),
-                                "type": "Image",
-                            },
-                        },
-                    },
-                ),
+                ("credentialSubject", credential_subject),
             ]
         )
 
@@ -2325,8 +2353,6 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
                         extension_contexts += extension_context
                     else:
                         extension_contexts.append(extension_context)
-
-                    # del extension_json["@context"]
 
                 except KeyError:
                     pass
@@ -2361,7 +2387,6 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
 
         # transform https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-rdfc-2022
 
-        # this is pretty slow
         canonicalized_proof = jsonld.normalize(
             proof, {"algorithm": "URDNA2015", "format": "application/n-quads"}
         )
@@ -2369,15 +2394,11 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             json, {"algorithm": "URDNA2015", "format": "application/n-quads"}
         )
 
-        # if settings.DEBUG:
-        #     print(canonicalized_proof)
-        #     print(canonicalized_json)
-
         # hash transformed documents, 32bit each
         hashed_proof = sha256(canonicalized_proof.encode()).digest()
         hashed_json = sha256(canonicalized_json.encode()).digest()
 
-        # concat for 64bit hash ans sign
+        # concat for 64bit hash and sign
         signature = private_key.sign(hashed_proof + hashed_json)
 
         # base58 encode with multibase prefix z
@@ -2823,6 +2844,19 @@ class QrCode(BaseVersionedEntity):
         on_delete=models.SET_NULL,
     )
 
+    activity_start_date = models.DateTimeField(
+        blank=True,
+        null=True,
+        default=None,
+        help_text="The datetime the activity/course started",
+    )
+    activity_end_date = models.DateTimeField(
+        blank=True,
+        null=True,
+        default=None,
+        help_text="The datetime the activity/course ended",
+    )
+
     valid_from = models.DateTimeField(blank=True, null=True, default=None)
 
     expires_at = models.DateTimeField(blank=True, null=True, default=None)
@@ -2996,12 +3030,19 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
                 description=self.description,
                 slug=self.entity_id,
                 issuer_id=self.issuer.entity_id,
+                created_at=self.created_at,
             )
         )
 
         tags = self.learningpathtag_set.all()
         badges = self.learningpathbadge_set.all()
-        image = self.participationBadge.image.url
+        image = "{}{}?type=png".format(
+            OriginSetting.HTTP,
+            reverse(
+                "badgeclass_image",
+                kwargs={"entity_id": self.participationBadge.entity_id},
+            ),
+        )
 
         json["tags"] = list(t.name for t in tags)
 
@@ -3013,7 +3054,7 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
             for badge in badges
         ]
 
-        json["image"] = image
+        json["participationBadge_image"] = image
 
         json["activated"] = self.activated
 

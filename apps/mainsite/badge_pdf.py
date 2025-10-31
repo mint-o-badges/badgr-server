@@ -68,7 +68,14 @@ class BadgePDFCreator:
         )
         self.used_space += image_height
 
-    def add_recipient_name(self, first_page_content, name, issuedOn):
+    def add_recipient_name(
+        self,
+        first_page_content,
+        name,
+        issuedOn,
+        activityStartDate=None,
+        activityEndDate=None,
+    ):
         first_page_content.append(Spacer(1, 58))
         self.used_space += 58
         recipient_style = ParagraphStyle(
@@ -87,7 +94,26 @@ class BadgePDFCreator:
 
         text_style = ParagraphStyle(name="Text_Style", fontSize=18, alignment=TA_CENTER)
 
-        text = "hat am " + issuedOn.strftime("%d.%m.%Y")
+        if activityStartDate and activityEndDate:
+            if activityStartDate.year == activityEndDate.year:
+                text = (
+                    "hat vom "
+                    + activityStartDate.strftime("%-d.%m.")
+                    + " - "
+                    + activityEndDate.strftime("%-d.%m.%Y")
+                )
+            else:
+                text = (
+                    "hat vom "
+                    + activityStartDate.strftime("%-d.%m.%Y")
+                    + " - "
+                    + activityEndDate.strftime("%-d.%m.%Y")
+                )
+        elif activityStartDate:
+            text = "hat am " + activityStartDate.strftime("%-d.%m.%Y")
+        else:
+            text = "hat am " + issuedOn.strftime("%-d.%m.%Y")
+
         first_page_content.append(Paragraph(text, text_style))
         first_page_content.append(Spacer(1, 10))
         self.used_space += 28  # spacer and paragraph
@@ -575,7 +601,13 @@ class BadgePDFCreator:
 
         first_page_content = []
 
-        self.add_recipient_name(first_page_content, name, badge_instance.issued_on)
+        self.add_recipient_name(
+            first_page_content,
+            name,
+            badge_instance.issued_on,
+            activityStartDate=badge_instance.activity_start_date,
+            activityEndDate=badge_instance.activity_end_date,
+        )
         self.add_badge_image(first_page_content, badge_instance.image)
         self.add_title(first_page_content, badge_class.name)
         self.add_description(first_page_content, badge_class.description)
@@ -640,17 +672,17 @@ class BadgePDFCreator:
         )
 
         try:
-            file_ext = badge_class.issuer.image.path.split(".")[-1].lower()
+            file_ext = badge_instance.issuer.image.path.split(".")[-1].lower()
             if file_ext == "svg":
                 storage = DefaultStorage()
                 bio = BytesIO()
-                file_path = badge_class.issuer.image.name
+                file_path = badge_instance.issuer.image.name
                 try:
                     with storage.open(file_path, "rb") as svg_file:
                         cairosvg.svg2png(file_obj=svg_file, write_to=bio)
                 except IOError:
                     raise ValueError(
-                        f"Failed to convert SVG to PNG: {badge_class.issuer.image}"
+                        f"Failed to convert SVG to PNG: {badge_instance.issuer.image}"
                     )
 
                 bio.seek(0)
@@ -658,15 +690,17 @@ class BadgePDFCreator:
                 aspect = dummy.imageHeight / dummy.imageWidth
                 imageContent = Image(bio, width=80, height=80 * aspect)
             elif file_ext in ["png", "jpg", "jpeg", "gif"]:
-                dummy = Image(badge_class.issuer.image)
+                dummy = Image(badge_instance.issuer.image)
                 aspect = dummy.imageHeight / dummy.imageWidth
                 try:
-                    badge_class.issuer.image.open()
-                    img_data = BytesIO(badge_class.issuer.image.read())
-                    badge_class.issuer.image.close()
+                    badge_instance.issuer.image.open()
+                    img_data = BytesIO(badge_instance.issuer.image.read())
+                    badge_instance.issuer.image.close()
                     imageContent = Image(img_data, width=80, height=80 * aspect)
                 except Exception as e:
-                    print(f"Unexpected error for image {badge_class.issuer.image}: {e}")
+                    print(
+                        f"Unexpected error for image {badge_instance.issuer.image}: {e}"
+                    )
             else:
                 raise ValueError(f"Unsupported file type: {file_ext}")
         except Exception:

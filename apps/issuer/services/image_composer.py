@@ -11,9 +11,9 @@ logger = logging.getLogger(__name__)
 
 class ImageComposer:
     CANVAS_SIZES = {
-        "participation": (600, 600),
-        "competency": (612, 612),
-        "learningpath": (616, 616),
+        "participation": (600, 620),
+        "competency": (612, 660),
+        "learningpath": (616, 670),
     }
 
     DEFAULT_CANVAS_SIZE = (600, 600)
@@ -93,7 +93,7 @@ class ImageComposer:
             else:
                 raise ValueError("Expected base64 string for image data")
 
-            target_size = (self.CANVAS_SIZE[0] // 2, self.CANVAS_SIZE[1] // 2)
+            target_size = (self.CANVAS_SIZE[0] // 2, self.CANVAS_SIZE[0] // 2)
 
             if img.width < target_size[0] or img.height < target_size[1]:
                 # upscale (e.g. nounproject images are 200x200px)
@@ -139,7 +139,6 @@ class ImageComposer:
                         file_obj=f,
                         write_to=png_buf,
                         output_width=self.CANVAS_SIZE[0],
-                        output_height=self.CANVAS_SIZE[1],
                     )
                 except IOError as e:
                     raise (f"IO error while converting svg2png {e}")
@@ -155,18 +154,32 @@ class ImageComposer:
         Add issuer logo with frame
         """
         try:
-            x_width = 55 if category == "participation" else 70
-            logo_x = self.CANVAS_SIZE[0] - self.CANVAS_SIZE[0] // 4 - x_width
-            logo_y = 10 if category == "learningpath" else 0
+            base_logo_height = 96  # same as network logo
+            scale_factor = self.CANVAS_SIZE[0] / 600
 
-            logo_size = (self.CANVAS_SIZE[0] // 5, self.CANVAS_SIZE[1] // 5)
+            logo_height = int(base_logo_height * scale_factor)
+            logo_size = (logo_height, logo_height)
+
+            logo_x = self.CANVAS_SIZE[0] - logo_size[0]
+
+            if category == "participation":
+                offset_ratio = 115 / 600
+            else:
+                offset_ratio = 135 / 600
+
+            logo_x = (
+                self.CANVAS_SIZE[0]
+                - logo_size[0]
+                - int(self.CANVAS_SIZE[0] * offset_ratio)
+            )
+            logo_y = int(20 * scale_factor)
 
             frame_image = self._get_logo_frame_svg("square")
             if frame_image:
                 frame_resized = frame_image.resize(logo_size, Image.Resampling.LANCZOS)
                 canvas.paste(frame_resized, (logo_x, logo_y), frame_resized)
 
-            border_padding = 12
+            border_padding = int(logo_size[0] * 0.2)
             logo_img = self._prepare_issuer_logo(
                 issuerImage,
                 (logo_size[0] - border_padding * 2, logo_size[1] - border_padding * 2),
@@ -192,8 +205,8 @@ class ImageComposer:
             scale_factor = self.CANVAS_SIZE[0] / base_canvas_size
 
             network_image_size = (
-                int(240 * scale_factor),
-                int(120 * scale_factor),
+                int(160 * scale_factor),
+                int(96 * scale_factor),
             )
 
             bottom_x = (self.CANVAS_SIZE[0] - network_image_size[0]) // 2
@@ -328,7 +341,7 @@ class ImageComposer:
 
     def _create_network_logo_with_text(self, network_img, frame_inner_size):
         """
-        Create a composite image with "Part of" text to the left of the network logo
+        Create a composite image with text and the network logo,
         """
         try:
             from PIL import ImageFont, ImageDraw
@@ -336,13 +349,13 @@ class ImageComposer:
             composite = Image.new("RGBA", frame_inner_size, (0, 0, 0, 0))
             draw = ImageDraw.Draw(composite)
 
-            font_size = 14
+            font_size = 16
             font_path_rubik_bold = finders.find("fonts/Rubik-Medium.ttf")
-            if not font_path_rubik_bold:
-                logger.error("Rubik-Medium.ttf not found via staticfiles")
-                font = ImageFont.load_default()
-            else:
-                font = ImageFont.truetype(font_path_rubik_bold, font_size)
+            font = (
+                ImageFont.truetype(font_path_rubik_bold, font_size)
+                if font_path_rubik_bold
+                else ImageFont.load_default()
+            )
 
             text = "TEIL VON"
             text_color = (0, 0, 0, 255)
@@ -351,37 +364,43 @@ class ImageComposer:
             text_width = text_bbox[2] - text_bbox[0]
             text_height = text_bbox[3] - text_bbox[1]
 
-            text_margin = 8
-            container_padding = 12
+            # Figma specifications scaled to the frame size
+            design_width = 63
+            design_left_padding = 4
+            design_gap = 2
+            design_image_padding = 4
 
-            max_logo_width = frame_inner_size[0] * 0.6
-            max_logo_height = frame_inner_size[1] * 0.8
+            scale = frame_inner_size[0] / design_width
 
-            logo_scale_x = max_logo_width / network_img.width
-            logo_scale_y = max_logo_height / network_img.height
-            scale_factor = min(logo_scale_x, logo_scale_y)
+            left_padding = int(design_left_padding * scale)
+            text_logo_gap = int(design_gap * scale)
+            image_padding = int(design_image_padding * scale)
+
+            available_width = frame_inner_size[0] - left_padding - image_padding
+            available_height = frame_inner_size[1] - (image_padding * 2)
+
+            network_img = self._trim_transparency(network_img)
+
+            max_logo_width = available_width - text_width - text_logo_gap
+            max_logo_height = available_height
+
+            logo_scale = min(
+                max_logo_width / network_img.width, max_logo_height / network_img.height
+            )
 
             new_logo_size = (
-                int(network_img.width * scale_factor),
-                int(network_img.height * scale_factor),
+                int(network_img.width * logo_scale),
+                int(network_img.height * logo_scale),
             )
             network_img = network_img.resize(new_logo_size, Image.Resampling.LANCZOS)
 
-            available_width = frame_inner_size[0] - (container_padding * 2)
-            content_width = text_width + text_margin + network_img.width
-
-            if content_width <= available_width:
-                start_x = container_padding + (available_width - content_width) // 2
-            else:
-                start_x = container_padding
-
-            text_x = start_x
-            text_y = (frame_inner_size[1] - text_height) // 2
-
+            text_x = left_padding
+            # Subtract text_bbox[1] to correct for the font’s baseline offset
+            text_y = (frame_inner_size[1] - text_height) // 2 - text_bbox[1]
             draw.text((text_x, text_y), text, fill=text_color, font=font)
 
-            logo_x = text_x + text_width + text_margin
-            logo_y = (frame_inner_size[1] - network_img.height) // 2
+            logo_x = text_x + text_width + text_logo_gap
+            logo_y = (frame_inner_size[1] - new_logo_size[1]) // 2
 
             composite.paste(network_img, (logo_x, logo_y), network_img)
 
@@ -389,5 +408,17 @@ class ImageComposer:
 
         except Exception as e:
             logger.error(f"Error creating network logo with text: {e}")
-            # Return original logo
             return network_img
+
+    def _trim_transparency(self, img):
+        """
+        Crop transparent whitespace from around an RGBA image.
+        Keeps the non-transparent content tight within its bounds.
+        """
+        if img.mode != "RGBA":
+            img = img.convert("RGBA")
+
+        bbox = img.getbbox()
+        if bbox:
+            return img.crop(bbox)
+        return img
