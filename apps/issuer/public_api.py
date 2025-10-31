@@ -300,7 +300,7 @@ class ImagePropertyDetailView(APIView, SlugToEntityIdRedirectMixin):
                 png_buf = None
                 with storage.open(image_prop.name, "rb") as input_svg:
                     if getattr(settings, "SVG_HTTP_CONVERSION_ENABLED", False):
-                        max_square = getattr(settings, "IMAGE_FIELD_MAX_PX", 400)
+                        max_square = getattr(settings, "IMAGE_FIELD_MAX_PX", 600)
                         png_buf = convert_svg_to_png(
                             input_svg.read(), max_square, max_square
                         )
