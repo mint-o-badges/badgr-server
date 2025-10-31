@@ -5,14 +5,17 @@ from django.http import (
     HttpResponseForbidden,
     JsonResponse,
 )
-from django.views import View
+from django.utils import timezone
 from django_filters import rest_framework as filters
+from oauth2_provider.models import AccessToken, Application
+from oauthlib.oauth2.rfc6749.tokens import random_token_generator
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 
 from apispec_drf.decorators import (
     apispec_list_operation,
 )
+from rest_framework.views import APIView
 
 from backpack.utils import get_skills_tree
 from mainsite.models import IframeUrl
@@ -116,21 +119,26 @@ class LearningPaths(TotalCountMixin, EntityViewSet):
     filterset_class = LearningPathFilter
 
 
-class LearnersProfile(View):
+class RequestIframe(APIView):
+    # for easier in-browser testing
+    def get(self, request, **kwargs):
+        if settings.DEBUG:
+            request._request.POST = request.GET
+            return self.post(request, **kwargs)
+        else:
+            return HttpResponse(b"", status=405)
+
+    def post(self, request, **kwargs):
+        return HttpResponse()
+
+
+class LearnersProfile(RequestIframe):
     permission_classes = [
         IsServerAdmin
         | (AuthenticatedWithVerifiedIdentifier & IsStaff & BadgrOAuthTokenHasScope)
         | BadgrOAuthTokenHasEntityScope
     ]
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
-
-    # for easier in-browser testing
-    def get(self, request, **kwargs):
-        if settings.DEBUG:
-            request.POST = request.GET
-            return self.post(request, **kwargs)
-        else:
-            return HttpResponse(b"", status=405)
 
     def post(self, request, **kwargs):
         try:
@@ -162,6 +170,127 @@ class LearnersProfile(View):
         iframe = IframeUrl.objects.create(
             name="profile",
             params={"skills": tree["skills"], "language": language},
+            created_by=request.user,
+        )
+
+        return JsonResponse({"url": iframe.url})
+
+
+class BadgeCreateEmbed(RequestIframe):
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsStaff & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    valid_scopes = ["rw:issuer", "rw:issuer:*", "rw:profile"]
+
+    def post(self, request, **kwargs):
+        try:
+            language = request.POST["lang"]
+            assert language in ["de", "en"]
+        except (KeyError, AssertionError):
+            language = "en"
+
+        try:
+            given_issuer = request.POST["issuer"]
+        except KeyError:
+            return HttpResponseBadRequest("No issuer id to create the badge specified")
+
+        issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
+        if issuers.count() == 0 or issuers.filter(entity_id=given_issuer).count() == 0:
+            return HttpResponseForbidden()
+
+        issuer = issuers.get(entity_id=given_issuer)
+
+        if request.auth:
+            application = request.auth.application
+        else:
+            # use public oauth app if not token auth
+            application = Application.objects.get(client_type="public")
+
+        # create short-lived oauth2 access token
+        token = AccessToken.objects.create(
+            user=request.user,
+            application=application,
+            token=random_token_generator(request, False),
+            scope="rw:issuer rw:profile",
+            expires=(timezone.now() + timezone.timedelta(0, 3600)),
+        )
+
+        iframe = IframeUrl.objects.create(
+            name="badge-create-or-edit",
+            params={
+                "language": language,
+                "token": token.token,
+                "issuer": issuer.get_json(),
+            },
+            created_by=request.user,
+        )
+
+        return JsonResponse({"url": iframe.url})
+
+
+class BadgeEditEmbed(RequestIframe):
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsStaff & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    valid_scopes = ["rw:issuer", "rw:issuer:*", "rw:profile"]
+
+    def post(self, request, **kwargs):
+        try:
+            language = request.POST["lang"]
+            assert language in ["de", "en"]
+        except (KeyError, AssertionError):
+            language = "en"
+
+        try:
+            badge_id = request.POST["badge"]
+        except KeyError:
+            return HttpResponseBadRequest("No badge id to edit the badge")
+
+        issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
+        if issuers.count() == 0:
+            return HttpResponseForbidden()
+
+        badge = (
+            BadgeClass.objects.filter(
+                entity_id=badge_id, issuer__staff__id=request.user.id
+            )
+            .distinct()
+            .first()
+        )
+
+        if badge and not issuers.get(entity_id=badge.issuer.entity_id):
+            return HttpResponseForbidden()
+
+        if not badge:
+            return HttpResponseBadRequest("No badge found for given badge id")
+
+        if request.auth:
+            application = request.auth.application
+        else:
+            # use public oauth app if not token auth
+            application = Application.objects.get(client_type="public")
+
+        # create short-lived oauth2 access token
+        token = AccessToken.objects.create(
+            user=request.user,
+            application=application,
+            token=random_token_generator(request, False),
+            scope="rw:issuer rw:profile",
+            expires=(timezone.now() + timezone.timedelta(0, 3600)),
+        )
+
+        iframe = IframeUrl.objects.create(
+            name="badge-create-or-edit",
+            params={
+                "language": language,
+                "token": token.token,
+                "badge": BadgeClassSerializerV1(badge).data,
+                "issuer": badge.issuer.get_json(),
+            },
             created_by=request.user,
         )
 
