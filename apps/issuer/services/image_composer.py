@@ -10,14 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 class ImageComposer:
-    CANVAS_SIZES = {
-        "participation": (600, 620),
-        "competency": (612, 660),
-        "learningpath": (616, 670),
-    }
-
     DEFAULT_CANVAS_SIZE = (600, 600)
-
+    CANVAS_SIZES = {
+        "participation": DEFAULT_CANVAS_SIZE,
+        "competency": DEFAULT_CANVAS_SIZE,
+        "learningpath": DEFAULT_CANVAS_SIZE,
+    }
+    FRAME_PADDING = 0.86
     MAX_IMAGE_SIZE = 2 * 1024 * 1024  # 2MB
     MAX_DIMENSIONS = (512, 512)
     ALLOWED_FORMATS = {"PNG", "SVG"}
@@ -93,7 +92,10 @@ class ImageComposer:
             else:
                 raise ValueError("Expected base64 string for image data")
 
-            target_size = (self.CANVAS_SIZE[0] // 2, self.CANVAS_SIZE[0] // 2)
+            target_size = (
+                int(((self.CANVAS_SIZE[0] * self.FRAME_PADDING) // 2)),
+                int(((self.CANVAS_SIZE[0] * self.FRAME_PADDING) // 2)),
+            )
 
             if img.width < target_size[0] or img.height < target_size[1]:
                 # upscale (e.g. nounproject images are 200x200px)
@@ -138,7 +140,7 @@ class ImageComposer:
                     cairosvg.svg2png(
                         file_obj=f,
                         write_to=png_buf,
-                        output_width=self.CANVAS_SIZE[0],
+                        output_width=self.CANVAS_SIZE[0] * self.FRAME_PADDING,
                     )
                 except IOError as e:
                     raise (f"IO error while converting svg2png {e}")
