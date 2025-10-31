@@ -289,7 +289,7 @@ class BadgeEditEmbed(RequestIframe):
             params={
                 "language": language,
                 "token": token.token,
-                "badge": badge.get_json(),
+                "badge": BadgeClassSerializerV1(badge).data,
                 "issuer": badge.issuer.get_json(),
             },
             created_by=request.user,
