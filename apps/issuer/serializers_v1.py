@@ -201,6 +201,7 @@ class NetworkSerializerV1(BaseIssuerSerializerV1):
             obi_version="1_1", use_canonical_id=True
         )
         representation["badgeClassCount"] = len(instance.cached_badgeclasses())
+        representation["learningPathCount"] = instance.learningpaths.count()
 
         exclude_fields = self.context.get("exclude_fields", [])
         if "partner_issuers" not in exclude_fields:
@@ -690,10 +691,13 @@ class BadgeClassSerializerV1(
                     issuer_image = None
                     network_image = None
 
-                    if new_badgeclass.issuer.is_network:
-                        network_image = new_badgeclass.issuer.image
-                    else:
-                        issuer_image = new_badgeclass.issuer.image
+                    if not (
+                        new_badgeclass.issuer.is_network and category == "learningpath"
+                    ):
+                        if new_badgeclass.issuer.is_network:
+                            network_image = new_badgeclass.issuer.image
+                        else:
+                            issuer_image = new_badgeclass.issuer.image
 
                     new_badgeclass.generate_badge_image(
                         category,
