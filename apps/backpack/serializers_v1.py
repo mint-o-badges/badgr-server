@@ -620,6 +620,7 @@ class V1InstanceSerializer(serializers.Serializer):
     expires = BadgeDateTimeField(required=False)
     image = BadgeImageURLField(required=False)
     evidence = BadgeURLField(required=False)
+    credentialSubject = serializers.DictField(required=False)
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -642,6 +643,7 @@ class V1BadgeInstanceSerializer(V1InstanceSerializer):
         if "evidence" in localbadgeinstance_json:
             localbadgeinstance_json["evidence"] = instance.evidence_url
         localbadgeinstance_json["uid"] = instance.entity_id
+        # TODO: check if badge can be removed as now the badge metadata is also included under credentialSubject.achievement
         localbadgeinstance_json["badge"] = instance.cached_badgeclass.json
         localbadgeinstance_json["badge"]["slug"] = instance.cached_badgeclass.entity_id
         localbadgeinstance_json["badge"]["criteria"] = (
@@ -654,6 +656,19 @@ class V1BadgeInstanceSerializer(V1InstanceSerializer):
             "type": "email",
             "recipient": instance.recipient_identifier,
         }
+
+        credential_subject = localbadgeinstance_json.get("credentialSubject", {})
+
+        if instance.activity_start_date:
+            credential_subject["activityStartDate"] = (
+                instance.activity_start_date.isoformat()
+            )
+        if instance.activity_end_date:
+            credential_subject["activityEndDate"] = (
+                instance.activity_end_date.isoformat()
+            )
+
+        localbadgeinstance_json["credentialSubject"] = credential_subject
         return super(V1BadgeInstanceSerializer, self).to_representation(
             localbadgeinstance_json
         )

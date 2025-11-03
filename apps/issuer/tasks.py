@@ -349,7 +349,7 @@ def generate_png_preview_image(self, entity_id, entity_type):
             "entity_id": entity_id,
         }
 
-    max_square = getattr(settings, "IMAGE_FIELD_MAX_PX", 400)
+    max_square = getattr(settings, "IMAGE_FIELD_MAX_PX", 600)
 
     # Do the conversion call
     png_bytes = convert_svg_to_png(entity.image.read(), max_square, max_square)

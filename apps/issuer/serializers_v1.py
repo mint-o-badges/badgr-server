@@ -200,6 +200,8 @@ class NetworkSerializerV1(BaseIssuerSerializerV1):
         representation["json"] = instance.get_json(
             obi_version="1_1", use_canonical_id=True
         )
+        representation["badgeClassCount"] = len(instance.cached_badgeclasses())
+        representation["learningPathCount"] = instance.learningpaths.count()
 
         exclude_fields = self.context.get("exclude_fields", [])
         if "partner_issuers" not in exclude_fields:
@@ -689,10 +691,13 @@ class BadgeClassSerializerV1(
                     issuer_image = None
                     network_image = None
 
-                    if new_badgeclass.issuer.is_network:
-                        network_image = new_badgeclass.issuer.image
-                    else:
-                        issuer_image = new_badgeclass.issuer.image
+                    if not (
+                        new_badgeclass.issuer.is_network and category == "learningpath"
+                    ):
+                        if new_badgeclass.issuer.is_network:
+                            network_image = new_badgeclass.issuer.image
+                        else:
+                            issuer_image = new_badgeclass.issuer.image
 
                     new_badgeclass.generate_badge_image(
                         category,
@@ -746,6 +751,13 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
 
     expires = DateTimeWithUtcZAtEndField(
         source="expires_at", required=False, allow_null=True, default_timezone=pytz.utc
+    )
+
+    activity_start_date = DateTimeWithUtcZAtEndField(
+        required=False, allow_null=True, default_timezone=pytz.utc
+    )
+    activity_end_date = DateTimeWithUtcZAtEndField(
+        required=False, allow_null=True, default_timezone=pytz.utc
     )
 
     create_notification = HumanReadableBooleanField(
@@ -881,6 +893,8 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
                 ),
                 badgr_app=BadgrApp.objects.get_current(self.context.get("request")),
                 expires_at=validated_data.get("expires_at", None),
+                activity_start_date=validated_data.get("activity_start_date", None),
+                activity_end_date=validated_data.get("activity_end_date", None),
                 extensions=validated_data.get("extension_items", None),
                 issuerSlug=issuer_slug,
             )
@@ -915,6 +929,13 @@ class QrCodeSerializerV1(serializers.Serializer):
     issuer_id = serializers.CharField(max_length=254)
     request_count = serializers.SerializerMethodField()
     notifications = serializers.BooleanField(default=False)
+
+    activity_start_date = DateTimeWithUtcZAtEndField(
+        required=False, allow_null=True, default_timezone=pytz.utc
+    )
+    activity_end_date = DateTimeWithUtcZAtEndField(
+        required=False, allow_null=True, default_timezone=pytz.utc
+    )
 
     valid_from = DateTimeWithUtcZAtEndField(
         required=False, allow_null=True, default_timezone=pytz.utc
@@ -961,6 +982,8 @@ class QrCodeSerializerV1(serializers.Serializer):
             created_by_user=created_by_user,
             valid_from=validated_data.get("valid_from"),
             expires_at=validated_data.get("expires_at"),
+            activity_start_date=validated_data.get("activity_start_date", None),
+            activity_end_date=validated_data.get("activity_end_date", None),
             notifications=notifications,
         )
 
@@ -972,8 +995,11 @@ class QrCodeSerializerV1(serializers.Serializer):
         if "valid_from" in validated_data:
             instance.valid_from = validated_data["valid_from"]
         if "expires_at" in validated_data:
-            print(f"expires {validated_data['expires_at']}")
             instance.expires_at = validated_data["expires_at"]
+        if "activity_start_date" in validated_data:
+            instance.activity_start_date = validated_data["activity_start_date"]
+        if "activity_end_date" in validated_data:
+            instance.activity_end_date = validated_data["activity_end_date"]
         instance.notifications = validated_data.get(
             "notifications", instance.notifications
         )
@@ -1269,6 +1295,7 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
     network = serializers.SerializerMethodField()
     shared_by_issuer = serializers.SerializerMethodField()
     awarded_count_original_issuer = serializers.SerializerMethodField()
+    recipient_count = serializers.SerializerMethodField()
 
     class Meta:
         model = BadgeClassNetworkShare
@@ -1281,6 +1308,7 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
             "shared_by_issuer",
             "is_active",
             "awarded_count_original_issuer",
+            "recipient_count",
         ]
         read_only_fields = ["id", "shared_at", "shared_by_user"]
 
@@ -1311,3 +1339,13 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
                 badgeclass=obj.badgeclass,
             ).count()
         return 0
+
+    def get_recipient_count(self, obj):
+        """
+        Count of badge instances issued after this badge was shared with the network.
+        """
+        return BadgeInstance.objects.filter(
+            badgeclass=obj.badgeclass,
+            revoked=False,
+            issued_on__gte=obj.shared_at,
+        ).count()
