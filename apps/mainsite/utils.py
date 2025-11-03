@@ -158,12 +158,12 @@ def scrubSvgElementTree(svg_elem):
     return svg_elem
 
 
-def fit_image_to_height(img, aspect_ratio, height=400):
+def fit_image_to_height(img, aspect_ratio, height=600):
     """
     Resize an image with the option to change the image ratio.
     :param img: An :py:class:`~PIL.Image.Image` object.
     :param aspect_ratio: A tuple that describes an aspect ratio. E.G: (1.91, 1)
-    :param height: Maximum image height, defaults to 400.
+    :param height: Maximum image height, defaults to 600.
     :return: An :py:class:`~PIL.Image.Image` object.
     """
 
