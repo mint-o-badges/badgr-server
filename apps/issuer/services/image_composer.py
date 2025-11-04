@@ -161,10 +161,12 @@ class ImageComposer:
             logo_height = int(base_logo_height * scale_factor)
             logo_size = (logo_height, logo_height)
 
-            if category == "participation":
-                offset_ratio = 125 / 600
-            else:
+            if category == "competency":
+                offset_ratio = 160 / 600
+            elif category == "learningpath":
                 offset_ratio = 135 / 600
+            else:
+                offset_ratio = 125 / 600
 
             logo_x = (
                 self.CANVAS_SIZE[0]
