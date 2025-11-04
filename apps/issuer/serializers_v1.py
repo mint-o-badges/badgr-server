@@ -201,7 +201,9 @@ class NetworkSerializerV1(BaseIssuerSerializerV1):
             obi_version="1_1", use_canonical_id=True
         )
         representation["badgeClassCount"] = len(instance.cached_badgeclasses())
+        # TODO: retrieve from cache?
         representation["learningPathCount"] = instance.learningpaths.count()
+        representation["partnerBadgesCount"] = instance.shared_badges.count()
 
         exclude_fields = self.context.get("exclude_fields", [])
         if "partner_issuers" not in exclude_fields:
