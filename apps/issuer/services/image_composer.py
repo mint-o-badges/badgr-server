@@ -216,8 +216,16 @@ class ImageComposer:
                 int(96 * scale_factor),
             )
 
+            if self.category == "participation":
+                frame_bottom_ratio = (
+                    0.87  # bottom frame border at approximately 87% of canvas height
+                )
+                frame_bottom = int(self.CANVAS_SIZE[1] * frame_bottom_ratio)
+                bottom_y = frame_bottom - (network_image_size[1] // 2)
+            else:
+                bottom_y = self.CANVAS_SIZE[1] - network_image_size[1]
+
             bottom_x = (self.CANVAS_SIZE[0] - network_image_size[0]) // 2
-            bottom_y = self.CANVAS_SIZE[1] - network_image_size[1]
 
             frame_image = self._get_logo_frame_svg("rectangle")
             if frame_image:
