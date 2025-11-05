@@ -98,21 +98,21 @@ class BadgePDFCreator:
             if activityStartDate.year == activityEndDate.year:
                 text = (
                     "hat vom "
-                    + activityStartDate.strftime("%-d.%m.")
-                    + " - "
-                    + activityEndDate.strftime("%-d.%m.%Y")
+                    + activityStartDate.strftime("%d.%m.")
+                    + " – "
+                    + activityEndDate.strftime("%d.%m.%Y")
                 )
             else:
                 text = (
                     "hat vom "
-                    + activityStartDate.strftime("%-d.%m.%Y")
+                    + activityStartDate.strftime("%d.%m.%Y")
                     + " - "
-                    + activityEndDate.strftime("%-d.%m.%Y")
+                    + activityEndDate.strftime("%d.%m.%Y")
                 )
         elif activityStartDate:
-            text = "hat am " + activityStartDate.strftime("%-d.%m.%Y")
+            text = "hat am " + activityStartDate.strftime("%d.%m.%Y")
         else:
-            text = "hat am " + issuedOn.strftime("%-d.%m.%Y")
+            text = "hat am " + issuedOn.strftime("%d.%m.%Y")
 
         first_page_content.append(Paragraph(text, text_style))
         first_page_content.append(Spacer(1, 10))

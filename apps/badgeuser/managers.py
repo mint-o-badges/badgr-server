@@ -28,6 +28,7 @@ class BadgeUserManager(UserManager):
         send_confirmation=True,
         create_email_address=True,
         marketing_opt_in=False,
+        zip_code=None,
         secure_password_set=True,
         source="",
     ):
@@ -87,6 +88,7 @@ class BadgeUserManager(UserManager):
         user.last_name = last_name
         user.badgrapp = badgrapp
         user.marketing_opt_in = marketing_opt_in
+        user.zip_code = zip_code
         user.secure_password_set = secure_password_set
         user.agreed_terms_version = TermsVersion.cached.latest_version()
         if plaintext_password:
