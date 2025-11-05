@@ -256,6 +256,8 @@ class BadgeUser(BaseVersionedEntity, AbstractUser, cachemodel.CacheModel):
 
     secure_password_set = models.BooleanField(default=True)
 
+    zip_code = models.CharField(max_length=100, blank=True, default=None, null=True)
+
     objects = BadgeUserManager()
 
     class Meta:
