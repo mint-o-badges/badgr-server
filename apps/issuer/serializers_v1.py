@@ -768,9 +768,7 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
     activity_city = serializers.CharField(
         required=False, default=None, allow_null=True, allow_blank=True
     )
-    activity_online = serializers.BooleanField(
-        required=False, default=None, allow_null=True
-    )
+    activity_online = serializers.BooleanField(required=False, default=False)
 
     create_notification = HumanReadableBooleanField(
         write_only=True, required=False, default=False
@@ -909,7 +907,7 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
                 activity_end_date=validated_data.get("activity_end_date", None),
                 activity_zip=validated_data.get("activity_zip", None),
                 activity_city=validated_data.get("activity_city", None),
-                activity_online=validated_data.get("activity_online", None),
+                activity_online=validated_data.get("activity_online", False),
                 extensions=validated_data.get("extension_items", None),
                 issuerSlug=issuer_slug,
             )
@@ -958,9 +956,7 @@ class QrCodeSerializerV1(serializers.Serializer):
     activity_city = serializers.CharField(
         required=False, default=None, allow_null=True, allow_blank=True
     )
-    activity_online = serializers.BooleanField(
-        required=False, default=None, allow_null=True
-    )
+    activity_online = serializers.BooleanField(required=False, default=False)
 
     valid_from = DateTimeWithUtcZAtEndField(
         required=False, allow_null=True, default_timezone=pytz.utc
@@ -1011,7 +1007,7 @@ class QrCodeSerializerV1(serializers.Serializer):
             activity_end_date=validated_data.get("activity_end_date", None),
             activity_city=validated_data.get("activity_city", None),
             activity_zip=validated_data.get("activity_zip", None),
-            activity_online=validated_data.get("activity_online", None),
+            activity_online=validated_data.get("activity_online", False),
             notifications=notifications,
         )
 
