@@ -2314,6 +2314,19 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
         if self.activity_end_date:
             credential_subject["activityEndDate"] = self.activity_end_date.isoformat()
 
+        if self.activity_city or self.activity_zip:
+            activity_location = {"type": ["Address"]}
+
+            if self.activity_city:
+                activity_location["addressLocality"] = self.activity_city
+            if self.activity_zip:
+                activity_location["postalCode"] = self.activity_zip
+
+            credential_subject["activityLocation"] = activity_location
+
+        if self.activity_online:
+            credential_subject["activityFormat"] = "Online"
+
         json = OrderedDict(
             [
                 (
