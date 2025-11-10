@@ -1,3 +1,4 @@
+from typing import Literal
 from django.conf import settings
 from django.http import (
     HttpResponseNotFound,
@@ -9,12 +10,15 @@ from django.views.decorators.csrf import csrf_exempt
 
 from allauth.account.models import EmailAddress
 from lti_tool.views import LtiLaunchBaseView, OIDCLoginInitView
-from lti_tool.models import LtiUser
+from lti_tool.models import LtiUser, LtiLaunch
 from pylti1p3.deep_link_resource import DeepLinkResource
 
 from backpack.utils import get_skills_tree
 from issuer.models import BadgeInstance
 from mainsite.views_iframes import iframe_profile
+
+DEFAULT_LOCALE = "en"
+SUPPORTED_LOCALES = Literal["en", "de"]
 
 
 @method_decorator(xframe_options_exempt, name="dispatch")
@@ -66,14 +70,7 @@ def LtiProfile(request):
     except LtiUser.DoesNotExist:
         return render(request, "lti/not_logged_in.html")
 
-    # get language (locale) from lti_launch data
-    launch_data = request.lti_launch.get_launch_data()
-    launch_presentation = launch_data.get(
-        "https://purl.imsglobal.org/spec/lti/claim/launch_presentation", {}
-    )
-    locale = launch_presentation.get("locale", "de").lower()
-    if locale not in ["de", "en"]:
-        locale = "en"
+    locale = get_lang_for_lti_launch(request.lti_launch)
 
     # try to find a badgeuser by email and get his badgeinstances,
     # else get badgeinstances by
@@ -87,3 +84,19 @@ def LtiProfile(request):
     tree = get_skills_tree(instances, locale)
 
     return iframe_profile(request, tree["skills"], locale)
+
+
+def get_lang_for_lti_launch(lti_launch: LtiLaunch) -> SUPPORTED_LOCALES:
+    # get language (locale) from lti_launch data
+    launch_data = lti_launch.get_launch_data()
+    if not launch_data:
+        return DEFAULT_LOCALE
+
+    launch_presentation = launch_data.get(
+        "https://purl.imsglobal.org/spec/lti/claim/launch_presentation", {}
+    )
+    locale = launch_presentation.get("locale", DEFAULT_LOCALE).lower()
+    if locale not in SUPPORTED_LOCALES:
+        return DEFAULT_LOCALE
+    else:
+        return locale
