@@ -2235,17 +2235,156 @@ class NetworkInvitation(BaseEntityDetailView):
     def get(self, request, **kwargs):
         return super(NetworkInvitation, self).get(request, **kwargs)
 
+    @apispec_delete_operation(
+        "NetworkInvite",
+        summary="Revoke a single NetworkInvitation",
+        tags=["NetworkInvite"],
+    )
+    def delete(self, request, **kwargs):
+        try:
+            invite = NetworkInvite.objects.get(entity_id=kwargs.get("slug"))
+
+            if invite.status != IssuerStaffRequest.Status.PENDING:
+                if invite.status == IssuerStaffRequest.Status.REVOKED:
+                    return Response(
+                        {
+                            "detail": "Request has already been revoked.",
+                        },
+                        status=status.HTTP_200_OK,
+                    )
+                return Response(
+                    {"detail": "Only pending requests can be revoked"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            invite.status = IssuerStaffRequest.Status.REVOKED
+            invite.revoked = True
+            invite.save()
+
+            serializer = self.v1_serializer_class(invite)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except IssuerStaffRequest.DoesNotExist:
+            return Response(
+                {"detail": "Network invitation not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+
+class NetworkInvitationConfirm(BaseEntityDetailView):
+    """
+    Confirm a network invitation.
+    """
+
+    model = NetworkInvite
+    v1_serializer_class = NetworkInviteSerializer
+    permission_classes = [
+        IsServerAdmin | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope)
+    ]
+    valid_scopes = ["rw:issuer"]
+
+    @apispec_put_operation(
+        "NetworkInvite",
+        summary="Confirm a network invitation",
+        description="Confirm a network invitation, adding the institution to the network",
+        tags=["NetworkInvite"],
+    )
+    def put(self, request, **kwargs):
+        try:
+            invitation = NetworkInvite.objects.get(entity_id=kwargs.get("slug"))
+
+            if invitation.status == NetworkInvite.Status.APPROVED:
+                return Response(
+                    {"detail": "Issuer is already a partner of this network"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if invitation.status != NetworkInvite.Status.PENDING:
+                return Response(
+                    {"detail": "Link expired"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            with transaction.atomic():
+                invitation.status = NetworkInvite.Status.APPROVED
+                invitation.acceptedOn = timezone.now()
+                invitation.save()
+
+                if invitation.issuer:
+                    NetworkMembership.objects.get_or_create(
+                        network=invitation.network, issuer=invitation.issuer
+                    )
+
+            serializer = self.v1_serializer_class(invitation)
+            return Response(serializer.data)
+
+        except NetworkInvite.DoesNotExist:
+            return Response(
+                {"detail": "Invitation not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class NetworkInvitationList(BaseEntityListView):
+    model = NetworkInvite
+    v1_serializer_class = NetworkInviteSerializer
+    permission_classes = [
+        IsServerAdmin | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope)
+    ]
+    valid_scopes = ["rw:issuer"]
+
+    def get_objects(self, request, **kwargs):
+        status_filter = request.GET.get("status", "").lower()
+
+        try:
+            network = Issuer.objects.get(entity_id=kwargs.get("networkSlug"))
+        except Issuer.DoesNotExist:
+            Exception("Network not found")
+
+        queryset = NetworkInvite.objects.filter(network=network)
+
+        if status_filter == "pending":
+            queryset = queryset.filter(status=NetworkInvite.Status.PENDING)
+        elif status_filter == "approved":
+            queryset = queryset.filter(status=NetworkInvite.Status.APPROVED)
+        else:
+            # return all
+            pass
+
+        return queryset
+
+    @apispec_get_operation(
+        "NetworkInvite",
+        summary="Get network invitations with optional status filter",
+        description="Get network invitations. Use 'status' query parameter to filter.",
+        parameters=[
+            {
+                "name": "status",
+                "in": "query",
+                "description": "Filter invitations by status",
+                "required": False,
+                "schema": {
+                    "type": "string",
+                    "enum": ["pending", "approved"],
+                    "default": "pending",
+                },
+            }
+        ],
+        tags=["NetworkInvite"],
+    )
+    def get(self, request, **kwargs):
+        return super(NetworkInvitationList, self).get(request, **kwargs)
+
     @apispec_post_operation(
         "NetworkInvite",
         summary="Create new network invitations",
+        description="Invite multiple institutions to join a network. Sends email notifications to institution owners.",
         tags=["NetworkInvite"],
         responses=OrderedDict(
             [
-                (
-                    "201",
-                    {"description": "Network invitation request created successfully"},
-                ),
+                ("201", {"description": "Network invitation(s) created successfully"}),
                 ("400", {"description": "Bad request or validation error"}),
+                ("403", {"description": "Not authorized to invite institutions"}),
+                ("404", {"description": "Network or institution(s) not found"}),
             ]
         ),
     )
@@ -2319,8 +2458,7 @@ class NetworkInvitation(BaseEntityDetailView):
             with transaction.atomic():
                 created_invitations = []
                 for issuer in issuers:
-                    # existing and pending invitations for the issuer/network combination
-                    # should be revoked before creating a new one to prevent duplicates
+                    # Revoke existing pending invitations to prevent duplicates
                     if existing_invitations.exists():
                         existing_invitations.filter(
                             issuer=issuer, network=network
@@ -2342,15 +2480,12 @@ class NetworkInvitation(BaseEntityDetailView):
                         + reverse(
                             "v1_api_user_confirm_network_invite",
                             current_app="badgeuser",
-                            kwargs={
-                                "inviteSlug": invitation.entity_id,
-                            },
+                            kwargs={"inviteSlug": invitation.entity_id},
                         ),
                         "call_to_action_label": "Einladung bestätigen",
                     }
 
                     adapter = get_adapter()
-
                     for owner in owners:
                         adapter.send_mail(
                             "issuer/email/notify_issuer_network_invitation",
@@ -2371,136 +2506,6 @@ class NetworkInvitation(BaseEntityDetailView):
                 {"response": f"Failed to create invitations: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
-    @apispec_put_operation(
-        "NetworkInvite",
-        summary="Update a single NetworkInvite",
-        tags=["NetworkInvite"],
-    )
-    def put(self, request, **kwargs):
-        if "confirm" in request.path:
-            return self.confirm(request, **kwargs)
-        return super(NetworkInvitation, self).put(request, **kwargs)
-
-    def confirm(self, request, **kwargs):
-        try:
-            invitation = NetworkInvite.objects.get(entity_id=kwargs.get("slug"))
-
-            if invitation.status != NetworkInvite.Status.PENDING:
-                return Response(
-                    {"detail": "Link expired"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            if invitation.status == NetworkInvite.Status.APPROVED:
-                return Response(
-                    {"detail": "Issuer is already a partner of this network"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            with transaction.atomic():
-                invitation.status = NetworkInvite.Status.APPROVED
-                invitation.acceptedOn = timezone.now()
-                invitation.save()
-
-                if invitation.issuer:
-                    NetworkMembership.objects.get_or_create(
-                        network=invitation.network, issuer=invitation.issuer
-                    )
-
-            serializer = self.v1_serializer_class(invitation)
-            return Response(serializer.data)
-
-        except NetworkInvite.DoesNotExist:
-            return Response(
-                {"detail": "Invitation not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
-    @apispec_delete_operation(
-        "NetworkInvite",
-        summary="Revoke a single NetworkInvitation",
-        tags=["NetworkInvite"],
-    )
-    def delete(self, request, **kwargs):
-        try:
-            invite = NetworkInvite.objects.get(entity_id=kwargs.get("slug"))
-
-            if invite.status != IssuerStaffRequest.Status.PENDING:
-                if invite.status == IssuerStaffRequest.Status.REVOKED:
-                    return Response(
-                        {
-                            "detail": "Request has already been revoked.",
-                        },
-                        status=status.HTTP_200_OK,
-                    )
-                return Response(
-                    {"detail": "Only pending requests can be revoked"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            invite.status = IssuerStaffRequest.Status.REVOKED
-            invite.revoked = True
-            invite.save()
-
-            serializer = self.v1_serializer_class(invite)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        except IssuerStaffRequest.DoesNotExist:
-            return Response(
-                {"detail": "Network invitation not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-
-class NetworkInvitationList(BaseEntityListView):
-    model = NetworkInvite
-    v1_serializer_class = NetworkInviteSerializer
-    permission_classes = [
-        IsServerAdmin | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope)
-    ]
-    valid_scopes = ["rw:issuer"]
-
-    def get_objects(self, request, **kwargs):
-        status_filter = request.GET.get("status", "").lower()
-
-        try:
-            network = Issuer.objects.get(entity_id=kwargs.get("networkSlug"))
-        except Issuer.DoesNotExist:
-            Exception("Network not found")
-
-        queryset = NetworkInvite.objects.filter(network=network)
-
-        if status_filter == "pending":
-            queryset = queryset.filter(status=NetworkInvite.Status.PENDING)
-        elif status_filter == "approved":
-            queryset = queryset.filter(status=NetworkInvite.Status.APPROVED)
-        else:
-            # return all
-            pass
-
-        return queryset
-
-    @apispec_get_operation(
-        "NetworkInvite",
-        summary="Get network invitations with optional status filter",
-        description="Get network invitations. Use 'status' query parameter to filter.",
-        parameters=[
-            {
-                "name": "status",
-                "in": "query",
-                "description": "Filter invitations by status",
-                "required": False,
-                "schema": {
-                    "type": "string",
-                    "enum": ["pending", "approved"],
-                    "default": "pending",
-                },
-            }
-        ],
-        tags=["NetworkInvite"],
-    )
-    def get(self, request, **kwargs):
-        return super(NetworkInvitationList, self).get(request, **kwargs)
 
 
 class NetworkSharedBadgesView(BaseEntityListView):
