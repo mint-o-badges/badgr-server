@@ -1678,25 +1678,23 @@ class IssuersChangedSince(BaseEntityView):
         return Response(serializer.data)
 
 
-class QRCodeDetail(BaseEntityView):
-    """
-    QrCode list resource for the authenticated user
-    """
+class QRCodeList(BaseEntityListView):
+    """List and create QR codes for a specific badge"""
 
     model = QrCode
     v1_serializer_class = QrCodeSerializerV1
-    # v2_serializer_class = IssuerSerializerV2
     permission_classes = (BadgrOAuthTokenHasScope, AuthenticatedWithVerifiedIdentifier)
     valid_scopes = ["rw:issuer"]
 
     def get_objects(self, request, **kwargs):
+        """Get QR codes filtered by badge and issuer"""
         badgeSlug = kwargs.get("badgeSlug")
         issuerSlug = kwargs.get("issuerSlug")
 
         try:
             issuer = Issuer.objects.get(entity_id=issuerSlug)
         except Issuer.DoesNotExist:
-            return None
+            return []
 
         if issuer.is_network:
             qr_codes = QrCode.objects.filter(
@@ -1704,8 +1702,7 @@ class QRCodeDetail(BaseEntityView):
                 issuer__network_memberships__network=issuer,
             ).select_related("issuer")
 
-            # permission check is done for every qr code
-            # TODO: check if this could become a performance problem
+            # Permission check for each QR code
             return [
                 qr_code
                 for qr_code in qr_codes
@@ -1716,62 +1713,68 @@ class QRCodeDetail(BaseEntityView):
             badgeclass__entity_id=badgeSlug, issuer__entity_id=issuerSlug
         )
 
+    @apispec_list_operation(
+        "QrCode",
+        summary="Get all QR codes for a specific badge and issuer",
+        tags=["QrCodes"],
+    )
+    def get(self, request, **kwargs):
+        return super().get(request, **kwargs)
+
+    @apispec_post_operation(
+        "QrCode",
+        summary="Create a new QR code for a badge",
+        tags=["QrCodes"],
+    )
+    def post(self, request, **kwargs):
+        return super().post(request, **kwargs)
+
+
+class QRCodeDetail(BaseEntityView):
+    """Retrieve, update, or delete a specific QR code"""
+
+    model = QrCode
+    v1_serializer_class = QrCodeSerializerV1
+    permission_classes = (BadgrOAuthTokenHasScope, AuthenticatedWithVerifiedIdentifier)
+    valid_scopes = ["rw:issuer"]
+
     def get_object(self, request, **kwargs):
         qr_code_id = kwargs.get("slug")
         return QrCode.objects.get(entity_id=qr_code_id)
 
-    @apispec_list_operation(
+    @apispec_get_operation(
         "QrCode",
-        summary="Get a list of QrCodes for authenticated user",
+        summary="Get a specific QR code by slug",
         tags=["QrCodes"],
     )
     def get(self, request, **kwargs):
-        serializer_class = self.get_serializer_class()
-
-        if "slug" in kwargs:
-            try:
-                qr_code = self.get_object(request, **kwargs)
-                serializer = serializer_class(qr_code)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            except QrCode.DoesNotExist:
-                return Response(
-                    {"detail": "QR code not found"}, status=status.HTTP_404_NOT_FOUND
-                )
-        else:
-            objects = self.get_objects(request, **kwargs)
-            serializer = serializer_class(objects, many=True)
-
-            return Response(serializer.data)
-
-    @apispec_post_operation(
-        "QrCode",
-        summary="Create a new QrCode",
-        tags=["QrCodes"],
-    )
-    def post(self, request, **kwargs):
-        context = self.get_context_data(**kwargs)
-        serializer_class = self.get_serializer_class()
-        serializer = serializer_class(data=request.data, context=context)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=HTTP_201_CREATED)
+        try:
+            qr_code = self.get_object(request, **kwargs)
+            serializer_class = self.get_serializer_class()
+            serializer = serializer_class(qr_code)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except QrCode.DoesNotExist:
+            return Response(
+                {"detail": "QR code not found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
     @apispec_put_operation(
         "QrCode",
-        summary="Update a single QrCode",
+        summary="Update a specific QR code",
         tags=["QrCodes"],
     )
     def put(self, request, **kwargs):
         qr_code = self.get_object(request, **kwargs)
+        context = self.get_context_data(**kwargs)
         serializer_class = self.get_serializer_class()
-        serializer = serializer_class(qr_code, data=request.data)
+        serializer = serializer_class(qr_code, data=request.data, context=context)
         serializer.is_valid(raise_exception=True)
         serializer.save(updated_by=request.user)
         return Response(serializer.data, status=HTTP_200_OK)
 
     @apispec_delete_operation(
         "QrCode",
-        summary="Delete an existing QrCode",
+        summary="Delete a specific QR code",
         tags=["QrCodes"],
     )
     def delete(self, request, **kwargs):

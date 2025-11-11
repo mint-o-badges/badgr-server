@@ -32,6 +32,7 @@ from issuer.api import (
     NetworkUserIssuersList,
     QRCodeDetail,
     BadgeImageComposition,
+    QRCodeList,
 )
 from issuer.api_v1 import FindBadgeClassDetail, IssuerStaffList
 
@@ -90,12 +91,14 @@ urlpatterns = [
         name="v1_api_issuer_shared_network_badges",
     ),
     url(
-        r"^qrcode/(?P<slug>[^/]+)$", QRCodeDetail.as_view(), name="v1_api_qrcode_detail"
+        r"^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/qrcodes/(?P<slug>[^/]+)$",
+        QRCodeDetail.as_view(),
+        name="v1_api_qrcode_detail",
     ),
     url(
         r"^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/qrcodes$",
-        QRCodeDetail.as_view(),
-        name="v1_api_qrcode_detail",
+        QRCodeList.as_view(),
+        name="v1_api_qrcode_list",
     ),
     url(
         r"^networks/(?P<networkSlug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/qrcodes$",
