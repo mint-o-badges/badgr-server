@@ -1152,7 +1152,7 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
     @apispec_delete_operation(
         "IssuerStaffRequest",
         summary="Revoke a request for an issuer membership",
-        tags=["IssuerStaffRequest"],
+        tags=["BadgeUser StaffRequests"],
         responses=OrderedDict(
             [("400", {"description": "Issuer staff request is already revoked"})]
         ),
@@ -1202,7 +1202,7 @@ class IssuerStaffRequestList(BaseEntityListView):
         "IssuerStaffRequest",
         summary="Get a list of issuer staff requests for the authenticated user",
         description="Use the id of the authenticated user to get a list of issuer staff requests",
-        tags=["IssuerStaffRequest"],
+        tags=["BadgeUser StaffRequests"],
     )
     def get_objects(self, request, **kwargs):
         return IssuerStaffRequest.objects.filter(
