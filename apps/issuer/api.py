@@ -919,6 +919,7 @@ class BadgeInstanceList(
     def get_context_data(self, **kwargs):
         context = super(BadgeInstanceList, self).get_context_data(**kwargs)
         context["badgeclass"] = self.get_object(self.request, **kwargs)
+        context["issuerSlug"] = kwargs.get("issuerSlug")
         return context
 
     @apispec_list_operation(
