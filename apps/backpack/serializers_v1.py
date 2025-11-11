@@ -668,6 +668,12 @@ class V1BadgeInstanceSerializer(V1InstanceSerializer):
                 instance.activity_end_date.isoformat()
             )
 
+        if instance.activity_city:
+            credential_subject["activityCity"] = instance.activity_city
+
+        if instance.activity_online:
+            credential_subject["activityOnline"] = instance.activity_online
+
         localbadgeinstance_json["credentialSubject"] = credential_subject
         return super(V1BadgeInstanceSerializer, self).to_representation(
             localbadgeinstance_json
