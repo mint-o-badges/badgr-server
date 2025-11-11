@@ -12,6 +12,7 @@ from issuer.api import (
     NetworkBadgeInstanceList,
     NetworkBadgeQRCodeList,
     NetworkInvitation,
+    NetworkInvitationConfirm,
     NetworkInvitationList,
     NetworkIssuerDetail,
     NetworkList,
@@ -189,17 +190,12 @@ urlpatterns = [
     url(
         r"^issuers/(?P<issuerSlug>[^/]+)/staffRequests/(?P<requestId>[^/]+)/confirm$",
         IssuerStaffRequestDetail.as_view(),
-        name="v1_api_staffrequest_detail",
+        name="v1_api_staffrequest_confirmation",
     ),
     url(
         r"^issuers/(?P<issuerSlug>[^/]+)/badges/image/compose$",
         BadgeImageComposition.as_view(),
         name="v1_api_badge_image_composition",
-    ),
-    url(
-        r"^networks/(?P<networkSlug>[^/]+)/invite$",
-        NetworkInvitation.as_view(),
-        name="v1_api_network_invite_detail",
     ),
     url(
         r"^networks/(?P<networkSlug>[^/]+)/invites$",
@@ -213,7 +209,7 @@ urlpatterns = [
     ),
     url(
         r"^networks/(?P<networkSlug>[^/]+)/invite/(?P<slug>[^/]+)/confirm$",
-        NetworkInvitation.as_view(),
-        name="v1_api_network_invite_detail",
+        NetworkInvitationConfirm.as_view(),
+        name="v1_api_network_invite_confirmation",
     ),
 ]
