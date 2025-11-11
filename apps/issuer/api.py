@@ -290,7 +290,7 @@ class NetworkIssuerDetail(BaseEntityDetailView):
         "Issuer",
         summary="Remove an issuer from a network",
         description="Authenticated user must have owner, editor, or staff status on the Network",
-        tags=["Issuers", "Network"],
+        tags=["Issuers", "Networks"],
     )
     def delete(self, request, slug, issuer_slug, **kwargs):
         try:
@@ -582,7 +582,7 @@ class IssuerLearningPathList(
         "LearningPath",
         summary="Create a new LearningPath associated with an Issuer",
         description="Authenticated user must have owner, editor, or staff status on the Issuer",
-        tags=["Issuers", "LearningPath"],
+        tags=["Issuers", "LearningPaths"],
     )
     def post(self, request, **kwargs):
         self.get_object(request, **kwargs)  # trigger a has_object_permissions() check
@@ -744,19 +744,18 @@ class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
         context["badgeclass"] = self.get_object(self.request, **kwargs)
         return context
 
-    @apispec_post_operation(
+    @apispec_get_operation(
         "Assertion",
-        summary="Issue multiple copies of the same BadgeClass to multiple recipients",
+        summary="Get batch assertion task status",
+        description="Check the status of a batch assertion issuance task",
         tags=["Assertions"],
         parameters=[
             {
-                "in": "body",
-                "name": "body",
+                "in": "path",
+                "name": "task_id",
+                "type": "string",
+                "description": "The task ID returned from the batch issuance request",
                 "required": True,
-                "schema": {
-                    "type": "array",
-                    "items": {"$ref": "#/definitions/Assertion"},
-                },
             }
         ],
     )
@@ -773,6 +772,22 @@ class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
             {"task_id": task_id, "status": task_result.status, "result": result}
         )
 
+    @apispec_post_operation(
+        "Assertion",
+        summary="Issue multiple copies of the same BadgeClass to multiple recipients",
+        tags=["Assertions"],
+        parameters=[
+            {
+                "in": "body",
+                "name": "body",
+                "required": True,
+                "schema": {
+                    "type": "array",
+                    "items": {"$ref": "#/definitions/Assertion"},
+                },
+            }
+        ],
+    )
     def post(self, request, **kwargs):
         issuerSlug = kwargs.get("issuerSlug")
         # verify the user has permission to the badgeclass
@@ -1268,6 +1283,20 @@ class NetworkBadgeInstanceList(
         ctx["user"] = self.request.user
         return ctx
 
+    @apispec_list_operation(
+        "Assertion",
+        summary="Get network badge instances across all partner issuers",
+        description="Retrieve all badge instances for a network badge class, grouped by issuing organization. Only available for badges created by networks.",
+        tags=["Assertions", "Networks", "BadgeClasses"],
+        parameters=[
+            {
+                "in": "query",
+                "name": "num",
+                "type": "string",
+                "description": "Request pagination of results",
+            },
+        ],
+    )
     def get(self, request, **kwargs):
         response = super().get(request, **kwargs)
         instances = response.data
@@ -1837,7 +1866,7 @@ class BadgeRequestList(BaseEntityListView):
     ]
     valid_scopes = ["rw:issuer"]
 
-    @apispec_delete_operation(
+    @apispec_post_operation(
         "RequestedBadge",
         summary="Delete multiple badge requests",
         tags=["Requested Badges"],
@@ -1891,7 +1920,7 @@ class LearningPathDetail(BaseEntityDetailView):
     @apispec_get_operation(
         "LearningPath",
         summary="Get a single LearningPath",
-        tags=["Learningpaths"],
+        tags=["LearningPaths"],
     )
     def get(self, request, **kwargs):
         return super(LearningPathDetail, self).get(request, **kwargs)
@@ -2076,6 +2105,39 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
 class BadgeImageComposition(APIView):
     permission_classes = (IsAuthenticated,)
 
+    @apispec_post_operation(
+        "BadgeClass",
+        summary="Compose a badge image",
+        description="Generate a composed badge image by combining the original badge image with the respective frame and issuer and/or network logos",
+        tags=["BadgeClasses"],
+        parameters=[
+            {
+                "in": "body",
+                "name": "body",
+                "required": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "badgeSlug": {
+                            "type": "string",
+                            "description": "Entity ID of the badge class",
+                        },
+                        "issuerSlug": {
+                            "type": "string",
+                            "description": "Entity ID of the issuer",
+                        },
+                        "category": {"type": "string", "description": "Badge category"},
+                        "useIssuerImage": {
+                            "type": "boolean",
+                            "description": "Whether to include the issuer's logo in the composition",
+                            "default": True,
+                        },
+                    },
+                    "required": ["badgeSlug", "issuerSlug", "category"],
+                },
+            }
+        ],
+    )
     def post(self, request, *args, **kwargs):
         try:
             badgeSlug = request.data.get("badgeSlug")
@@ -2468,9 +2530,9 @@ class NetworkSharedBadgesView(BaseEntityListView):
         )
 
     @apispec_get_operation(
-        "NetworkSharedBadges",
+        "BadgeClassNetworkShare",
         summary="Get all badges shared with a network",
-        tags=["Networks", "Badge Sharing"],
+        tags=["Networks"],
     )
     def get(self, request, **kwargs):
         """
@@ -2509,9 +2571,9 @@ class IssuerSharedNetworkBadgesView(BaseEntityListView):
         )
 
     @apispec_get_operation(
-        "IssuerSharedNetworkBadges",
+        "BadgeClassNetworkShare",
         summary="Get all badges shared by a specific issuer with networks",
-        tags=["Issuers", "Badge Sharing"],
+        tags=["Issuers"],
     )
     def get(self, request, **kwargs):
         """
@@ -2551,7 +2613,7 @@ class BadgeClassNetworkShareView(BaseEntityDetailView):
     @apispec_post_operation(
         "BadgeClassNetworkShare",
         summary="Share a badge class with a network",
-        tags=["Badge Sharing"],
+        tags=["BadgeClasses", "Networks"],
     )
     def post(self, request, **kwargs):
         """
