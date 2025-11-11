@@ -2028,47 +2028,6 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
         summary="Update a single IssuerStaffRequest",
         tags=["IssuerStaffRequest"],
     )
-    def put(self, request, **kwargs):
-        if "confirm" in request.path:
-            return self.confirm_request(request, **kwargs)
-        return super(IssuerStaffRequestDetail, self).put(request, **kwargs)
-
-    def confirm_request(self, request, **kwargs):
-        try:
-            staff_request = IssuerStaffRequest.objects.get(
-                entity_id=kwargs.get("requestId")
-            )
-
-            badgrapp = BadgrApp.objects.get_by_id_or_default()
-
-            if staff_request.status != IssuerStaffRequest.Status.PENDING:
-                return Response(
-                    {"detail": "Only pending requests can be confirmed"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            staff_request.status = IssuerStaffRequest.Status.APPROVED
-            staff_request.save()
-
-            serializer = self.v1_serializer_class(staff_request)
-
-            email_context = {
-                "issuer": staff_request.issuer,
-                "activate_url": badgrapp.ui_login_redirect.rstrip("/"),
-                "call_to_action_label": "Jetzt loslegen",
-            }
-            get_adapter().send_mail(
-                "account/email/staff_request_confirmed",
-                staff_request.user.email,
-                email_context,
-            )
-            return Response(serializer.data)
-
-        except IssuerStaffRequest.DoesNotExist:
-            return Response(
-                {"detail": "Staff request not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
     @apispec_delete_operation(
         "IssuerStaffRequest",
         summary="Delete a single IssuerStaffRequest",
@@ -2104,6 +2063,66 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
             return Response(
                 {"detail": "Staff request not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
+
+class IssuerStaffRequestConfirm(BaseEntityDetailView):
+    """Separate view for confirming requests"""
+
+    model = IssuerStaffRequest
+    v1_serializer_class = IssuerStaffRequestSerializer
+    permission_classes = [
+        IsServerAdmin
+        | (
+            AuthenticatedWithVerifiedIdentifier
+            & BadgrOAuthTokenHasScope
+            & ApprovedIssuersOnly
+            & MayEditBadgeClass
+        )
+    ]
+    valid_scopes = ["rw:issuer"]
+
+    @apispec_put_operation(
+        "IssuerStaffRequest",
+        summary="Confirm a staff membership request",
+        description="Approve a pending staff request and grant access (admin only)",
+        tags=["IssuerStaffRequest"],
+    )
+    def put(self, request, **kwargs):
+        try:
+            staff_request = IssuerStaffRequest.objects.get(
+                entity_id=kwargs.get("requestId")
+            )
+
+            badgrapp = BadgrApp.objects.get_by_id_or_default()
+
+            if staff_request.status != IssuerStaffRequest.Status.PENDING:
+                return Response(
+                    {"detail": "Only pending requests can be confirmed"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            staff_request.status = IssuerStaffRequest.Status.APPROVED
+            staff_request.save()
+
+            serializer = self.v1_serializer_class(staff_request)
+
+            email_context = {
+                "issuer": staff_request.issuer,
+                "activate_url": badgrapp.ui_login_redirect.rstrip("/"),
+                "call_to_action_label": "Jetzt loslegen",
+            }
+            get_adapter().send_mail(
+                "account/email/staff_request_confirmed",
+                staff_request.user.email,
+                email_context,
+            )
+            return Response(serializer.data)
+
+        except IssuerStaffRequest.DoesNotExist:
+            return Response(
+                {"detail": "Staff request not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        pass
 
 
 class BadgeImageComposition(APIView):

@@ -8,6 +8,7 @@ from issuer.api import (
     IssuerList,
     IssuerNetworkBadgeClassList,
     IssuerSharedNetworkBadgesView,
+    IssuerStaffRequestConfirm,
     NetworkBadgeClassesList,
     NetworkBadgeInstanceList,
     NetworkBadgeQRCodeList,
@@ -192,7 +193,7 @@ urlpatterns = [
     ),
     url(
         r"^issuers/(?P<issuerSlug>[^/]+)/staffRequests/(?P<requestId>[^/]+)/confirm$",
-        IssuerStaffRequestDetail.as_view(),
+        IssuerStaffRequestConfirm.as_view(),
         name="v1_api_staffrequest_confirmation",
     ),
     url(
