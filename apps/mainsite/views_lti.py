@@ -123,10 +123,12 @@ def LtiBadgeCreateOrEdit(request):
     locale = get_lang_for_lti_launch(request.lti_launch)
 
     # if the user is only in one issuer organization
-    # we may as well already hand that to the iframe
+    # we may as well already hand that to the iframe.
+    # We let the client handle when the user isn't
+    # staff of any issuer.
     issuers = Issuer.objects.filter(staff__id=badgeuser.id).distinct()
     issuer = None
-    if issuers.count() == 0:
+    if issuers.count() == 1:
         issuer = issuers.first()
 
     if request.auth:
@@ -143,7 +145,7 @@ def LtiBadgeCreateOrEdit(request):
         expires=(timezone.now() + timezone.timedelta(0, 3600)),
     )
 
-    return iframe_badge_create_or_edit(request, token.token, None, issuer, locale)
+    return iframe_badge_create_or_edit(request, token.token, None, issuer, locale, True)
 
 
 def get_lang_for_lti_launch(lti_launch: LtiLaunch) -> SUPPORTED_LOCALES:

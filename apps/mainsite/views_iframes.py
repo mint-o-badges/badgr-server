@@ -63,7 +63,12 @@ def iframe_profile(request, skills, language):
 
 
 def iframe_badge_create_or_edit(
-    request, token: str, badge: BadgeClass | None, issuer: Issuer | None, language: str
+    request,
+    token: str,
+    badge: BadgeClass | None,
+    issuer: Issuer | None,
+    language: str,
+    badgeSelection: bool = False,
 ):
     badge_json = json.dumps(badge, ensure_ascii=False)
     issuer_json = json.dumps(issuer, ensure_ascii=False)
@@ -76,5 +81,6 @@ def iframe_badge_create_or_edit(
             "badge": badge_json,
             "token": token,
             "issuer": issuer_json,
+            "showBadgeSelection": json.dumps(badgeSelection, ensure_ascii=False),
         },
     )
