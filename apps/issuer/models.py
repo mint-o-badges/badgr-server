@@ -1286,6 +1286,9 @@ class BadgeClass(
         issuerSlug=None,
         activity_start_date=None,
         activity_end_date=None,
+        activity_zip=None,
+        activity_city=None,
+        activity_online=False,
         **kwargs,
     ):
         return BadgeInstance.objects.create(
@@ -1303,6 +1306,9 @@ class BadgeClass(
             user=get_user_or_none(recipient_id, recipient_type),
             activity_start_date=activity_start_date,
             activity_end_date=activity_end_date,
+            activity_zip=activity_zip,
+            activity_city=activity_city,
+            activity_online=activity_online,
             **kwargs,
         )
 
@@ -1713,6 +1719,12 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
         default=None,
         help_text="The datetime the activity/course ended",
     )
+
+    activity_zip = models.CharField(max_length=255, null=True, blank=True, default=None)
+    activity_city = models.CharField(
+        max_length=255, null=True, blank=True, default=None
+    )
+    activity_online = models.BooleanField(blank=True, null=False, default=False)
 
     ob_json_2_0 = models.TextField(blank=True, null=True, default=None)
     ob_json_3_0 = models.TextField(blank=True, null=True, default=None)
@@ -2302,6 +2314,19 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
         if self.activity_end_date:
             credential_subject["activityEndDate"] = self.activity_end_date.isoformat()
 
+        if self.activity_city or self.activity_zip:
+            activity_location = {"type": ["Address"]}
+
+            if self.activity_city:
+                activity_location["addressLocality"] = self.activity_city
+            if self.activity_zip:
+                activity_location["postalCode"] = self.activity_zip
+
+            credential_subject["activityLocation"] = activity_location
+
+        if self.activity_online:
+            credential_subject["activityFormat"] = "Online"
+
         json = OrderedDict(
             [
                 (
@@ -2856,6 +2881,10 @@ class QrCode(BaseVersionedEntity):
         default=None,
         help_text="The datetime the activity/course ended",
     )
+
+    activity_zip = models.CharField(max_length=255, null=True, blank=True)
+    activity_city = models.CharField(max_length=255, null=True, blank=True)
+    activity_online = models.BooleanField(blank=True, null=False, default=False)
 
     valid_from = models.DateTimeField(blank=True, null=True, default=None)
 

@@ -792,6 +792,14 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
         required=False, allow_null=True, default_timezone=pytz.utc
     )
 
+    activity_zip = serializers.CharField(
+        required=False, default=None, allow_null=True, allow_blank=True
+    )
+    activity_city = serializers.CharField(
+        required=False, default=None, allow_null=True, allow_blank=True
+    )
+    activity_online = serializers.BooleanField(required=False, default=False)
+
     create_notification = HumanReadableBooleanField(
         write_only=True, required=False, default=False
     )
@@ -927,6 +935,9 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
                 expires_at=validated_data.get("expires_at", None),
                 activity_start_date=validated_data.get("activity_start_date", None),
                 activity_end_date=validated_data.get("activity_end_date", None),
+                activity_zip=validated_data.get("activity_zip", None),
+                activity_city=validated_data.get("activity_city", None),
+                activity_online=validated_data.get("activity_online", False),
                 extensions=validated_data.get("extension_items", None),
                 issuerSlug=issuer_slug,
             )
@@ -968,6 +979,14 @@ class QrCodeSerializerV1(serializers.Serializer):
     activity_end_date = DateTimeWithUtcZAtEndField(
         required=False, allow_null=True, default_timezone=pytz.utc
     )
+
+    activity_zip = serializers.CharField(
+        required=False, default=None, allow_null=True, allow_blank=True
+    )
+    activity_city = serializers.CharField(
+        required=False, default=None, allow_null=True, allow_blank=True
+    )
+    activity_online = serializers.BooleanField(required=False, default=False)
 
     valid_from = DateTimeWithUtcZAtEndField(
         required=False, allow_null=True, default_timezone=pytz.utc
@@ -1016,6 +1035,9 @@ class QrCodeSerializerV1(serializers.Serializer):
             expires_at=validated_data.get("expires_at"),
             activity_start_date=validated_data.get("activity_start_date", None),
             activity_end_date=validated_data.get("activity_end_date", None),
+            activity_city=validated_data.get("activity_city", None),
+            activity_zip=validated_data.get("activity_zip", None),
+            activity_online=validated_data.get("activity_online", False),
             notifications=notifications,
         )
 
@@ -1032,6 +1054,12 @@ class QrCodeSerializerV1(serializers.Serializer):
             instance.activity_start_date = validated_data["activity_start_date"]
         if "activity_end_date" in validated_data:
             instance.activity_end_date = validated_data["activity_end_date"]
+        if "activity_zip" in validated_data:
+            instance.activity_zip = validated_data["activity_zip"]
+        if "activity_city" in validated_data:
+            instance.activity_city = validated_data["activity_city"]
+        if "activity_online" in validated_data:
+            instance.activity_online = validated_data["activity_online"]
         instance.notifications = validated_data.get(
             "notifications", instance.notifications
         )

@@ -386,6 +386,16 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
                         )
                         network_image = badgeclass.cached_issuer.image
 
+                    else:
+                        share = (
+                            badgeclass.network_shares.filter(is_active=True)
+                            .select_related("network")
+                            .first()
+                        )
+                        if share:
+                            network_image = share.network.image
+                            issuer_image = issuer.image
+
                     if issuer_image and network_image and category != "learningpath":
                         new_instance.generate_assertion_image(
                             issuer_image,
