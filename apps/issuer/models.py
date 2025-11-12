@@ -986,23 +986,11 @@ class BadgeClass(
         "description",
         "entity_id",
         "entity_version",
-        "expires_amount",
-        "expires_duration",
+        "expiration",
         "name",
         "pk",
         "slug",
         "updated_at",
-    )
-
-    EXPIRES_DURATION_DAYS = "days"
-    EXPIRES_DURATION_WEEKS = "weeks"
-    EXPIRES_DURATION_MONTHS = "months"
-    EXPIRES_DURATION_YEARS = "years"
-    EXPIRES_DURATION_CHOICES = (
-        (EXPIRES_DURATION_DAYS, "Days"),
-        (EXPIRES_DURATION_WEEKS, "Weeks"),
-        (EXPIRES_DURATION_MONTHS, "Months"),
-        (EXPIRES_DURATION_YEARS, "Years"),
     )
 
     issuer = models.ForeignKey(
@@ -1028,14 +1016,11 @@ class BadgeClass(
     # TODO: criteria_url and criteria_text are deprecated and should be removed once the migration to the criteria field was done
     criteria_url = models.CharField(max_length=254, blank=True, null=True, default=None)
     criteria_text = models.TextField(blank=True, null=True)
-
-    expires_amount = models.IntegerField(blank=True, null=True, default=None)
-    expires_duration = models.CharField(
-        max_length=254,
-        choices=EXPIRES_DURATION_CHOICES,
+    expiration = models.IntegerField(
         blank=True,
         null=True,
         default=None,
+        help_text="Number of days the badge is valid after being issued.",
     )
 
     # permissions saved as integer in binary representation
@@ -1510,15 +1495,13 @@ class BadgeClass(
         return self.cached_issuer.cached_badgrapp
 
     def generate_expires_at(self, issued_on=None):
-        if not self.expires_duration or not self.expires_amount:
+        if not self.expiration:
             return None
 
         if issued_on is None:
             issued_on = timezone.now()
 
-        duration_kwargs = dict()
-        duration_kwargs[self.expires_duration] = self.expires_amount
-        return issued_on + dateutil.relativedelta.relativedelta(**duration_kwargs)
+        return issued_on + timezone.timedelta(days=self.expiration)
 
     @property
     def copy_permissions_list(self):

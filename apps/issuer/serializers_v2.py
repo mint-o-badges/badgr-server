@@ -306,15 +306,10 @@ class AlignmentItemSerializerV2(BaseSerializerV2, OriginalJsonSerializerMixin):
 
 
 class BadgeClassExpirationSerializerV2(serializers.Serializer):
-    amount = serializers.IntegerField(
-        source="expires_amount",
+    expiration = serializers.IntegerField(
+        source="expiration",
         allow_null=True,
         validators=[PositiveIntegerValidator()],
-    )
-    duration = serializers.ChoiceField(
-        source="expires_duration",
-        allow_null=True,
-        choices=BadgeClass.EXPIRES_DURATION_CHOICES,
     )
 
     class Meta:

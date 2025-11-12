@@ -643,6 +643,8 @@ class V1BadgeInstanceSerializer(V1InstanceSerializer):
         if "evidence" in localbadgeinstance_json:
             localbadgeinstance_json["evidence"] = instance.evidence_url
         localbadgeinstance_json["uid"] = instance.entity_id
+        if instance.expires_at:
+            localbadgeinstance_json["expires"] = instance.expires_at.isoformat()
         # TODO: check if badge can be removed as now the badge metadata is also included under credentialSubject.achievement
         localbadgeinstance_json["badge"] = instance.cached_badgeclass.json
         localbadgeinstance_json["badge"]["slug"] = instance.cached_badgeclass.entity_id
