@@ -949,22 +949,6 @@ class LearningPathList(BaseEntityListView):
     def get(self, request, **kwargs):
         return super(LearningPathList, self).get(request, **kwargs)
 
-    @apispec_post_operation(
-        "LearningPath",
-        summary="Create a new LearningPath",
-        tags=["LearningPaths"],
-        parameters=[
-            {
-                "in": "query",
-                "name": "num",
-                "type": "string",
-                "description": "Request pagination of results",
-            },
-        ],
-    )
-    def post(self, request, **kwargs):
-        return super(LearningPathList, self).post(request, **kwargs)
-
 
 class BaseRedirectView:
     """
