@@ -140,6 +140,26 @@ class LocalBadgeInstanceUploadSerializerV1(serializers.Serializer):
 
     extensions = serializers.DictField(source="extension_items", read_only=True)
 
+    class Meta:
+        apispec_definition = (
+            "BackpackAssertion",
+            {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "acceptance": {"type": "string"},
+                    "json": {"type": "object"},
+                    "imagePreview": {"type": "object"},
+                    "issuerImagePreview": {"type": "object"},
+                    "shareUrl": {"type": "string", "format": "uri"},
+                    "sharedOnNetwork": {"type": ["object", "null"]},
+                    "isNetworkBadge": {"type": "boolean"},
+                    "networkName": {"type": ["string", "null"]},
+                    "networkImage": {"type": ["string", "null"], "format": "uri"},
+                },
+            },
+        )
+
     # Reinstantiation using fields from badge instance when returned by .create
     # id = serializers.IntegerField(read_only=True)
     # json = V1InstanceSerializer(read_only=True)
@@ -667,6 +687,12 @@ class V1BadgeInstanceSerializer(V1InstanceSerializer):
             credential_subject["activityEndDate"] = (
                 instance.activity_end_date.isoformat()
             )
+
+        if instance.activity_city:
+            credential_subject["activityCity"] = instance.activity_city
+
+        if instance.activity_online:
+            credential_subject["activityOnline"] = instance.activity_online
 
         localbadgeinstance_json["credentialSubject"] = credential_subject
         return super(V1BadgeInstanceSerializer, self).to_representation(

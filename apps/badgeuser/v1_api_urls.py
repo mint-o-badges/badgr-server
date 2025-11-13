@@ -4,6 +4,8 @@ from badgeuser.api import (
     BadgeRequestVerification,
     BadgeUserConfirmStaffRequest,
     BadgeUserSaveMicroDegree,
+    BadgeUserStaffRequestDetail,
+    BadgeUserStaffRequestList,
     BadgeUserToken,
     BadgeUserForgotPassword,
     BadgeUserEmailConfirm,
@@ -11,8 +13,6 @@ from badgeuser.api import (
     BadgeUserResendEmailConfirmation,
     ConfirmNetworkInvitation,
     GetRedirectPath,
-    IssuerStaffRequestDetail,
-    IssuerStaffRequestList,
     LearningPathList,
     BadgeUserCollectBadgesInBackpack,
 )
@@ -71,19 +71,14 @@ urlpatterns = [
         name="v1_api_user_get_redirect_path",
     ),
     url(
-        r"^issuerStaffRequests$",
-        IssuerStaffRequestList.as_view(),
+        r"^issuerStaffRequest/issuer/(?P<issuer_id>[^/]+)$",
+        BadgeUserStaffRequestList.as_view(),
         name="v1_api_user_issuer_staff_requests",
     ),
     url(
-        r"^issuerStaffRequest/issuer/(?P<issuer_id>[^/]+)$",
-        IssuerStaffRequestDetail.as_view(),
+        r"^issuerStaffRequest/(?P<request_id>[^/]+)$",
+        BadgeUserStaffRequestDetail.as_view(),
         name="v1_api_user_issuer_staff_request_detail",
-    ),
-    url(
-        r"^issuerStaffRequest/request/(?P<request_id>[^/]+)$",
-        IssuerStaffRequestDetail.as_view(),
-        name="v1_api_user_issuer_staff__revoke_request_detail",
     ),
     url(
         r"^confirm-staff-request/(?P<entity_id>[^/]+)$",
