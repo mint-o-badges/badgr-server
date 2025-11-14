@@ -77,6 +77,7 @@ MIDDLEWARE = [
     "django_prometheus.middleware.PrometheusAfterMiddleware",
     "lti_tool.middleware.LtiLaunchMiddleware",
     "mainsite.middleware.ExceptionLoggingMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
 ]
 
 DBBACKUP_STORAGE = "django.core.files.storage.FileSystemStorage"
