@@ -14,7 +14,6 @@ from cryptography.hazmat.primitives import serialization
 from pyld import jsonld
 
 import cachemodel
-import dateutil
 from allauth.account.adapter import get_adapter
 from django.apps import apps
 from django.conf import settings

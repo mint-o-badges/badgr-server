@@ -31,7 +31,6 @@ from mainsite.utils import OriginSetting, verifyIssuerAutomatically
 from mainsite.validators import (
     BadgeExtensionValidator,
     ChoicesValidator,
-    PositiveIntegerValidator,
     TelephoneValidator,
 )
 from rest_framework import serializers
