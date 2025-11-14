@@ -3,6 +3,7 @@ import sys
 
 # load up django
 from django.core.wsgi import get_wsgi_application
+import apps.django_compat
 
 # assume we(this file) have a parent that is a sibling to the CODE_DIR
 OUR_DIR = os.path.abspath(os.path.dirname(__file__))

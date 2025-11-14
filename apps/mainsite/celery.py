@@ -2,6 +2,7 @@
 from django.conf import settings
 from celery import Celery
 import os
+import apps.django_compat
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mainsite.settings_local")
 app = Celery("mainsite")
