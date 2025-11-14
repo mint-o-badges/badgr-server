@@ -32,12 +32,24 @@ def iframe(request, *args, **kwargs):
                 badge = iframe.params["badge"]
             except KeyError:
                 badge = None
+
+            try:
+                issuer = iframe.params["issuer"]
+            except KeyError:
+                issuer = None
+
+            try:
+                show_badge_selection = bool(iframe.params["badgeSelection"])
+            except KeyError:
+                show_badge_selection = False
+
             return iframe_badge_create_or_edit(
                 request,
                 iframe.params["token"],
                 badge,
-                iframe.params["issuer"],
+                issuer,
                 iframe.params["language"],
+                show_badge_selection,
             )
     except Exception as e:
         # show errors while debug
