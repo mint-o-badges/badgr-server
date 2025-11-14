@@ -3,7 +3,8 @@
 
 from django.db import models, migrations
 import autoslug.fields
-import jsonfield.fields
+
+# import jsonfield.fields
 import django.db.models.deletion
 from django.conf import settings
 
@@ -27,7 +28,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("json", jsonfield.fields.JSONField()),
+                ("json", models.JSONField()),
                 ("name", models.CharField(max_length=255)),
                 ("slug", autoslug.fields.AutoSlugField(unique=True, max_length=255)),
                 ("criteria_text", models.TextField(null=True, blank=True)),
@@ -61,7 +62,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("json", jsonfield.fields.JSONField()),
+                ("json", models.JSONField()),
                 ("email", models.EmailField(max_length=255)),
                 (
                     "slug",
@@ -114,7 +115,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("json", jsonfield.fields.JSONField()),
+                ("json", models.JSONField()),
                 ("name", models.CharField(max_length=1024)),
                 ("slug", autoslug.fields.AutoSlugField(unique=True, max_length=255)),
                 ("image", models.ImageField(upload_to=b"uploads/issuers", blank=True)),

@@ -23,7 +23,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db import models, transaction
-from django.db.models import ProtectedError
+from django.db.models import ProtectedError, JSONField
 from django.urls import reverse
 from django.utils import timezone
 from apps.issuer.services.image_composer import ImageComposer
@@ -34,7 +34,6 @@ from issuer.managers import (
     BadgeInstanceManager,
     IssuerManager,
 )
-from jsonfield import JSONField
 from mainsite import blacklist
 from mainsite.managers import SlugOrJsonIdCacheModelManager
 from mainsite.mixins import (
@@ -273,7 +272,7 @@ class Issuer(
     description = models.TextField(blank=True, null=True, default=None)
     url = models.CharField(max_length=254, blank=True, null=True, default=None)
     email = models.CharField(max_length=254, blank=True, null=True, default=None)
-    old_json = JSONField()
+    old_json = models.JSONField(default=dict, blank=True)
 
     verified = models.BooleanField(null=False, default=False)
 
@@ -986,8 +985,8 @@ class BadgeClass(
         "description",
         "entity_id",
         "entity_version",
-        "expires_amount",
-        "expires_duration",
+        # "expires_amount",
+        # "expires_duration",
         "name",
         "pk",
         "slug",
@@ -1029,14 +1028,14 @@ class BadgeClass(
     criteria_url = models.CharField(max_length=254, blank=True, null=True, default=None)
     criteria_text = models.TextField(blank=True, null=True)
 
-    expires_amount = models.IntegerField(blank=True, null=True, default=None)
-    expires_duration = models.CharField(
-        max_length=254,
-        choices=EXPIRES_DURATION_CHOICES,
-        blank=True,
-        null=True,
-        default=None,
-    )
+    # expires_amount = models.IntegerField(blank=True, null=True, default=None)
+    # expires_duration = models.CharField(
+    #     max_length=254,
+    #     choices=EXPIRES_DURATION_CHOICES,
+    #     blank=True,
+    #     null=True,
+    #     default=None,
+    # )
 
     # permissions saved as integer in binary representation
     # issuer should always be set
@@ -1054,7 +1053,7 @@ class BadgeClass(
 
     criteria = models.JSONField(blank=True, null=True)
 
-    old_json = JSONField()
+    old_json = models.JSONField(default=dict, blank=True)
 
     objects = BadgeClassManager()
     cached = SlugOrJsonIdCacheModelManager(
@@ -1599,7 +1598,7 @@ class ImportedBadgeAssertion(
     revoked = models.BooleanField(default=False)
     revocation_reason = models.CharField(max_length=255, blank=True, null=True)
 
-    original_json = JSONField()
+    old_json = models.JSONField(default=dict, blank=True)
 
     hashed = models.BooleanField(default=True)
     salt = models.CharField(max_length=254, blank=True, null=True, default=None)
@@ -1700,7 +1699,7 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
 
     narrative = models.TextField(blank=True, null=True, default=None)
 
-    old_json = JSONField()
+    old_json = models.JSONField(default=dict, blank=True)
 
     objects = BadgeInstanceManager()
     cached = SlugOrJsonIdCacheModelManager(

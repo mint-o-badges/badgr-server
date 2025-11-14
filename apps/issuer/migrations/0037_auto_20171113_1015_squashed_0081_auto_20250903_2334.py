@@ -8,7 +8,8 @@ import django.db.models.deletion
 import django.utils.timezone
 import issuer.models
 import issuer.utils
-import jsonfield.fields
+
+# import jsonfield.fields
 import mainsite.mixins
 
 
@@ -978,7 +979,7 @@ class Migration(migrations.Migration):
                     "revocation_reason",
                     models.CharField(blank=True, max_length=255, null=True),
                 ),
-                ("original_json", jsonfield.fields.JSONField()),
+                ("original_json", models.JSONField()),
                 ("hashed", models.BooleanField(default=True)),
                 (
                     "salt",
