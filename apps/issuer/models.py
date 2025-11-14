@@ -22,6 +22,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, transaction
 from django.db.models import ProtectedError
 from django.urls import reverse
@@ -1020,6 +1021,10 @@ class BadgeClass(
         blank=True,
         null=True,
         default=None,
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(36500),  # 100 years
+        ],
         help_text="Number of days the badge is valid after being issued.",
     )
 

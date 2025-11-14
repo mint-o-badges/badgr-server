@@ -573,6 +573,16 @@ class BadgeClassSerializerV1(
         self.formal = is_formal
         return extensions
 
+    def validate_expiration(self, value):
+        if value is not None:
+            if value < 1:
+                raise serializers.ValidationError("Expiration must be at least 1 day.")
+            if value > 36500:
+                raise serializers.ValidationError(
+                    "Expiration cannot exceed 100 years (36500 days)."
+                )
+        return value
+
     def add_extensions(self, instance, add_these_extensions, extension_items):
         for extension_name in add_these_extensions:
             original_json = extension_items[extension_name]
