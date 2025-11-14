@@ -305,22 +305,6 @@ class AlignmentItemSerializerV2(BaseSerializerV2, OriginalJsonSerializerMixin):
         apispec_definition = ("BadgeClassAlignment", {"properties": {}})
 
 
-class BadgeClassExpirationSerializerV2(serializers.Serializer):
-    amount = serializers.IntegerField(
-        source="expires_amount",
-        allow_null=True,
-        validators=[PositiveIntegerValidator()],
-    )
-    duration = serializers.ChoiceField(
-        source="expires_duration",
-        allow_null=True,
-        choices=BadgeClass.EXPIRES_DURATION_CHOICES,
-    )
-
-    class Meta:
-        apispec_definition = ("BadgeClassExpiration", {"properties": {}})
-
-
 class BadgeClassSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixin):
     openBadgeId = serializers.URLField(source="jsonld_id", read_only=True)
     createdAt = DateTimeWithUtcZAtEndField(source="created_at", read_only=True)
@@ -351,8 +335,10 @@ class BadgeClassSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixin):
         child=StripTagsCharField(max_length=254), source="tag_items", required=False
     )
 
-    expires = BadgeClassExpirationSerializerV2(
-        source="*", required=False, allow_null=True
+    expiration = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        validators=[PositiveIntegerValidator()],
     )
 
     extensions = serializers.DictField(

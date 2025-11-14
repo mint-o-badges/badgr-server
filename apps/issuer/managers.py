@@ -1,6 +1,7 @@
 # encoding: utf-8
 
 
+from datetime import timedelta
 import json
 import os
 import six
@@ -11,6 +12,7 @@ import dateutil.parser
 from django.core.files.storage import DefaultStorage
 from django.db import models, transaction
 from django.urls import resolve, Resolver404
+from django.utils import timezone
 
 from issuer.utils import sanitize_id
 from mainsite.utils import fetch_remote_file_to_storage, list_of, OriginSetting
@@ -355,6 +357,10 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
             issuer = Issuer.objects.get(entity_id=issuerSlug)
         else:
             issuer = kwargs.pop("issuer", badgeclass.issuer)
+
+        if badgeclass and badgeclass.expiration:
+            issued_on = kwargs.get("issued_on", timezone.now())
+            kwargs["expires_at"] = issued_on + timedelta(days=badgeclass.expiration)
 
         # self.model would be a BadgeInstance
         new_instance = self.model(
