@@ -577,7 +577,7 @@ class BadgeClassSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixin):
 
 class BadgeRecipientSerializerV2(BaseSerializerV2):
     identity = serializers.CharField(source="recipient_identifier")
-    hashed = serializers.NullBooleanField(default=None, required=False)
+    hashed = serializers.BooleanField(default=None, allow_null=True, required=False)
     type = serializers.ChoiceField(
         choices=BadgeInstance.RECIPIENT_TYPE_CHOICES,
         default=RECIPIENT_TYPE_EMAIL,
