@@ -34,13 +34,12 @@ from issuer.permissions import (
     BadgrOAuthTokenHasScope,
 )
 from issuer.public_api import ImagePropertyDetailView
-from apispec_drf.decorators import (
-    apispec_list_operation,
-    apispec_post_operation,
-    apispec_get_operation,
-    apispec_delete_operation,
-    apispec_put_operation,
-    apispec_operation,
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+    OpenApiParameter,
+    OpenApiTypes,
+    inline_serializer,
 )
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAdmin
 
@@ -60,6 +59,21 @@ def _scrub_boolean(boolean_str, default=None):
     return default
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary="List imported badge assertions",
+        description="Get a list of all imported badge assertions for the authenticated user",
+        tags=["Backpack"],
+        responses={200: ImportedBadgeAssertionSerializer(many=True)},
+    ),
+    post=extend_schema(
+        summary="Import a new badge assertion",
+        description="Create a new imported badge instance",
+        tags=["Backpack"],
+        request=ImportedBadgeAssertionSerializer,
+        responses={201: ImportedBadgeAssertionSerializer},
+    ),
+)
 class ImportedBadgeInstanceList(BaseEntityListView):
     """
     API endpoint for importing and listing imported badge assertions
@@ -88,6 +102,20 @@ class ImportedBadgeInstanceList(BaseEntityListView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary="Get an imported badge assertion",
+        description="Retrieve details of a specific imported badge",
+        tags=["Backpack"],
+        responses={200: ImportedBadgeAssertionSerializer},
+    ),
+    delete=extend_schema(
+        summary="Delete an imported badge",
+        description="Remove an imported badge from the backpack",
+        tags=["Backpack"],
+        responses={204: None},
+    ),
+)
 class ImportedBadgeInstanceDetail(BaseEntityDetailView):
     """
     API endpoint for retrieving, updating, or deleting an imported badge
@@ -115,6 +143,45 @@ class ImportedBadgeInstanceDetail(BaseEntityDetailView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary="Get a list of Assertions in authenticated user's backpack",
+        description="Retrieve all badge assertions from the authenticated user's backpack",
+        tags=["Backpack"],
+        parameters=[
+            OpenApiParameter(
+                name="include_expired",
+                type=OpenApiTypes.BOOL,
+                location=OpenApiParameter.QUERY,
+                description="Include expired badges (default: true for v1, false for v2)",
+            ),
+            OpenApiParameter(
+                name="include_revoked",
+                type=OpenApiTypes.BOOL,
+                location=OpenApiParameter.QUERY,
+                description="Include revoked badges (default: false)",
+            ),
+            OpenApiParameter(
+                name="include_pending",
+                type=OpenApiTypes.BOOL,
+                location=OpenApiParameter.QUERY,
+                description="Include pending badges (default: false)",
+            ),
+            OpenApiParameter(
+                name="expand",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Expand related objects (badgeclass, issuer)",
+                many=True,
+            ),
+        ],
+    ),
+    post=extend_schema(
+        summary="Upload a new Assertion to the backpack",
+        description="Upload a new badge assertion to the user's backpack",
+        tags=["Backpack"],
+    ),
+)
 class BackpackAssertionList(BaseEntityListView):
     model = BadgeInstance
     v1_serializer_class = LocalBadgeInstanceUploadSerializerV1
@@ -163,11 +230,6 @@ class BackpackAssertionList(BaseEntityListView):
 
         return list(filter(badge_filter, self.request.user.cached_badgeinstances()))
 
-    @apispec_list_operation(
-        "Assertion",
-        summary="Get a list of Assertions in authenticated user's backpack ",
-        tags=["Backpack"],
-    )
     def get(self, request, **kwargs):
         mykwargs = kwargs.copy()
         mykwargs["expands"] = []
@@ -180,9 +242,6 @@ class BackpackAssertionList(BaseEntityListView):
 
         return super(BackpackAssertionList, self).get(request, **mykwargs)
 
-    @apispec_post_operation(
-        "Assertion", summary="Upload a new Assertion to the backpack", tags=["Backpack"]
-    )
     def post(self, request, **kwargs):
         if kwargs.get("version", "v1") == "v1":
             try:
@@ -228,6 +287,35 @@ class BackpackAssertionList(BaseEntityListView):
         return context
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary="Get detail on an Assertion in the user's Backpack",
+        description="Retrieve detailed information about a specific badge assertion",
+        tags=["Backpack"],
+        parameters=[
+            OpenApiParameter(
+                name="expand",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Expand related objects (badgeclass, issuer)",
+                many=True,
+            ),
+        ],
+    ),
+    delete=extend_schema(
+        summary="Remove an assertion from the backpack",
+        description="Delete a badge assertion from the user's backpack",
+        tags=["Backpack"],
+        responses={204: None},
+    ),
+    put=extend_schema(
+        summary="Update acceptance of an Assertion in the user's Backpack",
+        description="Update the acceptance status of a badge assertion",
+        tags=["Backpack"],
+        request=BackpackAssertionAcceptanceSerializerV2,
+        responses={200: BackpackAssertionSerializerV2},
+    ),
+)
 class BackpackAssertionDetail(BaseEntityDetailView):
     model = BadgeInstance
     v1_serializer_class = LocalBadgeInstanceUploadSerializerV1
@@ -251,11 +339,6 @@ class BackpackAssertionDetail(BaseEntityDetailView):
         )  # for /v1/earner/badges compat
         return context
 
-    @apispec_get_operation(
-        "BackpackAssertion",
-        summary="Get detail on an Assertion in the user's Backpack",
-        tags=["Backpack"],
-    )
     def get(self, request, **kwargs):
         mykwargs = kwargs.copy()
         mykwargs["expands"] = []
@@ -268,11 +351,6 @@ class BackpackAssertionDetail(BaseEntityDetailView):
 
         return super(BackpackAssertionDetail, self).get(request, **mykwargs)
 
-    @apispec_delete_operation(
-        "BackpackAssertion",
-        summary="Remove an assertion from the backpack",
-        tags=["Backpack"],
-    )
     def delete(self, request, **kwargs):
         obj = self.get_object(request, **kwargs)
         related_collections = list(
@@ -293,11 +371,6 @@ class BackpackAssertionDetail(BaseEntityDetailView):
         request.user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @apispec_put_operation(
-        "BackpackAssertion",
-        summary="Update acceptance of an Assertion in the user's Backpack",
-        tags=["Backpack"],
-    )
     def put(self, request, **kwargs):
         fields_whitelist = ("acceptance",)
         data = {k: v for k, v in list(request.data.items()) if k in fields_whitelist}
@@ -326,6 +399,21 @@ class BackpackAssertionDetailImage(ImagePropertyDetailView, BadgrOAuthTokenHasSc
     valid_scopes = ["r:backpack", "rw:backpack"]
 
 
+@extend_schema(
+    summary="Get skills tree from backpack assertions",
+    description="Retrieve a hierarchical skills tree from the user's badge assertions",
+    tags=["Backpack"],
+    parameters=[
+        OpenApiParameter(
+            name="lang",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            description="Language for skills (de or en, default: de)",
+            enum=["de", "en"],
+        ),
+    ],
+    responses={200: OpenApiTypes.OBJECT},
+)
 class BackpackSkillList(BackpackAssertionList):
     def get(self, request, **kwargs):
         instances = self.get_objects(request)
@@ -343,6 +431,20 @@ class BackpackSkillList(BackpackAssertionList):
         return JsonResponse(skills)
 
 
+@extend_schema(
+    summary="Get a list of Badges from a specific user",
+    description="Retrieve all badges for a user specified by email (admin only)",
+    tags=["Backpack"],
+    parameters=[
+        OpenApiParameter(
+            name="email",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.PATH,
+            description="Email address of the user",
+            required=True,
+        ),
+    ],
+)
 class BadgesFromUser(BaseEntityListView):
     model = BadgeInstance
     v1_serializer_class = LocalBadgeInstanceUploadSerializerV1
@@ -360,13 +462,25 @@ class BadgesFromUser(BaseEntityListView):
         except BadgeUser.DoesNotExist:
             raise ValueError("User not found")
 
-    @apispec_get_operation(
-        ["BadgeInstance"], summary="Get a list of Badges", tags=["Backpack"]
-    )
     def get(self, request, **kwargs):
         return super(BadgesFromUser, self).get(request, **kwargs)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary="Get a list of Collections",
+        description="Retrieve all badge collections for the authenticated user",
+        tags=["Backpack"],
+        responses={200: BackpackCollectionSerializerV2(many=True)},
+    ),
+    post=extend_schema(
+        summary="Create a new Collection",
+        description="Create a new badge collection",
+        tags=["Backpack"],
+        request=BackpackCollectionSerializerV2,
+        responses={201: BackpackCollectionSerializerV2},
+    ),
+)
 class BackpackCollectionList(BaseEntityListView):
     model = BackpackCollection
     v1_serializer_class = CollectionSerializerV1
@@ -384,19 +498,34 @@ class BackpackCollectionList(BaseEntityListView):
     def get_objects(self, request, **kwargs):
         return self.request.user.cached_backpackcollections()
 
-    @apispec_get_operation(
-        "Collection", summary="Get a list of Collections", tags=["Backpack"]
-    )
     def get(self, request, **kwargs):
         return super(BackpackCollectionList, self).get(request, **kwargs)
 
-    @apispec_post_operation(
-        "Collection", summary="Create a new Collection", tags=["Backpack"]
-    )
     def post(self, request, **kwargs):
         return super(BackpackCollectionList, self).post(request, **kwargs)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary="Get a single Collection",
+        description="Retrieve details of a specific badge collection",
+        tags=["Backpack"],
+        responses={200: BackpackCollectionSerializerV2},
+    ),
+    put=extend_schema(
+        summary="Update a Collection",
+        description="Update an existing badge collection",
+        tags=["Backpack"],
+        request=BackpackCollectionSerializerV2,
+        responses={200: BackpackCollectionSerializerV2},
+    ),
+    delete=extend_schema(
+        summary="Delete a collection",
+        description="Remove a badge collection",
+        tags=["Backpack"],
+        responses={204: None},
+    ),
+)
 class BackpackCollectionDetail(BaseEntityDetailView):
     model = BackpackCollection
     v1_serializer_class = CollectionSerializerV1
@@ -413,25 +542,39 @@ class BackpackCollectionDetail(BaseEntityDetailView):
         "delete": ["rw:backpack"],
     }
 
-    @apispec_get_operation(
-        "Collection", summary="Get a single Collection", tags=["Backpack"]
-    )
     def get(self, request, **kwargs):
         return super(BackpackCollectionDetail, self).get(request, **kwargs)
 
-    @apispec_put_operation(
-        "Collection", summary="Update a Collection", tags=["Backpack"]
-    )
     def put(self, request, **kwargs):
         return super(BackpackCollectionDetail, self).put(request, **kwargs)
 
-    @apispec_delete_operation(
-        "Collection", summary="Delete a collection", tags=["Backpack"]
-    )
     def delete(self, request, **kwargs):
         return super(BackpackCollectionDetail, self).delete(request, **kwargs)
 
 
+@extend_schema(
+    summary="Import a new Assertion to the backpack",
+    description="Import a badge assertion from URL, image, or JSON",
+    tags=["Backpack"],
+    request=inline_serializer(
+        name="BackpackImportRequest",
+        fields={
+            "url": serializers.URLField(
+                required=False,
+                help_text="URL to an OpenBadge compliant badge",
+            ),
+            "image": serializers.CharField(
+                required=False,
+                help_text="Base64 encoded Baked OpenBadge image (data:image/png;base64,...)",
+            ),
+            "assertion": serializers.JSONField(
+                required=False,
+                help_text="OpenBadge compliant JSON",
+            ),
+        },
+    ),
+    responses={201: BackpackAssertionSerializerV2},
+)
 class BackpackImportBadge(BaseEntityListView):
     v2_serializer_class = BackpackImportSerializerV2
     permission_classes = (
@@ -441,39 +584,6 @@ class BackpackImportBadge(BaseEntityListView):
     http_method_names = ("post",)
     valid_scopes = ["rw:backpack"]
 
-    @apispec_operation(
-        summary="Import a new Assertion to the backpack",
-        tags=["Backpack"],
-        parameters=[
-            {
-                "in": "body",
-                "name": "body",
-                "required": True,
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "url": {
-                            "type": "string",
-                            "format": "url",
-                            "description": "URL to an OpenBadge compliant badge",
-                            "required": False,
-                        },
-                        "image": {
-                            "type": "string",
-                            "format": "data:image/png;base64",
-                            "description": "base64 encoded Baked OpenBadge image",
-                            "required": False,
-                        },
-                        "assertion": {
-                            "type": "json",
-                            "description": "OpenBadge compliant json",
-                            "required": False,
-                        },
-                    },
-                },
-            }
-        ],
-    )
     def post(self, request, **kwargs):
         context = self.get_context_data(**kwargs)
         serializer_class = self.get_serializer_class()
@@ -488,6 +598,46 @@ class BackpackImportBadge(BaseEntityListView):
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(
+    summary="Share a badge assertion",
+    description="Share a single badge to a supported share provider (Facebook, LinkedIn)",
+    tags=["Backpack"],
+    parameters=[
+        OpenApiParameter(
+            name="provider",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            description="The share provider (facebook, linkedin)",
+            required=True,
+            enum=["facebook", "linkedin"],
+        ),
+        OpenApiParameter(
+            name="redirect",
+            type=OpenApiTypes.BOOL,
+            location=OpenApiParameter.QUERY,
+            description="Whether to redirect to the share URL (default: true)",
+        ),
+        OpenApiParameter(
+            name="source",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            description="Source of the share action",
+        ),
+        OpenApiParameter(
+            name="include_identifier",
+            type=OpenApiTypes.BOOL,
+            location=OpenApiParameter.QUERY,
+            description="Include recipient identifier in share",
+        ),
+    ],
+    responses={
+        302: OpenApiTypes.OBJECT,
+        200: inline_serializer(
+            name="ShareResponse",
+            fields={"url": serializers.URLField()},
+        ),
+    },
+)
 class ShareBackpackAssertion(BaseEntityDetailView):
     model = BadgeInstance
     permission_classes = (
@@ -497,16 +647,7 @@ class ShareBackpackAssertion(BaseEntityDetailView):
     allow_any_unauthenticated_access = True
 
     def get(self, request, **kwargs):
-        """
-        Share a single badge to a support share provider
-        ---
-        parameters:
-            - name: provider
-              description: The identifier of the provider to use. Supports 'facebook', 'linkedin'
-              required: true
-              type: string
-              paramType: query
-        """
+        """Share a single badge to a support share provider"""
         redirect = _scrub_boolean(request.query_params.get("redirect", "1"))
 
         provider = request.query_params.get("provider")
@@ -552,6 +693,40 @@ class ShareBackpackAssertion(BaseEntityDetailView):
             return Response({"url": share_url})
 
 
+@extend_schema(
+    summary="Share a badge collection",
+    description="Share a collection to a supported share provider (Facebook, LinkedIn)",
+    tags=["Backpack"],
+    parameters=[
+        OpenApiParameter(
+            name="provider",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            description="The share provider (facebook, linkedin)",
+            required=True,
+            enum=["facebook", "linkedin"],
+        ),
+        OpenApiParameter(
+            name="redirect",
+            type=OpenApiTypes.BOOL,
+            location=OpenApiParameter.QUERY,
+            description="Whether to redirect to the share URL (default: true)",
+        ),
+        OpenApiParameter(
+            name="source",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            description="Source of the share action",
+        ),
+    ],
+    responses={
+        302: OpenApiTypes.OBJECT,
+        200: inline_serializer(
+            name="ShareCollectionResponse",
+            fields={"url": serializers.URLField()},
+        ),
+    },
+)
 class ShareBackpackCollection(BaseEntityDetailView):
     model = BackpackCollection
     permission_classes = (
@@ -560,16 +735,7 @@ class ShareBackpackCollection(BaseEntityDetailView):
     http_method_names = ("get",)
 
     def get(self, request, **kwargs):
-        """
-        Share a collection to a supported share provider
-        ---
-        parameters:
-            - name: provider
-              description: The identifier of the provider to use. Supports 'facebook', 'linkedin'
-              required: true
-              type: string
-              paramType: query
-        """
+        """Share a collection to a supported share provider"""
         redirect = _scrub_boolean(request.query_params.get("redirect", "1"))
 
         provider = request.query_params.get("provider")

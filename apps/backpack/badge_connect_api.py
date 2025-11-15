@@ -1,6 +1,12 @@
 from collections import OrderedDict
 
-from apispec_drf.decorators import apispec_get_operation, apispec_post_operation
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiParameter,
+    OpenApiResponse,
+    OpenApiRequest,
+    inline_serializer,
+)
 from django.conf import settings
 from django.shortcuts import reverse
 from django.utils.dateparse import parse_datetime
@@ -14,6 +20,7 @@ from rest_framework.utils.urls import replace_query_param
 from rest_framework.views import APIView
 
 from backpack.serializers_bcv1 import (
+    BackpackImportResultSerializerBC,
     BackpackProfilesSerializerBC,
     BadgeConnectAssertionsSerializer,
     BadgeConnectImportSerializer,
@@ -73,18 +80,19 @@ def badge_connect_api_info(domain):
 class BadgeConnectManifestView(APIView):
     permission_classes = [AllowAny]
 
-    @apispec_get_operation(
-        "BadgeConnectManifest",
+    @extend_schema(
         summary="Fetch Badge Connect Manifest",
         tags=["BadgeConnect"],
         parameters=[
-            {
-                "in": "query",
-                "name": "domain",
-                "type": "string",
-                "description": "The CORS domain for the BadgrApp",
-            }
+            OpenApiParameter(
+                name="domain",
+                location=OpenApiParameter.QUERY,
+                description="The CORS domain for the BadgrApp",
+                required=False,
+                type=str,
+            )
         ],
+        responses=OpenApiResponse(BadgeConnectManifestSerializer),
     )
     def get(self, request, **kwargs):
         data = badge_connect_api_info(kwargs.get("domain"))
@@ -179,33 +187,36 @@ class BadgeConnectAssertionListView(ListCreateAPIView):
             return BadgeConnectImportSerializer
         return super(BadgeConnectAssertionListView, self).get_serializer_class()
 
-    @apispec_get_operation(
-        "BadgeConnectAssertions",
+    @extend_schema(
         summary="Get a list of Assertions",
         tags=["BadgeConnect"],
         parameters=[
-            {
-                "in": "query",
-                "name": "limit",
-                "type": "integer",
-                "description": "Indicate how many results should be retrieved in a single page.",
-            },
-            {
-                "in": "query",
-                "name": "offset",
-                "type": "integer",
-                "description": "Indicate the index of the first record to return (zero indexed).",
-            },
-            {
-                "in": "query",
-                "name": "limit",
-                "type": "string",
-                "format": "date-time",
-                "description": "Retrieve Assertions that were created or updated "
-                "after the provided timestamp. Must be an ISO 8601 "
-                "compatible timestamp with a time zone indicator.",
-            },
+            OpenApiParameter(
+                name="limit",
+                location=OpenApiParameter.QUERY,
+                description="How many results to return per page.",
+                type=int,
+            ),
+            OpenApiParameter(
+                name="offset",
+                location=OpenApiParameter.QUERY,
+                description="Zero-based index of the first record to return.",
+                type=int,
+            ),
+            OpenApiParameter(
+                name="since",
+                location=OpenApiParameter.QUERY,
+                description=(
+                    "Retrieve Assertions created or updated after this timestamp "
+                    "(ISO 8601 with timezone)."
+                ),
+                type=str,
+            ),
         ],
+        responses=OpenApiResponse(
+            response=BadgeConnectAssertionsSerializer(many=True),
+            description="List of Badge Assertions",
+        ),
     )
     def get(self, request, **kwargs):
         queryset = self.get_queryset()
@@ -217,21 +228,16 @@ class BadgeConnectAssertionListView(ListCreateAPIView):
         serializer = self.get_serializer(queryset)
         return Response(serializer.data)
 
-    @apispec_post_operation(
-        "BadgeConnectImport",
+    @extend_schema(
         summary="Import a Badge Assertion",
         tags=["BadgeConnect"],
-        responses=OrderedDict(
-            [
-                (
-                    "201",
-                    {
-                        "schema": {"$ref": "#/definitions/BadgeConnectImportResult"},
-                        "description": "Successfully created",
-                    },
-                ),
-            ]
-        ),
+        request=BadgeConnectImportSerializer,
+        responses={
+            201: OpenApiResponse(
+                response=BackpackImportResultSerializerBC,
+                description="Successfully created",
+            )
+        },
     )
     def post(self, request, **kwargs):
         return super(BadgeConnectAssertionListView, self).post(request, **kwargs)
@@ -250,10 +256,10 @@ class BadgeConnectProfileView(BaseEntityDetailView):
         ],
     }
 
-    @apispec_get_operation(
-        "BadgeConnectProfiles",
+    @extend_schema(
         summary="Get Badge Connect user profile",
         tags=["BadgeConnect"],
+        responses=OpenApiResponse(BackpackProfilesSerializerBC(many=True)),
     )
     def get(self, request, **kwargs):
         """

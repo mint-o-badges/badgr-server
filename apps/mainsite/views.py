@@ -73,6 +73,14 @@ from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table
 from reportlab.lib.utils import ImageReader
 import logging
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiParameter,
+    OpenApiTypes,
+    inline_serializer,
+)
+from rest_framework import serializers
+
 
 logger = logging.getLogger("Badgr.Events")
 
@@ -202,6 +210,16 @@ def call_aiskills_api(endpoint, method, payload: dict):
     )
 
 
+@extend_schema(
+    summary="Analyze text with AI skills",
+    description="Analyze text using AI skills service",
+    tags=["AI Skills"],
+    request=inline_serializer(
+        name="AISkillsRequest",
+        fields={"text": serializers.CharField()},
+    ),
+    responses={200: OpenApiTypes.OBJECT},
+)
 @api_view(["POST"])
 @authentication_classes(
     [TokenAuthentication, SessionAuthentication, BasicAuthentication]
@@ -222,6 +240,19 @@ def aiskills(req):
     return call_aiskills_api(endpoint, "POST", payload)
 
 
+@extend_schema(
+    summary="Get AI skills keywords",
+    description="Retrieve keywords from AI skills service",
+    tags=["AI Skills"],
+    request=inline_serializer(
+        name="AISkillsKeywordsRequest",
+        fields={
+            "keyword": serializers.CharField(),
+            "lang": serializers.CharField(),
+        },
+    ),
+    responses={200: OpenApiTypes.OBJECT},
+)
 @api_view(["POST"])
 @authentication_classes(
     [TokenAuthentication, SessionAuthentication, BasicAuthentication]
@@ -237,6 +268,12 @@ def aiskills_keywords(req):
     return call_aiskills_api(endpoint, "GET", payload)
 
 
+@extend_schema(
+    summary="Create CAPTCHA challenge",
+    description="Generate an Altcha CAPTCHA challenge",
+    tags=["Security"],
+    responses={200: OpenApiTypes.OBJECT},
+)
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def createCaptchaChallenge(req):
@@ -334,6 +371,12 @@ def requestBadge(req, qrCodeId):
         )
 
 
+@extend_schema(
+    summary="Get server timestamp",
+    description="Retrieve the current server timestamp",
+    tags=["System"],
+    responses={200: OpenApiTypes.OBJECT},
+)
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def getTimestamp(req):
@@ -416,6 +459,20 @@ def PageSetup(canvas, doc, badgeImage, issuerImage):
     p.drawOn(canvas, 0, text_y - 15)
 
 
+@extend_schema(
+    summary="Delete badge request",
+    description="Delete a badge request by ID",
+    tags=["Badges"],
+    parameters=[
+        OpenApiParameter(
+            name="requestId",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.PATH,
+            description="Request entity ID",
+        ),
+    ],
+    responses={200: OpenApiTypes.OBJECT},
+)
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def deleteBadgeRequest(req, requestId):
@@ -440,6 +497,20 @@ def deleteBadgeRequest(req, requestId):
     return JsonResponse({"message": "Badge request deleted"}, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    summary="Get badge requests by badge class",
+    description="Retrieve count of badge requests for a specific badge class",
+    tags=["Badges"],
+    parameters=[
+        OpenApiParameter(
+            name="badgeSlug",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.PATH,
+            description="Badge class entity ID",
+        ),
+    ],
+    responses={200: OpenApiTypes.OBJECT},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def badgeRequestsByBadgeClass(req, badgeSlug):
@@ -480,6 +551,24 @@ def create_page(response, page_content, badgeImage, issuerImage):
     )
 
 
+@extend_schema(
+    summary="Download QR code as PDF",
+    description="Generate and download a QR code PDF for a badge",
+    tags=["Badges"],
+    parameters=[
+        OpenApiParameter(
+            name="badgeSlug",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.PATH,
+            description="Badge class entity ID",
+        ),
+    ],
+    request=inline_serializer(
+        name="QRCodeDownloadRequest",
+        fields={"image": serializers.CharField()},
+    ),
+    responses={200: OpenApiTypes.BINARY},
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def downloadQrCode(request, *args, **kwargs):
@@ -563,6 +652,26 @@ def extractErrorMessage500(response: Response):
     return match.group(1) if match else "Invalid searchterm! (Unknown error)"
 
 
+@extend_schema(
+    summary="Search Noun Project icons",
+    description="Search for icons in the Noun Project",
+    tags=["Icons"],
+    parameters=[
+        OpenApiParameter(
+            name="searchterm",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.PATH,
+            description="Search term",
+        ),
+        OpenApiParameter(
+            name="page",
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.PATH,
+            description="Page number",
+        ),
+    ],
+    responses={200: OpenApiTypes.OBJECT},
+)
 @api_view(["GET"])
 @authentication_classes(
     [
@@ -814,6 +923,7 @@ def cms_api_script(request):
 
 
 class AppleAppSiteAssociation(APIView):
+    schema = None
     renderer_classes = (JSONRenderer,)
     permission_classes = (AllowAny,)
 
@@ -826,6 +936,7 @@ class AppleAppSiteAssociation(APIView):
         return Response(data=data)
 
 
+@extend_schema(exclude=True)
 class LegacyLoginAndObtainAuthToken(ObtainAuthToken):
     serializer_class = LegacyVerifiedAuthTokenSerializer
 
@@ -892,6 +1003,8 @@ class SitewideActionFormView(FormView):
 
 
 class RedirectToUiLogin(RedirectView):
+    schema = None
+
     def get_redirect_url(self, *args, **kwargs):
         badgrapp = BadgrApp.objects.get_current()
         return (
@@ -902,6 +1015,8 @@ class RedirectToUiLogin(RedirectView):
 
 
 class DocsAuthorizeRedirect(RedirectView):
+    schema = None
+
     def get_redirect_url(self, *args, **kwargs):
         badgrapp = BadgrApp.objects.get_current(request=self.request)
         url = badgrapp.oauth_authorization_redirect

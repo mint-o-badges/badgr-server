@@ -16,8 +16,12 @@ from rest_framework.decorators import (
     permission_classes,
 )
 from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import (
+    extend_schema,
+)
 
 
+@extend_schema(exclude=True)
 @api_view(["GET"])
 @authentication_classes(
     [TokenAuthentication, SessionAuthentication, BasicAuthentication]
@@ -55,6 +59,7 @@ def pdf(request, *args, **kwargs):
     return HttpResponse(pdf_content, content_type="application/pdf")
 
 
+@extend_schema(exclude=True)
 @api_view(["GET"])
 @authentication_classes(
     [TokenAuthentication, SessionAuthentication, BasicAuthentication]
