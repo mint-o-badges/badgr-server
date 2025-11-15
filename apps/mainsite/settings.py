@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     "issuer",
     "backpack",
     # api docs
-    "apispec_drf",
+    "drf_spectacular",
     # deprecated
     "composition",
     "django_filters",
@@ -339,12 +339,21 @@ REST_FRAMEWORK = {
         "entity.authentication.ExplicitCSRFSessionAuthentication",
         "mozilla_django_oidc.contrib.drf.OIDCAuthentication",
     ),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
     "DEFAULT_VERSION": "v1",
     "ALLOWED_VERSIONS": ["v1", "v2", "v3", "bcv1", "rfc7591"],
     "EXCEPTION_HANDLER": "entity.views.exception_handler",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 100,
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Badgr API",
+    "DESCRIPTION": "Badgr API documentation",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
 }
 
 
