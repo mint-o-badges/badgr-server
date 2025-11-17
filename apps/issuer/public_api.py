@@ -52,6 +52,8 @@ from .serializers_v1 import (
     QrCodeSerializerV1,
 )
 import logging
+from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.types import OpenApiTypes
 
 logger = logging.getLogger("Badgr.Events")
 
@@ -623,6 +625,12 @@ class BadgeClassCriteria(RedirectView, SlugToEntityIdRedirectMixin):
         return badge_class.get_absolute_url()
 
 
+@extend_schema(
+    responses={
+        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="OpenBadge JSON")
+    },
+    description="Returns OpenBadge compliant JSON",
+)
 class BadgeInstanceJson(JSONComponentView):
     permission_classes = (permissions.AllowAny,)
     model = BadgeInstance
@@ -699,6 +707,12 @@ class BadgeInstanceJson(JSONComponentView):
         )
 
 
+@extend_schema(
+    responses={
+        200: OpenApiResponse(response=OpenApiTypes.BINARY, description="Badge image")
+    },
+    description="Returns the badge image",
+)
 class BadgeInstanceImage(ImagePropertyDetailView):
     model = BadgeInstance
     prop = "image"

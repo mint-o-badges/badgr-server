@@ -12,7 +12,8 @@ from issuer.helpers import BadgeCheckHelper
 from issuer.models import BadgeInstance
 from issuer.serializers_v2 import BadgeRecipientSerializerV2, EvidenceItemSerializerV2
 from mainsite.serializers import MarkdownCharField, HumanReadableBooleanField
-
+from drf_spectacular.utils import extend_schema_field
+from drf_spectacular.types import OpenApiTypes
 
 CONTEXT_URI = "https://w3id.org/openbadges/v2"
 
@@ -154,6 +155,7 @@ class BadgeConnectProfile(BadgeConnectBaseEntitySerializer):
     class Meta:
         model = BadgeUser
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_name(self, instance):
         return "%s %s" % (instance.first_name, instance.last_name)
 

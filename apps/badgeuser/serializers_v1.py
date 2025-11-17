@@ -6,6 +6,8 @@ from mainsite.validators import PasswordValidator
 from mainsite.utils import validate_altcha
 from .models import BadgeUser, CachedEmailAddress, TermsVersion
 from .utils import notify_on_password_change
+from drf_spectacular.utils import extend_schema_field
+from drf_spectacular.types import OpenApiTypes
 
 
 class BadgeUserTokenSerializerV1(serializers.Serializer):
@@ -58,6 +60,7 @@ class BadgeUserProfileSerializerV1(serializers.Serializer):
     secure_password_set = serializers.BooleanField(required=False)
     source = serializers.CharField(write_only=True, required=False)
 
+    @extend_schema_field(OpenApiTypes.BOOL)
     def get_has_password_set(self, obj):
         return is_password_usable(obj.password)
 

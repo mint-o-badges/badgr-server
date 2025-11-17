@@ -49,6 +49,8 @@ from mainsite.utils import (
     throttleable,
     set_url_query_params,
 )
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 import logging
 
 logger = logging.getLogger("Badgr.Events")
@@ -752,6 +754,19 @@ class TokenView(OAuth2ProviderTokenView):
         return response
 
 
+@extend_schema(
+    request={
+        "application/json": {
+            "type": "object",
+            "properties": {
+                "code": {"type": "string"},
+                "redirect_uri": {"type": "string"},
+            },
+        }
+    },
+    responses={200: OpenApiTypes.OBJECT},
+    description="Exchange authorization code for access token",
+)
 class AuthCodeExchange(APIView):
     permission_classes = []
 

@@ -55,6 +55,8 @@ from .models import (
     RequestedLearningPath,
 )
 from django.db import transaction
+from drf_spectacular.utils import extend_schema_field
+from drf_spectacular.types import OpenApiTypes
 
 logger = logging.getLogger("Badgr.Events")
 
@@ -261,6 +263,7 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
         max_length=255, required=False, allow_blank=True, allow_null=True
     )
 
+    @extend_schema_field(OpenApiTypes.OBJECT)
     def get_networks(self, obj):
         from .serializers_v1 import NetworkSerializerV1
 
@@ -1009,6 +1012,7 @@ class QrCodeSerializerV1(serializers.Serializer):
         instance.save()
         return instance
 
+    @extend_schema_field(OpenApiTypes.INT)
     def get_request_count(self, obj):
         return obj.requestedbadges.count()
 
@@ -1078,6 +1082,7 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
 
     participationBadge_image = serializers.SerializerMethodField()
 
+    @extend_schema_field(OpenApiTypes.URI)
     def get_participationBadge_image(self, obj):
         image = "{}{}?type=png".format(
             OriginSetting.HTTP,
@@ -1309,6 +1314,7 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "shared_at", "shared_by_user"]
 
+    @extend_schema_field(OpenApiTypes.OBJECT)
     def get_badgeclass(self, obj):
         return BadgeClassSerializerV1(obj.badgeclass, context=self.context).data
 
