@@ -2266,8 +2266,8 @@ class NetworkInvitation(BaseEntityDetailView):
         try:
             invite = NetworkInvite.objects.get(entity_id=kwargs.get("slug"))
 
-            if invite.status != NetworkInvite.Status.PENDING:
-                if invite.status == NetworkInvite.Status.REVOKED:
+            if invite.status != IssuerStaffRequest.Status.PENDING:
+                if invite.status == IssuerStaffRequest.Status.REVOKED:
                     return Response(
                         {
                             "detail": "Request has already been revoked.",
@@ -2279,14 +2279,14 @@ class NetworkInvitation(BaseEntityDetailView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            invite.status = NetworkInvite.Status.REVOKED
+            invite.status = IssuerStaffRequest.Status.REVOKED
             invite.revoked = True
             invite.save()
 
             serializer = self.v1_serializer_class(invite)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
-        except NetworkInvite.DoesNotExist:
+        except IssuerStaffRequest.DoesNotExist:
             return Response(
                 {"detail": "Network invitation not found"},
                 status=status.HTTP_404_NOT_FOUND,
