@@ -305,6 +305,13 @@ class NetworkIssuerDetail(BaseEntityDetailView):
             membership = NetworkMembership.objects.get(network=network, issuer=issuer)
             membership.delete()
 
+            NetworkInvite.objects.filter(
+                network=network,
+                issuer=issuer,
+                status=NetworkInvite.Status.APPROVED,
+                revoked=False,
+            ).update(revoked=True, status=NetworkInvite.Status.REVOKED)
+
         except NetworkMembership.DoesNotExist:
             return Response(
                 {"error": "Membership not found"},
