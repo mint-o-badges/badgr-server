@@ -32,31 +32,10 @@ class BadgeConnectApiInfoSerializer(serializers.Serializer):
     authorizationUrl = serializers.URLField(read_only=True)
     tokenUrl = serializers.URLField(read_only=True)
 
-    class Meta:
-        apispec_definition = ("BadgeConnectApiInfo", {"properties": OrderedDict([])})
-
 
 class BadgeConnectManifestSerializer(serializers.Serializer):
     id = serializers.URLField(read_only=True)
     badgeConnectAPI = BadgeConnectApiInfoSerializer(read_only=True, many=True)
-
-    class Meta:
-        apispec_definition = (
-            "BadgeConnectManifest",
-            {
-                "properties": OrderedDict(
-                    [
-                        (
-                            "badgeConnectAPI",
-                            {
-                                "type": "object",
-                                "$ref": "#/definitions/BadgeConnectApiInfo",
-                            },
-                        ),
-                    ]
-                )
-            },
-        )
 
     def to_representation(self, instance):
         data = super(BadgeConnectManifestSerializer, self).to_representation(instance)
@@ -68,44 +47,6 @@ class BadgeConnectStatusSerializer(serializers.Serializer):
     error = serializers.CharField(default=None)
     statusCode = serializers.IntegerField(default=200)
     statusText = serializers.CharField(default="OK")
-
-    class Meta:
-        apispec_definition = (
-            "BadgeConnectStatus",
-            {
-                "properties": OrderedDict(
-                    [
-                        (
-                            "error",
-                            {
-                                "type": "string",
-                                "readOnly": True,
-                                "example": None,
-                                "description": "Error text, if any",
-                            },
-                        ),
-                        (
-                            "statusCode",
-                            {
-                                "type": "integer",
-                                "example": 200,
-                                "readOnly": True,
-                                "description": "Status code of request",
-                            },
-                        ),
-                        (
-                            "statusText",
-                            {
-                                "type": "string",
-                                "readOnly": True,
-                                "example": "OK",
-                                "description": "Status text of request",
-                            },
-                        ),
-                    ]
-                )
-            },
-        )
 
 
 class BadgeConnectErrorSerializer(serializers.Serializer):
@@ -150,202 +91,19 @@ class BadgeConnectAssertionSerializer(BadgeConnectBaseEntitySerializer):
     class Meta:
         SCHEMA_TYPE = "Assertion"
         model = BadgeInstance
-        apispec_definition = (
-            "BadgeConnectAssertion",
-            {
-                "properties": OrderedDict(
-                    [
-                        (
-                            "id",
-                            {
-                                "type": "string",
-                                "format": "url",
-                                "readOnly": True,
-                                "description": "URL of the BadgeInstance",
-                            },
-                        ),
-                        (
-                            "badge",
-                            {
-                                "type": "string",
-                                "format": "url",
-                                "readOnly": True,
-                                "description": "URL of the BadgeClass",
-                            },
-                        ),
-                        (
-                            "image",
-                            {
-                                "type": "string",
-                                "format": "string",
-                                "readOnly": True,
-                                "description": "Badge Image",
-                            },
-                        ),
-                        (
-                            "recipient",
-                            {
-                                "type": "object",
-                                "properties": BadgeRecipientSerializerV2.Meta.apispec_definition[
-                                    1
-                                ]["properties"],
-                                "readOnly": True,
-                                "description": "Recipient that was issued the Assertion",
-                            },
-                        ),
-                        (
-                            "issuedOn",
-                            {
-                                "type": "string",
-                                "format": "ISO8601 timestamp",
-                                "readOnly": True,
-                                "description": "Timestamp when the Assertion was issued",
-                            },
-                        ),
-                        (
-                            "narrative",
-                            {
-                                "type": "string",
-                                "format": "markdown",
-                                "description": "Markdown narrative of the achievement",
-                            },
-                        ),
-                        (
-                            "evidence",
-                            {
-                                "type": "string",
-                                "format": "string",
-                                "description": "Unique identifier for this Assertion",
-                            },
-                        ),
-                        (
-                            "revoked",
-                            {
-                                "type": "boolean",
-                                "readOnly": True,
-                                "description": "True if this Assertion has been revoked",
-                            },
-                        ),
-                        (
-                            "revocationReason",
-                            {
-                                "type": "string",
-                                "format": "string",
-                                "readOnly": True,
-                                "description": "Short description of why the Assertion was revoked",
-                            },
-                        ),
-                        (
-                            "expires",
-                            {
-                                "type": "string",
-                                "format": "ISO8601 timestamp",
-                                "description": "Timestamp when the Assertion expires",
-                            },
-                        ),
-                        (
-                            "@context",
-                            {
-                                "type": "string",
-                                "format": "url",
-                                "default": CONTEXT_URI,
-                                "example": CONTEXT_URI,
-                            },
-                        ),
-                        (
-                            "type",
-                            {
-                                "type": "string",
-                                "default": SCHEMA_TYPE,
-                                "example": SCHEMA_TYPE,
-                            },
-                        ),
-                    ]
-                )
-            },
-        )
 
 
 class BadgeConnectAssertionsSerializer(serializers.Serializer):
     status = BadgeConnectStatusSerializer(read_only=True, default={})
     results = BadgeConnectAssertionSerializer(many=True, source="*")
 
-    class Meta:
-        apispec_definition = (
-            "BadgeConnectAssertions",
-            {
-                "properties": OrderedDict(
-                    [
-                        (
-                            "status",
-                            {
-                                "type": "object",
-                                "$ref": "#/definitions/BadgeConnectStatus",
-                            },
-                        ),
-                        (
-                            "results",
-                            {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "$ref": "#/definitions/BadgeConnectAssertion",
-                                },
-                            },
-                        ),
-                    ]
-                )
-            },
-        )
-
 
 class BackpackImportResultSerializerBC(serializers.Serializer):
     status = BadgeConnectStatusSerializer(read_only=True, default={})
 
-    class Meta:
-        apispec_definition = (
-            "BadgeConnectImportResult",
-            {
-                "properties": OrderedDict(
-                    [
-                        (
-                            "status",
-                            {
-                                "type": "object",
-                                "$ref": "#/definitions/BadgeConnectStatus",
-                            },
-                        ),
-                    ]
-                )
-            },
-        )
-
 
 class BadgeConnectImportSerializer(serializers.Serializer):
     assertion = serializers.DictField()
-
-    class Meta:
-        apispec_definition = (
-            "BadgeConnectImport",
-            {
-                "properties": OrderedDict(
-                    [
-                        (
-                            "assertion",
-                            {
-                                "type": "object",
-                                "properties": {
-                                    "id": {
-                                        "format": "url",
-                                        "description": "URL of the Badge to import",
-                                    }
-                                },
-                            },
-                        )
-                    ]
-                )
-            },
-        )
 
     def create(self, validated_data):
         url = validated_data["assertion"]["id"]
@@ -395,40 +153,6 @@ class BadgeConnectProfile(BadgeConnectBaseEntitySerializer):
 
     class Meta:
         model = BadgeUser
-        apispec_definition = (
-            "BadgeConnectProfile",
-            {
-                "properties": OrderedDict(
-                    [
-                        (
-                            "name",
-                            {
-                                "type": "string",
-                                "format": "string",
-                                "description": "Name on the profile",
-                            },
-                        ),
-                        (
-                            "email",
-                            {
-                                "type": "string",
-                                "format": "email",
-                                "description": "Email on the profile",
-                            },
-                        ),
-                        (
-                            "@context",
-                            {
-                                "type": "string",
-                                "format": "url",
-                                "default": CONTEXT_URI,
-                                "example": CONTEXT_URI,
-                            },
-                        ),
-                    ]
-                )
-            },
-        )
 
     def get_name(self, instance):
         return "%s %s" % (instance.first_name, instance.last_name)
@@ -442,29 +166,3 @@ class BackpackProfilesSerializerBC(serializers.Serializer):
 
     class Meta:
         model = BadgeUser
-        apispec_definition = (
-            "BadgeConnectProfiles",
-            {
-                "properties": OrderedDict(
-                    [
-                        (
-                            "status",
-                            {
-                                "type": "object",
-                                "$ref": "#/definitions/BadgeConnectStatus",
-                            },
-                        ),
-                        (
-                            "results",
-                            {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "$ref": "#/definitions/BadgeConnectProfile",
-                                },
-                            },
-                        ),
-                    ]
-                )
-            },
-        )

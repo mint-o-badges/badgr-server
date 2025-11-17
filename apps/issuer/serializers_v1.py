@@ -116,15 +116,6 @@ class IssuerStaffSerializerV1(serializers.Serializer):
     class Meta:
         list_serializer_class = CachedListSerializer
 
-        apispec_definition = (
-            "IssuerStaff",
-            {
-                "properties": {
-                    "role": {"type": "string", "enum": ["staff", "editor", "owner"]}
-                }
-            },
-        )
-
 
 class BaseIssuerSerializerV1(
     OriginalJsonSerializerMixin, ExcludeFieldsMixin, serializers.Serializer
@@ -179,36 +170,6 @@ class BaseIssuerSerializerV1(
 
 class NetworkSerializerV1(BaseIssuerSerializerV1):
     url = serializers.URLField(max_length=1024, required=False, allow_blank=True)
-
-    class Meta:
-        apispec_definition = (
-            "Network",
-            {
-                "type": "object",
-                "properties": {
-                    "created_at": {"type": "string", "format": "date-time"},
-                    "created_by": {"type": "string"},
-                    "name": {"type": "string"},
-                    "slug": {"type": "string"},
-                    "image": {"type": "string", "format": "uri"},
-                    "description": {"type": "string"},
-                    "url": {"type": "string", "format": "uri"},
-                    "badgrapp": {"type": "string"},
-                    "staff": {
-                        "type": "array",
-                        "items": {"$ref": "#/definitions/IssuerStaff"},
-                    },
-                    "is_network": {"type": "boolean"},
-                    "badgeClassCount": {"type": "integer"},
-                    "learningPathCount": {"type": "integer"},
-                    "partnerBadgesCount": {"type": "integer"},
-                    "partner_issuers": {
-                        "type": "array",
-                        "items": {"$ref": "#/definitions/Issuer"},
-                    },
-                },
-            },
-        )
 
     def create(self, validated_data, **kwargs):
         new_network = Issuer(**validated_data)
@@ -318,9 +279,6 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
         ]
 
         return NetworkSerializerV1(networks, many=True, context=context).data
-
-    class Meta:
-        apispec_definition = ("Issuer", {})
 
     def create(self, validated_data, **kwargs):
         user = validated_data["created_by"]
@@ -465,9 +423,6 @@ class AlignmentItemSerializerV1(serializers.Serializer):
     )
     target_code = StripTagsCharField(required=False, allow_blank=True, allow_null=True)
 
-    class Meta:
-        apispec_definition = ("BadgeClassAlignment", {})
-
 
 class BadgeClassExpirationSerializerV1(serializers.Serializer):
     amount = serializers.IntegerField(
@@ -531,9 +486,6 @@ class BadgeClassSerializerV1(
     )
 
     copy_permissions = serializers.ListField(source="copy_permissions_list")
-
-    class Meta:
-        apispec_definition = ("BadgeClass", {})
 
     def to_internal_value(self, data):
         if "expires" in data:
@@ -752,9 +704,6 @@ class EvidenceItemSerializer(serializers.Serializer):
     )
     narrative = MarkdownCharField(required=False, allow_blank=True)
 
-    class Meta:
-        apispec_definition = ("AssertionEvidence", {})
-
     def validate(self, attrs):
         if not (attrs.get("evidence_url", None) or attrs.get("narrative", None)):
             raise serializers.ValidationError("Either url or narrative is required")
@@ -811,9 +760,6 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
     extensions = serializers.DictField(
         source="extension_items", required=False, validators=[BadgeExtensionValidator()]
     )
-
-    class Meta:
-        apispec_definition = ("Assertion", {})
 
     def validate(self, data):
         recipient_type = data.get("recipient_type")
@@ -995,9 +941,6 @@ class QrCodeSerializerV1(serializers.Serializer):
         required=False, allow_null=True, default_timezone=pytz.utc
     )
 
-    class Meta:
-        apispec_definition = ("QrCode", {})
-
     def create(self, validated_data, **kwargs):
         title = validated_data.get("title")
         createdBy = validated_data.get("createdBy")
@@ -1075,20 +1018,6 @@ class RequestedBadgeSerializer(serializers.ModelSerializer):
         model = RequestedBadge
         fields = "__all__"
 
-        apispec_definition = (
-            "RequestedBadge",
-            {
-                "type": "object",
-                "properties": {
-                    "entity_id": {"type": "string"},
-                    "qrcode": {"type": "string"},
-                    "user": {"type": "string"},
-                    "badgeclass": {"type": "string"},
-                    "created_at": {"type": "string", "format": "date-time"},
-                },
-            },
-        )
-
 
 class IssuerStaffRequestSerializer(serializers.ModelSerializer):
     issuer = IssuerSerializerV1(read_only=True)
@@ -1098,24 +1027,6 @@ class IssuerStaffRequestSerializer(serializers.ModelSerializer):
         model = IssuerStaffRequest
         fields = "__all__"
 
-        apispec_definition = (
-            "IssuerStaffRequest",
-            {
-                "type": "object",
-                "properties": {
-                    "entity_id": {"type": "string"},
-                    "issuer": {"$ref": "#/definitions/Issuer"},
-                    "user": {"type": "object"},
-                    "status": {
-                        "type": "string",
-                        "enum": ["pending", "approved", "rejected", "revoked"],
-                    },
-                    "created_at": {"type": "string", "format": "date-time"},
-                    "revoked": {"type": "boolean"},
-                },
-            },
-        )
-
 
 class NetworkInviteSerializer(serializers.ModelSerializer):
     network = NetworkSerializerV1(read_only=True)
@@ -1124,29 +1035,6 @@ class NetworkInviteSerializer(serializers.ModelSerializer):
     class Meta:
         model = NetworkInvite
         fields = "__all__"
-
-        apispec_definition = (
-            "NetworkInvite",
-            {
-                "type": "object",
-                "properties": {
-                    "entity_id": {"type": "string"},
-                    "network": {"$ref": "#/definitions/Network"},
-                    "issuer": {"$ref": "#/definitions/Issuer"},
-                    "status": {
-                        "type": "string",
-                        "enum": ["pending", "approved", "rejected", "revoked"],
-                    },
-                    "acceptedOn": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": True,
-                    },
-                    "created_at": {"type": "string", "format": "date-time"},
-                    "revoked": {"type": "boolean"},
-                },
-            },
-        )
 
 
 class RequestedLearningPathSerializer(serializers.ModelSerializer):
@@ -1165,9 +1053,6 @@ class RequestedLearningPathSerializer(serializers.ModelSerializer):
 class BadgeOrderSerializer(serializers.Serializer):
     badge = JSONField()
     order = serializers.IntegerField()
-
-    class Meta:
-        apispec_definition = ("LearningPathBadge", {})
 
 
 class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
@@ -1192,9 +1077,6 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
     badges = BadgeOrderSerializer(many=True, required=False)
 
     participationBadge_image = serializers.SerializerMethodField()
-
-    class Meta:
-        apispec_definition = ("LearningPath", {})
 
     def get_participationBadge_image(self, obj):
         image = "{}{}?type=png".format(
@@ -1402,16 +1284,6 @@ class LearningPathParticipantSerializerV1(serializers.Serializer):
 
 
 class NetworkBadgeInstanceSerializerV1(BadgeInstanceSerializerV1):
-    class Meta:
-        apispec_definition = (
-            "NetworkBadgeInstance",
-            {
-                "type": "object",
-                "description": "Badge instance issued within a network context",
-                "allOf": [{"$ref": "#/definitions/Assertion"}],
-            },
-        )
-
     pass
 
 
@@ -1436,39 +1308,6 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
             "recipient_count",
         ]
         read_only_fields = ["id", "shared_at", "shared_by_user"]
-
-        apispec_definition = (
-            "BadgeClassNetworkShare",
-            {
-                "type": "object",
-                "properties": {
-                    "id": {"type": "integer"},
-                    "badgeclass": {"$ref": "#/definitions/BadgeClass"},
-                    "network": {
-                        "type": "object",
-                        "properties": {
-                            "slug": {"type": "string"},
-                            "name": {"type": "string"},
-                            "image": {"type": "string", "format": "uri"},
-                        },
-                    },
-                    "shared_at": {"type": "string", "format": "date-time"},
-                    "shared_by_user": {"type": "string"},
-                    "shared_by_issuer": {
-                        "type": "object",
-                        "nullable": True,
-                        "properties": {
-                            "slug": {"type": "string"},
-                            "name": {"type": "string"},
-                            "image": {"type": "string", "format": "uri"},
-                        },
-                    },
-                    "is_active": {"type": "boolean"},
-                    "awarded_count_original_issuer": {"type": "integer"},
-                    "recipient_count": {"type": "integer"},
-                },
-            },
-        )
 
     def get_badgeclass(self, obj):
         return BadgeClassSerializerV1(obj.badgeclass, context=self.context).data

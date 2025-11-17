@@ -140,26 +140,6 @@ class LocalBadgeInstanceUploadSerializerV1(serializers.Serializer):
 
     extensions = serializers.DictField(source="extension_items", read_only=True)
 
-    class Meta:
-        apispec_definition = (
-            "BackpackAssertion",
-            {
-                "type": "object",
-                "properties": {
-                    "id": {"type": "string"},
-                    "acceptance": {"type": "string"},
-                    "json": {"type": "object"},
-                    "imagePreview": {"type": "object"},
-                    "issuerImagePreview": {"type": "object"},
-                    "shareUrl": {"type": "string", "format": "uri"},
-                    "sharedOnNetwork": {"type": ["object", "null"]},
-                    "isNetworkBadge": {"type": "boolean"},
-                    "networkName": {"type": ["string", "null"]},
-                    "networkImage": {"type": ["string", "null"], "format": "uri"},
-                },
-            },
-        )
-
     # Reinstantiation using fields from badge instance when returned by .create
     # id = serializers.IntegerField(read_only=True)
     # json = V1InstanceSerializer(read_only=True)
@@ -365,7 +345,6 @@ class CollectionBadgeSerializerV1(serializers.ModelSerializer):
         model = BackpackCollectionBadgeInstance
         list_serializer_class = CollectionBadgesSerializerV1
         fields = ("id", "collection", "badgeinstance")
-        apispec_definition = ("CollectionBadgeSerializerV1", {})
 
     def get_validators(self):
         return []
@@ -421,9 +400,6 @@ class CollectionSerializerV1(serializers.Serializer):
         read_only=False, many=True, required=False, source="cached_collects"
     )
     published = serializers.BooleanField(required=False)
-
-    class Meta:
-        apispec_definition = ("Collection", {})
 
     def to_representation(self, instance):
         representation = super(CollectionSerializerV1, self).to_representation(instance)
