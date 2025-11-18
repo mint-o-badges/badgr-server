@@ -145,6 +145,7 @@ class ImportedBadgeInstanceDetail(BaseEntityDetailView):
 
 @extend_schema_view(
     get=extend_schema(
+        operation_id="earner_badges_list",
         summary="Get a list of Assertions in authenticated user's backpack",
         description="Retrieve all badge assertions from the authenticated user's backpack",
         tags=["Backpack"],
@@ -177,6 +178,7 @@ class ImportedBadgeInstanceDetail(BaseEntityDetailView):
         ],
     ),
     post=extend_schema(
+        operation_id="earner_badges_upload",
         summary="Upload a new Assertion to the backpack",
         description="Upload a new badge assertion to the user's backpack",
         tags=["Backpack"],
@@ -289,6 +291,7 @@ class BackpackAssertionList(BaseEntityListView):
 
 @extend_schema_view(
     get=extend_schema(
+        operation_id="earner_badge_retrieve",
         summary="Get detail on an Assertion in the user's Backpack",
         description="Retrieve detailed information about a specific badge assertion",
         tags=["Backpack"],
@@ -303,12 +306,14 @@ class BackpackAssertionList(BaseEntityListView):
         ],
     ),
     delete=extend_schema(
+        operation_id="earner_badge_delete",
         summary="Remove an assertion from the backpack",
         description="Delete a badge assertion from the user's backpack",
         tags=["Backpack"],
         responses={204: None},
     ),
     put=extend_schema(
+        operation_id="earner_badge_update_acceptance",
         summary="Update acceptance of an Assertion in the user's Backpack",
         description="Update the acceptance status of a badge assertion",
         tags=["Backpack"],
@@ -393,6 +398,7 @@ class BackpackAssertionDetail(BaseEntityDetailView):
         return Response(serializer.data)
 
 
+@extend_schema(exclude=True)
 class BackpackAssertionDetailImage(ImagePropertyDetailView, BadgrOAuthTokenHasScope):
     model = BadgeInstance
     prop = "image"
@@ -468,12 +474,14 @@ class BadgesFromUser(BaseEntityListView):
 
 @extend_schema_view(
     get=extend_schema(
+        operation_id="earner_collection_list",
         summary="Get a list of Collections",
         description="Retrieve all badge collections for the authenticated user",
         tags=["Backpack"],
         responses={200: BackpackCollectionSerializerV2(many=True)},
     ),
     post=extend_schema(
+        operation_id="earner_collection_add",
         summary="Create a new Collection",
         description="Create a new badge collection",
         tags=["Backpack"],
@@ -507,12 +515,14 @@ class BackpackCollectionList(BaseEntityListView):
 
 @extend_schema_view(
     get=extend_schema(
+        operation_id="earner_collection_retrieve",
         summary="Get a single Collection",
         description="Retrieve details of a specific badge collection",
         tags=["Backpack"],
         responses={200: BackpackCollectionSerializerV2},
     ),
     put=extend_schema(
+        operation_id="earner_collection_update",
         summary="Update a Collection",
         description="Update an existing badge collection",
         tags=["Backpack"],
