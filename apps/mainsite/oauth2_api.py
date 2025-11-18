@@ -49,13 +49,14 @@ from mainsite.utils import (
     throttleable,
     set_url_query_params,
 )
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, extend_schema_field, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
 import logging
 
 logger = logging.getLogger("Badgr.Events")
 
 
+@extend_schema(exclude=True)
 class AuthorizationApiView(OAuthLibMixin, APIView):
     permission_classes = []
 
@@ -379,6 +380,7 @@ class RegistrationSerializer(serializers.Serializer):
         return rep
 
 
+@extend_schema(exclude=True)
 class RegisterApiView(APIView):
     permission_classes = []
 
@@ -409,6 +411,7 @@ class PublicRegistrationSerializer(serializers.Serializer):
     client_id_issued_at = serializers.SerializerMethodField(read_only=True)
     client_secret_expires_at = serializers.IntegerField(default=0, read_only=True)
 
+    @extend_schema_field(OpenApiTypes.INT)
     def get_client_id_issued_at(self, obj):
         try:
             return int(obj.created.strftime("%s"))
@@ -476,6 +479,14 @@ class PublicRegisterApiView(APIView):
     permission_classes = []
     permission_classes = (permissions.IsAuthenticated,)
 
+    @extend_schema(
+        tags=["Registration"],
+        request=PublicRegistrationSerializer,
+        responses={
+            201: PublicRegistrationSerializer,
+            400: OpenApiResponse(description="Validation error"),
+        },
+    )
     def post(self, request, **kwargs):
         serializer = PublicRegistrationSerializer(
             data=request.data, context={"request": request}
