@@ -277,56 +277,6 @@ class BaseUserRecoveryView(BaseEntityDetailView):
         return Response(serializer.data, status=status)
 
 
-class BadgeRequestVerification(BaseUserRecoveryView):
-    authentication_classes = ()
-    permission_classes = (permissions.AllowAny,)
-
-    def get(self, request, *args, **kwargs):
-        badgr_app = None
-        badgrapp_id = self.request.GET.get("a")
-
-        if badgrapp_id:
-            try:
-                badgr_app = BadgrApp.objects.get(id=badgrapp_id)
-            except BadgrApp.DoesNotExist:
-                pass
-
-        if badgr_app is None:
-            badgr_app = BadgrApp.objects.get_current(request)
-
-        token = request.GET.get("token", "")
-        badge_request_id = request.GET.get("request_id", "")
-
-        try:
-            # Verify the token but don't invalidate it
-            signer = TimestampSigner()
-            verified_badge_request_id = signer.unsign(token, max_age=None)
-
-            if verified_badge_request_id != badge_request_id:
-                return Response(
-                    {"error": "Invalid token for this badge request"},
-                    status=HTTP_400_BAD_REQUEST,
-                )
-
-            badge_request = RequestedBadge.objects.get(id=badge_request_id)
-
-            base_url = badgr_app.cors.rstrip("/") + "/"
-
-            if not base_url.startswith(("http://", "https://")):
-                base_url = f"https://{base_url}"
-
-            path = f"issuer/issuers/{badge_request.qrcode.issuer.entity_id}/badges/{badge_request.qrcode.badgeclass.entity_id}"
-
-            redirect_url = urllib.parse.urljoin(base_url, path) + f"?token={token}"
-
-            return Response(status=HTTP_302_FOUND, headers={"Location": redirect_url})
-
-        except RequestedBadge.DoesNotExist:
-            return Response(
-                {"error": "Badge request not found"}, status=HTTP_404_NOT_FOUND
-            )
-
-
 class BadgeUserForgotPassword(BaseUserRecoveryView):
     schema = None
     authentication_classes = ()
@@ -757,6 +707,7 @@ class BadgeUserAccountConfirm(RedirectView):
 
 class AccessTokenList(BaseEntityListView):
     model = AccessTokenProxy
+    serializer_class = AccessTokenSerializerV2
     v2_serializer_class = AccessTokenSerializerV2
     permission_classes = (permissions.IsAuthenticated, BadgrOAuthTokenHasScope)
     valid_scopes = ["rw:profile"]
@@ -776,6 +727,7 @@ class AccessTokenList(BaseEntityListView):
 
 class ApplicationList(BaseEntityListView):
     model = get_application_model()
+    serializer_class = ApplicationInfoSerializer
     v2_serializer_class = ApplicationInfoSerializer
     permission_classes = (permissions.IsAuthenticated, BadgrOAuthTokenHasScope)
     valid_scopes = ["rw:profile"]
@@ -793,6 +745,7 @@ class ApplicationList(BaseEntityListView):
 
 class ApplicationDetails(BaseEntityDetailView):
     model = ApplicationInfo
+    serializer_class = ApplicationInfoSerializer
     v2_serializer_class = ApplicationInfoSerializer
     permission_classes = (permissions.IsAuthenticated, BadgrOAuthTokenHasScope)
     valid_scopes = ["rw:profile"]
@@ -810,6 +763,7 @@ class ApplicationDetails(BaseEntityDetailView):
 
 class AccessTokenDetail(BaseEntityDetailView):
     model = AccessTokenProxy
+    serializer_class = AccessTokenSerializerV2
     v2_serializer_class = AccessTokenSerializerV2
     permission_classes = (permissions.IsAuthenticated, BadgrOAuthTokenHasScope)
     valid_scopes = ["rw:profile"]
@@ -841,6 +795,7 @@ class AccessTokenDetail(BaseEntityDetailView):
 
 class LatestTermsVersionDetail(BaseEntityDetailView):
     model = TermsVersion
+    serializer_class = TermsVersionSerializerV2
     v2_serializer_class = TermsVersionSerializerV2
     permission_classes = (permissions.AllowAny,)
 
@@ -856,6 +811,8 @@ class LatestTermsVersionDetail(BaseEntityDetailView):
 
 class BadgeUserResendEmailConfirmation(BaseUserRecoveryView):
     permission_classes = (permissions.AllowAny,)
+    serializer_class = EmailSerializerV1
+    v1_serializer_class = EmailSerializerV1
 
     def put(self, request, **kwargs):
         email = request.data.get("email")
@@ -1018,6 +975,7 @@ class BadgeUserCollectBadgesInBackpack(BaseEntityDetailView, BaseRedirectView):
         return self._prepare_redirect(request, badgrapp, intended_redirect)
 
 
+@extend_schema(exclude=True)
 class GetRedirectPath(BaseEntityDetailView):
     permission_classes = (permissions.IsAuthenticated,)
 
