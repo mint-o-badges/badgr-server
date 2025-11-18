@@ -351,7 +351,7 @@ REST_FRAMEWORK = {
 SPECTACULAR_SETTINGS = {
     "TITLE": "Badgr API",
     "DESCRIPTION": "Badgr API documentation",
-    "VERSION": "1.0.0",
+    "VERSION": "3.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
 }
