@@ -7,10 +7,6 @@ from drf_spectacular.types import OpenApiTypes
 class ExplicitCSRFSessionAuthenticationScheme(OpenApiAuthenticationExtension):
     """
     Extension for ExplicitCSRFSessionAuthentication.
-
-    This is session-based authentication (using Django's session cookie)
-    with explicit CSRF protection. It's typically used for browser-based
-    clients that maintain a session after logging in through the web interface.
     """
 
     target_class = "entity.authentication.ExplicitCSRFSessionAuthentication"

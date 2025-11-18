@@ -174,7 +174,7 @@ urlpatterns = [
     #
     # OpenAPI schema endpoint
     url(r"^api/schema/$", SpectacularAPIView.as_view(), name="schema"),
-    # OAuth2 authorize redirect for docs (keep your existing endpoint)
+    # OAuth2 authorize redirect for docs
     url(
         r"^docs/oauth2/authorize$",
         DocsAuthorizeRedirect.as_view(),
@@ -187,7 +187,7 @@ urlpatterns = [
         name="swagger-ui-v2",
     ),
     url(r"^redoc/$", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
-    # Default redirect to v2 docs?
+    # Default redirect to v2 docs
     url(r"^docs/?$", RedirectView.as_view(url="/docs/v2/", permanent=True)),
     # unversioned public endpoints
     url(
