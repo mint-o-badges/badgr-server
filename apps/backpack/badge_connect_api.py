@@ -80,20 +80,7 @@ def badge_connect_api_info(domain):
 class BadgeConnectManifestView(APIView):
     permission_classes = [AllowAny]
 
-    @extend_schema(
-        summary="Fetch Badge Connect Manifest",
-        tags=["BadgeConnect"],
-        parameters=[
-            OpenApiParameter(
-                name="domain",
-                location=OpenApiParameter.QUERY,
-                description="The CORS domain for the BadgrApp",
-                required=False,
-                type=str,
-            )
-        ],
-        responses=OpenApiResponse(BadgeConnectManifestSerializer),
-    )
+    @extend_schema(exclude=True)
     def get(self, request, **kwargs):
         data = badge_connect_api_info(kwargs.get("domain"))
         if data is None:
@@ -187,37 +174,7 @@ class BadgeConnectAssertionListView(ListCreateAPIView):
             return BadgeConnectImportSerializer
         return super(BadgeConnectAssertionListView, self).get_serializer_class()
 
-    @extend_schema(
-        summary="Get a list of Assertions",
-        tags=["BadgeConnect"],
-        parameters=[
-            OpenApiParameter(
-                name="limit",
-                location=OpenApiParameter.QUERY,
-                description="How many results to return per page.",
-                type=int,
-            ),
-            OpenApiParameter(
-                name="offset",
-                location=OpenApiParameter.QUERY,
-                description="Zero-based index of the first record to return.",
-                type=int,
-            ),
-            OpenApiParameter(
-                name="since",
-                location=OpenApiParameter.QUERY,
-                description=(
-                    "Retrieve Assertions created or updated after this timestamp "
-                    "(ISO 8601 with timezone)."
-                ),
-                type=str,
-            ),
-        ],
-        responses=OpenApiResponse(
-            response=BadgeConnectAssertionsSerializer(many=True),
-            description="List of Badge Assertions",
-        ),
-    )
+    @extend_schema(exclude=True)
     def get(self, request, **kwargs):
         queryset = self.get_queryset()
         page = self.paginate_queryset(queryset)
@@ -228,17 +185,7 @@ class BadgeConnectAssertionListView(ListCreateAPIView):
         serializer = self.get_serializer(queryset)
         return Response(serializer.data)
 
-    @extend_schema(
-        summary="Import a Badge Assertion",
-        tags=["BadgeConnect"],
-        request=BadgeConnectImportSerializer,
-        responses={
-            201: OpenApiResponse(
-                response=BackpackImportResultSerializerBC,
-                description="Successfully created",
-            )
-        },
-    )
+    @extend_schema(exclude=True)
     def post(self, request, **kwargs):
         return super(BadgeConnectAssertionListView, self).post(request, **kwargs)
 
@@ -256,11 +203,7 @@ class BadgeConnectProfileView(BaseEntityDetailView):
         ],
     }
 
-    @extend_schema(
-        summary="Get Badge Connect user profile",
-        tags=["BadgeConnect"],
-        responses=OpenApiResponse(BackpackProfilesSerializerBC(many=True)),
-    )
+    @extend_schema(exclude=True)
     def get(self, request, **kwargs):
         """
         GET a single entity by its identifier

@@ -268,12 +268,7 @@ def aiskills_keywords(req):
     return call_aiskills_api(endpoint, "GET", payload)
 
 
-@extend_schema(
-    summary="Create CAPTCHA challenge",
-    description="Generate an Altcha CAPTCHA challenge",
-    tags=["Security"],
-    responses={200: OpenApiTypes.OBJECT},
-)
+@extend_schema(exclude=True)
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def createCaptchaChallenge(req):
@@ -339,6 +334,7 @@ def createCaptchaChallenge(req):
             description="QR Code Entity ID",
         )
     ],
+    tags=["Requested Badges"],
 )
 @api_view(["POST", "GET"])
 @permission_classes([AllowAny])
@@ -498,7 +494,7 @@ def PageSetup(canvas, doc, badgeImage, issuerImage):
 @extend_schema(
     summary="Delete badge request",
     description="Delete a badge request by ID",
-    tags=["Badges"],
+    tags=["Requested Badges"],
     parameters=[
         OpenApiParameter(
             name="requestId",
@@ -536,7 +532,7 @@ def deleteBadgeRequest(req, requestId):
 @extend_schema(
     summary="Get badge requests by badge class",
     description="Retrieve count of badge requests for a specific badge class",
-    tags=["Badges"],
+    tags=["Requested Badges"],
     parameters=[
         OpenApiParameter(
             name="badgeSlug",
@@ -589,8 +585,8 @@ def create_page(response, page_content, badgeImage, issuerImage):
 
 @extend_schema(
     summary="Download QR code as PDF",
-    description="Generate and download a QR code PDF for a badge",
-    tags=["Badges"],
+    description="Generate and download a QR code PDF for a badge instance",
+    tags=["Assertions"],
     parameters=[
         OpenApiParameter(
             name="badgeSlug",
@@ -688,26 +684,7 @@ def extractErrorMessage500(response: Response):
     return match.group(1) if match else "Invalid searchterm! (Unknown error)"
 
 
-@extend_schema(
-    summary="Search Noun Project icons",
-    description="Search for icons in the Noun Project",
-    tags=["Icons"],
-    parameters=[
-        OpenApiParameter(
-            name="searchterm",
-            type=OpenApiTypes.STR,
-            location=OpenApiParameter.PATH,
-            description="Search term",
-        ),
-        OpenApiParameter(
-            name="page",
-            type=OpenApiTypes.INT,
-            location=OpenApiParameter.PATH,
-            description="Page number",
-        ),
-    ],
-    responses={200: OpenApiTypes.OBJECT},
-)
+@extend_schema(exclude=True)
 @api_view(["GET"])
 @authentication_classes(
     [

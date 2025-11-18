@@ -818,12 +818,7 @@ class BadgeInstanceJson(JSONComponentView):
         )
 
 
-@extend_schema(
-    responses={
-        200: OpenApiResponse(response=OpenApiTypes.BINARY, description="Badge image")
-    },
-    description="Returns the badge image",
-)
+@extend_schema(exclude=True)
 class BadgeInstanceImage(ImagePropertyDetailView):
     model = BadgeInstance
     prop = "image"
@@ -1065,6 +1060,7 @@ class OEmbedAPIEndpoint(APIView):
         404: {"type": "object"},
         400: {"type": "object"},
     },
+    tags=["Assertions"],
 )
 class VerifyBadgeAPIEndpoint(JSONComponentView):
     permission_classes = (permissions.AllowAny,)

@@ -479,14 +479,7 @@ class PublicRegisterApiView(APIView):
     permission_classes = []
     permission_classes = (permissions.IsAuthenticated,)
 
-    @extend_schema(
-        tags=["Registration"],
-        request=PublicRegistrationSerializer,
-        responses={
-            201: PublicRegistrationSerializer,
-            400: OpenApiResponse(description="Validation error"),
-        },
-    )
+    @extend_schema(exclude=True)
     def post(self, request, **kwargs):
         serializer = PublicRegistrationSerializer(
             data=request.data, context={"request": request}
@@ -765,19 +758,7 @@ class TokenView(OAuth2ProviderTokenView):
         return response
 
 
-@extend_schema(
-    request={
-        "application/json": {
-            "type": "object",
-            "properties": {
-                "code": {"type": "string"},
-                "redirect_uri": {"type": "string"},
-            },
-        }
-    },
-    responses={200: OpenApiTypes.OBJECT},
-    description="Exchange authorization code for access token",
-)
+@extend_schema(exclude=True)
 class AuthCodeExchange(APIView):
     permission_classes = []
 
