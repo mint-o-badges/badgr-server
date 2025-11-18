@@ -14,7 +14,6 @@ from cryptography.hazmat.primitives import serialization
 from pyld import jsonld
 
 import cachemodel
-import dateutil
 from allauth.account.adapter import get_adapter
 from django.apps import apps
 from django.conf import settings
@@ -22,6 +21,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, transaction
 from django.db.models import ProtectedError
 from django.urls import reverse
@@ -986,23 +986,11 @@ class BadgeClass(
         "description",
         "entity_id",
         "entity_version",
-        "expires_amount",
-        "expires_duration",
+        "expiration",
         "name",
         "pk",
         "slug",
         "updated_at",
-    )
-
-    EXPIRES_DURATION_DAYS = "days"
-    EXPIRES_DURATION_WEEKS = "weeks"
-    EXPIRES_DURATION_MONTHS = "months"
-    EXPIRES_DURATION_YEARS = "years"
-    EXPIRES_DURATION_CHOICES = (
-        (EXPIRES_DURATION_DAYS, "Days"),
-        (EXPIRES_DURATION_WEEKS, "Weeks"),
-        (EXPIRES_DURATION_MONTHS, "Months"),
-        (EXPIRES_DURATION_YEARS, "Years"),
     )
 
     issuer = models.ForeignKey(
@@ -1028,14 +1016,15 @@ class BadgeClass(
     # TODO: criteria_url and criteria_text are deprecated and should be removed once the migration to the criteria field was done
     criteria_url = models.CharField(max_length=254, blank=True, null=True, default=None)
     criteria_text = models.TextField(blank=True, null=True)
-
-    expires_amount = models.IntegerField(blank=True, null=True, default=None)
-    expires_duration = models.CharField(
-        max_length=254,
-        choices=EXPIRES_DURATION_CHOICES,
+    expiration = models.IntegerField(
         blank=True,
         null=True,
         default=None,
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(36500),  # 100 years
+        ],
+        help_text="Number of days the badge is valid after being issued.",
     )
 
     # permissions saved as integer in binary representation
@@ -1286,6 +1275,9 @@ class BadgeClass(
         issuerSlug=None,
         activity_start_date=None,
         activity_end_date=None,
+        activity_zip=None,
+        activity_city=None,
+        activity_online=False,
         **kwargs,
     ):
         return BadgeInstance.objects.create(
@@ -1303,6 +1295,9 @@ class BadgeClass(
             user=get_user_or_none(recipient_id, recipient_type),
             activity_start_date=activity_start_date,
             activity_end_date=activity_end_date,
+            activity_zip=activity_zip,
+            activity_city=activity_city,
+            activity_online=activity_online,
             **kwargs,
         )
 
@@ -1504,15 +1499,13 @@ class BadgeClass(
         return self.cached_issuer.cached_badgrapp
 
     def generate_expires_at(self, issued_on=None):
-        if not self.expires_duration or not self.expires_amount:
+        if not self.expiration:
             return None
 
         if issued_on is None:
             issued_on = timezone.now()
 
-        duration_kwargs = dict()
-        duration_kwargs[self.expires_duration] = self.expires_amount
-        return issued_on + dateutil.relativedelta.relativedelta(**duration_kwargs)
+        return issued_on + timezone.timedelta(days=self.expiration)
 
     @property
     def copy_permissions_list(self):
@@ -1713,6 +1706,12 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
         default=None,
         help_text="The datetime the activity/course ended",
     )
+
+    activity_zip = models.CharField(max_length=255, null=True, blank=True, default=None)
+    activity_city = models.CharField(
+        max_length=255, null=True, blank=True, default=None
+    )
+    activity_online = models.BooleanField(blank=True, null=False, default=False)
 
     ob_json_2_0 = models.TextField(blank=True, null=True, default=None)
     ob_json_3_0 = models.TextField(blank=True, null=True, default=None)
@@ -2302,6 +2301,19 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
         if self.activity_end_date:
             credential_subject["activityEndDate"] = self.activity_end_date.isoformat()
 
+        if self.activity_city or self.activity_zip:
+            activity_location = {"type": ["Address"]}
+
+            if self.activity_city:
+                activity_location["addressLocality"] = self.activity_city
+            if self.activity_zip:
+                activity_location["postalCode"] = self.activity_zip
+
+            credential_subject["activityLocation"] = activity_location
+
+        if self.activity_online:
+            credential_subject["activityFormat"] = "Online"
+
         json = OrderedDict(
             [
                 (
@@ -2856,6 +2868,10 @@ class QrCode(BaseVersionedEntity):
         default=None,
         help_text="The datetime the activity/course ended",
     )
+
+    activity_zip = models.CharField(max_length=255, null=True, blank=True)
+    activity_city = models.CharField(max_length=255, null=True, blank=True)
+    activity_online = models.BooleanField(blank=True, null=False, default=False)
 
     valid_from = models.DateTimeField(blank=True, null=True, default=None)
 

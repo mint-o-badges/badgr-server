@@ -140,6 +140,26 @@ class LocalBadgeInstanceUploadSerializerV1(serializers.Serializer):
 
     extensions = serializers.DictField(source="extension_items", read_only=True)
 
+    class Meta:
+        apispec_definition = (
+            "BackpackAssertion",
+            {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "acceptance": {"type": "string"},
+                    "json": {"type": "object"},
+                    "imagePreview": {"type": "object"},
+                    "issuerImagePreview": {"type": "object"},
+                    "shareUrl": {"type": "string", "format": "uri"},
+                    "sharedOnNetwork": {"type": ["object", "null"]},
+                    "isNetworkBadge": {"type": "boolean"},
+                    "networkName": {"type": ["string", "null"]},
+                    "networkImage": {"type": ["string", "null"], "format": "uri"},
+                },
+            },
+        )
+
     # Reinstantiation using fields from badge instance when returned by .create
     # id = serializers.IntegerField(read_only=True)
     # json = V1InstanceSerializer(read_only=True)
@@ -643,6 +663,8 @@ class V1BadgeInstanceSerializer(V1InstanceSerializer):
         if "evidence" in localbadgeinstance_json:
             localbadgeinstance_json["evidence"] = instance.evidence_url
         localbadgeinstance_json["uid"] = instance.entity_id
+        if instance.expires_at:
+            localbadgeinstance_json["expires"] = instance.expires_at.isoformat()
         # TODO: check if badge can be removed as now the badge metadata is also included under credentialSubject.achievement
         localbadgeinstance_json["badge"] = instance.cached_badgeclass.json
         localbadgeinstance_json["badge"]["slug"] = instance.cached_badgeclass.entity_id
@@ -667,6 +689,12 @@ class V1BadgeInstanceSerializer(V1InstanceSerializer):
             credential_subject["activityEndDate"] = (
                 instance.activity_end_date.isoformat()
             )
+
+        if instance.activity_city:
+            credential_subject["activityCity"] = instance.activity_city
+
+        if instance.activity_online:
+            credential_subject["activityOnline"] = instance.activity_online
 
         localbadgeinstance_json["credentialSubject"] = credential_subject
         return super(V1BadgeInstanceSerializer, self).to_representation(
