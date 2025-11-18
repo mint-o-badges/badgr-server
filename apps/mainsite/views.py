@@ -304,6 +304,42 @@ def createCaptchaChallenge(req):
     return JsonResponse(ch)
 
 
+@extend_schema(
+    request=inline_serializer(
+        name="BadgeRequestSerializer",
+        fields={
+            "firstname": serializers.CharField(),
+            "lastname": serializers.CharField(),
+            "email": serializers.EmailField(),
+            "ageConfirmation": serializers.BooleanField(),
+        },
+    ),
+    responses={
+        200: inline_serializer(
+            name="BadgeRequestResponseSerializer",
+            fields={
+                "message": serializers.CharField(),
+                "requested_badges": serializers.ListField(
+                    child=serializers.DictField()
+                ),
+            },
+        ),
+        400: inline_serializer(
+            name="BadgeRequestErrorSerializer",
+            fields={
+                "error": serializers.CharField(),
+            },
+        ),
+    },
+    parameters=[
+        OpenApiParameter(
+            name="qrCodeId",
+            type=str,
+            location=OpenApiParameter.PATH,
+            description="QR Code Entity ID",
+        )
+    ],
+)
 @api_view(["POST", "GET"])
 @permission_classes([AllowAny])
 def requestBadge(req, qrCodeId):
