@@ -247,6 +247,7 @@ class IssuerDetail(BaseEntityDetailView):
         return super(IssuerDetail, self).delete(request, **kwargs)
 
 
+@extend_schema(exclude=True)
 class NetworkIssuerDetail(BaseEntityDetailView):
     model = Issuer
     permission_classes = [
@@ -263,8 +264,28 @@ class NetworkIssuerDetail(BaseEntityDetailView):
 
     @extend_schema(
         summary="Remove an issuer from a network",
-        description="Authenticated user must have owner, editor, or staff status on the Network",
-        tags=["Issuers", "Networks"],
+        description="Authenticated user must have owner, editor, or staff status on the Network.",
+        parameters=[
+            OpenApiParameter(
+                name="slug",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.PATH,
+                description="The network's entity_id",
+            ),
+            OpenApiParameter(
+                name="issuer_slug",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.PATH,
+                description="The issuer's entity_id",
+            ),
+        ],
+        responses={
+            204: OpenApiResponse(
+                description="Issuer successfully removed from the network"
+            ),
+            403: OpenApiResponse(description="Not authorized to remove issuer"),
+            404: OpenApiResponse(description="Network or membership not found"),
+        },
     )
     def delete(self, request, slug, issuer_slug, **kwargs):
         try:
@@ -560,9 +581,13 @@ class LearningPathParticipantsList(BaseEntityView):
     GET a list of learningpath participants
     """
 
+    serializer_class = LearningPathParticipantSerializerV1
     valid_scopes = ["rw:issuer"]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return BadgeInstance.objects.none()
+
         learning_path_slug = self.kwargs.get("slug")
         learning_path = LearningPath.objects.get(entity_id=learning_path_slug)
         badge_instances = BadgeInstance.objects.filter(
@@ -774,6 +799,7 @@ class BatchAssertionsRevoke(VersionedObjectMixin, BaseEntityView):
         )
         | BadgrOAuthTokenHasEntityScope
     ]
+    serializer_class = BadgeInstanceSerializerV2
     v2_serializer_class = BadgeInstanceSerializerV2
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
@@ -1373,6 +1399,7 @@ class IssuerTokensList(BaseEntityListView):
         BadgrOAuthTokenHasScope,
         AuthorizationIsBadgrOAuthToken,
     )
+    serializer_class = IssuerAccessTokenSerializerV2
     v2_serializer_class = IssuerAccessTokenSerializerV2
     valid_scopes = ["rw:issuer"]
 
