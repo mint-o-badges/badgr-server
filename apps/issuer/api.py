@@ -88,7 +88,6 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
-    HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
@@ -290,7 +289,7 @@ class NetworkIssuerDetail(BaseEntityDetailView):
         "Issuer",
         summary="Remove an issuer from a network",
         description="Authenticated user must have owner, editor, or staff status on the Network",
-        tags=["Issuers", "Network"],
+        tags=["Issuers", "Networks"],
     )
     def delete(self, request, slug, issuer_slug, **kwargs):
         try:
@@ -582,7 +581,7 @@ class IssuerLearningPathList(
         "LearningPath",
         summary="Create a new LearningPath associated with an Issuer",
         description="Authenticated user must have owner, editor, or staff status on the Issuer",
-        tags=["Issuers", "LearningPath"],
+        tags=["Issuers", "LearningPaths"],
     )
     def post(self, request, **kwargs):
         self.get_object(request, **kwargs)  # trigger a has_object_permissions() check
@@ -744,19 +743,18 @@ class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
         context["badgeclass"] = self.get_object(self.request, **kwargs)
         return context
 
-    @apispec_post_operation(
+    @apispec_get_operation(
         "Assertion",
-        summary="Issue multiple copies of the same BadgeClass to multiple recipients",
+        summary="Get batch assertion task status",
+        description="Check the status of a batch assertion issuance task",
         tags=["Assertions"],
         parameters=[
             {
-                "in": "body",
-                "name": "body",
+                "in": "path",
+                "name": "task_id",
+                "type": "string",
+                "description": "The task ID returned from the batch issuance request",
                 "required": True,
-                "schema": {
-                    "type": "array",
-                    "items": {"$ref": "#/definitions/Assertion"},
-                },
             }
         ],
     )
@@ -773,6 +771,22 @@ class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
             {"task_id": task_id, "status": task_result.status, "result": result}
         )
 
+    @apispec_post_operation(
+        "Assertion",
+        summary="Issue multiple copies of the same BadgeClass to multiple recipients",
+        tags=["Assertions"],
+        parameters=[
+            {
+                "in": "body",
+                "name": "body",
+                "required": True,
+                "schema": {
+                    "type": "array",
+                    "items": {"$ref": "#/definitions/Assertion"},
+                },
+            }
+        ],
+    )
     def post(self, request, **kwargs):
         issuerSlug = kwargs.get("issuerSlug")
         # verify the user has permission to the badgeclass
@@ -1269,6 +1283,20 @@ class NetworkBadgeInstanceList(
         ctx["user"] = self.request.user
         return ctx
 
+    @apispec_list_operation(
+        "Assertion",
+        summary="Get network badge instances across all partner issuers",
+        description="Retrieve all badge instances for a network badge class, grouped by issuing organization. Only available for badges created by networks.",
+        tags=["Assertions", "Networks", "BadgeClasses"],
+        parameters=[
+            {
+                "in": "query",
+                "name": "num",
+                "type": "string",
+                "description": "Request pagination of results",
+            },
+        ],
+    )
     def get(self, request, **kwargs):
         response = super().get(request, **kwargs)
         instances = response.data
@@ -1649,25 +1677,23 @@ class IssuersChangedSince(BaseEntityView):
         return Response(serializer.data)
 
 
-class QRCodeDetail(BaseEntityView):
-    """
-    QrCode list resource for the authenticated user
-    """
+class QRCodeList(BaseEntityListView):
+    """List and create QR codes for a specific badge"""
 
     model = QrCode
     v1_serializer_class = QrCodeSerializerV1
-    # v2_serializer_class = IssuerSerializerV2
     permission_classes = (BadgrOAuthTokenHasScope, AuthenticatedWithVerifiedIdentifier)
     valid_scopes = ["rw:issuer"]
 
     def get_objects(self, request, **kwargs):
+        """Get QR codes filtered by badge and issuer"""
         badgeSlug = kwargs.get("badgeSlug")
         issuerSlug = kwargs.get("issuerSlug")
 
         try:
             issuer = Issuer.objects.get(entity_id=issuerSlug)
         except Issuer.DoesNotExist:
-            return None
+            return []
 
         if issuer.is_network:
             qr_codes = QrCode.objects.filter(
@@ -1675,8 +1701,7 @@ class QRCodeDetail(BaseEntityView):
                 issuer__network_memberships__network=issuer,
             ).select_related("issuer")
 
-            # permission check is done for every qr code
-            # TODO: check if this could become a performance problem
+            # Permission check for each QR code
             return [
                 qr_code
                 for qr_code in qr_codes
@@ -1687,62 +1712,68 @@ class QRCodeDetail(BaseEntityView):
             badgeclass__entity_id=badgeSlug, issuer__entity_id=issuerSlug
         )
 
+    @apispec_list_operation(
+        "QrCode",
+        summary="Get all QR codes for a specific badge and issuer",
+        tags=["QrCodes"],
+    )
+    def get(self, request, **kwargs):
+        return super().get(request, **kwargs)
+
+    @apispec_post_operation(
+        "QrCode",
+        summary="Create a new QR code for a badge",
+        tags=["QrCodes"],
+    )
+    def post(self, request, **kwargs):
+        return super().post(request, **kwargs)
+
+
+class QRCodeDetail(BaseEntityView):
+    """Retrieve, update, or delete a specific QR code"""
+
+    model = QrCode
+    v1_serializer_class = QrCodeSerializerV1
+    permission_classes = (BadgrOAuthTokenHasScope, AuthenticatedWithVerifiedIdentifier)
+    valid_scopes = ["rw:issuer"]
+
     def get_object(self, request, **kwargs):
         qr_code_id = kwargs.get("slug")
         return QrCode.objects.get(entity_id=qr_code_id)
 
-    @apispec_list_operation(
+    @apispec_get_operation(
         "QrCode",
-        summary="Get a list of QrCodes for authenticated user",
+        summary="Get a specific QR code by slug",
         tags=["QrCodes"],
     )
     def get(self, request, **kwargs):
-        serializer_class = self.get_serializer_class()
-
-        if "slug" in kwargs:
-            try:
-                qr_code = self.get_object(request, **kwargs)
-                serializer = serializer_class(qr_code)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            except QrCode.DoesNotExist:
-                return Response(
-                    {"detail": "QR code not found"}, status=status.HTTP_404_NOT_FOUND
-                )
-        else:
-            objects = self.get_objects(request, **kwargs)
-            serializer = serializer_class(objects, many=True)
-
-            return Response(serializer.data)
-
-    @apispec_post_operation(
-        "QrCode",
-        summary="Create a new QrCode",
-        tags=["QrCodes"],
-    )
-    def post(self, request, **kwargs):
-        context = self.get_context_data(**kwargs)
-        serializer_class = self.get_serializer_class()
-        serializer = serializer_class(data=request.data, context=context)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=HTTP_201_CREATED)
+        try:
+            qr_code = self.get_object(request, **kwargs)
+            serializer_class = self.get_serializer_class()
+            serializer = serializer_class(qr_code)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except QrCode.DoesNotExist:
+            return Response(
+                {"detail": "QR code not found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
     @apispec_put_operation(
         "QrCode",
-        summary="Update a single QrCode",
+        summary="Update a specific QR code",
         tags=["QrCodes"],
     )
     def put(self, request, **kwargs):
         qr_code = self.get_object(request, **kwargs)
+        context = self.get_context_data(**kwargs)
         serializer_class = self.get_serializer_class()
-        serializer = serializer_class(qr_code, data=request.data)
+        serializer = serializer_class(qr_code, data=request.data, context=context)
         serializer.is_valid(raise_exception=True)
         serializer.save(updated_by=request.user)
         return Response(serializer.data, status=HTTP_200_OK)
 
     @apispec_delete_operation(
         "QrCode",
-        summary="Delete an existing QrCode",
+        summary="Delete a specific QR code",
         tags=["QrCodes"],
     )
     def delete(self, request, **kwargs):
@@ -1838,7 +1869,7 @@ class BadgeRequestList(BaseEntityListView):
     ]
     valid_scopes = ["rw:issuer"]
 
-    @apispec_delete_operation(
+    @apispec_post_operation(
         "RequestedBadge",
         summary="Delete multiple badge requests",
         tags=["Requested Badges"],
@@ -1892,7 +1923,7 @@ class LearningPathDetail(BaseEntityDetailView):
     @apispec_get_operation(
         "LearningPath",
         summary="Get a single LearningPath",
-        tags=["Learningpaths"],
+        tags=["LearningPaths"],
     )
     def get(self, request, **kwargs):
         return super(LearningPathDetail, self).get(request, **kwargs)
@@ -1996,47 +2027,6 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
         summary="Update a single IssuerStaffRequest",
         tags=["IssuerStaffRequest"],
     )
-    def put(self, request, **kwargs):
-        if "confirm" in request.path:
-            return self.confirm_request(request, **kwargs)
-        return super(IssuerStaffRequestDetail, self).put(request, **kwargs)
-
-    def confirm_request(self, request, **kwargs):
-        try:
-            staff_request = IssuerStaffRequest.objects.get(
-                entity_id=kwargs.get("requestId")
-            )
-
-            badgrapp = BadgrApp.objects.get_by_id_or_default()
-
-            if staff_request.status != IssuerStaffRequest.Status.PENDING:
-                return Response(
-                    {"detail": "Only pending requests can be confirmed"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            staff_request.status = IssuerStaffRequest.Status.APPROVED
-            staff_request.save()
-
-            serializer = self.v1_serializer_class(staff_request)
-
-            email_context = {
-                "issuer": staff_request.issuer,
-                "activate_url": badgrapp.ui_login_redirect.rstrip("/"),
-                "call_to_action_label": "Jetzt loslegen",
-            }
-            get_adapter().send_mail(
-                "account/email/staff_request_confirmed",
-                staff_request.user.email,
-                email_context,
-            )
-            return Response(serializer.data)
-
-        except IssuerStaffRequest.DoesNotExist:
-            return Response(
-                {"detail": "Staff request not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
     @apispec_delete_operation(
         "IssuerStaffRequest",
         summary="Delete a single IssuerStaffRequest",
@@ -2074,9 +2064,102 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
             )
 
 
+class IssuerStaffRequestConfirm(BaseEntityDetailView):
+    """Separate view for confirming requests"""
+
+    model = IssuerStaffRequest
+    v1_serializer_class = IssuerStaffRequestSerializer
+    permission_classes = [
+        IsServerAdmin
+        | (
+            AuthenticatedWithVerifiedIdentifier
+            & BadgrOAuthTokenHasScope
+            & ApprovedIssuersOnly
+            & MayEditBadgeClass
+        )
+    ]
+    valid_scopes = ["rw:issuer"]
+
+    @apispec_put_operation(
+        "IssuerStaffRequest",
+        summary="Confirm a staff membership request",
+        description="Approve a pending staff request and grant access (admin only)",
+        tags=["IssuerStaffRequest"],
+    )
+    def put(self, request, **kwargs):
+        try:
+            staff_request = IssuerStaffRequest.objects.get(
+                entity_id=kwargs.get("requestId")
+            )
+
+            badgrapp = BadgrApp.objects.get_by_id_or_default()
+
+            if staff_request.status != IssuerStaffRequest.Status.PENDING:
+                return Response(
+                    {"detail": "Only pending requests can be confirmed"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            staff_request.status = IssuerStaffRequest.Status.APPROVED
+            staff_request.save()
+
+            serializer = self.v1_serializer_class(staff_request)
+
+            email_context = {
+                "issuer": staff_request.issuer,
+                "activate_url": badgrapp.ui_login_redirect.rstrip("/"),
+                "call_to_action_label": "Jetzt loslegen",
+            }
+            get_adapter().send_mail(
+                "account/email/staff_request_confirmed",
+                staff_request.user.email,
+                email_context,
+            )
+            return Response(serializer.data)
+
+        except IssuerStaffRequest.DoesNotExist:
+            return Response(
+                {"detail": "Staff request not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        pass
+
+
 class BadgeImageComposition(APIView):
     permission_classes = (IsAuthenticated,)
 
+    @apispec_post_operation(
+        "BadgeClass",
+        summary="Compose a badge image",
+        description="Generate a composed badge image by combining the original badge image with the respective frame and issuer and/or network logos",
+        tags=["BadgeClasses"],
+        parameters=[
+            {
+                "in": "body",
+                "name": "body",
+                "required": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "badgeSlug": {
+                            "type": "string",
+                            "description": "Entity ID of the badge class",
+                        },
+                        "issuerSlug": {
+                            "type": "string",
+                            "description": "Entity ID of the issuer",
+                        },
+                        "category": {"type": "string", "description": "Badge category"},
+                        "useIssuerImage": {
+                            "type": "boolean",
+                            "description": "Whether to include the issuer's logo in the composition",
+                            "default": True,
+                        },
+                    },
+                    "required": ["badgeSlug", "issuerSlug", "category"],
+                },
+            }
+        ],
+    )
     def post(self, request, *args, **kwargs):
         try:
             badgeSlug = request.data.get("badgeSlug")
@@ -2174,17 +2257,156 @@ class NetworkInvitation(BaseEntityDetailView):
     def get(self, request, **kwargs):
         return super(NetworkInvitation, self).get(request, **kwargs)
 
+    @apispec_delete_operation(
+        "NetworkInvite",
+        summary="Revoke a single NetworkInvitation",
+        tags=["NetworkInvite"],
+    )
+    def delete(self, request, **kwargs):
+        try:
+            invite = NetworkInvite.objects.get(entity_id=kwargs.get("slug"))
+
+            if invite.status != NetworkInvite.Status.PENDING:
+                if invite.status == NetworkInvite.Status.REVOKED:
+                    return Response(
+                        {
+                            "detail": "Request has already been revoked.",
+                        },
+                        status=status.HTTP_200_OK,
+                    )
+                return Response(
+                    {"detail": "Only pending requests can be revoked"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            invite.status = NetworkInvite.Status.REVOKED
+            invite.revoked = True
+            invite.save()
+
+            serializer = self.v1_serializer_class(invite)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except NetworkInvite.DoesNotExist:
+            return Response(
+                {"detail": "Network invitation not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+
+class NetworkInvitationConfirm(BaseEntityDetailView):
+    """
+    Confirm a network invitation.
+    """
+
+    model = NetworkInvite
+    v1_serializer_class = NetworkInviteSerializer
+    permission_classes = [
+        IsServerAdmin | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope)
+    ]
+    valid_scopes = ["rw:issuer"]
+
+    @apispec_put_operation(
+        "NetworkInvite",
+        summary="Confirm a network invitation",
+        description="Confirm a network invitation, adding the institution to the network",
+        tags=["NetworkInvite"],
+    )
+    def put(self, request, **kwargs):
+        try:
+            invitation = NetworkInvite.objects.get(entity_id=kwargs.get("slug"))
+
+            if invitation.status == NetworkInvite.Status.APPROVED:
+                return Response(
+                    {"detail": "Issuer is already a partner of this network"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if invitation.status != NetworkInvite.Status.PENDING:
+                return Response(
+                    {"detail": "Link expired"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            with transaction.atomic():
+                invitation.status = NetworkInvite.Status.APPROVED
+                invitation.acceptedOn = timezone.now()
+                invitation.save()
+
+                if invitation.issuer:
+                    NetworkMembership.objects.get_or_create(
+                        network=invitation.network, issuer=invitation.issuer
+                    )
+
+            serializer = self.v1_serializer_class(invitation)
+            return Response(serializer.data)
+
+        except NetworkInvite.DoesNotExist:
+            return Response(
+                {"detail": "Invitation not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class NetworkInvitationList(BaseEntityListView):
+    model = NetworkInvite
+    v1_serializer_class = NetworkInviteSerializer
+    permission_classes = [
+        IsServerAdmin | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope)
+    ]
+    valid_scopes = ["rw:issuer"]
+
+    def get_objects(self, request, **kwargs):
+        status_filter = request.GET.get("status", "").lower()
+
+        try:
+            network = Issuer.objects.get(entity_id=kwargs.get("networkSlug"))
+        except Issuer.DoesNotExist:
+            Exception("Network not found")
+
+        queryset = NetworkInvite.objects.filter(network=network)
+
+        if status_filter == "pending":
+            queryset = queryset.filter(status=NetworkInvite.Status.PENDING)
+        elif status_filter == "approved":
+            queryset = queryset.filter(status=NetworkInvite.Status.APPROVED)
+        else:
+            # return all
+            pass
+
+        return queryset
+
+    @apispec_get_operation(
+        "NetworkInvite",
+        summary="Get network invitations with optional status filter",
+        description="Get network invitations. Use 'status' query parameter to filter.",
+        parameters=[
+            {
+                "name": "status",
+                "in": "query",
+                "description": "Filter invitations by status",
+                "required": False,
+                "schema": {
+                    "type": "string",
+                    "enum": ["pending", "approved"],
+                    "default": "pending",
+                },
+            }
+        ],
+        tags=["NetworkInvite"],
+    )
+    def get(self, request, **kwargs):
+        return super(NetworkInvitationList, self).get(request, **kwargs)
+
     @apispec_post_operation(
         "NetworkInvite",
         summary="Create new network invitations",
+        description="Invite multiple institutions to join a network. Sends email notifications to institution owners.",
         tags=["NetworkInvite"],
         responses=OrderedDict(
             [
-                (
-                    "201",
-                    {"description": "Network invitation request created successfully"},
-                ),
+                ("201", {"description": "Network invitation(s) created successfully"}),
                 ("400", {"description": "Bad request or validation error"}),
+                ("403", {"description": "Not authorized to invite institutions"}),
+                ("404", {"description": "Network or institution(s) not found"}),
             ]
         ),
     )
@@ -2258,8 +2480,7 @@ class NetworkInvitation(BaseEntityDetailView):
             with transaction.atomic():
                 created_invitations = []
                 for issuer in issuers:
-                    # existing and pending invitations for the issuer/network combination
-                    # should be revoked before creating a new one to prevent duplicates
+                    # Revoke existing pending invitations to prevent duplicates
                     if existing_invitations.exists():
                         existing_invitations.filter(
                             issuer=issuer, network=network
@@ -2281,15 +2502,12 @@ class NetworkInvitation(BaseEntityDetailView):
                         + reverse(
                             "v1_api_user_confirm_network_invite",
                             current_app="badgeuser",
-                            kwargs={
-                                "inviteSlug": invitation.entity_id,
-                            },
+                            kwargs={"inviteSlug": invitation.entity_id},
                         ),
                         "call_to_action_label": "Einladung bestätigen",
                     }
 
                     adapter = get_adapter()
-
                     for owner in owners:
                         adapter.send_mail(
                             "issuer/email/notify_issuer_network_invitation",
@@ -2310,136 +2528,6 @@ class NetworkInvitation(BaseEntityDetailView):
                 {"response": f"Failed to create invitations: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
-    @apispec_put_operation(
-        "NetworkInvite",
-        summary="Update a single NetworkInvite",
-        tags=["NetworkInvite"],
-    )
-    def put(self, request, **kwargs):
-        if "confirm" in request.path:
-            return self.confirm(request, **kwargs)
-        return super(NetworkInvitation, self).put(request, **kwargs)
-
-    def confirm(self, request, **kwargs):
-        try:
-            invitation = NetworkInvite.objects.get(entity_id=kwargs.get("slug"))
-
-            if invitation.status != NetworkInvite.Status.PENDING:
-                return Response(
-                    {"detail": "Link expired"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            if invitation.status == NetworkInvite.Status.APPROVED:
-                return Response(
-                    {"detail": "Issuer is already a partner of this network"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            with transaction.atomic():
-                invitation.status = NetworkInvite.Status.APPROVED
-                invitation.acceptedOn = timezone.now()
-                invitation.save()
-
-                if invitation.issuer:
-                    NetworkMembership.objects.get_or_create(
-                        network=invitation.network, issuer=invitation.issuer
-                    )
-
-            serializer = self.v1_serializer_class(invitation)
-            return Response(serializer.data)
-
-        except NetworkInvite.DoesNotExist:
-            return Response(
-                {"detail": "Invitation not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
-    @apispec_delete_operation(
-        "NetworkInvite",
-        summary="Revoke a single NetworkInvitation",
-        tags=["NetworkInvite"],
-    )
-    def delete(self, request, **kwargs):
-        try:
-            invite = NetworkInvite.objects.get(entity_id=kwargs.get("slug"))
-
-            if invite.status != IssuerStaffRequest.Status.PENDING:
-                if invite.status == IssuerStaffRequest.Status.REVOKED:
-                    return Response(
-                        {
-                            "detail": "Request has already been revoked.",
-                        },
-                        status=status.HTTP_200_OK,
-                    )
-                return Response(
-                    {"detail": "Only pending requests can be revoked"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            invite.status = IssuerStaffRequest.Status.REVOKED
-            invite.revoked = True
-            invite.save()
-
-            serializer = self.v1_serializer_class(invite)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        except IssuerStaffRequest.DoesNotExist:
-            return Response(
-                {"detail": "Network invitation not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-
-class NetworkInvitationList(BaseEntityListView):
-    model = NetworkInvite
-    v1_serializer_class = NetworkInviteSerializer
-    permission_classes = [
-        IsServerAdmin | (AuthenticatedWithVerifiedIdentifier & BadgrOAuthTokenHasScope)
-    ]
-    valid_scopes = ["rw:issuer"]
-
-    def get_objects(self, request, **kwargs):
-        status_filter = request.GET.get("status", "").lower()
-
-        try:
-            network = Issuer.objects.get(entity_id=kwargs.get("networkSlug"))
-        except Issuer.DoesNotExist:
-            Exception("Network not found")
-
-        queryset = NetworkInvite.objects.filter(network=network)
-
-        if status_filter == "pending":
-            queryset = queryset.filter(status=NetworkInvite.Status.PENDING)
-        elif status_filter == "approved":
-            queryset = queryset.filter(status=NetworkInvite.Status.APPROVED)
-        else:
-            # return all
-            pass
-
-        return queryset
-
-    @apispec_get_operation(
-        "NetworkInvite",
-        summary="Get network invitations with optional status filter",
-        description="Get network invitations. Use 'status' query parameter to filter.",
-        parameters=[
-            {
-                "name": "status",
-                "in": "query",
-                "description": "Filter invitations by status",
-                "required": False,
-                "schema": {
-                    "type": "string",
-                    "enum": ["pending", "approved"],
-                    "default": "pending",
-                },
-            }
-        ],
-        tags=["NetworkInvite"],
-    )
-    def get(self, request, **kwargs):
-        return super(NetworkInvitationList, self).get(request, **kwargs)
 
 
 class NetworkSharedBadgesView(BaseEntityListView):
@@ -2469,9 +2557,9 @@ class NetworkSharedBadgesView(BaseEntityListView):
         )
 
     @apispec_get_operation(
-        "NetworkSharedBadges",
+        "BadgeClassNetworkShare",
         summary="Get all badges shared with a network",
-        tags=["Networks", "Badge Sharing"],
+        tags=["Networks"],
     )
     def get(self, request, **kwargs):
         """
@@ -2510,9 +2598,9 @@ class IssuerSharedNetworkBadgesView(BaseEntityListView):
         )
 
     @apispec_get_operation(
-        "IssuerSharedNetworkBadges",
+        "BadgeClassNetworkShare",
         summary="Get all badges shared by a specific issuer with networks",
-        tags=["Issuers", "Badge Sharing"],
+        tags=["Issuers"],
     )
     def get(self, request, **kwargs):
         """
@@ -2552,7 +2640,7 @@ class BadgeClassNetworkShareView(BaseEntityDetailView):
     @apispec_post_operation(
         "BadgeClassNetworkShare",
         summary="Share a badge class with a network",
-        tags=["Badge Sharing"],
+        tags=["BadgeClasses", "Networks"],
     )
     def post(self, request, **kwargs):
         """

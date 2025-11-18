@@ -193,14 +193,16 @@ class BadgeCreateEmbed(RequestIframe):
 
         try:
             given_issuer = request.POST["issuer"]
+            issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
+            if (
+                issuers.count() == 0
+                or issuers.filter(entity_id=given_issuer).count() == 0
+            ):
+                return HttpResponseForbidden()
+            issuer = issuers.get(entity_id=given_issuer)
         except KeyError:
-            return HttpResponseBadRequest("No issuer id to create the badge specified")
-
-        issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
-        if issuers.count() == 0 or issuers.filter(entity_id=given_issuer).count() == 0:
-            return HttpResponseForbidden()
-
-        issuer = issuers.get(entity_id=given_issuer)
+            issuer = None
+            pass
 
         if request.auth:
             application = request.auth.application
@@ -222,7 +224,7 @@ class BadgeCreateEmbed(RequestIframe):
             params={
                 "language": language,
                 "token": token.token,
-                "issuer": issuer.get_json(),
+                "issuer": issuer.get_json() if issuer else None,
             },
             created_by=request.user,
         )
@@ -245,28 +247,24 @@ class BadgeEditEmbed(RequestIframe):
         except (KeyError, AssertionError):
             language = "en"
 
-        try:
-            badge_id = request.POST["badge"]
-        except KeyError:
-            return HttpResponseBadRequest("No badge id to edit the badge")
-
         issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
         if issuers.count() == 0:
             return HttpResponseForbidden()
 
-        badge = (
-            BadgeClass.objects.filter(
-                entity_id=badge_id, issuer__staff__id=request.user.id
+        try:
+            badge_id = request.POST["badge"]
+            badge = (
+                BadgeClass.objects.filter(
+                    entity_id=badge_id, issuer__staff__id=request.user.id
+                )
+                .distinct()
+                .first()
             )
-            .distinct()
-            .first()
-        )
+        except KeyError:
+            badge = None
 
         if badge and not issuers.get(entity_id=badge.issuer.entity_id):
             return HttpResponseForbidden()
-
-        if not badge:
-            return HttpResponseBadRequest("No badge found for given badge id")
 
         if request.auth:
             application = request.auth.application
@@ -288,8 +286,9 @@ class BadgeEditEmbed(RequestIframe):
             params={
                 "language": language,
                 "token": token.token,
-                "badge": BadgeClassSerializerV1(badge).data,
-                "issuer": badge.issuer.get_json(),
+                "badge": BadgeClassSerializerV1(badge).data if badge else None,
+                "issuer": badge.issuer.get_json() if badge else None,
+                "badgeSelection": False if badge else True,
             },
             created_by=request.user,
         )

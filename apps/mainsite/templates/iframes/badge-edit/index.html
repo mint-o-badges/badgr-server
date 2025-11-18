@@ -27,6 +27,7 @@
             document.addEventListener("DOMContentLoaded", () => {
                 const issuer = JSON.parse("{{ issuer | escapejs }}");
                 const badge = JSON.parse("{{ badge | escapejs }}");
+                const showBadgeSelection = JSON.parse("{{ showBadgeSelection | escapejs }}");
                 const editForm = document.getElementById("edit-form");
 
                 editForm.addEventListener("finished", (ev) => {
@@ -43,6 +44,7 @@
                 editForm.config = {
                     issuer: issuer,
                     badge: badge,
+                    showBadgeSelection: showBadgeSelection
                 };
             });
         </script>
