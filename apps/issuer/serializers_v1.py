@@ -1318,6 +1318,7 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
     def get_badgeclass(self, obj):
         return BadgeClassSerializerV1(obj.badgeclass, context=self.context).data
 
+    @extend_schema_field(OpenApiTypes.OBJECT)
     def get_network(self, obj):
         return {
             "slug": obj.network.entity_id,
@@ -1325,6 +1326,7 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
             "image": obj.network.image_url(),
         }
 
+    @extend_schema_field(OpenApiTypes.OBJECT)
     def get_shared_by_issuer(self, obj):
         if obj.shared_by_issuer:
             return {
@@ -1334,6 +1336,7 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
             }
         return None
 
+    @extend_schema_field(OpenApiTypes.INT)
     def get_awarded_count_original_issuer(self, obj):
         if obj.shared_by_issuer:
             return BadgeInstance.objects.filter(
@@ -1343,6 +1346,7 @@ class BadgeClassNetworkShareSerializerV1(serializers.ModelSerializer):
             ).count()
         return 0
 
+    @extend_schema_field(OpenApiTypes.INT)
     def get_recipient_count(self, obj):
         """
         Count of badge instances issued after this badge was shared with the network.
