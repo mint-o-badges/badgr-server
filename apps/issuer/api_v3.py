@@ -9,10 +9,15 @@ from django.utils import timezone
 from django_filters import rest_framework as filters
 from oauth2_provider.models import AccessToken, Application
 from oauthlib.oauth2.rfc6749.tokens import random_token_generator
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, serializers
 from rest_framework.response import Response
 
-from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+    inline_serializer,
+    OpenApiParameter,
+)
 from rest_framework.views import APIView
 
 from backpack.utils import get_skills_tree
@@ -95,6 +100,12 @@ class Badges(EntityViewSet, TotalCountMixin):
         summary="Get a list of all available badge tags",
         tags=["BadgeClasses"],
         description="Fetch all available tags that existing Badges may be filtered by",
+        responses={
+            200: inline_serializer(
+                name="BadgeTagsResponse",
+                fields={"tags": serializers.ListField(child=serializers.CharField())},
+            )
+        },
     ),
 )
 class BadgeTags(viewsets.ViewSet):
@@ -256,39 +267,7 @@ class RequestIframe(APIView):
         return HttpResponse()
 
 
-@extend_schema_view(
-    post=extend_schema(
-        summary="Generate iframe URL for learner's profile",
-        tags=["Iframes"],
-        description="Generate an iframe URL to display a learner's badge profile with skills tree",
-        parameters=[
-            OpenApiParameter(
-                "email",
-                type=str,
-                location=OpenApiParameter.QUERY,
-                description="Email address of the learner",
-                required=True,
-            ),
-            OpenApiParameter(
-                "lang",
-                type=str,
-                location=OpenApiParameter.QUERY,
-                description="Language code (de or en)",
-                required=False,
-            ),
-        ],
-        responses={
-            200: {
-                "type": "object",
-                "properties": {
-                    "url": {"type": "string", "description": "The iframe URL"}
-                },
-            },
-            400: {"description": "Missing email parameter"},
-            403: {"description": "User forbidden or no issuer association"},
-        },
-    ),
-)
+@extend_schema(exclude=True)
 class LearnersProfile(RequestIframe):
     permission_classes = [
         IsServerAdmin
@@ -333,38 +312,7 @@ class LearnersProfile(RequestIframe):
         return JsonResponse({"url": iframe.url})
 
 
-@extend_schema_view(
-    post=extend_schema(
-        summary="Generate iframe URL for badge creation",
-        tags=["Iframes"],
-        description="Generate an iframe URL with a short-lived OAuth token for creating badges",
-        parameters=[
-            OpenApiParameter(
-                "lang",
-                type=str,
-                location=OpenApiParameter.QUERY,
-                description="Language code (de or en)",
-                required=False,
-            ),
-            OpenApiParameter(
-                "issuer",
-                type=str,
-                location=OpenApiParameter.QUERY,
-                description="Entity ID of the issuer",
-                required=False,
-            ),
-        ],
-        responses={
-            200: {
-                "type": "object",
-                "properties": {
-                    "url": {"type": "string", "description": "The iframe URL"}
-                },
-            },
-            403: {"description": "User forbidden or no issuer association"},
-        },
-    ),
-)
+@extend_schema(exclude=True)
 class BadgeCreateEmbed(RequestIframe):
     permission_classes = [
         IsServerAdmin
@@ -421,38 +369,7 @@ class BadgeCreateEmbed(RequestIframe):
         return JsonResponse({"url": iframe.url})
 
 
-@extend_schema_view(
-    post=extend_schema(
-        summary="Generate iframe URL for badge editing",
-        tags=["Iframes"],
-        description="Generate an iframe URL with a short-lived OAuth token for editing an existing badge",
-        parameters=[
-            OpenApiParameter(
-                "lang",
-                type=str,
-                location=OpenApiParameter.QUERY,
-                description="Language code (de or en)",
-                required=False,
-            ),
-            OpenApiParameter(
-                "badge",
-                type=str,
-                location=OpenApiParameter.QUERY,
-                description="Entity ID of the badge to edit",
-                required=False,
-            ),
-        ],
-        responses={
-            200: {
-                "type": "object",
-                "properties": {
-                    "url": {"type": "string", "description": "The iframe URL"}
-                },
-            },
-            403: {"description": "User forbidden or no issuer association"},
-        },
-    ),
-)
+@extend_schema(exclude=True)
 class BadgeEditEmbed(RequestIframe):
     permission_classes = [
         IsServerAdmin
