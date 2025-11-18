@@ -31,7 +31,6 @@ from mainsite.utils import OriginSetting, verifyIssuerAutomatically
 from mainsite.validators import (
     BadgeExtensionValidator,
     ChoicesValidator,
-    PositiveIntegerValidator,
     TelephoneValidator,
 )
 from rest_framework import serializers
@@ -427,19 +426,6 @@ class AlignmentItemSerializerV1(serializers.Serializer):
     target_code = StripTagsCharField(required=False, allow_blank=True, allow_null=True)
 
 
-class BadgeClassExpirationSerializerV1(serializers.Serializer):
-    amount = serializers.IntegerField(
-        source="expires_amount",
-        allow_null=True,
-        validators=[PositiveIntegerValidator()],
-    )
-    duration = serializers.ChoiceField(
-        source="expires_duration",
-        allow_null=True,
-        choices=BadgeClass.EXPIRES_DURATION_CHOICES,
-    )
-
-
 class BadgeClassSerializerV1(
     OriginalJsonSerializerMixin,
     ExtensionsSaverMixin,
@@ -476,9 +462,7 @@ class BadgeClassSerializerV1(
         source="extension_items", required=False, validators=[BadgeExtensionValidator()]
     )
 
-    expires = BadgeClassExpirationSerializerV1(
-        source="*", required=False, allow_null=True
-    )
+    expiration = serializers.IntegerField(required=False, allow_null=True)
 
     source_url = serializers.CharField(
         max_length=255, required=False, allow_blank=True, allow_null=True
@@ -489,13 +473,6 @@ class BadgeClassSerializerV1(
     )
 
     copy_permissions = serializers.ListField(source="copy_permissions_list")
-
-    def to_internal_value(self, data):
-        if "expires" in data:
-            if not data["expires"] or len(data["expires"]) == 0:
-                # if expires was included blank, remove it so to_internal_value() doesnt choke
-                del data["expires"]
-        return super(BadgeClassSerializerV1, self).to_internal_value(data)
 
     def to_representation(self, instance):
         representation = super(BadgeClassSerializerV1, self).to_representation(instance)
@@ -580,6 +557,16 @@ class BadgeClassSerializerV1(
         self.formal = is_formal
         return extensions
 
+    def validate_expiration(self, value):
+        if value is not None:
+            if value < 1:
+                raise serializers.ValidationError("Expiration must be at least 1 day.")
+            if value > 36500:
+                raise serializers.ValidationError(
+                    "Expiration cannot exceed 100 years (36500 days)."
+                )
+        return value
+
     def add_extensions(self, instance, add_these_extensions, extension_items):
         for extension_name in add_these_extensions:
             original_json = extension_items[extension_name]
@@ -613,8 +600,7 @@ class BadgeClassSerializerV1(
             instance.alignment_items = validated_data.get("alignment_items")
             instance.tag_items = validated_data.get("tag_items")
 
-            instance.expires_amount = validated_data.get("expires_amount", None)
-            instance.expires_duration = validated_data.get("expires_duration", None)
+            instance.expiration = validated_data.get("expiration", None)
 
             instance.imageFrame = validated_data.get("imageFrame", True)
 
