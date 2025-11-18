@@ -10,10 +10,6 @@ from allauth.account.models import EmailConfirmationHMAC
 from allauth.account.utils import user_pk_to_url_str, url_str_to_user_pk
 from drf_spectacular.utils import (
     extend_schema,
-    OpenApiParameter,
-    OpenApiResponse,
-    OpenApiRequest,
-    inline_serializer,
 )
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
@@ -34,7 +30,6 @@ from issuer.models import (
     LearningPath,
     LearningPathBadge,
     NetworkInvite,
-    RequestedBadge,
 )
 from issuer.serializers_v1 import IssuerStaffRequestSerializer, LearningPathSerializerV1
 from rest_framework import permissions, serializers, status
@@ -79,7 +74,6 @@ from mainsite.utils import (
 )
 from mainsite.serializers import ApplicationInfoSerializer
 
-from django.core.signing import TimestampSigner
 import logging
 
 logger = logging.getLogger("Badgr.Events")

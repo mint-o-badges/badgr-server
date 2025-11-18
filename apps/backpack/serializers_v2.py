@@ -1,8 +1,4 @@
 # encoding: utf-8
-
-
-from collections import OrderedDict
-
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError as RestframeworkValidationError

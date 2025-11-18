@@ -1,5 +1,3 @@
-from collections import OrderedDict
-
 from rest_framework import serializers
 from django.contrib.auth.hashers import is_password_usable
 

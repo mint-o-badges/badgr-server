@@ -1,7 +1,6 @@
 import os
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
-from django.conf import settings
 
 from mainsite import TOP_DIR
 
@@ -28,7 +27,7 @@ class Command(BaseCommand):
             try:
                 # Generate the schema file
                 # Note: drf-spectacular doesn't have native multi-version support
-                with open(output_file, "w") as f:
+                with open(output_file, "w"):
                     call_command(
                         "spectacular",
                         "--file",

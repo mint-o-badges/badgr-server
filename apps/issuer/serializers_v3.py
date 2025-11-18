@@ -1,5 +1,3 @@
-from collections import OrderedDict
-
 from entity.serializers import DetailSerializerV2
 from issuer.models import BadgeClass
 

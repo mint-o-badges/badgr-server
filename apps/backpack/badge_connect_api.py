@@ -1,11 +1,5 @@
-from collections import OrderedDict
-
 from drf_spectacular.utils import (
     extend_schema,
-    OpenApiParameter,
-    OpenApiResponse,
-    OpenApiRequest,
-    inline_serializer,
 )
 from django.conf import settings
 from django.shortcuts import reverse
@@ -20,7 +14,6 @@ from rest_framework.utils.urls import replace_query_param
 from rest_framework.views import APIView
 
 from backpack.serializers_bcv1 import (
-    BackpackImportResultSerializerBC,
     BackpackProfilesSerializerBC,
     BadgeConnectAssertionsSerializer,
     BadgeConnectImportSerializer,

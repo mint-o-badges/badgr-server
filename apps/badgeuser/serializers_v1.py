@@ -1,6 +1,5 @@
 from django.contrib.auth.hashers import is_password_usable
 from rest_framework import serializers
-from collections import OrderedDict
 from mainsite.serializers import StripTagsCharField
 from mainsite.validators import PasswordValidator
 from mainsite.utils import validate_altcha

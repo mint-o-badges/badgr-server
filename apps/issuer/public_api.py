@@ -49,7 +49,6 @@ from .serializers_v1 import (
     BadgeClassSerializerV1,
     IssuerSerializerV1,
     LearningPathSerializerV1,
-    NetworkSerializerV1,
     QrCodeSerializerV1,
 )
 import logging
