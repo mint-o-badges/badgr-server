@@ -41,7 +41,7 @@ from drf_spectacular.types import OpenApiTypes
     responses={
         200: OpenApiResponse(
             description="PDF file",
-            response={(200, "application/pdf"): OpenApiTypes.BINARY},
+            response=OpenApiTypes.BINARY,
         ),
         404: OpenApiResponse(description="Badge not found"),
         403: OpenApiResponse(description="Permission denied"),
@@ -98,7 +98,7 @@ def pdf(request, *args, **kwargs):
     responses={
         200: OpenApiResponse(
             description="PDF file",
-            response={(200, "application/pdf"): OpenApiTypes.BINARY},
+            response=OpenApiTypes.BINARY,
         ),
         404: OpenApiResponse(description="Collection not found"),
         403: OpenApiResponse(description="Permission denied"),
