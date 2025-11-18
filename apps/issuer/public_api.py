@@ -49,10 +49,11 @@ from .serializers_v1 import (
     BadgeClassSerializerV1,
     IssuerSerializerV1,
     LearningPathSerializerV1,
+    NetworkSerializerV1,
     QrCodeSerializerV1,
 )
 import logging
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 
 logger = logging.getLogger("Badgr.Events")
@@ -339,6 +340,24 @@ class ImagePropertyDetailView(APIView, SlugToEntityIdRedirectMixin):
         return redirect(image_url)
 
 
+@extend_schema(
+    description="Returns public issuer details",
+    parameters=[
+        OpenApiParameter(
+            name="entity_id",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.PATH,
+            description="Issuer ID",
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="Issuer JSON",
+            response=BadgeClassSerializerV1,
+        )
+    },
+    tags=["Issuers"],
+)
 class IssuerJson(JSONComponentView):
     permission_classes = (permissions.AllowAny,)
     model = Issuer
@@ -364,6 +383,24 @@ class IssuerJson(JSONComponentView):
         )
 
 
+@extend_schema(
+    description="Returns public details of badgeclasses for an issuer",
+    parameters=[
+        OpenApiParameter(
+            name="entity_id",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.PATH,
+            description="Issuer ID",
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="Issuer Badges JSON",
+            response=BadgeClassSerializerV1,
+        )
+    },
+    tags=["BadgeClasses"],
+)
 class IssuerBadgesJson(JSONComponentView):
     permission_classes = (permissions.AllowAny,)
     model = Issuer
@@ -384,6 +421,24 @@ class IssuerBadgesJson(JSONComponentView):
         ]
 
 
+@extend_schema(
+    description="Returns public details of learning paths for an issuer",
+    parameters=[
+        OpenApiParameter(
+            name="entity_id",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.PATH,
+            description="Issuer ID",
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="Issuer LearningPaths JSON",
+            response=LearningPathSerializerV1,
+        )
+    },
+    tags=["LearningPaths"],
+)
 class IssuerLearningPathsJson(JSONComponentView):
     permission_classes = (permissions.AllowAny,)
     model = Issuer
@@ -397,6 +452,7 @@ class IssuerLearningPathsJson(JSONComponentView):
         ]
 
 
+@extend_schema(exclude=True)
 class NetworkIssuersJson(JSONComponentView):
     permission_classes = (permissions.AllowAny,)
     model = Issuer
@@ -436,6 +492,7 @@ class NetworkIssuersJson(JSONComponentView):
         ]
 
 
+@extend_schema(exclude=True)
 class IssuerNetworksJson(JSONComponentView):
     permission_classes = (permissions.AllowAny,)
     model = Issuer
@@ -475,6 +532,7 @@ class IssuerNetworksJson(JSONComponentView):
         return Response(json_data)
 
 
+@extend_schema(exclude=True)
 class IssuerImage(ImagePropertyDetailView):
     model = Issuer
     prop = "image"
@@ -483,6 +541,16 @@ class IssuerImage(ImagePropertyDetailView):
         logger.info("Issuer image retrieved event '%s'", obj)
 
 
+@extend_schema(
+    description="Returns public issuers",
+    responses={
+        200: OpenApiResponse(
+            description="Issuer list",
+            response=IssuerSerializerV1,
+        )
+    },
+    tags=["Issuers"],
+)
 class IssuerList(JSONListView):
     permission_classes = (permissions.AllowAny,)
     model = Issuer
@@ -509,6 +577,16 @@ class IssuerList(JSONListView):
         return super(IssuerList, self).get_json(request)
 
 
+@extend_schema(
+    description="Returns issuers that match the search term",
+    responses={
+        200: OpenApiResponse(
+            description="Issuer Search",
+            response=IssuerSerializerV1,
+        )
+    },
+    tags=["Issuers"],
+)
 class IssuerSearch(JSONListView):
     permission_classes = (permissions.AllowAny,)
     model = Issuer
@@ -533,6 +611,32 @@ class IssuerSearch(JSONListView):
         return Response(serializer.data)
 
 
+@extend_schema(
+    description="Returns public badge class details",
+    responses={
+        200: OpenApiResponse(
+            description="Badge class JSON",
+            response=BadgeClassSerializerV1,
+        )
+    },
+    parameters=[
+        OpenApiParameter(
+            name="entity_id",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.PATH,
+            description="BadgeClass ID",
+        ),
+        OpenApiParameter(
+            name="expand",
+            location=OpenApiParameter.QUERY,
+            type=OpenApiTypes.STR,
+            style="form",
+            explode=True,
+            description='Fields to expand ("issuer")',
+        ),
+    ],
+    tags=["BadgeClasses"],
+)
 class BadgeClassJson(JSONComponentView):
     permission_classes = (permissions.AllowAny,)
     model = BadgeClass
@@ -578,6 +682,16 @@ class BadgeClassJson(JSONComponentView):
         )
 
 
+@extend_schema(
+    description="Returns list of badge classes",
+    responses={
+        200: OpenApiResponse(
+            description="Badge class list",
+            response=BadgeClassSerializerV1,
+        )
+    },
+    tags=["BadgeClasses"],
+)
 class BadgeClassList(JSONListView):
     permission_classes = (permissions.AllowAny,)
     model = BadgeClass
@@ -602,6 +716,7 @@ class BadgeClassList(JSONListView):
         return super(BadgeClassList, self).get_json(request)
 
 
+@extend_schema(exclude=True)
 class BadgeClassImage(ImagePropertyDetailView):
     model = BadgeClass
     prop = "image"
@@ -610,6 +725,7 @@ class BadgeClassImage(ImagePropertyDetailView):
         logger.info("Badge class image retrieved '%s'", obj)
 
 
+@extend_schema(exclude=True)
 class BadgeClassCriteria(RedirectView, SlugToEntityIdRedirectMixin):
     permanent = False
     model = BadgeClass
@@ -625,12 +741,7 @@ class BadgeClassCriteria(RedirectView, SlugToEntityIdRedirectMixin):
         return badge_class.get_absolute_url()
 
 
-@extend_schema(
-    responses={
-        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="OpenBadge JSON")
-    },
-    description="Returns OpenBadge compliant JSON",
-)
+@extend_schema(exclude=True)
 class BadgeInstanceJson(JSONComponentView):
     permission_classes = (permissions.AllowAny,)
     model = BadgeInstance
@@ -727,6 +838,7 @@ class BadgeInstanceImage(ImagePropertyDetailView):
         return obj
 
 
+@extend_schema(exclude=True)
 class BadgeInstanceRevocations(JSONComponentView):
     model = BadgeInstance
 
@@ -734,6 +846,7 @@ class BadgeInstanceRevocations(JSONComponentView):
         return self.current_object.get_revocation_json()
 
 
+@extend_schema(exclude=True)
 class BackpackCollectionJson(JSONComponentView):
     permission_classes = (permissions.AllowAny,)
     model = BackpackCollection
@@ -813,6 +926,7 @@ class BackpackCollectionJson(JSONComponentView):
         return json
 
 
+@extend_schema(exclude=True)
 class BakedBadgeInstanceImage(
     VersionedObjectMixin, APIView, SlugToEntityIdRedirectMixin
 ):
@@ -844,6 +958,7 @@ class BakedBadgeInstanceImage(
         return redirect(redirect_url, permanent=True)
 
 
+@extend_schema(exclude=True)
 class OEmbedAPIEndpoint(APIView):
     permission_classes = (permissions.AllowAny,)
 
@@ -941,6 +1056,16 @@ class OEmbedAPIEndpoint(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    summary="Verify a Badge",
+    description="Verify a badge by entity ID. Returns the badge instance JSON including expanded badge class and issuer.",
+    request={"application/json": None},
+    responses={
+        200: {"type": "object"},
+        404: {"type": "object"},
+        400: {"type": "object"},
+    },
+)
 class VerifyBadgeAPIEndpoint(JSONComponentView):
     permission_classes = (permissions.AllowAny,)
 
@@ -1075,6 +1200,20 @@ class VerifyBadgeAPIEndpoint(JSONComponentView):
         )
 
 
+@extend_schema(
+    summary="Retrieve a Learning Path",
+    description="Get detailed JSON data for a Learning Path by its slug or ID.",
+    parameters=[
+        OpenApiParameter(
+            name="entity_id",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.PATH,
+            description="Slug or ID of the Learning Path",
+        )
+    ],
+    responses=LearningPathSerializerV1,
+    tags=["LearningPaths"],
+)
 class LearningPathJson(BaseEntityDetailViewPublic, SlugToEntityIdRedirectMixin):
     permission_classes = (permissions.AllowAny,)
     model = LearningPath
@@ -1091,6 +1230,11 @@ class LearningPathJson(BaseEntityDetailViewPublic, SlugToEntityIdRedirectMixin):
         return context
 
 
+@extend_schema(
+    summary="Get list of public learning paths",
+    responses=LearningPathSerializerV1,
+    tags=["LearningPaths"],
+)
 class LearningPathList(JSONListView):
     permission_classes = (permissions.AllowAny,)
     model = LearningPath
@@ -1114,6 +1258,7 @@ class LearningPathList(JSONListView):
         return super(LearningPathList, self).get_json(request)
 
 
+@extend_schema(exclude=True)
 class BadgeLearningPathList(JSONListView):
     permission_classes = (permissions.AllowAny,)
     model = LearningPath
@@ -1142,6 +1287,19 @@ class BadgeLearningPathList(JSONListView):
         return Response(serialized_learning_paths.data)
 
 
+@extend_schema(
+    summary="Get details of qr code",
+    parameters=[
+        OpenApiParameter(
+            name="entity_id",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.PATH,
+            description="QR Code ID",
+        )
+    ],
+    responses=QrCodeSerializerV1,
+    tags=["QrCodes"],
+)
 class QRCodeJson(BaseEntityDetailViewPublic, SlugToEntityIdRedirectMixin):
     """
     Public QRCode endpoint for badge requests
