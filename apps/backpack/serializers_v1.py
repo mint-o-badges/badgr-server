@@ -136,7 +136,7 @@ class LocalBadgeInstanceUploadSerializerV1(serializers.Serializer):
     acceptance = serializers.CharField(default="Accepted")
     narrative = MarkdownCharField(required=False, read_only=True)
     evidence_items = EvidenceItemSerializer(many=True, required=False, read_only=True)
-    pending = serializers.ReadOnlyField()
+    pending = serializers.BooleanField(read_only=True)
 
     extensions = serializers.DictField(source="extension_items", read_only=True)
 
@@ -336,9 +336,15 @@ class CollectionBadgesSerializerV1(serializers.ListSerializer):
 
 
 class CollectionBadgeSerializerV1(serializers.ModelSerializer):
-    id = serializers.RelatedField(queryset=BadgeInstance.objects.all())
-    collection = serializers.RelatedField(
-        queryset=BackpackCollection.objects.all(), write_only=True, required=False
+    id = serializers.SlugRelatedField(
+        slug_field="entity_id",
+        queryset=BadgeInstance.objects.all(),
+    )
+    collection = serializers.SlugRelatedField(
+        slug_field="entity_id",
+        queryset=BackpackCollection.objects.all(),
+        write_only=True,
+        required=False,
     )
 
     class Meta:
