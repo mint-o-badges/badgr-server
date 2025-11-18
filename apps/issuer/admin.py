@@ -405,8 +405,7 @@ class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
                 "fields": (
                     "criteria_url",
                     "criteria_text",
-                    "expires_duration",
-                    "expires_amount",
+                    "expiration",
                     "copy_permissions",
                 )
             },
