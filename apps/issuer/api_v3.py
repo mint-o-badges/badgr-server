@@ -11,12 +11,14 @@ from oauth2_provider.models import AccessToken, Application
 from oauthlib.oauth2.rfc6749.tokens import random_token_generator
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
+from rest_framework.filters import OrderingFilter
 
 from apispec_drf.decorators import (
     apispec_list_operation,
 )
 from rest_framework.views import APIView
 
+from apps.issuer.serializers_v3 import BadgeInstanceSerializerV3
 from backpack.utils import get_skills_tree
 from mainsite.models import IframeUrl
 from issuer.permissions import (
@@ -25,10 +27,18 @@ from issuer.permissions import (
     IsStaff,
 )
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAdmin
-from entity.api_v3 import EntityFilter, EntityViewSet, TagFilter, TotalCountMixin
+from entity.api_v3 import (
+    BadgeInstancePagination,
+    EntityFilter,
+    EntityLimitOffsetPagination,
+    EntityViewSet,
+    TagFilter,
+    TotalCountMixin,
+)
 
 from .serializers_v1 import (
     BadgeClassSerializerV1,
+    BadgeInstanceSerializerV1,
     IssuerSerializerV1,
     LearningPathSerializerV1,
     NetworkSerializerV1,
@@ -56,6 +66,16 @@ class Badges(TotalCountMixin, EntityViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         return queryset.distinct()
+
+
+class BadgeInstances(TotalCountMixin, EntityViewSet):
+    queryset = BadgeInstance.objects.all()
+    serializer_class = BadgeInstanceSerializerV1
+    pagination_class = BadgeInstancePagination
+    filter_backends = [filters.DjangoFilterBackend, OrderingFilter]
+    # filterset_class = BadgeInstanceV3FilterSet
+    ordering_fields = ["created_at", "recipient_identifier"]
+    ordering = ["-created_at"]
 
 
 class BadgeTags(viewsets.ViewSet):

@@ -1,3 +1,4 @@
+from rest_framework.response import Response
 from rest_framework import viewsets
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.filters import OrderingFilter
@@ -6,6 +7,19 @@ from django_filters import rest_framework as filters
 
 class EntityLimitOffsetPagination(LimitOffsetPagination):
     default_limit = 20
+
+
+class BadgeInstancePagination(LimitOffsetPagination):
+    def get_paginated_response(self, data):
+        return Response(
+            {
+                "count": len(data),
+                "total_count": self.count,
+                "next": self.get_next_link(),
+                "previous": self.get_previous_link(),
+                "results": data,
+            }
+        )
 
 
 class EntityFilter(filters.FilterSet):
