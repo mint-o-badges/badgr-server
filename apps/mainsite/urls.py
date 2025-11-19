@@ -1,6 +1,11 @@
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic.base import RedirectView, TemplateView
 from django.conf.urls.static import static
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularSwaggerView,
+    SpectacularRedocView,
+)
 from apps.mainsite.views_iframes import iframe
 from mainsite.views import (
     AdminIssuer,
@@ -42,6 +47,7 @@ from mainsite.views import (
 
 from mainsite.views_lti import (
     ApplicationLaunchView,
+    LtiBadgeCreateOrEdit,
     LtiProfile,
     XFrameExemptOIDCLoginInitView,
 )
@@ -168,15 +174,23 @@ urlpatterns = [
     #
     # api docs
     #
-    re_path(
+    # OpenAPI schema endpoint
+    url(r"^api/schema/$", SpectacularAPIView.as_view(), name="schema"),
+    # OAuth2 authorize redirect for docs
+    url(
         r"^docs/oauth2/authorize$",
         DocsAuthorizeRedirect.as_view(),
         name="docs_authorize_redirect",
     ),
-    re_path(
-        r"^docs/?$", RedirectView.as_view(url="/docs/v2/", permanent=True)
-    ),  # default redirect to /v2/
-    re_path(r"^docs/", include("apispec_drf.urls")),
+    # Swagger UI for v2 docs
+    url(
+        r"^docs/v2/$",
+        SpectacularSwaggerView.as_view(url_name="schema"),
+        name="swagger-ui-v2",
+    ),
+    url(r"^redoc/$", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+    # Default redirect to v2 docs
+    url(r"^docs/?$", RedirectView.as_view(url="/docs/v2/", permanent=True)),
     # unversioned public endpoints
     re_path(
         r"^unsubscribe/(?P<email_encoded>[^/]+)/(?P<expiration>[^/]+)/(?P<signature>[^/]+)",
@@ -263,6 +277,7 @@ urlpatterns = [
     ),
     path("lti/launch/", ApplicationLaunchView.as_view()),
     path("lti/tools/profile/", LtiProfile),
+    path("lti/tools/badge-create-or-edit/", LtiBadgeCreateOrEdit),
     # Prometheus endpoint
     path("", include("django_prometheus.urls")),
 ]

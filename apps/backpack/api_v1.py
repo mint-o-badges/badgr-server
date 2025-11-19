@@ -1,4 +1,4 @@
-from rest_framework import permissions, status
+from rest_framework import permissions, status, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -6,7 +6,41 @@ from backpack.models import BackpackCollectionBadgeInstance, BackpackCollection
 from backpack.serializers_v1 import CollectionBadgeSerializerV1
 from issuer.models import BadgeInstance
 
+from drf_spectacular.utils import extend_schema_view, extend_schema, inline_serializer
 
+
+@extend_schema_view(
+    get=extend_schema(
+        summary="Get badges in a collection",
+        description="Retrieve all badges that belong to a specific collection",
+        tags=["Collections"],
+        responses={
+            200: CollectionBadgeSerializerV1(many=True),
+            404: {"description": "Collection not found"},
+        },
+    ),
+    post=extend_schema(
+        summary="Add badges to collection",
+        description="Add one or more badges to an existing collection",
+        tags=["Collections"],
+        request=CollectionBadgeSerializerV1,
+        responses={
+            201: CollectionBadgeSerializerV1,
+            400: {"description": "No new records could be added"},
+            404: {"description": "Collection not found"},
+        },
+    ),
+    put=extend_schema(
+        summary="Update collection badges",
+        description="Replace the entire list of badges in a collection",
+        tags=["Collections"],
+        request=CollectionBadgeSerializerV1,
+        responses={
+            200: CollectionBadgeSerializerV1,
+            404: {"description": "Collection not found"},
+        },
+    ),
+)
 class CollectionLocalBadgeInstanceList(APIView):
     """
     POST to add badges to collection, PUT to update collection to a new list of
@@ -109,6 +143,26 @@ class CollectionLocalBadgeInstanceList(APIView):
         return Response(serializer.data)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary="Get a specific badge in a collection",
+        description="Retrieve details of a single badge within a collection",
+        tags=["Collections"],
+        responses={
+            200: CollectionBadgeSerializerV1,
+            404: {"description": "Collection or badge not found"},
+        },
+    ),
+    delete=extend_schema(
+        summary="Remove badge from collection",
+        description="Remove a badge from a collection (does not delete it from the earner's account)",
+        tags=["Collections"],
+        responses={
+            204: {"description": "Badge removed successfully"},
+            404: {"description": "Collection or badge not found"},
+        },
+    ),
+)
 class CollectionLocalBadgeInstanceDetail(APIView):
     """
     Update details on a single item in the collection or remove it from the
@@ -244,6 +298,33 @@ class CollectionLocalBadgeInstanceDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary="Generate shareable URL for collection",
+        description="Make a collection public by generating a shareable hash and return the share URL",
+        tags=["Collections"],
+        responses={
+            200: inline_serializer(
+                name="CollectionShareUrlResponse",
+                fields={
+                    "share_url": serializers.URLField(
+                        help_text="The shareable URL for the collection"
+                    )
+                },
+            ),
+            404: {"description": "Collection not found"},
+        },
+    ),
+    delete=extend_schema(
+        summary="Remove collection share",
+        description="Make a collection private by removing its share hash",
+        tags=["Collections"],
+        responses={
+            204: {"description": "Share hash removed successfully"},
+            404: {"description": "Collection not found"},
+        },
+    ),
+)
 class CollectionGenerateShare(APIView):
     """
     Allows a Collection to be public by generation of a shareable hash.

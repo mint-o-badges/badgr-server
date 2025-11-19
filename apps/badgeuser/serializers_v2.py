@@ -1,5 +1,3 @@
-from collections import OrderedDict
-
 from rest_framework import serializers
 from django.contrib.auth.hashers import is_password_usable
 
@@ -22,39 +20,6 @@ class BadgeUserEmailSerializerV2(DetailSerializerV2):
     caseVariants = serializers.ListField(
         child=serializers.CharField(), required=False, source="cached_variant_emails"
     )
-
-    class Meta(DetailSerializerV2.Meta):
-        apispec_definition = (
-            "BadgeUserEmail",
-            {
-                "properties": OrderedDict(
-                    [
-                        (
-                            "email",
-                            {
-                                "type": "string",
-                                "format": "email",
-                                "description": "Email address associated with a BadgeUser",
-                            },
-                        ),
-                        (
-                            "verified",
-                            {
-                                "type": "boolean",
-                                "description": "True if the email address has been verified",
-                            },
-                        ),
-                        (
-                            "primary",
-                            {
-                                "type": "boolean",
-                                "description": "True for a single email address to receive email notifications",
-                            },
-                        ),
-                    ]
-                )
-            },
-        )
 
 
 class BadgeUserSerializerV2(DetailSerializerV2):
@@ -108,47 +73,6 @@ class BadgeUserSerializerV2(DetailSerializerV2):
 
     class Meta(DetailSerializerV2.Meta):
         model = BadgeUser
-        apispec_definition = (
-            "BadgeUser",
-            {
-                "properties": OrderedDict(
-                    [
-                        (
-                            "entityId",
-                            {
-                                "type": "string",
-                                "format": "string",
-                                "description": "Unique identifier for this BadgeUser",
-                            },
-                        ),
-                        (
-                            "entityType",
-                            {
-                                "type": "string",
-                                "format": "string",
-                                "description": '"BadgeUser"',
-                            },
-                        ),
-                        (
-                            "firstName",
-                            {
-                                "type": "string",
-                                "format": "string",
-                                "description": "Given name",
-                            },
-                        ),
-                        (
-                            "lastName",
-                            {
-                                "type": "string",
-                                "format": "string",
-                                "description": "Family name",
-                            },
-                        ),
-                    ]
-                ),
-            },
-        )
 
     def update(self, instance, validated_data):
         password = (
@@ -203,23 +127,6 @@ class BadgeUserTokenSerializerV2(BaseSerializerV2):
 
     class Meta:
         list_serializer_class = ListSerializerV2
-        apispec_definition = (
-            "BadgeUserToken",
-            {
-                "properties": OrderedDict(
-                    [
-                        (
-                            "token",
-                            {
-                                "type": "string",
-                                "format": "string",
-                                "description": "Access token to use in the Authorization header",
-                            },
-                        ),
-                    ]
-                )
-            },
-        )
 
     def update(self, instance, validated_data):
         # noop
@@ -234,7 +141,6 @@ class AccessTokenSerializerV2(DetailSerializerV2):
 
     class Meta:
         list_serializer_class = ListSerializerV2
-        apispec_definition = ("AccessToken", {})
 
 
 class TermsVersionSerializerV2(DetailSerializerV2):

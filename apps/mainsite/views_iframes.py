@@ -32,12 +32,24 @@ def iframe(request, *args, **kwargs):
                 badge = iframe.params["badge"]
             except KeyError:
                 badge = None
+
+            try:
+                issuer = iframe.params["issuer"]
+            except KeyError:
+                issuer = None
+
+            try:
+                show_badge_selection = bool(iframe.params["badgeSelection"])
+            except KeyError:
+                show_badge_selection = False
+
             return iframe_badge_create_or_edit(
                 request,
                 iframe.params["token"],
                 badge,
-                iframe.params["issuer"],
+                issuer,
                 iframe.params["language"],
+                show_badge_selection,
             )
     except Exception as e:
         # show errors while debug
@@ -63,7 +75,12 @@ def iframe_profile(request, skills, language):
 
 
 def iframe_badge_create_or_edit(
-    request, token: str, badge: BadgeClass | None, issuer: Issuer, language: str
+    request,
+    token: str,
+    badge: BadgeClass | None,
+    issuer: Issuer | None,
+    language: str,
+    badgeSelection: bool = False,
 ):
     badge_json = json.dumps(badge, ensure_ascii=False)
     issuer_json = json.dumps(issuer, ensure_ascii=False)
@@ -76,5 +93,6 @@ def iframe_badge_create_or_edit(
             "badge": badge_json,
             "token": token,
             "issuer": issuer_json,
+            "showBadgeSelection": json.dumps(badgeSelection, ensure_ascii=False),
         },
     )

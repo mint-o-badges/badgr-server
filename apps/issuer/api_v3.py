@@ -9,11 +9,14 @@ from django.utils import timezone
 from django_filters import rest_framework as filters
 from oauth2_provider.models import AccessToken, Application
 from oauthlib.oauth2.rfc6749.tokens import random_token_generator
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, serializers
 from rest_framework.response import Response
 
-from apispec_drf.decorators import (
-    apispec_list_operation,
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+    inline_serializer,
+    OpenApiParameter,
 )
 from rest_framework.views import APIView
 
@@ -40,16 +43,50 @@ class BadgeFilter(EntityFilter):
     tags = TagFilter(field_name="badgeclasstag__name", lookup_expr="icontains")
 
 
-class Badges(TotalCountMixin, EntityViewSet):
+@extend_schema_view(
+    list=extend_schema(
+        summary="Get a list of Badges",
+        tags=["BadgeClasses"],
+        parameters=[
+            OpenApiParameter(
+                "tags",
+                type=str,
+                description="Filter by tag name (case-insensitive partial match)",
+            ),
+            OpenApiParameter(
+                "ordering",
+                type=str,
+                description="Order by field. Available fields: name, created_at",
+            ),
+        ],
+    ),
+    retrieve=extend_schema(
+        summary="Get a specific Badge by ID",
+        tags=["BadgeClasses"],
+    ),
+    create=extend_schema(
+        summary="Create a new Badge",
+        tags=["BadgeClasses"],
+    ),
+    update=extend_schema(
+        summary="Update a Badge",
+        tags=["BadgeClasses"],
+    ),
+    partial_update=extend_schema(
+        summary="Partially update a Badge",
+        tags=["BadgeClasses"],
+    ),
+    destroy=extend_schema(
+        summary="Delete a Badge",
+        tags=["BadgeClasses"],
+    ),
+)
+class Badges(EntityViewSet, TotalCountMixin):
     queryset = BadgeClass.objects.all()
     serializer_class = BadgeClassSerializerV1
     filterset_class = BadgeFilter
     ordering_fields = ["name", "created_at"]
 
-    # only for apispec, get() does nothing on viewset
-    @apispec_list_operation(
-        "BadgeClass", summary="Get a list of Badges", tags=["BadgeClasses"]
-    )
     def get(self, request, **kwargs):
         pass
 
@@ -58,6 +95,19 @@ class Badges(TotalCountMixin, EntityViewSet):
         return queryset.distinct()
 
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="Get a list of all available badge tags",
+        tags=["BadgeClasses"],
+        description="Fetch all available tags that existing Badges may be filtered by",
+        responses={
+            200: inline_serializer(
+                name="BadgeTagsResponse",
+                fields={"tags": serializers.ListField(child=serializers.CharField())},
+            )
+        },
+    ),
+)
 class BadgeTags(viewsets.ViewSet):
     """A ViewSet to fetch all available tags the existing Badges may be filtered by"""
 
@@ -72,7 +122,33 @@ class BadgeTags(viewsets.ViewSet):
         return Response(list(tag_names))
 
 
-class Issuers(TotalCountMixin, EntityViewSet):
+@extend_schema_view(
+    list=extend_schema(
+        summary="Get a list of Issuers",
+        tags=["Issuers"],
+    ),
+    retrieve=extend_schema(
+        summary="Get a specific Issuer by ID",
+        tags=["Issuers"],
+    ),
+    create=extend_schema(
+        summary="Create a new Issuer",
+        tags=["Issuers"],
+    ),
+    update=extend_schema(
+        summary="Update an Issuer",
+        tags=["Issuers"],
+    ),
+    partial_update=extend_schema(
+        summary="Partially update an Issuer",
+        tags=["Issuers"],
+    ),
+    destroy=extend_schema(
+        summary="Delete an Issuer",
+        tags=["Issuers"],
+    ),
+)
+class Issuers(EntityViewSet, TotalCountMixin):
     queryset = Issuer.objects.all()
     serializer_class = IssuerSerializerV1
 
@@ -89,7 +165,33 @@ class Issuers(TotalCountMixin, EntityViewSet):
         return context
 
 
-class Networks(TotalCountMixin, EntityViewSet):
+@extend_schema_view(
+    list=extend_schema(
+        summary="Get a list of Networks",
+        tags=["Networks"],
+    ),
+    retrieve=extend_schema(
+        summary="Get a specific Network by ID",
+        tags=["Networks"],
+    ),
+    create=extend_schema(
+        summary="Create a new Network",
+        tags=["Networks"],
+    ),
+    update=extend_schema(
+        summary="Update a Network",
+        tags=["Networks"],
+    ),
+    partial_update=extend_schema(
+        summary="Partially update a Network",
+        tags=["Networks"],
+    ),
+    destroy=extend_schema(
+        summary="Delete a Network",
+        tags=["Networks"],
+    ),
+)
+class Networks(EntityViewSet, TotalCountMixin):
     queryset = Issuer.objects.filter(is_network=True)
     serializer_class = NetworkSerializerV1
 
@@ -113,7 +215,40 @@ class LearningPathFilter(EntityFilter):
     )
 
 
-class LearningPaths(TotalCountMixin, EntityViewSet):
+@extend_schema_view(
+    list=extend_schema(
+        summary="Get a list of Learning Paths",
+        tags=["LearningPaths"],
+        parameters=[
+            OpenApiParameter(
+                "tags",
+                type=str,
+                description="Filter by tag name (case-insensitive partial match)",
+            ),
+        ],
+    ),
+    retrieve=extend_schema(
+        summary="Get a specific Learning Path by ID",
+        tags=["LearningPaths"],
+    ),
+    create=extend_schema(
+        summary="Create a new Learning Path",
+        tags=["LearningPaths"],
+    ),
+    update=extend_schema(
+        summary="Update a Learning Path",
+        tags=["LearningPaths"],
+    ),
+    partial_update=extend_schema(
+        summary="Partially update a Learning Path",
+        tags=["LearningPaths"],
+    ),
+    destroy=extend_schema(
+        summary="Delete a Learning Path",
+        tags=["LearningPaths"],
+    ),
+)
+class LearningPaths(EntityViewSet, TotalCountMixin):
     queryset = LearningPath.objects.all()
     serializer_class = LearningPathSerializerV1
     filterset_class = LearningPathFilter
@@ -132,6 +267,7 @@ class RequestIframe(APIView):
         return HttpResponse()
 
 
+@extend_schema(exclude=True)
 class LearnersProfile(RequestIframe):
     permission_classes = [
         IsServerAdmin
@@ -176,6 +312,7 @@ class LearnersProfile(RequestIframe):
         return JsonResponse({"url": iframe.url})
 
 
+@extend_schema(exclude=True)
 class BadgeCreateEmbed(RequestIframe):
     permission_classes = [
         IsServerAdmin
@@ -193,14 +330,16 @@ class BadgeCreateEmbed(RequestIframe):
 
         try:
             given_issuer = request.POST["issuer"]
+            issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
+            if (
+                issuers.count() == 0
+                or issuers.filter(entity_id=given_issuer).count() == 0
+            ):
+                return HttpResponseForbidden()
+            issuer = issuers.get(entity_id=given_issuer)
         except KeyError:
-            return HttpResponseBadRequest("No issuer id to create the badge specified")
-
-        issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
-        if issuers.count() == 0 or issuers.filter(entity_id=given_issuer).count() == 0:
-            return HttpResponseForbidden()
-
-        issuer = issuers.get(entity_id=given_issuer)
+            issuer = None
+            pass
 
         if request.auth:
             application = request.auth.application
@@ -222,7 +361,7 @@ class BadgeCreateEmbed(RequestIframe):
             params={
                 "language": language,
                 "token": token.token,
-                "issuer": issuer.get_json(),
+                "issuer": issuer.get_json() if issuer else None,
             },
             created_by=request.user,
         )
@@ -230,6 +369,7 @@ class BadgeCreateEmbed(RequestIframe):
         return JsonResponse({"url": iframe.url})
 
 
+@extend_schema(exclude=True)
 class BadgeEditEmbed(RequestIframe):
     permission_classes = [
         IsServerAdmin
@@ -245,28 +385,24 @@ class BadgeEditEmbed(RequestIframe):
         except (KeyError, AssertionError):
             language = "en"
 
-        try:
-            badge_id = request.POST["badge"]
-        except KeyError:
-            return HttpResponseBadRequest("No badge id to edit the badge")
-
         issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
         if issuers.count() == 0:
             return HttpResponseForbidden()
 
-        badge = (
-            BadgeClass.objects.filter(
-                entity_id=badge_id, issuer__staff__id=request.user.id
+        try:
+            badge_id = request.POST["badge"]
+            badge = (
+                BadgeClass.objects.filter(
+                    entity_id=badge_id, issuer__staff__id=request.user.id
+                )
+                .distinct()
+                .first()
             )
-            .distinct()
-            .first()
-        )
+        except KeyError:
+            badge = None
 
         if badge and not issuers.get(entity_id=badge.issuer.entity_id):
             return HttpResponseForbidden()
-
-        if not badge:
-            return HttpResponseBadRequest("No badge found for given badge id")
 
         if request.auth:
             application = request.auth.application
@@ -288,8 +424,9 @@ class BadgeEditEmbed(RequestIframe):
             params={
                 "language": language,
                 "token": token.token,
-                "badge": BadgeClassSerializerV1(badge).data,
-                "issuer": badge.issuer.get_json(),
+                "badge": BadgeClassSerializerV1(badge).data if badge else None,
+                "issuer": badge.issuer.get_json() if badge else None,
+                "badgeSelection": False if badge else True,
             },
             created_by=request.user,
         )
