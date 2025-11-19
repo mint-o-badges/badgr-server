@@ -1,16 +1,17 @@
 import datetime
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 import json
 
 import dateutil.parser
 from allauth.account.adapter import get_adapter
-from apispec_drf.decorators import (
-    apispec_delete_operation,
-    apispec_get_operation,
-    apispec_list_operation,
-    apispec_post_operation,
-    apispec_put_operation,
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiParameter,
+    OpenApiResponse,
+    OpenApiRequest,
+    inline_serializer,
 )
+from drf_spectacular.types import OpenApiTypes
 from celery import shared_task
 from celery.result import AsyncResult
 from django.contrib.auth import get_user_model
@@ -129,19 +130,13 @@ class IssuerList(BaseEntityListView):
             staff__id=request.user.id, is_network=False
         ).distinct()
 
-    @apispec_list_operation(
-        "Issuer",
-        summary="Get a list of Issuers for authenticated user",
-        tags=["Issuers"],
+    @extend_schema(
+        summary="Get a list of Issuers for authenticated user", tags=["Issuers"]
     )
     def get(self, request, **kwargs):
         return super(IssuerList, self).get(request, **kwargs)
 
-    @apispec_post_operation(
-        "Issuer",
-        summary="Create a new Issuer",
-        tags=["Issuers"],
-    )
+    @extend_schema(summary="Create a new Issuer", tags=["Issuers"])
     def post(self, request, **kwargs):
         return super(IssuerList, self).post(request, **kwargs)
 
@@ -170,19 +165,13 @@ class NetworkList(BaseEntityListView):
             is_network=True,
         ).distinct()
 
-    @apispec_list_operation(
-        "Network",
-        summary="Get a list of Networks for authenticated user",
-        tags=["Networks"],
+    @extend_schema(
+        summary="Get a list of networks for the authenticated user", tags=["Networks"]
     )
     def get(self, request, **kwargs):
         return super(NetworkList, self).get(request, **kwargs)
 
-    @apispec_post_operation(
-        "Network",
-        summary="Create a new Network",
-        tags=["Networks"],
-    )
+    @extend_schema(summary="Create a network", tags=["Networks"])
     def post(self, request, **kwargs):
         return super(NetworkList, self).post(request, **kwargs)
 
@@ -222,8 +211,7 @@ class NetworkUserIssuersList(BaseEntityListView):
             network_memberships__network_id=network.id,
         ).distinct()
 
-    @apispec_list_operation(
-        "Issuer",
+    @extend_schema(
         summary="Get a list of Issuers within a network for authenticated user",
         tags=["Networks", "Issuers"],
     )
@@ -246,31 +234,20 @@ class IssuerDetail(BaseEntityDetailView):
     ]
     valid_scopes = ["rw:issuer", "rw:issuer:*", "rw:serverAdmin"]
 
-    @apispec_get_operation(
-        "Issuer",
-        summary="Get a single Issuer",
-        tags=["Issuers"],
-    )
+    @extend_schema(summary="Get a single Issuer", tags=["Issuers"])
     def get(self, request, **kwargs):
         return super(IssuerDetail, self).get(request, **kwargs)
 
-    @apispec_put_operation(
-        "Issuer",
-        summary="Update a single Issuer",
-        tags=["Issuers"],
-    )
+    @extend_schema(summary="Update a single Issuer", tags=["Issuers"])
     def put(self, request, **kwargs):
         return super(IssuerDetail, self).put(request, **kwargs)
 
-    @apispec_delete_operation(
-        "Issuer",
-        summary="Delete a single Issuer",
-        tags=["Issuers"],
-    )
+    @extend_schema(summary="Delete a single Issuer", tags=["Issuers"])
     def delete(self, request, **kwargs):
         return super(IssuerDetail, self).delete(request, **kwargs)
 
 
+@extend_schema(exclude=True)
 class NetworkIssuerDetail(BaseEntityDetailView):
     model = Issuer
     permission_classes = [
@@ -285,11 +262,30 @@ class NetworkIssuerDetail(BaseEntityDetailView):
         except Issuer.DoesNotExist:
             raise Http404("Issuer not found in this network")
 
-    @apispec_delete_operation(
-        "Issuer",
+    @extend_schema(
         summary="Remove an issuer from a network",
-        description="Authenticated user must have owner, editor, or staff status on the Network",
-        tags=["Issuers", "Networks"],
+        description="Authenticated user must have owner, editor, or staff status on the Network.",
+        parameters=[
+            OpenApiParameter(
+                name="slug",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.PATH,
+                description="The network's entity_id",
+            ),
+            OpenApiParameter(
+                name="issuer_slug",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.PATH,
+                description="The issuer's entity_id",
+            ),
+        ],
+        responses={
+            204: OpenApiResponse(
+                description="Issuer successfully removed from the network"
+            ),
+            403: OpenApiResponse(description="Not authorized to remove issuer"),
+            404: OpenApiResponse(description="Network or membership not found"),
+        },
     )
     def delete(self, request, slug, issuer_slug, **kwargs):
         try:
@@ -354,25 +350,23 @@ class AllBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListView):
             "created_at"
         )
 
-    @apispec_list_operation(
-        "BadgeClass",
+    @extend_schema(
         summary="Get a list of BadgeClasses for authenticated user",
         tags=["BadgeClasses"],
     )
     def get(self, request, **kwargs):
         return super(AllBadgeClassesList, self).get(request, **kwargs)
 
-    @apispec_post_operation(
-        "BadgeClass",
+    @extend_schema(
         summary="Create a new BadgeClass",
         tags=["BadgeClasses"],
         parameters=[
-            {
-                "in": "query",
-                "name": "num",
-                "type": "string",
-                "description": "Request pagination of results",
-            },
+            OpenApiParameter(
+                name="num",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Request pagination of results",
+            )
         ],
     )
     def post(self, request, **kwargs):
@@ -409,25 +403,23 @@ class IssuerBadgeClassList(
         context["issuer"] = self.get_object(self.request, **kwargs)
         return context
 
-    @apispec_list_operation(
-        "BadgeClass",
+    @extend_schema(
         summary="Get a list of BadgeClasses for a single Issuer",
         description="Authenticated user must have owner, editor, or staff status on the Issuer",
         tags=["Issuers", "BadgeClasses"],
         parameters=[
-            {
-                "in": "query",
-                "name": "num",
-                "type": "string",
-                "description": "Request pagination of results",
-            },
+            OpenApiParameter(
+                name="num",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Request pagination of results",
+            )
         ],
     )
     def get(self, request, **kwargs):
         return super(IssuerBadgeClassList, self).get(request, **kwargs)
 
-    @apispec_post_operation(
-        "BadgeClass",
+    @extend_schema(
         summary="Create a new BadgeClass associated with an Issuer",
         description="Authenticated user must have owner, editor, or staff status on the Issuer",
         tags=["Issuers", "BadgeClasses"],
@@ -462,8 +454,7 @@ class NetworkBadgeClassesList(UncachedPaginatedViewMixin, BaseEntityListView):
         except Issuer.DoesNotExist:
             return BadgeClass.objects.none()
 
-    @apispec_list_operation(
-        "BadgeClass",
+    @extend_schema(
         summary="Get a list of BadgeClasses for network members",
         tags=["BadgeClasses"],
     )
@@ -516,18 +507,17 @@ class IssuerAwardableBadgeClassList(
         context["issuer"] = self.get_object(self.request, **kwargs)
         return context
 
-    @apispec_list_operation(
-        "BadgeClass",
+    @extend_schema(
         summary="Get a list of BadgeClasses that this Issuer can award",
-        description="Returns own BadgeClasses plus BadgeClasses from networks where this issuer is a partner, plus BadgeClasses shared with those networks. Authenticated user must have owner, editor, or staff status on the Issuer",
+        description="Returns own BadgeClasses plus network-shared BadgeClasses.",
         tags=["Issuers", "BadgeClasses"],
         parameters=[
-            {
-                "in": "query",
-                "name": "num",
-                "type": "string",
-                "description": "Request pagination of results",
-            },
+            OpenApiParameter(
+                name="num",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Request pagination of results",
+            )
         ],
     )
     def get(self, request, **kwargs):
@@ -560,27 +550,25 @@ class IssuerLearningPathList(
         context["issuer"] = self.get_object(self.request, **kwargs)
         return context
 
-    @apispec_list_operation(
-        "LearningPath",
+    @extend_schema(
         summary="Get a list of LearningPaths for a single Issuer",
-        description="Authenticated user must have owner, editor, or staff status on the Issuer",
+        description="Authenticated user must have owner, editor, or staff status",
         tags=["Issuers", "LearningPaths"],
         parameters=[
-            {
-                "in": "query",
-                "name": "num",
-                "type": "string",
-                "description": "Request pagination of results",
-            },
+            OpenApiParameter(
+                name="num",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Request pagination of results",
+            ),
         ],
     )
     def get(self, request, **kwargs):
         return super(IssuerLearningPathList, self).get(request, **kwargs)
 
-    @apispec_post_operation(
-        "LearningPath",
+    @extend_schema(
         summary="Create a new LearningPath associated with an Issuer",
-        description="Authenticated user must have owner, editor, or staff status on the Issuer",
+        description="Authenticated user must have owner, editor, or staff status",
         tags=["Issuers", "LearningPaths"],
     )
     def post(self, request, **kwargs):
@@ -593,9 +581,13 @@ class LearningPathParticipantsList(BaseEntityView):
     GET a list of learningpath participants
     """
 
+    serializer_class = LearningPathParticipantSerializerV1
     valid_scopes = ["rw:issuer"]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return BadgeInstance.objects.none()
+
         learning_path_slug = self.kwargs.get("slug")
         learning_path = LearningPath.objects.get(entity_id=learning_path_slug)
         badge_instances = BadgeInstance.objects.filter(
@@ -605,8 +597,7 @@ class LearningPathParticipantsList(BaseEntityView):
         )
         return badge_instances
 
-    @apispec_list_operation(
-        "LearningPath",
+    @extend_schema(
         summary="Get a list of participants for this LearningPath",
         tags=["LearningPaths"],
     )
@@ -637,29 +628,22 @@ class BadgeClassDetail(BaseEntityDetailView):
 
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
-    @apispec_get_operation(
-        "BadgeClass",
+    @extend_schema(
         summary="Get a single BadgeClass",
         tags=["BadgeClasses"],
     )
     def get(self, request, **kwargs):
         return super(BadgeClassDetail, self).get(request, **kwargs)
 
-    @apispec_delete_operation(
-        "BadgeClass",
+    @extend_schema(
         summary="Delete a BadgeClass",
-        description="Restricted to owners or editors (not staff) of the corresponding Issuer.",
+        description="Restricted to owners or editors (not staff).",
         tags=["BadgeClasses"],
-        responses=OrderedDict(
-            [
-                (
-                    "400",
-                    {
-                        "description": "BadgeClass couldn't be deleted. It may have already been issued."
-                    },
-                ),
-            ]
-        ),
+        responses={
+            400: OpenApiResponse(
+                description="BadgeClass couldn't be deleted. It may have already been issued."
+            )
+        },
     )
     def delete(self, request, **kwargs):
         base_entity = super(BadgeClassDetail, self)
@@ -673,9 +657,9 @@ class BadgeClassDetail(BaseEntityDetailView):
 
         return base_entity.delete(request, **kwargs)
 
-    @apispec_put_operation(
-        "BadgeClass",
-        summary="Update an existing BadgeClass.  Previously issued BadgeInstances will NOT be updated",
+    @extend_schema(
+        summary="Update an existing BadgeClass",
+        description="Previously issued BadgeInstances will NOT be updated",
         tags=["BadgeClasses"],
     )
     def put(self, request, **kwargs):
@@ -743,19 +727,18 @@ class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
         context["badgeclass"] = self.get_object(self.request, **kwargs)
         return context
 
-    @apispec_get_operation(
-        "Assertion",
+    @extend_schema(
         summary="Get batch assertion task status",
         description="Check the status of a batch assertion issuance task",
         tags=["Assertions"],
         parameters=[
-            {
-                "in": "path",
-                "name": "task_id",
-                "type": "string",
-                "description": "The task ID returned from the batch issuance request",
-                "required": True,
-            }
+            OpenApiParameter(
+                name="task_id",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.PATH,
+                required=True,
+                description="The task ID returned from the issuance request",
+            )
         ],
     )
     def get(self, request, task_id, **kwargs):
@@ -771,21 +754,11 @@ class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
             {"task_id": task_id, "status": task_result.status, "result": result}
         )
 
-    @apispec_post_operation(
-        "Assertion",
-        summary="Issue multiple copies of the same BadgeClass to multiple recipients",
+    @extend_schema(
+        summary="Issue multiple copies of a BadgeClass",
         tags=["Assertions"],
-        parameters=[
-            {
-                "in": "body",
-                "name": "body",
-                "required": True,
-                "schema": {
-                    "type": "array",
-                    "items": {"$ref": "#/definitions/Assertion"},
-                },
-            }
-        ],
+        request=BadgeInstanceSerializerV1(many=True),
+        responses={202: OpenApiResponse(description="Task started")},
     )
     def post(self, request, **kwargs):
         issuerSlug = kwargs.get("issuerSlug")
@@ -826,6 +799,7 @@ class BatchAssertionsRevoke(VersionedObjectMixin, BaseEntityView):
         )
         | BadgrOAuthTokenHasEntityScope
     ]
+    serializer_class = BadgeInstanceSerializerV2
     v2_serializer_class = BadgeInstanceSerializerV2
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
@@ -864,21 +838,10 @@ class BatchAssertionsRevoke(VersionedObjectMixin, BaseEntityView):
 
         return dict(response, revoked=True)
 
-    @apispec_post_operation(
-        "Assertion",
+    @extend_schema(
         summary="Revoke multiple Assertions",
         tags=["Assertions"],
-        parameters=[
-            {
-                "in": "body",
-                "name": "body",
-                "required": True,
-                "schema": {
-                    "type": "array",
-                    "items": {"$ref": "#/definitions/Assertion"},
-                },
-            }
-        ],
+        request=BadgeInstanceSerializerV2(many=True),
     )
     def post(self, request, **kwargs):
         result = [
@@ -936,35 +899,35 @@ class BadgeInstanceList(
         context["issuerSlug"] = kwargs.get("issuerSlug")
         return context
 
-    @apispec_list_operation(
-        "Assertion",
+    @extend_schema(
         summary="Get a list of Assertions for a single BadgeClass",
         tags=["Assertions", "BadgeClasses"],
         parameters=[
-            {
-                "in": "query",
-                "name": "recipient",
-                "type": "string",
-                "description": "A recipient identifier to filter by",
-            },
-            {
-                "in": "query",
-                "name": "num",
-                "type": "string",
-                "description": "Request pagination of results",
-            },
-            {
-                "in": "query",
-                "name": "include_expired",
-                "type": "boolean",
-                "description": "Include expired assertions",
-            },
-            {
-                "in": "query",
-                "name": "include_revoked",
-                "type": "boolean",
-                "description": "Include revoked assertions",
-            },
+            OpenApiParameter(
+                name="recipient",
+                description="A recipient identifier to filter by",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                many=True,
+            ),
+            OpenApiParameter(
+                name="num",
+                description="Request pagination of results",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+            ),
+            OpenApiParameter(
+                name="include_expired",
+                description="Include expired assertions",
+                type=OpenApiTypes.BOOL,
+                location=OpenApiParameter.QUERY,
+            ),
+            OpenApiParameter(
+                name="include_revoked",
+                description="Include revoked assertions",
+                type=OpenApiTypes.BOOL,
+                location=OpenApiParameter.QUERY,
+            ),
         ],
     )
     def get(self, request, **kwargs):
@@ -972,8 +935,7 @@ class BadgeInstanceList(
         self.get_object(request, **kwargs)
         return super(BadgeInstanceList, self).get(request, **kwargs)
 
-    @apispec_post_operation(
-        "Assertion",
+    @extend_schema(
         summary="Issue an Assertion to a single recipient",
         tags=["Assertions", "BadgeClasses"],
     )
@@ -1048,8 +1010,7 @@ class IssuerNetworkBadgeClassList(
 
         return queryset
 
-    @apispec_list_operation(
-        "BadgeClass",
+    @extend_schema(
         summary="Get badge classes awarded by this issuer from networks (owned or shared), grouped by network",
         tags=["BadgeClasses", "Issuers", "Networks"],
     )
@@ -1156,8 +1117,7 @@ class IssuerNetworkBadgeInstanceList(
         ctx["user"] = self.request.user
         return ctx
 
-    @apispec_list_operation(
-        "Assertion",
+    @extend_schema(
         summary="Get badge instances issued by this issuer from network badge classes",
         tags=["Assertions", "Issuers", "Networks"],
     )
@@ -1197,42 +1157,41 @@ class IssuerBadgeInstanceList(
             queryset = queryset.filter(revoked=False)
         return queryset
 
-    @apispec_list_operation(
-        "Assertion",
+    @extend_schema(
         summary="Get a list of Assertions for a single Issuer",
         tags=["Assertions", "Issuers"],
         parameters=[
-            {
-                "in": "query",
-                "name": "recipient",
-                "type": "string",
-                "description": "A recipient identifier to filter by",
-            },
-            {
-                "in": "query",
-                "name": "num",
-                "type": "string",
-                "description": "Request pagination of results",
-            },
-            {
-                "in": "query",
-                "name": "include_expired",
-                "type": "boolean",
-                "description": "Include expired assertions",
-            },
-            {
-                "in": "query",
-                "name": "include_revoked",
-                "type": "boolean",
-                "description": "Include revoked assertions",
-            },
+            OpenApiParameter(
+                name="recipient",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="A recipient identifier to filter by",
+                many=True,
+            ),
+            OpenApiParameter(
+                name="num",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Request pagination of results",
+            ),
+            OpenApiParameter(
+                name="include_expired",
+                type=OpenApiTypes.BOOL,
+                location=OpenApiParameter.QUERY,
+                description="Include expired assertions",
+            ),
+            OpenApiParameter(
+                name="include_revoked",
+                type=OpenApiTypes.BOOL,
+                location=OpenApiParameter.QUERY,
+                description="Include revoked assertions",
+            ),
         ],
     )
     def get(self, request, **kwargs):
         return super(IssuerBadgeInstanceList, self).get(request, **kwargs)
 
-    @apispec_post_operation(
-        "Assertion",
+    @extend_schema(
         summary="Issue a new Assertion to a recipient",
         tags=["Assertions", "Issuers"],
     )
@@ -1283,18 +1242,20 @@ class NetworkBadgeInstanceList(
         ctx["user"] = self.request.user
         return ctx
 
-    @apispec_list_operation(
-        "Assertion",
+    @extend_schema(
         summary="Get network badge instances across all partner issuers",
-        description="Retrieve all badge instances for a network badge class, grouped by issuing organization. Only available for badges created by networks.",
+        description=(
+            "Retrieve all badge instances for a network badge class, grouped by issuing "
+            "organization. Only available for badges created by networks."
+        ),
         tags=["Assertions", "Networks", "BadgeClasses"],
         parameters=[
-            {
-                "in": "query",
-                "name": "num",
-                "type": "string",
-                "description": "Request pagination of results",
-            },
+            OpenApiParameter(
+                name="num",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Request pagination of results",
+            ),
         ],
     )
     def get(self, request, **kwargs):
@@ -1370,37 +1331,32 @@ class BadgeInstanceDetail(BaseEntityDetailView):
     v2_serializer_class = BadgeInstanceSerializerV2
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
-    @apispec_get_operation(
-        "Assertion", summary="Get a single Assertion", tags=["Assertions"]
+    @extend_schema(
+        summary="Get a single Assertion",
+        tags=["Assertions"],
     )
     def get(self, request, **kwargs):
         return super(BadgeInstanceDetail, self).get(request, **kwargs)
 
-    @apispec_delete_operation(
-        "Assertion",
+    @extend_schema(
         summary="Revoke an Assertion",
         tags=["Assertions"],
-        responses=OrderedDict(
-            [("400", {"description": "Assertion is already revoked"})]
-        ),
-        parameters=[
+        request=OpenApiRequest(
             {
-                "in": "body",
-                "name": "body",
-                "required": True,
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "revocation_reason": {
-                            "type": "string",
-                            "format": "string",
-                            "description": "The reason for revoking this assertion",
-                            "required": False,
-                        },
-                    },
+                "type": "object",
+                "properties": {
+                    "revocation_reason": {
+                        "type": "string",
+                        "description": "The reason for revoking this assertion",
+                    }
                 },
+                "required": ["revocation_reason"],
             }
-        ],
+        ),
+        responses={
+            200: OpenApiResponse(response=BadgeInstanceSerializerV2),
+            400: OpenApiResponse(description="Assertion is already revoked"),
+        },
     )
     def delete(self, request, **kwargs):
         # verify the user has permission to the assertion
@@ -1428,8 +1384,7 @@ class BadgeInstanceDetail(BaseEntityDetailView):
         )
         return Response(status=HTTP_200_OK, data=serializer.data)
 
-    @apispec_put_operation(
-        "Assertion",
+    @extend_schema(
         summary="Update an Assertion",
         tags=["Assertions"],
     )
@@ -1444,13 +1399,27 @@ class IssuerTokensList(BaseEntityListView):
         BadgrOAuthTokenHasScope,
         AuthorizationIsBadgrOAuthToken,
     )
+    serializer_class = IssuerAccessTokenSerializerV2
     v2_serializer_class = IssuerAccessTokenSerializerV2
     valid_scopes = ["rw:issuer"]
 
-    @apispec_post_operation(
-        "AccessToken",
+    @extend_schema(
         summary="Retrieve issuer tokens",
         tags=["Issuers"],
+        request=OpenApiRequest(
+            {
+                "type": "object",
+                "properties": {
+                    "issuers": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of issuer entity IDs",
+                    }
+                },
+                "required": ["issuers"],
+            }
+        ),
+        responses=IssuerAccessTokenSerializerV2(many=True),
     )
     def post(self, request, **kwargs):
         issuer_entityids = request.data.get("issuers", None)
@@ -1522,6 +1491,7 @@ class PaginatedAssertionsSinceSerializer(CursorPaginatedListSerializer):
 
 
 class AssertionsChangedSince(BaseEntityView):
+    schema = None
     permission_classes = (BadgrOAuthTokenHasScope,)
     valid_scopes = ["r:issuer", "rw:issuer", "rw:serverAdmin"]
 
@@ -1538,6 +1508,19 @@ class AssertionsChangedSince(BaseEntityView):
         qs = BadgeInstance.objects.filter(expr).distinct()
         return qs
 
+    @extend_schema(
+        summary="Get Assertions updated since a timestamp",
+        tags=["Assertions"],
+        parameters=[
+            OpenApiParameter(
+                name="since",
+                description="ISO-8601 timestamp (with time zone) specifying the earliest update time",
+                type=OpenApiTypes.DATETIME,
+                location=OpenApiParameter.QUERY,
+            )
+        ],
+        responses=PaginatedAssertionsSinceSerializer,
+    )
     def get(self, request, **kwargs):
         since = request.GET.get("since", None)
         if since is not None:
@@ -1581,6 +1564,7 @@ class PaginatedBadgeClassesSinceSerializer(CursorPaginatedListSerializer):
 
 
 class BadgeClassesChangedSince(BaseEntityView):
+    schema = None
     permission_classes = (BadgrOAuthTokenHasScope,)
     valid_scopes = ["r:issuer", "rw:issuer", "rw:serverAdmin"]
 
@@ -1595,6 +1579,19 @@ class BadgeClassesChangedSince(BaseEntityView):
         qs = BadgeClass.objects.filter(expr).distinct()
         return qs
 
+    @extend_schema(
+        summary="Get BadgeClasses updated since a timestamp",
+        tags=["BadgeClasses"],
+        parameters=[
+            OpenApiParameter(
+                name="since",
+                description="ISO-8601 timestamp (with time zone)",
+                type=OpenApiTypes.DATETIME,
+                location=OpenApiParameter.QUERY,
+            )
+        ],
+        responses=PaginatedBadgeClassesSinceSerializer,
+    )
     def get(self, request, **kwargs):
         since = request.GET.get("since", None)
         if since is not None:
@@ -1638,6 +1635,7 @@ class PaginatedIssuersSinceSerializer(CursorPaginatedListSerializer):
 
 
 class IssuersChangedSince(BaseEntityView):
+    schema = None
     permission_classes = (BadgrOAuthTokenHasScope,)
     valid_scopes = ["r:issuer", "rw:issuer", "rw:serverAdmin"]
 
@@ -1652,6 +1650,19 @@ class IssuersChangedSince(BaseEntityView):
         qs = Issuer.objects.filter(expr).distinct()
         return qs
 
+    @extend_schema(
+        summary="Get Issuers updated since a timestamp",
+        tags=["Issuers"],
+        parameters=[
+            OpenApiParameter(
+                name="since",
+                type=OpenApiTypes.DATETIME,
+                description="ISO-8601 timestamp (with time zone)",
+                location=OpenApiParameter.QUERY,
+            )
+        ],
+        responses=PaginatedIssuersSinceSerializer,
+    )
     def get(self, request, **kwargs):
         since = request.GET.get("since", None)
         if since is not None:
@@ -1712,18 +1723,19 @@ class QRCodeList(BaseEntityListView):
             badgeclass__entity_id=badgeSlug, issuer__entity_id=issuerSlug
         )
 
-    @apispec_list_operation(
-        "QrCode",
+    @extend_schema(
         summary="Get all QR codes for a specific badge and issuer",
         tags=["QrCodes"],
+        responses=QrCodeSerializerV1(many=True),
     )
     def get(self, request, **kwargs):
         return super().get(request, **kwargs)
 
-    @apispec_post_operation(
-        "QrCode",
+    @extend_schema(
         summary="Create a new QR code for a badge",
         tags=["QrCodes"],
+        request=QrCodeSerializerV1,
+        responses=QrCodeSerializerV1,
     )
     def post(self, request, **kwargs):
         return super().post(request, **kwargs)
@@ -1741,10 +1753,13 @@ class QRCodeDetail(BaseEntityView):
         qr_code_id = kwargs.get("slug")
         return QrCode.objects.get(entity_id=qr_code_id)
 
-    @apispec_get_operation(
-        "QrCode",
+    @extend_schema(
         summary="Get a specific QR code by slug",
         tags=["QrCodes"],
+        responses={
+            200: QrCodeSerializerV1,
+            404: OpenApiResponse(description="QR code not found"),
+        },
     )
     def get(self, request, **kwargs):
         try:
@@ -1757,10 +1772,11 @@ class QRCodeDetail(BaseEntityView):
                 {"detail": "QR code not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-    @apispec_put_operation(
-        "QrCode",
+    @extend_schema(
         summary="Update a specific QR code",
         tags=["QrCodes"],
+        request=QrCodeSerializerV1,
+        responses=QrCodeSerializerV1,
     )
     def put(self, request, **kwargs):
         qr_code = self.get_object(request, **kwargs)
@@ -1771,10 +1787,10 @@ class QRCodeDetail(BaseEntityView):
         serializer.save(updated_by=request.user)
         return Response(serializer.data, status=HTTP_200_OK)
 
-    @apispec_delete_operation(
-        "QrCode",
+    @extend_schema(
         summary="Delete a specific QR code",
         tags=["QrCodes"],
+        responses={204: OpenApiResponse(description="Deleted")},
     )
     def delete(self, request, **kwargs):
         qr_code = self.get_object(request, **kwargs)
@@ -1817,10 +1833,13 @@ class NetworkBadgeQRCodeList(BaseEntityView):
 
         return qrcodes_by_issuer
 
-    @apispec_list_operation(
-        "QrCode",
+    @extend_schema(
         summary="Get all QrCodes for a specific badge in a network grouped by issuer",
         tags=["QrCodes"],
+        responses={
+            200: OpenApiTypes.OBJECT,
+            404: OpenApiResponse(description="Network or QR codes not found"),
+        },
     )
     def get(self, request, **kwargs):
         qrcodes_by_issuer = self.get_network_badge_qrcodes(request, **kwargs)
@@ -1869,10 +1888,15 @@ class BadgeRequestList(BaseEntityListView):
     ]
     valid_scopes = ["rw:issuer"]
 
-    @apispec_post_operation(
-        "RequestedBadge",
+    @extend_schema(
         summary="Delete multiple badge requests",
         tags=["Requested Badges"],
+        request=OpenApiTypes.OBJECT,
+        responses={
+            200: OpenApiResponse(description="Successfully deleted badge requests"),
+            404: OpenApiResponse(description="Some requests not found"),
+            400: OpenApiResponse(description="Invalid request"),
+        },
     )
     def post(self, request, **kwargs):
         try:
@@ -1920,18 +1944,19 @@ class LearningPathDetail(BaseEntityDetailView):
     permission_classes = (BadgrOAuthTokenHasScope, MayIssueLearningPath)
     valid_scopes = ["rw:issuer"]
 
-    @apispec_get_operation(
-        "LearningPath",
+    @extend_schema(
         summary="Get a single LearningPath",
         tags=["LearningPaths"],
+        responses=LearningPathSerializerV1,
     )
     def get(self, request, **kwargs):
         return super(LearningPathDetail, self).get(request, **kwargs)
 
-    @apispec_put_operation(
-        "LearningPath",
+    @extend_schema(
         summary="Update a single LearningPath",
         tags=["LearningPaths"],
+        request=LearningPathSerializerV1,
+        responses=LearningPathSerializerV1,
     )
     def put(self, request, **kwargs):
         if not is_learningpath_editor(request.user, self.get_object(request, **kwargs)):
@@ -1941,10 +1966,10 @@ class LearningPathDetail(BaseEntityDetailView):
             )
         return super(LearningPathDetail, self).put(request, **kwargs)
 
-    @apispec_delete_operation(
-        "LearningPath",
+    @extend_schema(
         summary="Delete a single LearningPath",
         tags=["LearningPaths"],
+        responses={204: OpenApiResponse(description="Deleted")},
     )
     def delete(self, request, **kwargs):
         if not is_learningpath_editor(request.user, self.get_object(request, **kwargs)):
@@ -1975,11 +2000,11 @@ class IssuerStaffRequestList(BaseEntityListView):
         "delete": ["rw:profile"],
     }
 
-    @apispec_get_operation(
-        "IssuerStaffRequest",
+    @extend_schema(
         summary="Get a list of staff membership requests for the institution",
-        description="Use the id of the issuer to get a list of issuer staff requests",
+        description="Use issuerSlug to retrieve staff membership requests",
         tags=["IssuerStaffRequest"],
+        responses=IssuerStaffRequestSerializer(many=True),
     )
     def get_objects(self, request, **kwargs):
         issuerSlug = kwargs.get("issuerSlug")
@@ -2014,23 +2039,31 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
     ]
     valid_scopes = ["rw:issuer"]
 
-    @apispec_get_operation(
-        "IssuerStaffRequest",
+    @extend_schema(
         summary="Get a single IssuerStaffRequest",
         tags=["IssuerStaffRequest"],
+        responses=IssuerStaffRequestSerializer,
     )
     def get(self, request, **kwargs):
         return super(IssuerStaffRequestDetail, self).get(request, **kwargs)
 
-    @apispec_put_operation(
-        "IssuerStaffRequest",
+    @extend_schema(
         summary="Update a single IssuerStaffRequest",
         tags=["IssuerStaffRequest"],
+        request=IssuerStaffRequestSerializer,
+        responses=IssuerStaffRequestSerializer,
     )
-    @apispec_delete_operation(
-        "IssuerStaffRequest",
+    def put(self, request, **kwargs):
+        return super(IssuerStaffRequestDetail).put(request, **kwargs)
+
+    @extend_schema(
         summary="Delete a single IssuerStaffRequest",
         tags=["IssuerStaffRequest"],
+        responses={
+            200: OpenApiResponse(IssuerStaffRequestSerializer),
+            400: OpenApiResponse(description="Bad request"),
+            404: OpenApiResponse(description="Not found"),
+        },
     )
     def delete(self, request, **kwargs):
         try:
@@ -2080,11 +2113,12 @@ class IssuerStaffRequestConfirm(BaseEntityDetailView):
     ]
     valid_scopes = ["rw:issuer"]
 
-    @apispec_put_operation(
-        "IssuerStaffRequest",
+    @extend_schema(
         summary="Confirm a staff membership request",
-        description="Approve a pending staff request and grant access (admin only)",
+        description="Approve a pending staff request and grant access",
         tags=["IssuerStaffRequest"],
+        request=IssuerStaffRequestSerializer,
+        responses=IssuerStaffRequestSerializer,
     )
     def put(self, request, **kwargs):
         try:
@@ -2127,38 +2161,31 @@ class IssuerStaffRequestConfirm(BaseEntityDetailView):
 class BadgeImageComposition(APIView):
     permission_classes = (IsAuthenticated,)
 
-    @apispec_post_operation(
-        "BadgeClass",
+    @extend_schema(
         summary="Compose a badge image",
-        description="Generate a composed badge image by combining the original badge image with the respective frame and issuer and/or network logos",
+        description="Generate a composed image from badge + issuer/network logos.",
         tags=["BadgeClasses"],
-        parameters=[
-            {
-                "in": "body",
-                "name": "body",
-                "required": True,
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "badgeSlug": {
-                            "type": "string",
-                            "description": "Entity ID of the badge class",
-                        },
-                        "issuerSlug": {
-                            "type": "string",
-                            "description": "Entity ID of the issuer",
-                        },
-                        "category": {"type": "string", "description": "Badge category"},
-                        "useIssuerImage": {
-                            "type": "boolean",
-                            "description": "Whether to include the issuer's logo in the composition",
-                            "default": True,
-                        },
-                    },
-                    "required": ["badgeSlug", "issuerSlug", "category"],
+        request=inline_serializer(
+            name="BadgeImageCompositionRequest",
+            fields={
+                "badgeSlug": serializers.CharField(),
+                "issuerSlug": serializers.CharField(),
+                "category": serializers.CharField(),
+                "useIssuerImage": serializers.BooleanField(required=False),
+            },
+        ),
+        responses={
+            200: inline_serializer(
+                name="BadgeImageCompositionResponse",
+                fields={
+                    "success": serializers.BooleanField(),
+                    "image_url": serializers.CharField(),
+                    "message": serializers.CharField(),
                 },
-            }
-        ],
+            ),
+            400: OpenApiResponse(description="Invalid request"),
+            404: OpenApiResponse(description="Badge or issuer not found"),
+        },
     )
     def post(self, request, *args, **kwargs):
         try:
@@ -2249,18 +2276,22 @@ class NetworkInvitation(BaseEntityDetailView):
     ]
     valid_scopes = ["rw:issuer"]
 
-    @apispec_get_operation(
-        "NetworkInvite",
+    @extend_schema(
         summary="Get a single NetworkInvitation",
         tags=["NetworkInvite"],
+        responses=NetworkInviteSerializer,
     )
     def get(self, request, **kwargs):
         return super(NetworkInvitation, self).get(request, **kwargs)
 
-    @apispec_delete_operation(
-        "NetworkInvite",
-        summary="Revoke a single NetworkInvitation",
+    @extend_schema(
+        summary="Revoke a network invitation",
         tags=["NetworkInvite"],
+        responses={
+            200: NetworkInviteSerializer,
+            400: OpenApiResponse(description="Invalid state"),
+            404: OpenApiResponse(description="Not found"),
+        },
     )
     def delete(self, request, **kwargs):
         try:
@@ -2305,11 +2336,12 @@ class NetworkInvitationConfirm(BaseEntityDetailView):
     ]
     valid_scopes = ["rw:issuer"]
 
-    @apispec_put_operation(
-        "NetworkInvite",
-        summary="Confirm a network invitation",
-        description="Confirm a network invitation, adding the institution to the network",
+    @extend_schema(
+        summary="Confirm network invitation",
+        description="Approve a pending network invitation.",
         tags=["NetworkInvite"],
+        request=None,
+        responses=NetworkInviteSerializer,
     )
     def put(self, request, **kwargs):
         try:
@@ -2374,41 +2406,35 @@ class NetworkInvitationList(BaseEntityListView):
 
         return queryset
 
-    @apispec_get_operation(
-        "NetworkInvite",
-        summary="Get network invitations with optional status filter",
-        description="Get network invitations. Use 'status' query parameter to filter.",
-        parameters=[
-            {
-                "name": "status",
-                "in": "query",
-                "description": "Filter invitations by status",
-                "required": False,
-                "schema": {
-                    "type": "string",
-                    "enum": ["pending", "approved"],
-                    "default": "pending",
-                },
-            }
-        ],
+    @extend_schema(
+        summary="Get network invitations",
+        description="Use the 'status' query parameter to filter.",
         tags=["NetworkInvite"],
+        parameters=[
+            OpenApiParameter(
+                name="status",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                enum=["pending", "approved"],
+                description="Filter invitations",
+            )
+        ],
+        responses=NetworkInviteSerializer(many=True),
     )
     def get(self, request, **kwargs):
         return super(NetworkInvitationList, self).get(request, **kwargs)
 
-    @apispec_post_operation(
-        "NetworkInvite",
-        summary="Create new network invitations",
-        description="Invite multiple institutions to join a network. Sends email notifications to institution owners.",
+    @extend_schema(
+        summary="Create network invitations",
         tags=["NetworkInvite"],
-        responses=OrderedDict(
-            [
-                ("201", {"description": "Network invitation(s) created successfully"}),
-                ("400", {"description": "Bad request or validation error"}),
-                ("403", {"description": "Not authorized to invite institutions"}),
-                ("404", {"description": "Network or institution(s) not found"}),
-            ]
-        ),
+        request=NetworkInviteSerializer(many=True),
+        responses={
+            201: OpenApiResponse(description="Invitations created"),
+            400: OpenApiResponse(description="Bad request"),
+            403: OpenApiResponse(description="Forbidden"),
+            404: OpenApiResponse(description="Not found"),
+        },
     )
     def post(self, request, **kwargs):
         try:
@@ -2556,10 +2582,10 @@ class NetworkSharedBadgesView(BaseEntityListView):
             .order_by("-shared_at")
         )
 
-    @apispec_get_operation(
-        "BadgeClassNetworkShare",
+    @extend_schema(
         summary="Get all badges shared with a network",
         tags=["Networks"],
+        responses=BadgeClassNetworkShareSerializerV1(many=True),
     )
     def get(self, request, **kwargs):
         """
@@ -2597,10 +2623,10 @@ class IssuerSharedNetworkBadgesView(BaseEntityListView):
             .order_by("-shared_at")
         )
 
-    @apispec_get_operation(
-        "BadgeClassNetworkShare",
-        summary="Get all badges shared by a specific issuer with networks",
+    @extend_schema(
+        summary="Get all badges shared by an issuer with networks",
         tags=["Issuers"],
+        responses=BadgeClassNetworkShareSerializerV1(many=True),
     )
     def get(self, request, **kwargs):
         """
@@ -2637,10 +2663,11 @@ class BadgeClassNetworkShareView(BaseEntityDetailView):
             badgeclass__issuer__id__in=user_issuers
         ).distinct()
 
-    @apispec_post_operation(
-        "BadgeClassNetworkShare",
-        summary="Share a badge class with a network",
+    @extend_schema(
+        summary="Share a badge with a network",
         tags=["BadgeClasses", "Networks"],
+        request=None,  # no body, uses path params
+        responses=BadgeClassNetworkShareSerializerV1,
     )
     def post(self, request, **kwargs):
         """

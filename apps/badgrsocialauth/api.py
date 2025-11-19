@@ -24,6 +24,7 @@ from entity.api import BaseEntityListView, BaseEntityDetailView
 from entity.serializers import BaseSerializerV2
 from issuer.permissions import BadgrOAuthTokenHasScope
 from mainsite.utils import OriginSetting
+from drf_spectacular.utils import extend_schema
 
 
 class BadgrSocialAccountList(BaseEntityListView):
@@ -42,6 +43,7 @@ class BadgrSocialAccountList(BaseEntityListView):
         return super(BadgrSocialAccountList, self).get(request, **kwargs)
 
 
+@extend_schema(exclude=True)
 class BadgrSocialAccountConnect(APIView):
     permission_classes = (BadgrOAuthTokenHasScope,)
     valid_scopes = ["rw:profile"]
