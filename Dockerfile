@@ -86,7 +86,7 @@ RUN curl -fsSLO "$SUPERCRONIC_URL" \
 
 # Get node and install mjml for email templates
 ARG NODE_VERSION=v24.6.0
-ARG MJML_VERSION=4.16.1
+ARG MJML_VERSION=4.17.1
 RUN curl -fsSL https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-x64.tar.xz -o node.tar.xz \
     && tar -xf node.tar.xz -C /usr/local --strip-components=1 \
     && rm node.tar.xz
