@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = "==3.10.*"
 
 [manifest]
@@ -32,27 +32,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/8b/8d/52179c4e3f1978d3d9a285f98c706642522750ef343e9738286130423730/aniso8601-10.0.1.tar.gz", hash = "sha256:25488f8663dd1528ae1f54f94ac1ea51ae25b4d531539b8bc707fed184d16845", size = 47190, upload-time = "2025-04-18T17:29:42.995Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/59/75/e0e10dc7ed1408c28e03a6cb2d7a407f99320eb953f229d008a7a6d05546/aniso8601-10.0.1-py2.py3-none-any.whl", hash = "sha256:eb19717fd4e0db6de1aab06f12450ab92144246b257423fe020af5748c0cb89e", size = 52848, upload-time = "2025-04-18T17:29:41.492Z" },
-]
-
-[[package]]
-name = "apispec"
-version = "0.22.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pyyaml" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/cd/fe/7bbf5c57570d4236942c69610b6f9c9f5614c09ea6c65a21cc481aab0f6d/apispec-0.22.0.tar.gz", hash = "sha256:987f152c81c4ec36ba7a4a9f0150066ba9c4737180d00e47554434715fed7278", size = 40153, upload-time = "2017-05-31T02:19:03.27Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c9/72/121ff2804947179e2b5c5f8ff88f1f00586b7ba1e4ad0cddd684ecee762d/apispec-0.22.0-py2.py3-none-any.whl", hash = "sha256:bd1761a945a23d272793315f45a3757100857ea30b16c228f2e02744754a65fd", size = 21326, upload-time = "2017-05-31T02:19:01.364Z" },
-]
-
-[[package]]
-name = "apispec-djangorestframework"
-version = "1.1.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/22/9f/19385f7facd2654bfc91d95359c6bdb7f9ba503bd69a483524d58556dce5/apispec-djangorestframework-1.1.1.tar.gz", hash = "sha256:abc12837a45b31523e5616c608bb395e5a8ff27609d85dfce9300c207caf1148", size = 530542, upload-time = "2020-06-16T04:28:13.626Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/00/57/9a6f1bddfe799536d9bedc036b8ffe4b47f9244bbaa5f45e9894e1c44d7b/apispec_djangorestframework-1.1.1-py3-none-any.whl", hash = "sha256:259419952edcdfaccceacca797386ef603f7bc886157517a341bc94c38e5c7be", size = 536455, upload-time = "2020-06-16T04:28:11.802Z" },
 ]
 
 [[package]]
@@ -136,8 +115,6 @@ name = "badgr-server"
 version = "2.2.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "apispec" },
-    { name = "apispec-djangorestframework" },
     { name = "backports-csv" },
     { name = "badgecheck" },
     { name = "base58" },
@@ -170,10 +147,12 @@ dependencies = [
     { name = "django-object-actions" },
     { name = "django-prometheus" },
     { name = "djangorestframework" },
+    { name = "drf-spectacular" },
     { name = "geopy" },
     { name = "idna" },
     { name = "importlib-resources" },
     { name = "ipaddress" },
+    { name = "jsonfield" },
     { name = "jsonschema" },
     { name = "lti" },
     { name = "markdown" },
@@ -226,8 +205,6 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "apispec", specifier = "==0.22.0" },
-    { name = "apispec-djangorestframework", specifier = "==1.1.1" },
     { name = "backports-csv", specifier = "==1.0.4" },
     { name = "badgecheck", specifier = "==1.1.8" },
     { name = "base58", specifier = ">=2.1.1" },
@@ -260,10 +237,12 @@ requires-dist = [
     { name = "django-object-actions", specifier = ">=3.2.0" },
     { name = "django-prometheus", specifier = "==2.3.1" },
     { name = "djangorestframework", specifier = ">=3.14.0" },
+    { name = "drf-spectacular", specifier = ">=0.29.0" },
     { name = "geopy", specifier = "==2.4.1" },
     { name = "idna", specifier = "==2.8" },
     { name = "importlib-resources", specifier = "==5.10.0" },
     { name = "ipaddress", specifier = "==1.0.14" },
+    { name = "jsonfield", specifier = "==3.2.0" },
     { name = "jsonschema", specifier = "==2.6.0" },
     { name = "lti", specifier = "==0.9.5" },
     { name = "markdown", specifier = ">=3.5.0" },
@@ -878,6 +857,23 @@ wheels = [
 ]
 
 [[package]]
+name = "drf-spectacular"
+version = "0.29.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+    { name = "djangorestframework" },
+    { name = "inflection" },
+    { name = "jsonschema" },
+    { name = "pyyaml" },
+    { name = "uritemplate" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5e/0e/a4f50d83e76cbe797eda88fc0083c8ca970cfa362b5586359ef06ec6f70a/drf_spectacular-0.29.0.tar.gz", hash = "sha256:0a069339ea390ce7f14a75e8b5af4a0860a46e833fd4af027411a3e94fc1a0cc", size = 241722, upload-time = "2025-11-02T03:40:26.348Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/32/d9/502c56fc3ca960075d00956283f1c44e8cafe433dada03f9ed2821f3073b/drf_spectacular-0.29.0-py3-none-any.whl", hash = "sha256:d1ee7c9535d89848affb4427347f7c4a22c5d22530b8842ef133d7b72e19b41a", size = 105433, upload-time = "2025-11-02T03:40:24.823Z" },
+]
+
+[[package]]
 name = "ecdsa"
 version = "0.19.1"
 source = { registry = "https://pypi.org/simple" }
@@ -984,6 +980,15 @@ wheels = [
 ]
 
 [[package]]
+name = "inflection"
+version = "0.5.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e1/7e/691d061b7329bc8d54edbf0ec22fbfb2afe61facb681f9aaa9bff7a27d04/inflection-0.5.1.tar.gz", hash = "sha256:1a29730d366e996aaacffb2f1f1cb9593dc38e2ddd30c91250c6dde09ea9b417", size = 15091, upload-time = "2020-08-22T08:16:29.139Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/59/91/aa6bde563e0085a02a435aa99b49ef75b0a4b062635e606dab23ce18d720/inflection-0.5.1-py2.py3-none-any.whl", hash = "sha256:f38b2b640938a4f35ade69ac3d053042959b62a0f1076a5bbaa1b9526605a8a2", size = 9454, upload-time = "2020-08-22T08:16:27.816Z" },
+]
+
+[[package]]
 name = "ipaddress"
 version = "1.0.14"
 source = { registry = "https://pypi.org/simple" }
@@ -1008,6 +1013,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/9d/19/4ebe24c42c341c5868dff072b78d503fc1b0725d88ea619d2db68f5624a9/josepy-2.1.0.tar.gz", hash = "sha256:9beafbaa107ec7128e6c21d86b2bc2aea2f590158e50aca972dca3753046091f", size = 56189, upload-time = "2025-07-08T17:20:54.98Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/47/0e/e248f059986e376b87e546cd840d244370b9f7ef2b336456f0c2cfb2fef0/josepy-2.1.0-py3-none-any.whl", hash = "sha256:0eadf09b96821bdae9a8b14145425cb9fe0bbee64c6fdfce3ccd4ceb7d7efbbd", size = 29065, upload-time = "2025-07-08T17:20:53.504Z" },
+]
+
+[[package]]
+name = "jsonfield"
+version = "3.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fa/e9/537e105246dba81d898853dbbe17eb3edd23d47a35074b99fd4add6f1662/jsonfield-3.2.0.tar.gz", hash = "sha256:ca53871bc3308ae4f4cddc3b4f99ed5c6fc6abb1832fbfb499bc6da566c70e4a", size = 17156, upload-time = "2025-07-04T23:06:24.883Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0a/22/2e08e7b957f50e5eceefde018ce9ee88aceb5126231128d9c1cb8167c1c8/jsonfield-3.2.0-py3-none-any.whl", hash = "sha256:ca4f6bf89c819f293e77074d613c0021e3c4e8521be95c73d03caecb4372e1ee", size = 8316, upload-time = "2025-07-04T23:06:23.588Z" },
 ]
 
 [[package]]
@@ -1864,6 +1881,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/95/32/1a225d6164441be760d75c2c42e2780dc0873fe382da3e98a2e1e48361e5/tzdata-2025.2.tar.gz", hash = "sha256:b60a638fcc0daffadf82fe0f57e53d06bdec2f36c4df66280ae79bce6bd6f2b9", size = 196380, upload-time = "2025-03-23T13:54:43.652Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5c/23/c7abc0ca0a1526a0774eca151daeb8de62ec457e77262b66b359c3c7679e/tzdata-2025.2-py2.py3-none-any.whl", hash = "sha256:1a403fada01ff9221ca8044d701868fa132215d84beb92242d9acd2147f667a8", size = 347839, upload-time = "2025-03-23T13:54:41.845Z" },
+]
+
+[[package]]
+name = "uritemplate"
+version = "4.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/98/60/f174043244c5306c9988380d2cb10009f91563fc4b31293d27e17201af56/uritemplate-4.2.0.tar.gz", hash = "sha256:480c2ed180878955863323eea31b0ede668795de182617fef9c6ca09e6ec9d0e", size = 33267, upload-time = "2025-06-02T15:12:06.318Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a9/99/3ae339466c9183ea5b8ae87b34c0b897eda475d2aec2307cae60e5cd4f29/uritemplate-4.2.0-py3-none-any.whl", hash = "sha256:962201ba1c4edcab02e60f9a0d3821e82dfc5d2d6662a21abd533879bdb8a686", size = 11488, upload-time = "2025-06-02T15:12:03.405Z" },
 ]
 
 [[package]]
