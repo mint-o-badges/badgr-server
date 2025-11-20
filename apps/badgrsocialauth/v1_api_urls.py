@@ -1,4 +1,4 @@
-from django.conf.urls import url
+from django.urls import re_path
 
 from badgrsocialauth.api import (
     BadgrSocialAccountList,
@@ -7,17 +7,17 @@ from badgrsocialauth.api import (
 )
 
 urlpatterns = [
-    url(
+    re_path(
         r"^socialaccounts$",
         BadgrSocialAccountList.as_view(),
         name="v1_api_user_socialaccount_list",
     ),
-    url(
+    re_path(
         r"^socialaccounts/connect$",
         BadgrSocialAccountConnect.as_view(),
         name="v1_api_user_socialaccount_connect",
     ),
-    url(
+    re_path(
         r"^socialaccounts/(?P<id>[^/]+)$",
         BadgrSocialAccountDetail.as_view(),
         name="v1_api_user_socialaccount_detail",
