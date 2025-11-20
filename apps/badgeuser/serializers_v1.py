@@ -1,17 +1,15 @@
 from django.contrib.auth.hashers import is_password_usable
 from rest_framework import serializers
-from collections import OrderedDict
 from mainsite.serializers import StripTagsCharField
 from mainsite.validators import PasswordValidator
 from mainsite.utils import validate_altcha
 from .models import BadgeUser, CachedEmailAddress, TermsVersion
 from .utils import notify_on_password_change
+from drf_spectacular.utils import extend_schema_field
+from drf_spectacular.types import OpenApiTypes
 
 
 class BadgeUserTokenSerializerV1(serializers.Serializer):
-    class Meta:
-        apispec_definition = ("BadgeUserToken", {})
-
     def to_representation(self, instance):
         representation = {
             "username": instance.username,
@@ -61,27 +59,9 @@ class BadgeUserProfileSerializerV1(serializers.Serializer):
     secure_password_set = serializers.BooleanField(required=False)
     source = serializers.CharField(write_only=True, required=False)
 
+    @extend_schema_field(OpenApiTypes.BOOL)
     def get_has_password_set(self, obj):
         return is_password_usable(obj.password)
-
-    class Meta:
-        apispec_definition = (
-            "BadgeUser",
-            {
-                "properties": OrderedDict(
-                    [
-                        (
-                            "source",
-                            {
-                                "type": "string",
-                                "format": "string",
-                                "description": "Ex: mozilla",
-                            },
-                        ),
-                    ]
-                )
-            },
-        )
 
     def create(self, validated_data):
         captcha = self.context.get("captcha")
@@ -171,7 +151,6 @@ class EmailSerializerV1(serializers.ModelSerializer):
         model = CachedEmailAddress
         fields = ("id", "email", "verified", "primary", "variants")
         read_only_fields = ("id", "verified", "primary", "variants")
-        apispec_definition = ("BadgeUserEmail", {})
 
     def create(self, validated_data):
         new_address = validated_data.get("email")

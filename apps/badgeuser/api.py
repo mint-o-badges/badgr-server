@@ -8,13 +8,8 @@ from jsonschema import ValidationError
 from allauth.account.adapter import get_adapter
 from allauth.account.models import EmailConfirmationHMAC
 from allauth.account.utils import user_pk_to_url_str, url_str_to_user_pk
-from apispec_drf.decorators import (
-    apispec_get_operation,
-    apispec_put_operation,
-    apispec_post_operation,
-    apispec_operation,
-    apispec_delete_operation,
-    apispec_list_operation,
+from drf_spectacular.utils import (
+    extend_schema,
 )
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
@@ -35,7 +30,6 @@ from issuer.models import (
     LearningPath,
     LearningPathBadge,
     NetworkInvite,
-    RequestedBadge,
 )
 from issuer.serializers_v1 import IssuerStaffRequestSerializer, LearningPathSerializerV1
 from rest_framework import permissions, serializers, status
@@ -80,7 +74,6 @@ from mainsite.utils import (
 )
 from mainsite.serializers import ApplicationInfoSerializer
 
-from django.core.signing import TimestampSigner
 import logging
 
 logger = logging.getLogger("Badgr.Events")
@@ -100,8 +93,7 @@ class BadgeUserDetail(BaseEntityDetailView):
         "delete": ["rw:profile"],
     }
 
-    @apispec_post_operation(
-        "BadgeUser",
+    @extend_schema(
         summary="Post a single BadgeUser profile",
         description="Make an account",
         tags=["BadgeUsers"],
@@ -161,8 +153,7 @@ class BadgeUserDetail(BaseEntityDetailView):
 
         return Response(status=HTTP_404_NOT_FOUND)
 
-    @apispec_get_operation(
-        "BadgeUser",
+    @extend_schema(
         summary="Get a single BadgeUser profile",
         description="Use the entityId 'self' to retrieve the authenticated user's profile",
         tags=["BadgeUsers"],
@@ -170,8 +161,7 @@ class BadgeUserDetail(BaseEntityDetailView):
     def get(self, request, **kwargs):
         return super(BadgeUserDetail, self).get(request, **kwargs)
 
-    @apispec_put_operation(
-        "BadgeUser",
+    @extend_schema(
         summary="Update a BadgeUser",
         description="Use the entityId 'self' to update the authenticated user's profile",
         tags=["BadgeUsers"],
@@ -179,8 +169,7 @@ class BadgeUserDetail(BaseEntityDetailView):
     def put(self, request, **kwargs):
         return super(BadgeUserDetail, self).put(request, allow_partial=True, **kwargs)
 
-    @apispec_delete_operation(
-        "BadgeUser",
+    @extend_schema(
         summary="Delete a BadgeUser",
         description="Use the entityId 'self' to delete the authenticated user's profile",
         tags=["BadgeUsers"],
@@ -282,57 +271,8 @@ class BaseUserRecoveryView(BaseEntityDetailView):
         return Response(serializer.data, status=status)
 
 
-class BadgeRequestVerification(BaseUserRecoveryView):
-    authentication_classes = ()
-    permission_classes = (permissions.AllowAny,)
-
-    def get(self, request, *args, **kwargs):
-        badgr_app = None
-        badgrapp_id = self.request.GET.get("a")
-
-        if badgrapp_id:
-            try:
-                badgr_app = BadgrApp.objects.get(id=badgrapp_id)
-            except BadgrApp.DoesNotExist:
-                pass
-
-        if badgr_app is None:
-            badgr_app = BadgrApp.objects.get_current(request)
-
-        token = request.GET.get("token", "")
-        badge_request_id = request.GET.get("request_id", "")
-
-        try:
-            # Verify the token but don't invalidate it
-            signer = TimestampSigner()
-            verified_badge_request_id = signer.unsign(token, max_age=None)
-
-            if verified_badge_request_id != badge_request_id:
-                return Response(
-                    {"error": "Invalid token for this badge request"},
-                    status=HTTP_400_BAD_REQUEST,
-                )
-
-            badge_request = RequestedBadge.objects.get(id=badge_request_id)
-
-            base_url = badgr_app.cors.rstrip("/") + "/"
-
-            if not base_url.startswith(("http://", "https://")):
-                base_url = f"https://{base_url}"
-
-            path = f"issuer/issuers/{badge_request.qrcode.issuer.entity_id}/badges/{badge_request.qrcode.badgeclass.entity_id}"
-
-            redirect_url = urllib.parse.urljoin(base_url, path) + f"?token={token}"
-
-            return Response(status=HTTP_302_FOUND, headers={"Location": redirect_url})
-
-        except RequestedBadge.DoesNotExist:
-            return Response(
-                {"error": "Badge request not found"}, status=HTTP_404_NOT_FOUND
-            )
-
-
 class BadgeUserForgotPassword(BaseUserRecoveryView):
+    schema = None
     authentication_classes = ()
     permission_classes = (permissions.AllowAny,)
     v1_serializer_class = serializers.Serializer
@@ -354,27 +294,27 @@ class BadgeUserForgotPassword(BaseUserRecoveryView):
         tokenized_url = "{}{}".format(redirect_url, token)
         return Response(status=HTTP_302_FOUND, headers={"Location": tokenized_url})
 
-    @apispec_operation(
-        summary="Request an account recovery email",
-        tags=["Authentication"],
-        parameters=[
-            {
-                "in": "body",
-                "name": "body",
-                "required": True,
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "email": {
-                            "type": "string",
-                            "format": "email",
-                            "description": "The email address on file to send recovery email to",
-                        }
-                    },
-                },
-            }
-        ],
-    )
+    # @apispec_operation(
+    #     summary="Request an account recovery email",
+    #     tags=["Authentication"],
+    #     parameters=[
+    #         {
+    #             "in": "body",
+    #             "name": "body",
+    #             "required": True,
+    #             "schema": {
+    #                 "type": "object",
+    #                 "properties": {
+    #                     "email": {
+    #                         "type": "string",
+    #                         "format": "email",
+    #                         "description": "The email address on file to send recovery email to",
+    #                     }
+    #                 },
+    #             },
+    #         }
+    #     ],
+    # )
     def post(self, request, **kwargs):
         email = request.data.get("email")
         try:
@@ -439,33 +379,33 @@ class BadgeUserForgotPassword(BaseUserRecoveryView):
 
         return self.get_response()
 
-    @apispec_operation(
-        summary="Recover an account and set a new password",
-        tags=["Authentication"],
-        parameters=[
-            {
-                "in": "body",
-                "name": "body",
-                "required": True,
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "token": {
-                            "type": "string",
-                            "format": "string",
-                            "description": "The token recieved in the recovery email",
-                            "required": True,
-                        },
-                        "password": {
-                            "type": "string",
-                            "description": "The new password to use",
-                            "required": True,
-                        },
-                    },
-                },
-            }
-        ],
-    )
+    # @apispec_operation(
+    #     summary="Recover an account and set a new password",
+    #     tags=["Authentication"],
+    #     parameters=[
+    #         {
+    #             "in": "body",
+    #             "name": "body",
+    #             "required": True,
+    #             "schema": {
+    #                 "type": "object",
+    #                 "properties": {
+    #                     "token": {
+    #                         "type": "string",
+    #                         "format": "string",
+    #                         "description": "The token recieved in the recovery email",
+    #                         "required": True,
+    #                     },
+    #                     "password": {
+    #                         "type": "string",
+    #                         "description": "The new password to use",
+    #                         "required": True,
+    #                     },
+    #                 },
+    #             },
+    #         }
+    #     ],
+    # )
     def put(self, request, **kwargs):
         token = request.data.get("token")
         password = request.data.get("password")
@@ -544,6 +484,7 @@ class BaseRedirectView:
 
 
 class BadgeUserEmailConfirm(BaseUserRecoveryView, BaseRedirectView):
+    schema = None
     permission_classes = (permissions.AllowAny,)
     v1_serializer_class = BaseSerializer
     v2_serializer_class = BaseSerializerV2
@@ -760,6 +701,7 @@ class BadgeUserAccountConfirm(RedirectView):
 
 class AccessTokenList(BaseEntityListView):
     model = AccessTokenProxy
+    serializer_class = AccessTokenSerializerV2
     v2_serializer_class = AccessTokenSerializerV2
     permission_classes = (permissions.IsAuthenticated, BadgrOAuthTokenHasScope)
     valid_scopes = ["rw:profile"]
@@ -769,8 +711,7 @@ class AccessTokenList(BaseEntityListView):
             user=request.user, expires__gt=timezone.now()
         )
 
-    @apispec_list_operation(
-        "AccessToken",
+    @extend_schema(
         summary="Get a list of access tokens for authenticated user",
         tags=["Authentication"],
     )
@@ -780,6 +721,7 @@ class AccessTokenList(BaseEntityListView):
 
 class ApplicationList(BaseEntityListView):
     model = get_application_model()
+    serializer_class = ApplicationInfoSerializer
     v2_serializer_class = ApplicationInfoSerializer
     permission_classes = (permissions.IsAuthenticated, BadgrOAuthTokenHasScope)
     valid_scopes = ["rw:profile"]
@@ -787,8 +729,7 @@ class ApplicationList(BaseEntityListView):
     def get_objects(self, request, **kwargs):
         return ApplicationInfo.objects.filter(application__user=request.user)
 
-    @apispec_list_operation(
-        "Applicationlist",
+    @extend_schema(
         summary="Get a list of application registered for the authenticated user",
         tags=["Authentication"],
     )
@@ -798,14 +739,13 @@ class ApplicationList(BaseEntityListView):
 
 class ApplicationDetails(BaseEntityDetailView):
     model = ApplicationInfo
+    serializer_class = ApplicationInfoSerializer
     v2_serializer_class = ApplicationInfoSerializer
     permission_classes = (permissions.IsAuthenticated, BadgrOAuthTokenHasScope)
     valid_scopes = ["rw:profile"]
 
-    @apispec_list_operation(
-        "ApplicationDetails",
-        summary="Delete one registed set of access tokens",
-        tags=["Authentication"],
+    @extend_schema(
+        summary="Delete one registed set of access tokens", tags=["Authentication"]
     )
     def delete(self, request, application_id, **kwargs):
         model = get_application_model()
@@ -817,6 +757,7 @@ class ApplicationDetails(BaseEntityDetailView):
 
 class AccessTokenDetail(BaseEntityDetailView):
     model = AccessTokenProxy
+    serializer_class = AccessTokenSerializerV2
     v2_serializer_class = AccessTokenSerializerV2
     permission_classes = (permissions.IsAuthenticated, BadgrOAuthTokenHasScope)
     valid_scopes = ["rw:profile"]
@@ -833,15 +774,11 @@ class AccessTokenDetail(BaseEntityDetailView):
             raise Http404
         return self.object
 
-    @apispec_get_operation(
-        "AccessToken", summary="Get a single AccessToken", tags=["Authentication"]
-    )
+    @extend_schema(summary="Get a single AccessToken", tags=["Authentication"])
     def get(self, request, **kwargs):
         return super(AccessTokenDetail, self).get(request, **kwargs)
 
-    @apispec_delete_operation(
-        "AccessToken", summary="Revoke an AccessToken", tags=["Authentication"]
-    )
+    @extend_schema(summary="Revoke an AccessToken", tags=["Authentication"])
     def delete(self, request, **kwargs):
         obj = self.get_object(request, **kwargs)
         if not self.has_object_permissions(request, obj):
@@ -852,6 +789,7 @@ class AccessTokenDetail(BaseEntityDetailView):
 
 class LatestTermsVersionDetail(BaseEntityDetailView):
     model = TermsVersion
+    serializer_class = TermsVersionSerializerV2
     v2_serializer_class = TermsVersionSerializerV2
     permission_classes = (permissions.AllowAny,)
 
@@ -867,6 +805,8 @@ class LatestTermsVersionDetail(BaseEntityDetailView):
 
 class BadgeUserResendEmailConfirmation(BaseUserRecoveryView):
     permission_classes = (permissions.AllowAny,)
+    serializer_class = EmailSerializerV1
+    v1_serializer_class = EmailSerializerV1
 
     def put(self, request, **kwargs):
         email = request.data.get("email")
@@ -940,8 +880,7 @@ class LearningPathList(BaseEntityListView):
 
         return lps
 
-    @apispec_list_operation(
-        "LearningPath",
+    @extend_schema(
         summary="Get a list of LearningPaths for authenticated user",
         tags=["LearningPaths"],
     )
@@ -994,6 +933,7 @@ class BaseRedirectView:
 
 
 class BadgeUserSaveMicroDegree(BaseEntityDetailView, BaseRedirectView):
+    schema = None
     permission_classes = (permissions.AllowAny,)
     v1_serializer_class = BaseSerializer
     v2_serializer_class = BaseSerializerV2
@@ -1012,6 +952,7 @@ class BadgeUserSaveMicroDegree(BaseEntityDetailView, BaseRedirectView):
 
 
 class BadgeUserCollectBadgesInBackpack(BaseEntityDetailView, BaseRedirectView):
+    schema = None
     permission_classes = (permissions.AllowAny,)
     v1_serializer_class = BaseSerializer
     v2_serializer_class = BaseSerializerV2
@@ -1028,6 +969,7 @@ class BadgeUserCollectBadgesInBackpack(BaseEntityDetailView, BaseRedirectView):
         return self._prepare_redirect(request, badgrapp, intended_redirect)
 
 
+@extend_schema(exclude=True)
 class GetRedirectPath(BaseEntityDetailView):
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -1054,8 +996,7 @@ class BadgeUserStaffRequestList(BaseEntityListView):
         "get": ["r:profile", "rw:profile"],
     }
 
-    @apispec_get_operation(
-        "IssuerStaffRequest",
+    @extend_schema(
         summary="Get my staff membership requests",
         description="Get all staff requests created by the authenticated user",
         tags=["BadgeUser StaffRequests"],
@@ -1066,8 +1007,7 @@ class BadgeUserStaffRequestList(BaseEntityListView):
             revoked=False,
         )
 
-    @apispec_post_operation(
-        "IssuerStaffRequest",
+    @extend_schema(
         summary="Create a new issuer staff request",
         description="Request membership to an institution's staff",
         tags=["BadgeUser StaffRequests"],
@@ -1159,8 +1099,7 @@ class BadgeUserStaffRequestDetail(BaseEntityDetailView):
             raise Http404
         return self.object
 
-    @apispec_get_operation(
-        "IssuerStaffRequest",
+    @extend_schema(
         summary="Get a specific staff request",
         description="Get details of a staff request created by the authenticated user",
         tags=["BadgeUser StaffRequests"],
@@ -1175,8 +1114,7 @@ class BadgeUserStaffRequestDetail(BaseEntityDetailView):
         )
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @apispec_delete_operation(
-        "IssuerStaffRequest",
+    @extend_schema(
         summary="Revoke a request for an issuer membership",
         description="Revoke your own pending staff membership request",
         tags=["BadgeUser StaffRequests"],
@@ -1199,6 +1137,7 @@ class BadgeUserStaffRequestDetail(BaseEntityDetailView):
 
 
 class BadgeUserConfirmStaffRequest(BaseEntityDetailView, BaseRedirectView):
+    schema = None
     permission_classes = (permissions.AllowAny,)
     v1_serializer_class = BaseSerializer
     v2_serializer_class = BaseSerializerV2
@@ -1217,6 +1156,7 @@ class BadgeUserConfirmStaffRequest(BaseEntityDetailView, BaseRedirectView):
 
 
 class ConfirmNetworkInvitation(BaseEntityDetailView, BaseRedirectView):
+    schema = None
     permission_classes = (permissions.AllowAny,)
     v1_serializer_class = BaseSerializer
     v2_serializer_class = BaseSerializerV2

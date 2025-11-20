@@ -1,6 +1,6 @@
-from collections import OrderedDict
-
-from apispec_drf.decorators import apispec_get_operation, apispec_post_operation
+from drf_spectacular.utils import (
+    extend_schema,
+)
 from django.conf import settings
 from django.shortcuts import reverse
 from django.utils.dateparse import parse_datetime
@@ -73,19 +73,7 @@ def badge_connect_api_info(domain):
 class BadgeConnectManifestView(APIView):
     permission_classes = [AllowAny]
 
-    @apispec_get_operation(
-        "BadgeConnectManifest",
-        summary="Fetch Badge Connect Manifest",
-        tags=["BadgeConnect"],
-        parameters=[
-            {
-                "in": "query",
-                "name": "domain",
-                "type": "string",
-                "description": "The CORS domain for the BadgrApp",
-            }
-        ],
-    )
+    @extend_schema(exclude=True)
     def get(self, request, **kwargs):
         data = badge_connect_api_info(kwargs.get("domain"))
         if data is None:
@@ -179,34 +167,7 @@ class BadgeConnectAssertionListView(ListCreateAPIView):
             return BadgeConnectImportSerializer
         return super(BadgeConnectAssertionListView, self).get_serializer_class()
 
-    @apispec_get_operation(
-        "BadgeConnectAssertions",
-        summary="Get a list of Assertions",
-        tags=["BadgeConnect"],
-        parameters=[
-            {
-                "in": "query",
-                "name": "limit",
-                "type": "integer",
-                "description": "Indicate how many results should be retrieved in a single page.",
-            },
-            {
-                "in": "query",
-                "name": "offset",
-                "type": "integer",
-                "description": "Indicate the index of the first record to return (zero indexed).",
-            },
-            {
-                "in": "query",
-                "name": "limit",
-                "type": "string",
-                "format": "date-time",
-                "description": "Retrieve Assertions that were created or updated "
-                "after the provided timestamp. Must be an ISO 8601 "
-                "compatible timestamp with a time zone indicator.",
-            },
-        ],
-    )
+    @extend_schema(exclude=True)
     def get(self, request, **kwargs):
         queryset = self.get_queryset()
         page = self.paginate_queryset(queryset)
@@ -217,22 +178,7 @@ class BadgeConnectAssertionListView(ListCreateAPIView):
         serializer = self.get_serializer(queryset)
         return Response(serializer.data)
 
-    @apispec_post_operation(
-        "BadgeConnectImport",
-        summary="Import a Badge Assertion",
-        tags=["BadgeConnect"],
-        responses=OrderedDict(
-            [
-                (
-                    "201",
-                    {
-                        "schema": {"$ref": "#/definitions/BadgeConnectImportResult"},
-                        "description": "Successfully created",
-                    },
-                ),
-            ]
-        ),
-    )
+    @extend_schema(exclude=True)
     def post(self, request, **kwargs):
         return super(BadgeConnectAssertionListView, self).post(request, **kwargs)
 
@@ -250,11 +196,7 @@ class BadgeConnectProfileView(BaseEntityDetailView):
         ],
     }
 
-    @apispec_get_operation(
-        "BadgeConnectProfiles",
-        summary="Get Badge Connect user profile",
-        tags=["BadgeConnect"],
-    )
+    @extend_schema(exclude=True)
     def get(self, request, **kwargs):
         """
         GET a single entity by its identifier

@@ -275,3 +275,14 @@ pip install commitizen
 ## Branches
 
 Development happens in feature branches (e.g. `feat/foo` or `fix/bar`). Those are then merged (via a PR) into `develop`. The `develop` branch is synchronized automatically with `develop.openbadges.education`. Once dev tests have completed on `develop.openbadges.education`, `develop` is merged (via a PR) into `main`. The `main` branch is synchronized automatically with `staging.openbadges.education`. Once this state is ready for a deployment, `main` is merged (via a PR) into `production`. The `production` branch is synchronized automatically with `openbadges.education`.
+
+## API Documentation
+
+This project includes an automatically generated API documentation using [drf-spectacular](https://drf-spectacular.readthedocs.io/).
+
+You can access it at:
+
+- **Swagger UI:** `/docs/`
+- **Redoc:** `/redoc/`
+- **OpenAPI schema (JSON):** `/api/schema/`
+

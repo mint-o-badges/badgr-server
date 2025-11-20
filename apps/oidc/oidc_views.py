@@ -8,9 +8,11 @@ from rest_framework.decorators import (
     authentication_classes,
     api_view,
 )
+from drf_spectacular.utils import extend_schema
 
 
 class OidcView:
+    @extend_schema(exclude=True)
     @api_view(["GET"])
     @authentication_classes([])
     @permission_classes([])
