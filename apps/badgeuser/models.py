@@ -327,6 +327,8 @@ class BadgeUser(BaseVersionedEntity, AbstractUser, cachemodel.CacheModel):
 
     @cachemodel.cached_method(auto_publish=True)
     def cached_emails(self):
+        if not self.pk:
+            return []
         return CachedEmailAddress.objects.filter(user=self)
 
     @cachemodel.cached_method(auto_publish=True)
