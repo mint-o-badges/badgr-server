@@ -1,9 +1,14 @@
 # encoding: utf-8
 
-
-from apispec_drf.decorators import apispec_list_operation, apispec_operation
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+    OpenApiParameter,
+    OpenApiExample,
+    inline_serializer,
+)
 from django.contrib.auth import get_user_model
-from rest_framework import status, authentication
+from rest_framework import status, authentication, serializers
 from rest_framework.exceptions import ValidationError, PermissionDenied, NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -67,6 +72,94 @@ class AbstractIssuerAPIEndpoint(APIView):
             return obj
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary="Get a list of users associated with a role on an Issuer",
+        tags=["Issuers"],
+        parameters=[
+            OpenApiParameter(
+                "slug",
+                type=str,
+                location=OpenApiParameter.PATH,
+                description="The slug of the issuer",
+                required=True,
+            )
+        ],
+        responses={
+            200: IssuerStaffSerializerV1(many=True),
+            404: inline_serializer(
+                name="IssuerStaffNotFound",
+                fields={"error": serializers.CharField()},
+            ),
+        },
+    ),
+    post=extend_schema(
+        summary="Add or remove a user from a role on an issuer. Limited to Owner users only",
+        tags=["Issuers"],
+        parameters=[
+            OpenApiParameter(
+                "slug",
+                type=str,
+                location=OpenApiParameter.PATH,
+                description="The slug of the issuer whose roles to modify",
+                required=True,
+            )
+        ],
+        request=IssuerRoleActionSerializerV1,
+        responses={
+            200: inline_serializer(
+                name="IssuerStaffRemoved",
+                fields={"message": serializers.CharField()},
+            ),
+            201: IssuerStaffSerializerV1,
+            400: inline_serializer(
+                name="IssuerStaffBadRequest",
+                fields={"error": serializers.CharField()},
+            ),
+            404: inline_serializer(
+                name="IssuerStaffUserNotFound",
+                fields={"error": serializers.CharField()},
+            ),
+        },
+        examples=[
+            OpenApiExample(
+                "Add user by email",
+                value={
+                    "action": "add",
+                    "email": "user@example.com",
+                    "role": "staff",
+                },
+                request_only=True,
+            ),
+            OpenApiExample(
+                "Add user by username",
+                value={
+                    "action": "add",
+                    "username": "johndoe",
+                    "role": "editor",
+                },
+                request_only=True,
+            ),
+            OpenApiExample(
+                "Modify user role",
+                value={
+                    "action": "modify",
+                    "email": "user@example.com",
+                    "role": "owner",
+                },
+                request_only=True,
+            ),
+            OpenApiExample(
+                "Remove user",
+                value={
+                    "action": "remove",
+                    "email": "user@example.com",
+                },
+                request_only=True,
+            ),
+        ],
+    ),
+)
 class IssuerStaffList(VersionedObjectMixin, APIView):
     """View or modify an issuer's staff members and privileges"""
 
@@ -84,11 +177,6 @@ class IssuerStaffList(VersionedObjectMixin, APIView):
         "@apispec_scopes": {},
     }
 
-    @apispec_list_operation(
-        "IssuerStaff",
-        tags=["Issuers"],
-        summary="Get a list of users associated with a role on an Issuer",
-    )
     def get(self, request, **kwargs):
         current_issuer = self.get_object(request, **kwargs)
         if not self.has_object_permissions(request, current_issuer):
@@ -107,57 +195,8 @@ class IssuerStaffList(VersionedObjectMixin, APIView):
             return Response([], status=status.HTTP_200_OK)
         return Response(serializer.data)
 
-    @apispec_operation(
-        tags=["Issuers"],
-        summary="Add or remove a user from a role on an issuer. Limited to Owner users only",
-    )
     @throttleable
     def post(self, request, **kwargs):
-        """
-        ---
-        parameters:
-            - name: slug
-              type: string
-              paramType: path
-              description: The slug of the issuer whose roles to modify.
-              required: true
-            - name: action
-              type: string
-              paramType: form
-              description: The action to perform on the user. Must be one of 'add',
-                'modify', or 'remove'.
-              required: true
-            - name: username
-              type: string
-              paramType: form
-              description: The username of the user whose role will be added,
-                removed or modified.
-              required: false
-            - name: email
-              type: string
-              paramType: form
-              description: A verified email address of the user whose role will be added,
-                removed or modified.
-              required: false
-            - name: url
-              type: string
-              paramType: form
-              description: A verified user recipient identifier of the user whose role
-                will be added, removed or modified. Must be of type url.
-              required: false
-            - name: telephone
-              type: string
-              paramType: form
-              description: A verified user recipient identifier of the user whose role
-                will be added, removed or modified. Must be of type telephone.
-              required: false
-            - name: role
-              type: string
-              paramType: form
-              description: Role to set user as. One of 'owner', 'editor', or 'staff'
-              defaultValue: staff
-              required: false
-        """
         # validate POST data
         serializer = IssuerRoleActionSerializerV1(data=request.data)
         if not serializer.is_valid():
@@ -258,6 +297,35 @@ class IssuerStaffList(VersionedObjectMixin, APIView):
         return Response(IssuerStaffSerializerV1(staff_instance).data)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary="Get a specific BadgeClass by searching by identifier",
+        tags=["BadgeClasses"],
+        parameters=[
+            OpenApiParameter(
+                "identifier",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                description="The identifier of the badge. Possible values: JSONld identifier, BadgeClass.id, or BadgeClass.slug",
+                required=True,
+            )
+        ],
+        responses={
+            200: BadgeClassSerializerV1,
+            404: inline_serializer(
+                name="BadgeClassNotFound",
+                fields={"detail": serializers.CharField()},
+            ),
+        },
+        examples=[
+            OpenApiExample(
+                "Find by slug",
+                value={"identifier": "my-badge-class"},
+                request_only=False,
+            )
+        ],
+    ),
+)
 class FindBadgeClassDetail(APIView):
     """
     GET a specific BadgeClass by searching by identifier
@@ -265,21 +333,6 @@ class FindBadgeClassDetail(APIView):
 
     permission_classes = (AuthenticatedWithVerifiedIdentifier,)
 
-    @apispec_operation(
-        summary="Get a specific BadgeClass by searching by identifier",
-        tags=["BadgeClasses"],
-        parameters=[
-            {
-                "in": "query",
-                "name": "identifier",
-                "required": True,
-                "description": (
-                    "The identifier of the badge possible values: "
-                    "JSONld identifier, BadgeClass.id, or BadgeClass.slug"
-                ),
-            }
-        ],
-    )
     def get(self, request, **kwargs):
         identifier = request.query_params.get("identifier")
         badge = get_badgeclass_by_identifier(identifier)

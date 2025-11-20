@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = "==3.10.*"
 
 [manifest]
@@ -30,27 +30,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/8b/8d/52179c4e3f1978d3d9a285f98c706642522750ef343e9738286130423730/aniso8601-10.0.1.tar.gz", hash = "sha256:25488f8663dd1528ae1f54f94ac1ea51ae25b4d531539b8bc707fed184d16845", size = 47190, upload-time = "2025-04-18T17:29:42.995Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/59/75/e0e10dc7ed1408c28e03a6cb2d7a407f99320eb953f229d008a7a6d05546/aniso8601-10.0.1-py2.py3-none-any.whl", hash = "sha256:eb19717fd4e0db6de1aab06f12450ab92144246b257423fe020af5748c0cb89e", size = 52848, upload-time = "2025-04-18T17:29:41.492Z" },
-]
-
-[[package]]
-name = "apispec"
-version = "0.22.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pyyaml" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/cd/fe/7bbf5c57570d4236942c69610b6f9c9f5614c09ea6c65a21cc481aab0f6d/apispec-0.22.0.tar.gz", hash = "sha256:987f152c81c4ec36ba7a4a9f0150066ba9c4737180d00e47554434715fed7278", size = 40153, upload-time = "2017-05-31T02:19:03.27Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c9/72/121ff2804947179e2b5c5f8ff88f1f00586b7ba1e4ad0cddd684ecee762d/apispec-0.22.0-py2.py3-none-any.whl", hash = "sha256:bd1761a945a23d272793315f45a3757100857ea30b16c228f2e02744754a65fd", size = 21326, upload-time = "2017-05-31T02:19:01.364Z" },
-]
-
-[[package]]
-name = "apispec-djangorestframework"
-version = "1.1.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/22/9f/19385f7facd2654bfc91d95359c6bdb7f9ba503bd69a483524d58556dce5/apispec-djangorestframework-1.1.1.tar.gz", hash = "sha256:abc12837a45b31523e5616c608bb395e5a8ff27609d85dfce9300c207caf1148", size = 530542, upload-time = "2020-06-16T04:28:13.626Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/00/57/9a6f1bddfe799536d9bedc036b8ffe4b47f9244bbaa5f45e9894e1c44d7b/apispec_djangorestframework-1.1.1-py3-none-any.whl", hash = "sha256:259419952edcdfaccceacca797386ef603f7bc886157517a341bc94c38e5c7be", size = 536455, upload-time = "2020-06-16T04:28:11.802Z" },
 ]
 
 [[package]]
@@ -125,8 +104,6 @@ name = "badgr-server"
 version = "2.2.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "apispec" },
-    { name = "apispec-djangorestframework" },
     { name = "backports-csv" },
     { name = "badgecheck" },
     { name = "base58" },
@@ -158,6 +135,7 @@ dependencies = [
     { name = "django-object-actions" },
     { name = "django-prometheus" },
     { name = "djangorestframework" },
+    { name = "drf-spectacular" },
     { name = "geopy" },
     { name = "idna" },
     { name = "importlib-resources" },
@@ -213,8 +191,6 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "apispec", specifier = "==0.22.0" },
-    { name = "apispec-djangorestframework", specifier = "==1.1.1" },
     { name = "backports-csv", specifier = "==1.0.4" },
     { name = "badgecheck", specifier = "==1.1.8" },
     { name = "base58", specifier = ">=2.1.1" },
@@ -246,6 +222,7 @@ requires-dist = [
     { name = "django-object-actions", specifier = "==1.1.0" },
     { name = "django-prometheus", specifier = "==2.3.1" },
     { name = "djangorestframework", specifier = "==3.12.2" },
+    { name = "drf-spectacular", specifier = ">=0.29.0" },
     { name = "geopy", specifier = "==2.4.1" },
     { name = "idna", specifier = "==2.8" },
     { name = "importlib-resources", specifier = "==5.10.0" },
@@ -812,6 +789,23 @@ wheels = [
 ]
 
 [[package]]
+name = "drf-spectacular"
+version = "0.29.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+    { name = "djangorestframework" },
+    { name = "inflection" },
+    { name = "jsonschema" },
+    { name = "pyyaml" },
+    { name = "uritemplate" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5e/0e/a4f50d83e76cbe797eda88fc0083c8ca970cfa362b5586359ef06ec6f70a/drf_spectacular-0.29.0.tar.gz", hash = "sha256:0a069339ea390ce7f14a75e8b5af4a0860a46e833fd4af027411a3e94fc1a0cc", size = 241722, upload-time = "2025-11-02T03:40:26.348Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/32/d9/502c56fc3ca960075d00956283f1c44e8cafe433dada03f9ed2821f3073b/drf_spectacular-0.29.0-py3-none-any.whl", hash = "sha256:d1ee7c9535d89848affb4427347f7c4a22c5d22530b8842ef133d7b72e19b41a", size = 105433, upload-time = "2025-11-02T03:40:24.823Z" },
+]
+
+[[package]]
 name = "ecdsa"
 version = "0.19.1"
 source = { registry = "https://pypi.org/simple" }
@@ -903,6 +897,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/06/72/6bf0df4fe7a139147f5d6b473f16d5aefb7bc5b719ba5dd33f230d35760f/importlib_resources-5.10.0.tar.gz", hash = "sha256:c01b1b94210d9849f286b86bb51bcea7cd56dde0600d8db721d7b81330711668", size = 37906, upload-time = "2022-10-08T01:10:36.882Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c8/47/6bfe2147eae436391916b3741a2cd9a76763e9671703a0d1d8e83142816e/importlib_resources-5.10.0-py3-none-any.whl", hash = "sha256:ee17ec648f85480d523596ce49eae8ead87d5631ae1551f913c0100b5edd3437", size = 34706, upload-time = "2022-10-08T01:10:35.119Z" },
+]
+
+[[package]]
+name = "inflection"
+version = "0.5.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e1/7e/691d061b7329bc8d54edbf0ec22fbfb2afe61facb681f9aaa9bff7a27d04/inflection-0.5.1.tar.gz", hash = "sha256:1a29730d366e996aaacffb2f1f1cb9593dc38e2ddd30c91250c6dde09ea9b417", size = 15091, upload-time = "2020-08-22T08:16:29.139Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/59/91/aa6bde563e0085a02a435aa99b49ef75b0a4b062635e606dab23ce18d720/inflection-0.5.1-py2.py3-none-any.whl", hash = "sha256:f38b2b640938a4f35ade69ac3d053042959b62a0f1076a5bbaa1b9526605a8a2", size = 9454, upload-time = "2020-08-22T08:16:27.816Z" },
 ]
 
 [[package]]
@@ -1076,7 +1079,7 @@ wheels = [
 name = "mysqlclient"
 version = "1.4.6"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/d0/97/7326248ac8d5049968bf4ec708a5d3d4806e412a42e74160d7f266a3e03a/mysqlclient-1.4.6.tar.gz", hash = "sha256:f3fdaa9a38752a3b214a6fe79d7cae3653731a53e577821f9187e67cbecb2e16", size = 85517 }
+sdist = { url = "https://files.pythonhosted.org/packages/d0/97/7326248ac8d5049968bf4ec708a5d3d4806e412a42e74160d7f266a3e03a/mysqlclient-1.4.6.tar.gz", hash = "sha256:f3fdaa9a38752a3b214a6fe79d7cae3653731a53e577821f9187e67cbecb2e16", size = 85517, upload-time = "2019-11-21T12:37:28.548Z" }
 
 [[package]]
 name = "netaddr"
@@ -1726,6 +1729,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/98/5a/da40306b885cc8c09109dc2e1abd358d5684b1425678151cdaed4731c822/typing_extensions-4.14.1.tar.gz", hash = "sha256:38b39f4aeeab64884ce9f74c94263ef78f3c22467c8724005483154c26648d36", size = 107673, upload-time = "2025-07-04T13:28:34.16Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b5/00/d631e67a838026495268c2f6884f3711a15a9a2a96cd244fdaea53b823fb/typing_extensions-4.14.1-py3-none-any.whl", hash = "sha256:d1e1e3b58374dc93031d6eda2420a48ea44a36c2b4766a4fdeb3710755731d76", size = 43906, upload-time = "2025-07-04T13:28:32.743Z" },
+]
+
+[[package]]
+name = "uritemplate"
+version = "4.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/98/60/f174043244c5306c9988380d2cb10009f91563fc4b31293d27e17201af56/uritemplate-4.2.0.tar.gz", hash = "sha256:480c2ed180878955863323eea31b0ede668795de182617fef9c6ca09e6ec9d0e", size = 33267, upload-time = "2025-06-02T15:12:06.318Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a9/99/3ae339466c9183ea5b8ae87b34c0b897eda475d2aec2307cae60e5cd4f29/uritemplate-4.2.0-py3-none-any.whl", hash = "sha256:962201ba1c4edcab02e60f9a0d3821e82dfc5d2d6662a21abd533879bdb8a686", size = 11488, upload-time = "2025-06-02T15:12:03.405Z" },
 ]
 
 [[package]]
