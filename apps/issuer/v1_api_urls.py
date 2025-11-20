@@ -1,4 +1,4 @@
-from django.conf.urls import url
+from django.urls import re_path
 
 from issuer.api import (
     BadgeClassNetworkShareView,
@@ -39,179 +39,179 @@ from issuer.api_v1 import FindBadgeClassDetail, IssuerStaffList
 
 urlpatterns = [
     # url(r'^$', RedirectView.as_view(url='/v1/issuer/issuers', permanent=False)),
-    url(
+    re_path(
         r"^all-badges$",
         AllBadgeClassesList.as_view(),
         name="v1_api_issuer_all_badges_list",
     ),
-    url(
+    re_path(
         r"^all-badges/find$",
         FindBadgeClassDetail.as_view(),
         name="v1_api_find_badgeclass_by_identifier",
     ),
-    url(r"^issuers$", IssuerList.as_view(), name="v1_api_issuer_list"),
-    url(r"^networks$", NetworkList.as_view(), name="v1_api_network_list"),
-    url(
+    re_path(r"^issuers$", IssuerList.as_view(), name="v1_api_issuer_list"),
+    re_path(r"^networks$", NetworkList.as_view(), name="v1_api_network_list"),
+    re_path(
         r"^issuers/(?P<slug>[^/]+)$",
         IssuerDetail.as_view(),
         name="v1_api_issuer_detail",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<slug>[^/]+)/staff$",
         IssuerStaffList.as_view(),
         name="v1_api_issuer_staff",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<slug>[^/]+)/badges$",
         IssuerBadgeClassList.as_view(),
         name="v1_api_badgeclass_list",
     ),
-    url(
+    re_path(
         r"^networks/(?P<slug>[^/]+)/badges$",
         NetworkBadgeClassesList.as_view(),
         name="v1_api_network_badgeclass_list",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<slug>[^/]+)/awardable-badges$",
         IssuerAwardableBadgeClassList.as_view(),
         name="v1_issuer_awardable_badgeclasses",
     ),
-    url(
+    re_path(
         r"^networks/(?P<networkSlug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/share$",
         BadgeClassNetworkShareView.as_view(),
         name="v1_api_network_badge_share_detail",
     ),
-    url(
+    re_path(
         r"^networks/(?P<entity_id>[^/]+)/shared-badges$",
         NetworkSharedBadgesView.as_view(),
         name="v1_api_network_shared_badges",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<entity_id>[^/]+)/networks/shared-badges$",
         IssuerSharedNetworkBadgesView.as_view(),
         name="v1_api_issuer_shared_network_badges",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/qrcodes/(?P<slug>[^/]+)$",
         QRCodeDetail.as_view(),
         name="v1_api_qrcode_detail",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/qrcodes$",
         QRCodeList.as_view(),
         name="v1_api_qrcode_list",
     ),
-    url(
+    re_path(
         r"^networks/(?P<networkSlug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/qrcodes$",
         NetworkBadgeQRCodeList.as_view(),
         name="v1_api_network_badge_qrcode_list",
     ),
-    url(
+    re_path(
         r"^networks/(?P<networkSlug>[^/]+)/issuers$",
         NetworkUserIssuersList.as_view(),
         name="v1_api_network_issuer_list",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/qrcodes/(?P<slug>[^/]+)$",
         QRCodeDetail.as_view(),
         name="v1_api_qrcode_detail",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/requests$",
         BadgeRequestList.as_view(),
         name="v1_api_badgerequest_list",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<slug>[^/]+)$",
         BadgeClassDetail.as_view(),
         name="v1_api_badgeclass_detail",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<slug>[^/]+)/batchAssertions$",
         BatchAssertionsIssue.as_view(),
         name="v1_api_badgeclass_batchissue",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<slug>[^/]+)/batch-assertions/status/(?P<task_id>[^/]+)$",
         BatchAssertionsIssue.as_view(),
         name="batch-assertions-status",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<slug>[^/]+)/assertions$",
         BadgeInstanceList.as_view(),
         name="v1_api_badgeinstance_list",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<issuerSlug>[^/]+)/network/badges$",
         IssuerNetworkBadgeClassList.as_view(),
         name="v1_api_issuer_network_badgeclass_list",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<slug>[^/]+)/network-assertions$",
         NetworkBadgeInstanceList.as_view(),
         name="v1_api_network_badgeinstance_list",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<slug>[^/]+)/assertions$",
         IssuerBadgeInstanceList.as_view(),
         name="v1_api_issuer_instance_list",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<issuerSlug>[^/]+)/badges/(?P<badgeSlug>[^/]+)/assertions/(?P<slug>[^/]+)$",
         BadgeInstanceDetail.as_view(),
         name="v1_api_badgeinstance_detail",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<slug>[^/]+)/learningpath$",
         IssuerLearningPathList.as_view(),
         name="v1_api_learningpath_list",
     ),
-    url(
+    re_path(
         r"^networks/(?P<slug>[^/]+)/issuer/(?P<issuer_slug>[^/]+)$",
         NetworkIssuerDetail.as_view(),
         name="v1_api_network_issuer_detail",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<issuerSlug>[^/]+)/learningpath/(?P<slug>[^/]+)$",
         LearningPathDetail.as_view(),
         name="v1_api_learningpath_detail",
     ),
-    url(
+    re_path(
         r"^learningpath/(?P<slug>[^/]+)/participants$",
         LearningPathParticipantsList.as_view(),
         name="v1_api_learningpath_participant_list",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<issuerSlug>[^/]+)/staffRequests$",
         IssuerStaffRequestList.as_view(),
         name="v1_api_staffrequest_list",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<issuerSlug>[^/]+)/staffRequests/(?P<requestId>[^/]+)$",
         IssuerStaffRequestDetail.as_view(),
         name="v1_api_staffrequest_detail",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<issuerSlug>[^/]+)/staffRequests/(?P<requestId>[^/]+)/confirm$",
         IssuerStaffRequestConfirm.as_view(),
         name="v1_api_staffrequest_confirmation",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<issuerSlug>[^/]+)/badges/image/compose$",
         BadgeImageComposition.as_view(),
         name="v1_api_badge_image_composition",
     ),
-    url(
+    re_path(
         r"^networks/(?P<networkSlug>[^/]+)/invites$",
         NetworkInvitationList.as_view(),
         name="v1_api_network_invite_list",
     ),
-    url(
+    re_path(
         r"^networks/invites/(?P<slug>[^/]+)$",
         NetworkInvitation.as_view(),
         name="v1_api_network_invite_detail",
     ),
-    url(
+    re_path(
         r"^networks/(?P<networkSlug>[^/]+)/invite/(?P<slug>[^/]+)/confirm$",
         NetworkInvitationConfirm.as_view(),
         name="v1_api_network_invite_confirmation",
