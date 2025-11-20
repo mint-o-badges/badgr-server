@@ -23,7 +23,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, transaction
-from django.db.models import ProtectedError, JSONField
+from django.db.models import ProtectedError
 from django.urls import reverse
 from django.utils import timezone
 from apps.issuer.services.image_composer import ImageComposer
@@ -34,6 +34,7 @@ from issuer.managers import (
     BadgeInstanceManager,
     IssuerManager,
 )
+from jsonfield import JSONField
 from mainsite import blacklist
 from mainsite.managers import SlugOrJsonIdCacheModelManager
 from mainsite.mixins import (
@@ -272,7 +273,7 @@ class Issuer(
     description = models.TextField(blank=True, null=True, default=None)
     url = models.CharField(max_length=254, blank=True, null=True, default=None)
     email = models.CharField(max_length=254, blank=True, null=True, default=None)
-    old_json = models.JSONField(default=dict, blank=True)
+    old_json = JSONField()
 
     verified = models.BooleanField(null=False, default=False)
 
@@ -1042,7 +1043,7 @@ class BadgeClass(
 
     criteria = models.JSONField(blank=True, null=True)
 
-    old_json = models.JSONField(default=dict, blank=True)
+    old_json = JSONField()
 
     objects = BadgeClassManager()
     cached = SlugOrJsonIdCacheModelManager(
@@ -1585,7 +1586,7 @@ class ImportedBadgeAssertion(
     revoked = models.BooleanField(default=False)
     revocation_reason = models.CharField(max_length=255, blank=True, null=True)
 
-    old_json = models.JSONField(default=dict, blank=True)
+    original_json = JSONField()
 
     hashed = models.BooleanField(default=True)
     salt = models.CharField(max_length=254, blank=True, null=True, default=None)
@@ -1686,7 +1687,7 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
 
     narrative = models.TextField(blank=True, null=True, default=None)
 
-    old_json = models.JSONField(default=dict, blank=True)
+    old_json = JSONField()
 
     objects = BadgeInstanceManager()
     cached = SlugOrJsonIdCacheModelManager(

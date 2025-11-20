@@ -3,7 +3,7 @@
 from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
-# import jsonfield.fields
+import jsonfield.fields
 
 
 class Migration(migrations.Migration):
@@ -87,7 +87,7 @@ class Migration(migrations.Migration):
                     "revocation_reason",
                     models.CharField(blank=True, max_length=255, null=True),
                 ),
-                ("original_json", models.JSONField()),
+                ("original_json", jsonfield.fields.JSONField()),
                 ("hashed", models.BooleanField(default=True)),
                 (
                     "salt",
