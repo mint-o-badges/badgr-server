@@ -175,22 +175,22 @@ urlpatterns = [
     # api docs
     #
     # OpenAPI schema endpoint
-    url(r"^api/schema/$", SpectacularAPIView.as_view(), name="schema"),
+    re_path(r"^api/schema/$", SpectacularAPIView.as_view(), name="schema"),
     # OAuth2 authorize redirect for docs
-    url(
+    re_path(
         r"^docs/oauth2/authorize$",
         DocsAuthorizeRedirect.as_view(),
         name="docs_authorize_redirect",
     ),
     # Swagger UI for v2 docs
-    url(
+    re_path(
         r"^docs/v2/$",
         SpectacularSwaggerView.as_view(url_name="schema"),
         name="swagger-ui-v2",
     ),
-    url(r"^redoc/$", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+    re_path(r"^redoc/$", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
     # Default redirect to v2 docs
-    url(r"^docs/?$", RedirectView.as_view(url="/docs/v2/", permanent=True)),
+    re_path(r"^docs/?$", RedirectView.as_view(url="/docs/v2/", permanent=True)),
     # unversioned public endpoints
     re_path(
         r"^unsubscribe/(?P<email_encoded>[^/]+)/(?P<expiration>[^/]+)/(?P<signature>[^/]+)",
