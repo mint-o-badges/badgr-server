@@ -1719,7 +1719,9 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
     ob_json_3_0 = models.TextField(blank=True, null=True, default=None)
 
     class Meta:
-        index_together = (("recipient_identifier", "badgeclass", "revoked"),)
+        indexes = [
+            models.Index(fields=["recipient_identifier", "badgeclass", "revoked"])
+        ]
 
     @property
     def extended_json(self):
