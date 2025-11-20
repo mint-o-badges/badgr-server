@@ -179,6 +179,8 @@ class BaseOpenBadgeObjectModel(OriginalJsonMixin, cachemodel.CacheModel):
 
     @cachemodel.cached_method(auto_publish=True)
     def cached_extensions(self):
+        if not self.pk:
+            return []
         return self.get_extensions_manager().all()
 
     @property
@@ -2480,6 +2482,8 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
 
     @cachemodel.cached_method(auto_publish=True)
     def cached_evidence(self):
+        if not self.pk:
+            return []
         return self.badgeinstanceevidence_set.all()
 
     @property
