@@ -550,7 +550,19 @@ class IssuerLearningPathList(
 
     def get_queryset(self, request=None, **kwargs):
         issuer = self.get_object(request, **kwargs)
-        return LearningPath.objects.filter(issuer=issuer)
+
+        archived_param = (
+            request.query_params.get("archived", "false").lower()
+            if request
+            else "false"
+        )
+
+        if archived_param == "all":
+            return LearningPath.objects.filter(issuer=issuer)
+        elif archived_param == "true":
+            return LearningPath.objects.filter(issuer=issuer, archived=True)
+        else:
+            return LearningPath.objects.filter(issuer=issuer, archived=False)
 
     def get_context_data(self, **kwargs):
         context = super(IssuerLearningPathList, self).get_context_data(**kwargs)
@@ -567,6 +579,14 @@ class IssuerLearningPathList(
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.QUERY,
                 description="Request pagination of results",
+            ),
+            OpenApiParameter(
+                name="archived",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description='Filter by archived status: "true" (archived only), "false" (active only, default), or "all" (both)',
+                required=False,
+                enum=["true", "false", "all"],
             ),
         ],
     )
@@ -1985,6 +2005,39 @@ class LearningPathDetail(BaseEntityDetailView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         return super(LearningPathDetail, self).delete(request, **kwargs)
+
+
+class LearningPathArchive(BaseEntityDetailView):
+    model = LearningPath
+    v1_serializer_class = LearningPathSerializerV1
+    permission_classes = (BadgrOAuthTokenHasScope, MayIssueLearningPath)
+    valid_scopes = ["rw:issuer"]
+
+    @extend_schema(
+        summary="Archive a LearningPath",
+        tags=["LearningPaths"],
+        responses=LearningPathSerializerV1,
+    )
+    def post(self, request, **kwargs):
+        if not is_learningpath_editor(request.user, self.get_object(request, **kwargs)):
+            return Response(
+                {"error": "You are not authorized to archive this learning path."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        learning_path = self.get_object(request, **kwargs)
+
+        if learning_path.archived:
+            return Response(
+                {"error": "Learning path is already archived."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        learning_path.archive()
+        serializer = self.v1_serializer_class(
+            learning_path, context={"request": request}
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class IssuerStaffRequestList(BaseEntityListView):

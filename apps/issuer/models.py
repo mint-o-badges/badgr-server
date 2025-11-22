@@ -1933,6 +1933,15 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
         if not revocation_reason:
             raise ValidationError("revocation_reason is required")
 
+        archived_learningpath = LearningPath.objects.filter(
+            participationBadge=self.badgeclass, archived=True
+        ).first()
+
+        if archived_learningpath:
+            raise ValidationError(
+                f"Cannot revoke micro degree from archived learning path: {archived_learningpath.name}"
+            )
+
         self.revoked = True
         self.revocation_reason = revocation_reason
         self.image.delete()
@@ -2944,6 +2953,28 @@ class LearningPath(BaseVersionedEntity, BaseAuditedModel):
 
     required_badges_count = models.PositiveIntegerField()
     activated = models.BooleanField(null=False, default=False)
+
+    archived = models.BooleanField(null=False, default=False)
+    archived_at = models.DateTimeField(blank=True, null=True, default=None)
+
+    @property
+    def is_active(self):
+        return self.activated and not self.archived
+
+    def archive(self):
+        if not self.archived:
+            self.archived = True
+            self.archived_at = timezone.now()
+            self.save()
+
+    @property
+    def has_awarded_micro_degree(self):
+        """Check if any micro degree has been awarded for this learning path"""
+        return self.participationBadge.badgeinstances.filter(revoked=False).exists()
+
+    @property
+    def awarded_badges_count(self):
+        return self.participationBadge.badgeinstances.filter(revoked=False).count()
 
     @property
     def public_url(self):

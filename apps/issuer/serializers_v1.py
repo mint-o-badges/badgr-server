@@ -1068,6 +1068,8 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
 
     participationBadge_image = serializers.SerializerMethodField()
 
+    has_awarded_micro_degree = serializers.SerializerMethodField()
+
     @extend_schema_field(OpenApiTypes.URI)
     def get_participationBadge_image(self, obj):
         image = "{}{}?type=png".format(
@@ -1085,6 +1087,10 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
             if obj.participationBadge.entity_id
             else None
         )
+
+    @extend_schema_field(OpenApiTypes.BOOL)
+    def get_has_awarded_micro_degree(self, obj):
+        return obj.has_awarded_micro_degree
 
     def to_representation(self, instance):
         request = self.context.get("request")
