@@ -27,7 +27,7 @@ jobs:
 
         steps:
             - name: ⬇️ Checkout repository
-              uses: actions/checkout@v5
+              uses: actions/checkout@v6
 
             - name: 🏄 Copy default env vars
               run: cp .docker/etc/settings_local.prod.py.example .docker/etc/settings_local.py
