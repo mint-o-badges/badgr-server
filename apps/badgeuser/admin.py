@@ -60,12 +60,20 @@ class BadgeUserAdmin(DjangoObjectActions, ModelAdmin):
         "last_name",
         "is_active",
         "is_staff",
+        "zip_code",
         "issuers",
         "assertion_count",
         "date_joined",
     )
     list_filter = ("is_active", "is_staff", "is_superuser", "date_joined", "last_login")
-    search_fields = ("email", "first_name", "last_name", "username", "entity_id")
+    search_fields = (
+        "email",
+        "first_name",
+        "last_name",
+        "username",
+        "entity_id",
+        "zip_code",
+    )
     fieldsets = (
         (
             "Metadata",
@@ -86,6 +94,7 @@ class BadgeUserAdmin(DjangoObjectActions, ModelAdmin):
                     "first_name",
                     "last_name",
                     "badgrapp",
+                    "zip_code",
                     "agreed_terms_version",
                     "marketing_opt_in",
                     "secure_password_set",

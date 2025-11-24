@@ -1,4 +1,3 @@
-from collections import OrderedDict
 import datetime
 import json
 import re
@@ -927,7 +926,13 @@ class LearningPathList(BaseEntityListView):
 
     def get_objects(self, request, **kwargs):
         badgeinstances = request.user.cached_badgeinstances().all()
-        badges = list({badgeinstance.badgeclass for badgeinstance in badgeinstances})
+        badges = list(
+            {
+                badgeinstance.badgeclass
+                for badgeinstance in badgeinstances
+                if badgeinstance.revoked is False
+            }
+        )
         lp_badges = LearningPathBadge.objects.filter(badge__in=badges)
         lps = LearningPath.objects.filter(
             activated=True, learningpathbadge__in=lp_badges
@@ -942,22 +947,6 @@ class LearningPathList(BaseEntityListView):
     )
     def get(self, request, **kwargs):
         return super(LearningPathList, self).get(request, **kwargs)
-
-    @apispec_post_operation(
-        "LearningPath",
-        summary="Create a new LearningPath",
-        tags=["LearningPaths"],
-        parameters=[
-            {
-                "in": "query",
-                "name": "num",
-                "type": "string",
-                "description": "Request pagination of results",
-            },
-        ],
-    )
-    def post(self, request, **kwargs):
-        return super(LearningPathList, self).post(request, **kwargs)
 
 
 class BaseRedirectView:
@@ -1054,28 +1043,34 @@ class GetRedirectPath(BaseEntityDetailView):
         return response
 
 
-class IssuerStaffRequestDetail(BaseEntityDetailView):
+class BadgeUserStaffRequestList(BaseEntityListView):
+    """List and create staff requests for the authenticated user"""
+
     model = IssuerStaffRequest
     v1_serializer_class = IssuerStaffRequestSerializer
-    v2_serializer_class = IssuerStaffRequestSerializer
     permission_classes = (permissions.IsAuthenticated,)
     valid_scopes = {
-        "post": ["*"],
+        "post": ["rw:profile"],
         "get": ["r:profile", "rw:profile"],
-        "put": ["rw:profile"],
-        "delete": ["rw:profile"],
     }
+
+    @apispec_get_operation(
+        "IssuerStaffRequest",
+        summary="Get my staff membership requests",
+        description="Get all staff requests created by the authenticated user",
+        tags=["BadgeUser StaffRequests"],
+    )
+    def get_objects(self, request, **kwargs):
+        return IssuerStaffRequest.objects.filter(
+            user=request.user,
+            revoked=False,
+        )
 
     @apispec_post_operation(
         "IssuerStaffRequest",
         summary="Create a new issuer staff request",
-        tags=["IssuerStaffRequest"],
-        responses=OrderedDict(
-            [
-                ("201", {"description": "Issuer staff request created successfully"}),
-                ("400", {"description": "Bad request or validation error"}),
-            ]
-        ),
+        description="Request membership to an institution's staff",
+        tags=["BadgeUser StaffRequests"],
     )
     def post(self, request, issuer_id, **kwargs):
         try:
@@ -1143,13 +1138,48 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+
+class BadgeUserStaffRequestDetail(BaseEntityDetailView):
+    """View and manage user's own staff requests"""
+
+    model = IssuerStaffRequest
+    v1_serializer_class = IssuerStaffRequestSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    valid_scopes = ["rw:profile"]
+
+    def get_object(self, request, **kwargs):
+        try:
+            self.object = IssuerStaffRequest.objects.filter(
+                entity_id=kwargs.get("request_id"),
+            ).first()
+        except IssuerStaffRequest.DoesNotExist:
+            raise Http404
+
+        if not self.has_object_permissions(request, self.object):
+            raise Http404
+        return self.object
+
+    @apispec_get_operation(
+        "IssuerStaffRequest",
+        summary="Get a specific staff request",
+        description="Get details of a staff request created by the authenticated user",
+        tags=["BadgeUser StaffRequests"],
+    )
+    def get(self, request, **kwargs):
+        staff_request = self.get_object(request, **kwargs)
+        if not self.has_object_permissions(request, staff_request):
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.get_serializer_class()(
+            staff_request, context={"request": request}
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     @apispec_delete_operation(
         "IssuerStaffRequest",
         summary="Revoke a request for an issuer membership",
-        tags=["IssuerStaffRequest"],
-        responses=OrderedDict(
-            [("400", {"description": "Issuer staff request is already revoked"})]
-        ),
+        description="Revoke your own pending staff membership request",
+        tags=["BadgeUser StaffRequests"],
     )
     def delete(self, request, **kwargs):
         staff_request = self.get_object(request, **kwargs)
@@ -1166,49 +1196,6 @@ class IssuerStaffRequestDetail(BaseEntityDetailView):
         )
 
         return Response(status=HTTP_200_OK, data=serializer.data)
-
-    def get_object(self, request, **kwargs):
-        try:
-            self.object = IssuerStaffRequest.objects.filter(
-                entity_id=kwargs.get("request_id"),
-            ).first()
-        except IssuerStaffRequest.DoesNotExist:
-            raise Http404
-
-        if not self.has_object_permissions(request, self.object):
-            raise Http404
-        return self.object
-
-
-class IssuerStaffRequestList(BaseEntityListView):
-    model = IssuerStaffRequest
-    v1_serializer_class = IssuerStaffRequestSerializer
-    v2_serializer_class = IssuerStaffRequestSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-    valid_scopes = {
-        "post": ["*"],
-        "get": ["r:profile", "rw:profile"],
-        "put": ["rw:profile"],
-        "delete": ["rw:profile"],
-    }
-
-    @apispec_get_operation(
-        "IssuerStaffRequest",
-        summary="Get a list of issuer staff requests for the authenticated user",
-        description="Use the id of the authenticated user to get a list of issuer staff requests",
-        tags=["IssuerStaffRequest"],
-    )
-    def get_objects(self, request, **kwargs):
-        return IssuerStaffRequest.objects.filter(
-            user=request.user,
-            revoked=False,
-            status__in=[
-                IssuerStaffRequest.Status.PENDING,
-            ],
-        )
-
-    def get(self, request, **kwargs):
-        return super(IssuerStaffRequestList, self).get(request, **kwargs)
 
 
 class BadgeUserConfirmStaffRequest(BaseEntityDetailView, BaseRedirectView):

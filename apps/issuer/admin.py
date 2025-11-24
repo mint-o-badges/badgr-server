@@ -405,8 +405,7 @@ class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
                 "fields": (
                     "criteria_url",
                     "criteria_text",
-                    "expires_duration",
-                    "expires_amount",
+                    "expiration",
                     "copy_permissions",
                 )
             },
@@ -558,6 +557,11 @@ class BadgeInstanceAdmin(DjangoObjectActions, ModelAdmin):
                     "image",
                     "issued_on",
                     "expires_at",
+                    "activity_start_date",
+                    "activity_end_date",
+                    "activity_zip",
+                    "activity_city",
+                    "activity_online",
                     "narrative",
                 )
             },

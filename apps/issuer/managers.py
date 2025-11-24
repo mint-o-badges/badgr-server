@@ -1,6 +1,7 @@
 # encoding: utf-8
 
 
+from datetime import timedelta
 import json
 import os
 import six
@@ -11,6 +12,7 @@ import dateutil.parser
 from django.core.files.storage import DefaultStorage
 from django.db import models, transaction
 from django.urls import resolve, Resolver404
+from django.utils import timezone
 
 from issuer.utils import sanitize_id
 from mainsite.utils import fetch_remote_file_to_storage, list_of, OriginSetting
@@ -356,6 +358,10 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
         else:
             issuer = kwargs.pop("issuer", badgeclass.issuer)
 
+        if badgeclass and badgeclass.expiration:
+            issued_on = kwargs.get("issued_on", timezone.now())
+            kwargs["expires_at"] = issued_on + timedelta(days=badgeclass.expiration)
+
         # self.model would be a BadgeInstance
         new_instance = self.model(
             recipient_identifier=recipient_identifier,
@@ -368,15 +374,35 @@ class BadgeInstanceManager(BaseOpenBadgeObjectManager):
             new_instance.save()
 
             if badgeclass and badgeclass.imageFrame:
+                badge_extensions = badgeclass.cached_extensions()
+                categoryExtension = badge_extensions.get(
+                    name="extensions:CategoryExtension"
+                )
+                category = json.loads(categoryExtension.original_json)["Category"]
+
                 try:
                     issuer_image = None
                     network_image = None
 
                     if badgeclass.cached_issuer.is_network:
-                        issuer_image = issuer.image if issuer else None
+                        issuer_image = (
+                            issuer.image
+                            if issuer and category != "learningpath"
+                            else None
+                        )
                         network_image = badgeclass.cached_issuer.image
 
-                    if issuer_image and network_image:
+                    else:
+                        share = (
+                            badgeclass.network_shares.filter(is_active=True)
+                            .select_related("network")
+                            .first()
+                        )
+                        if share:
+                            network_image = share.network.image
+                            issuer_image = issuer.image
+
+                    if issuer_image and network_image and category != "learningpath":
                         new_instance.generate_assertion_image(
                             issuer_image,
                             network_image,

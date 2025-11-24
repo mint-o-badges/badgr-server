@@ -68,7 +68,16 @@ class BadgePDFCreator:
         )
         self.used_space += image_height
 
-    def add_recipient_name(self, first_page_content, name, issuedOn):
+    def add_recipient_name(
+        self,
+        first_page_content,
+        name,
+        issuedOn,
+        activityStartDate=None,
+        activityEndDate=None,
+        activityCity=None,
+        activityOnline=False,
+    ):
         first_page_content.append(Spacer(1, 58))
         self.used_space += 58
         recipient_style = ParagraphStyle(
@@ -87,8 +96,32 @@ class BadgePDFCreator:
 
         text_style = ParagraphStyle(name="Text_Style", fontSize=18, alignment=TA_CENTER)
 
-        text = "hat am " + issuedOn.strftime("%d.%m.%Y")
+        if activityStartDate and activityEndDate:
+            if activityStartDate.year == activityEndDate.year:
+                date_text = (
+                    f"<strong>{activityStartDate.strftime('%d.%m.')}"
+                    f" – {activityEndDate.strftime('%d.%m.%Y')}</strong>"
+                )
+            else:
+                date_text = (
+                    f"<strong>{activityStartDate.strftime('%d.%m.%Y')}"
+                    f" – {activityEndDate.strftime('%d.%m.%Y')}</strong>"
+                )
+            text = "hat vom " + date_text
+        elif activityStartDate:
+            date_text = f"<strong>{activityStartDate.strftime('%d.%m.%Y')}</strong>"
+            text = "hat am " + date_text
+        else:
+            date_text = f"<strong>{issuedOn.strftime('%d.%m.%Y')}</strong>"
+            text = "hat am " + date_text
+
+        if activityCity:
+            text += f" <strong>in {activityCity}</strong>"
+        elif activityOnline:
+            text += " <strong>online</strong>"
+
         first_page_content.append(Paragraph(text, text_style))
+
         first_page_content.append(Spacer(1, 10))
         self.used_space += 28  # spacer and paragraph
 
@@ -575,7 +608,15 @@ class BadgePDFCreator:
 
         first_page_content = []
 
-        self.add_recipient_name(first_page_content, name, badge_instance.issued_on)
+        self.add_recipient_name(
+            first_page_content,
+            name,
+            badge_instance.issued_on,
+            activityStartDate=badge_instance.activity_start_date,
+            activityEndDate=badge_instance.activity_end_date,
+            activityCity=badge_instance.activity_city,
+            activityOnline=badge_instance.activity_online,
+        )
         self.add_badge_image(first_page_content, badge_instance.image)
         self.add_title(first_page_content, badge_class.name)
         self.add_description(first_page_content, badge_class.description)

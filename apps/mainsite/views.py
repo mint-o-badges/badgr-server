@@ -46,7 +46,7 @@ from apps.mainsite.permissions import IsServerAdmin
 from badgeuser.models import BadgeUser
 from badgeuser.serializers_v1 import BadgeUserProfileSerializerV1
 from entity.api_v3 import EntityViewSet
-from mainsite.authentication import ValidAltcha
+from mainsite.authentication import BadgrOAuth2Authentication, ValidAltcha
 from issuer.tasks import rebake_all_assertions, update_issuedon_all_assertions
 from issuer.models import BadgeClass, Issuer, QrCode, RequestedBadge
 from issuer.serializers_v1 import IssuerSerializerV1, RequestedBadgeSerializer
@@ -274,13 +274,10 @@ def requestBadge(req, qrCodeId):
         return JsonResponse(
             {"error": "Method not allowed"}, status=status.HTTP_400_BAD_REQUEST
         )
-    qrCode = QrCode.objects.get(entity_id=qrCodeId)
-
-    validity_error = validate_qr_code_validity(qrCode)
-    if validity_error:
-        return JsonResponse(
-            {"error": validity_error}, status=status.HTTP_400_BAD_REQUEST
-        )
+    try:
+        qrCode = QrCode.objects.get(entity_id=qrCodeId)
+    except QrCode.DoesNotExist:
+        return JsonResponse({"error": "Invalid qrCodeId"}, status=400)
 
     if req.method == "GET":
         requestedBadges = RequestedBadge.objects.filter(qrcode=qrCode)
@@ -290,6 +287,11 @@ def requestBadge(req, qrCodeId):
         )
 
     elif req.method == "POST":
+        validity_error = validate_qr_code_validity(qrCode)
+        if validity_error:
+            return JsonResponse(
+                {"error": validity_error}, status=status.HTTP_400_BAD_REQUEST
+            )
         try:
             data = json.loads(req.data)
         except json.JSONDecodeError:
@@ -565,7 +567,12 @@ def extractErrorMessage500(response: Response):
 
 @api_view(["GET"])
 @authentication_classes(
-    [TokenAuthentication, SessionAuthentication, BasicAuthentication]
+    [
+        BadgrOAuth2Authentication,
+        TokenAuthentication,
+        SessionAuthentication,
+        BasicAuthentication,
+    ]
 )
 @permission_classes([IsAuthenticated])
 def nounproject(req, searchterm, page):
