@@ -53,11 +53,12 @@ class ImageComposer:
                 y = (self.CANVAS_SIZE[1] - badge_img.height) // 2
                 canvas.paste(badge_img, (x, y), badge_img)
 
-            if issuerImage:
-                canvas = self._add_issuer_logo(canvas, self.category, issuerImage)
+            if draw_frame:
+                if issuerImage:
+                    canvas = self._add_issuer_logo(canvas, self.category, issuerImage)
 
-            if networkImage:
-                canvas = self._add_network_logo(canvas, networkImage)
+                if networkImage:
+                    canvas = self._add_network_logo(canvas, networkImage)
 
             return self._get_image_as_base64(canvas)
 
