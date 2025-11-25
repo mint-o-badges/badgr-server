@@ -87,7 +87,11 @@ class ImageComposer:
                 else:
                     image_bytes = base64.b64decode(image_data)
 
-                img = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
+                if header.startswith("data:image/svg"):
+                    png_bytes = cairosvg.svg2png(bytestring=image_bytes)
+                    img = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
+                else:
+                    img = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
 
             else:
                 raise ValueError("Expected base64 string for image data")
