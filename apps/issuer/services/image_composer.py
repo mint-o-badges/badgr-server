@@ -101,7 +101,7 @@ class ImageComposer:
                 raise ValueError("Expected base64 string for image data")
 
             if apply_padding:
-                interior_size = int(self.CANVAS_SIZE[0] * self.FRAME_PADDING)
+                interior_size = int((self.CANVAS_SIZE[0] * self.FRAME_PADDING) // 2)
             else:
                 interior_size = self.CANVAS_SIZE[0]
 
