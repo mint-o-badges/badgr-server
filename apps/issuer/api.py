@@ -309,6 +309,13 @@ class NetworkIssuerDetail(BaseEntityDetailView):
             membership = NetworkMembership.objects.get(network=network, issuer=issuer)
             membership.delete()
 
+            NetworkInvite.objects.filter(
+                network=network,
+                issuer=issuer,
+                status=NetworkInvite.Status.APPROVED,
+                revoked=False,
+            ).update(revoked=True, status=NetworkInvite.Status.REVOKED)
+
         except NetworkMembership.DoesNotExist:
             return Response(
                 {"error": "Membership not found"},
@@ -2218,7 +2225,7 @@ class BadgeImageComposition(APIView):
                     network_image = shared_network.network.image
 
             image_url = composer.compose_badge_from_uploaded_image(
-                original_image, issuer_image, network_image
+                original_image, issuer_image, network_image, badge.imageFrame
             )
 
             if not image_url:
