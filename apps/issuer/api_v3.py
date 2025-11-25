@@ -12,6 +12,7 @@ from oauthlib.oauth2.rfc6749.tokens import random_token_generator
 from rest_framework import viewsets, permissions, serializers
 from rest_framework.response import Response
 
+from apps.backpack.api import BackpackAssertionList
 from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
@@ -306,6 +307,54 @@ class LearnersProfile(RequestIframe):
         iframe = IframeUrl.objects.create(
             name="profile",
             params={"skills": tree["skills"], "language": language},
+            created_by=request.user,
+        )
+
+        return JsonResponse({"url": iframe.url})
+
+
+@extend_schema(exclude=True)
+class LearnersCompetencies(RequestIframe):
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsStaff & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    def post(self, request, **kwargs):
+        try:
+            email = request.POST["email"]
+        except KeyError:
+            return HttpResponseBadRequest(b"Missing email parameter")
+
+        if not request.user:
+            return HttpResponseForbidden()
+
+        issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
+        if issuers.count == 0:
+            return HttpResponseForbidden()
+
+        instances = []
+        for issuer in issuers:
+            instances += BadgeInstance.objects.filter(
+                issuer=issuer, recipient_identifier=email
+            )
+
+        try:
+            language = request.POST["lang"]
+            assert language in ["de", "en"]
+        except (KeyError, AssertionError):
+            language = "en"
+
+        iframe = IframeUrl.objects.create(
+            name="competencies",
+            params={
+                "badges": BackpackAssertionList.v1_serializer_class().to_representation(
+                    instances
+                ),
+                "language": language,
+            },
             created_by=request.user,
         )
 

@@ -51,6 +51,27 @@ def iframe(request, *args, **kwargs):
                 iframe.params["language"],
                 show_badge_selection,
             )
+        if iframe.name == "competencies":
+            return iframe_competencies(
+                request, iframe.params["badges"], iframe.params["language"]
+            )
+        if iframe.name == "badges":
+            return iframe_badges(
+                request, iframe.params["badges"], iframe.params["language"]
+            )
+        if iframe.name == "learningpaths":
+            return iframe_learningpaths(
+                request, iframe.params["learningpaths"], iframe.params["language"]
+            )
+        if iframe.name == "backpack":
+            return iframe_backpack(
+                request,
+                iframe.params["profile"],
+                iframe.params["skills"],
+                iframe.params["badges"],
+                iframe.params["learningpaths"],
+                iframe.params["language"],
+            )
     except Exception as e:
         # show errors while debug
         if settings.DEBUG:
@@ -69,6 +90,64 @@ def iframe_profile(request, skills, language):
         context={
             "asset_path": settings.WEBCOMPONENTS_ASSETS_PATH,
             "skill_json": skill_json,
+            "language": language,
+        },
+    )
+
+
+def iframe_competencies(request, badges, language):
+    badges_json = json.dumps(badges, ensure_ascii=False)
+    return render(
+        request,
+        "iframes/competencies/index.html",
+        context={
+            "asset_path": settings.WEBCOMPONENTS_ASSETS_PATH,
+            "badges_json": badges_json,
+            "language": language,
+        },
+    )
+
+
+def iframe_badges(request, badges, language):
+    badges_json = json.dumps(badges, ensure_ascii=False)
+    return render(
+        request,
+        "iframes/badges/index.html",
+        context={
+            "asset_path": settings.WEBCOMPONENTS_ASSETS_PATH,
+            "badges_json": badges_json,
+            "language": language,
+        },
+    )
+
+
+def iframe_learningpaths(request, learningpaths, language):
+    learningpaths_json = json.dumps(learningpaths, ensure_ascii=False)
+    return render(
+        request,
+        "iframes/learningpaths/index.html",
+        context={
+            "asset_path": settings.WEBCOMPONENTS_ASSETS_PATH,
+            "learningpaths_json": learningpaths_json,
+            "language": language,
+        },
+    )
+
+
+def iframe_backpack(request, profile, skills, badges, learningpaths, language):
+    profile_json = json.dumps(profile, ensure_ascii=False)
+    skill_json = json.dumps(skills, ensure_ascii=False)
+    badges_json = json.dumps(badges, ensure_ascii=False)
+    learningpaths_json = json.dumps(learningpaths, ensure_ascii=False)
+    return render(
+        request,
+        "iframes/backpack/index.html",
+        context={
+            "asset_path": settings.WEBCOMPONENTS_ASSETS_PATH,
+            "profile_json": profile_json,
+            "skill_json": skill_json,
+            "badges_json": badges_json,
+            "learningpaths_json": learningpaths_json,
             "language": language,
         },
     )
