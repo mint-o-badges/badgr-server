@@ -704,11 +704,21 @@ def call_cms_api(request, path, params={}):
 
 
 def cms_transform_urls(text):
-    # remove api base url
+    # replace with asset:// to be able to easily restore later
     text = text.replace(f"{settings.CMS_API_BASE_URL}/wp-content", "asset://")
+
+    # temporarily replace iframe src originating from cms with a placeholder restore later
+    pattern = re.compile(r'(<iframe\b[^>]*\bsrc=)(["\'])(.*?)(\2)', flags=re.IGNORECASE)
+    for match in pattern.finditer(text):
+        matched_url = match.group(3)
+        if matched_url.find(settings.CMS_API_BASE_URL) >= 0:
+            suffix = matched_url.split(settings.CMS_API_BASE_URL)[1]
+            text = text.replace(matched_url, f"external://{suffix}")
+
     text = text.replace(settings.CMS_API_BASE_URL, "/page")
     text = text.replace("/page/post", "/post")
     text = text.replace("/page/en/post", "/post")
+    text = text.replace("external://", settings.CMS_API_BASE_URL)
     text = text.replace("asset://", f"{settings.CMS_API_BASE_URL}/wp-content")
     return text
 
