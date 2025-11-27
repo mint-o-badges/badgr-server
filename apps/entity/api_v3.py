@@ -1,4 +1,3 @@
-from rest_framework.response import Response
 from rest_framework import viewsets, serializers
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.filters import OrderingFilter
