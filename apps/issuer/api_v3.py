@@ -135,8 +135,8 @@ class Badges(EntityViewSet, TotalCountMixin):
         return queryset.distinct()
 
 
-class BadgeInstances(TotalCountMixin, EntityViewSet):
-    queryset = BadgeInstance.objects.all()
+class BadgeInstances(EntityViewSet, TotalCountMixin):
+    queryset = BadgeInstance.objects.filter(revoked=False)
     serializer_class = BadgeInstanceSerializerV1
     pagination_class = BadgeInstancePagination
     filter_backends = [filters.DjangoFilterBackend, OrderingFilter]
