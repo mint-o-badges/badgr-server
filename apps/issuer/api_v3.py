@@ -12,6 +12,8 @@ from oauthlib.oauth2.rfc6749.tokens import random_token_generator
 from rest_framework import viewsets, permissions, serializers
 from rest_framework.response import Response
 from rest_framework.filters import OrderingFilter
+from rest_framework.pagination import LimitOffsetPagination
+
 
 from drf_spectacular.utils import (
     extend_schema,
@@ -30,7 +32,6 @@ from issuer.permissions import (
 )
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAdmin
 from entity.api_v3 import (
-    BadgeInstancePagination,
     EntityFilter,
     EntityViewSet,
     TagFilter,
@@ -138,7 +139,7 @@ class Badges(EntityViewSet, TotalCountMixin):
 class BadgeInstances(EntityViewSet, TotalCountMixin):
     queryset = BadgeInstance.objects.filter(revoked=False)
     serializer_class = BadgeInstanceSerializerV1
-    pagination_class = BadgeInstancePagination
+    pagination_class = LimitOffsetPagination
     filter_backends = [filters.DjangoFilterBackend, OrderingFilter]
     filterset_class = BadgeInstanceV3FilterSet
     ordering_fields = ["created_at", "recipient_identifier"]
