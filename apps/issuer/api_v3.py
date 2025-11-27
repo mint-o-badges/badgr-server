@@ -13,7 +13,7 @@ from rest_framework import viewsets, permissions, serializers
 from rest_framework.response import Response
 
 from apps.backpack.api import BackpackAssertionList
-from apps.badgeuser.api import BadgeUserDetail
+from apps.badgeuser.api import BadgeUserDetail, LearningPathList
 from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
@@ -479,7 +479,10 @@ class LearnersLearningPaths(RequestIframe):
         iframe = IframeUrl.objects.create(
             name="learningpaths",
             params={
-                "learningpaths": lps,
+                "learningpaths": list(
+                    LearningPathList.v1_serializer_class().to_representation(lp)
+                    for lp in lps
+                ),
                 "language": language,
             },
             created_by=request.user,
