@@ -18,23 +18,23 @@
         </script>
     </head>
     <body>
-        <oeb-backpack id="backpack" />
+        <oeb-backpack id="backpack" baseurl="{{ asset_path }}oeb-backpack/" />
         <script src="{{ asset_path }}oeb-backpack/polyfills.js" type="module"></script>
         <script src="{{ asset_path }}oeb-backpack/main.js" type="module"></script>
         <script type="text/javascript">
             document.addEventListener("DOMContentLoaded", () => {
                 const backpack = document.getElementById("backpack");
-                const profile = JSON.parse("{{ profile_json | escapejs }}");
                 const badges = JSON.parse("{{ badges_json | escapejs }}");
-                const skills = JSON.parse("{{ skills_json | escapejs }}");
+                const skills = JSON.parse("{{ skill_json | escapejs }}");
                 const learningPaths = JSON.parse(
                     "{{ learningpaths_json | escapejs }}"
                 );
+                const profile = JSON.parse("{{ profile_json | escapejs }}");
 
-                backpack.profile = profile;
                 backpack.badges = badges;
                 backpack.skills = skills;
                 backpack.learningPaths = learningPaths;
+                backpack.profile = profile;
             });
         </script>
     </body>
