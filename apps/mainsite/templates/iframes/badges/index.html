@@ -5,11 +5,12 @@
         <meta charset="utf-8" />
         <title>Open Educational Badges Learners Badges</title>
         <link rel="stylesheet"
-              href="{{ asset_path }}oeb-earned-badges/styles.css"
+              href="{{ asset_path }}oeb-earned-badges-overview/styles.css"
               media="print"
               onload="this.media='all'" />
         <noscript>
-            <link rel="stylesheet" href="{{ asset_path }}oeb-earned-badges/styles.css" />
+            <link rel="stylesheet"
+                  href="{{ asset_path }}oeb-earned-badges-overview/styles.css" />
         </noscript>
         <script>
             window.OEBWebComponentSettings = {
@@ -18,9 +19,11 @@
         </script>
     </head>
     <body>
-        <oeb-earned-badges id="badges" />
-        <script src="{{ asset_path }}oeb-earned-badges/polyfills.js" type="module"></script>
-        <script src="{{ asset_path }}oeb-earned-badges/main.js" type="module"></script>
+        <oeb-earned-badges-overview id="badges" />
+        <script src="{{ asset_path }}oeb-earned-badges-overview/polyfills.js"
+                type="module"></script>
+        <script src="{{ asset_path }}oeb-earned-badges-overview/main.js"
+                type="module"></script>
         <script type="text/javascript">
             document.addEventListener("DOMContentLoaded", () => {
                 const badges = JSON.parse("{{ badges_json | escapejs }}");

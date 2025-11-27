@@ -358,11 +358,13 @@ class LearnersCompetencies(RequestIframe):
         except (KeyError, AssertionError):
             language = "en"
 
+        badge_serializer = BackpackAssertionList.v1_serializer_class()
+        badge_serializer.context["format"] = "plain"
         iframe = IframeUrl.objects.create(
             name="competencies",
             params={
                 "badges": list(
-                    BackpackAssertionList.v1_serializer_class().to_representation(i)
+                    badge_serializer.to_representation(i)
                     for i in BackpackAssertionList().get_filtered_objects(
                         instances, True, False, True
                     )
@@ -409,11 +411,16 @@ class LearnersBadges(RequestIframe):
         except (KeyError, AssertionError):
             language = "en"
 
+        badge_serializer = BackpackAssertionList.v1_serializer_class()
+        badge_serializer.context["format"] = "plain"
         iframe = IframeUrl.objects.create(
             name="badges",
             params={
-                "badges": BackpackAssertionList.v1_serializer_class().to_representation(
-                    instances
+                "badges": list(
+                    badge_serializer.to_representation(i)
+                    for i in BackpackAssertionList().get_filtered_objects(
+                        instances, True, False, True
+                    )
                 ),
                 "language": language,
             },
@@ -527,16 +534,22 @@ class LearnersBackpack(RequestIframe):
         except (KeyError, AssertionError):
             language = "en"
 
-        tree = get_skills_tree(instances, language)
+        filtered_instances = BackpackAssertionList().get_filtered_objects(
+            instances, True, False, True
+        )
+
+        tree = get_skills_tree(filtered_instances, language)
         profile = BadgeUserDetail.v1_serializer_class().to_representation(request.user)
 
+        badge_serializer = BackpackAssertionList.v1_serializer_class()
+        badge_serializer.context["format"] = "plain"
         iframe = IframeUrl.objects.create(
             name="backpack",
             params={
                 "profile": profile,
                 "skills": tree["skills"],
-                "badges": BackpackAssertionList.v1_serializer_class().to_representation(
-                    instances
+                "badges": list(
+                    badge_serializer.to_representation(i) for i in filtered_instances
                 ),
                 "learningpaths": lps,
                 "language": language,
