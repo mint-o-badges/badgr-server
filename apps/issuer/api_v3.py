@@ -310,7 +310,10 @@ class LearnersProfile(RequestIframe):
         except (KeyError, AssertionError):
             language = "en"
 
-        tree = get_skills_tree(instances, language)
+        tree = get_skills_tree(
+            BackpackAssertionList().get_filtered_objects(instances, True, False, True),
+            language,
+        )
 
         iframe = IframeUrl.objects.create(
             name="profile",
@@ -358,8 +361,11 @@ class LearnersCompetencies(RequestIframe):
         iframe = IframeUrl.objects.create(
             name="competencies",
             params={
-                "badges": BackpackAssertionList.v1_serializer_class().to_representation(
-                    instances
+                "badges": list(
+                    BackpackAssertionList.v1_serializer_class().to_representation(i)
+                    for i in BackpackAssertionList().get_filtered_objects(
+                        instances, True, False, True
+                    )
                 ),
                 "language": language,
             },
