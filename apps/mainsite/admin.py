@@ -17,7 +17,7 @@ from django.http import HttpResponseRedirect
 from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.module_loading import autodiscover_modules
-from django.utils.translation import ugettext_lazy
+from django.utils.translation import gettext_lazy
 from django_object_actions import DjangoObjectActions
 from oauth2_provider.models import (
     get_application_model,
@@ -47,8 +47,8 @@ logger = logging.getLogger("Badgr.Events")
 
 
 class BadgrAdminSite(AdminSite):
-    site_header = ugettext_lazy("Badgr")
-    index_title = f"{ugettext_lazy('Staff Dashboard')} - Deployment timestamp: {mainsite.__timestamp__}"
+    site_header = gettext_lazy("Badgr")
+    index_title = f"{gettext_lazy('Staff Dashboard')} - Deployment timestamp: {mainsite.__timestamp__}"
     site_title = "Badgr"
 
     def autodiscover(self):
