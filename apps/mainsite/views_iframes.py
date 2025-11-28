@@ -66,7 +66,6 @@ def iframe(request, *args, **kwargs):
         if iframe.name == "backpack":
             return iframe_backpack(
                 request,
-                iframe.params["profile"],
                 iframe.params["skills"],
                 iframe.params["badges"],
                 iframe.params["learningpaths"],

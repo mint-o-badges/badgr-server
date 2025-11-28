@@ -276,6 +276,26 @@ class RequestIframe(APIView):
         return HttpResponse()
 
 
+def get_badgeinstances_from_post(request):
+    try:
+        email = request.POST["email"]
+        emails = email.split(",")
+    except KeyError:
+        return HttpResponseBadRequest(b"Missing email parameter")
+
+    issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
+    if issuers.count == 0:
+        return HttpResponseForbidden()
+
+    instances = []
+    for issuer in issuers:
+        instances += BadgeInstance.objects.filter(
+            issuer=issuer, recipient_identifier__in=emails
+        )
+
+    return instances
+
+
 @extend_schema(exclude=True)
 class LearnersProfile(RequestIframe):
     permission_classes = [
@@ -286,23 +306,10 @@ class LearnersProfile(RequestIframe):
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
     def post(self, request, **kwargs):
-        try:
-            email = request.POST["email"]
-        except KeyError:
-            return HttpResponseBadRequest(b"Missing email parameter")
-
         if not request.user:
             return HttpResponseForbidden()
 
-        issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
-        if issuers.count == 0:
-            return HttpResponseForbidden()
-
-        instances = []
-        for issuer in issuers:
-            instances += BadgeInstance.objects.filter(
-                issuer=issuer, recipient_identifier=email
-            )
+        instances = get_badgeinstances_from_post(request)
 
         try:
             language = request.POST["lang"]
@@ -334,23 +341,10 @@ class LearnersCompetencies(RequestIframe):
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
     def post(self, request, **kwargs):
-        try:
-            email = request.POST["email"]
-        except KeyError:
-            return HttpResponseBadRequest(b"Missing email parameter")
-
         if not request.user:
             return HttpResponseForbidden()
 
-        issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
-        if issuers.count == 0:
-            return HttpResponseForbidden()
-
-        instances = []
-        for issuer in issuers:
-            instances += BadgeInstance.objects.filter(
-                issuer=issuer, recipient_identifier=email
-            )
+        instances = get_badgeinstances_from_post(request)
 
         try:
             language = request.POST["lang"]
@@ -387,23 +381,10 @@ class LearnersBadges(RequestIframe):
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
     def post(self, request, **kwargs):
-        try:
-            email = request.POST["email"]
-        except KeyError:
-            return HttpResponseBadRequest(b"Missing email parameter")
-
         if not request.user:
             return HttpResponseForbidden()
 
-        issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
-        if issuers.count == 0:
-            return HttpResponseForbidden()
-
-        instances = []
-        for issuer in issuers:
-            instances += BadgeInstance.objects.filter(
-                issuer=issuer, recipient_identifier=email
-            )
+        instances = get_badgeinstances_from_post(request)
 
         try:
             language = request.POST["lang"]
@@ -440,24 +421,10 @@ class LearnersLearningPaths(RequestIframe):
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
     def post(self, request, **kwargs):
-        try:
-            email = request.POST["email"]
-        except KeyError:
-            return HttpResponseBadRequest(b"Missing email parameter")
-
         if not request.user:
             return HttpResponseForbidden()
 
-        issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
-        if issuers.count == 0:
-            return HttpResponseForbidden()
-
-        instances = []
-        for issuer in issuers:
-            instances += BadgeInstance.objects.filter(
-                issuer=issuer, recipient_identifier=email
-            )
-
+        instances = get_badgeinstances_from_post(request)
         badges = list(
             {
                 badgeinstance.badgeclass
@@ -501,23 +468,10 @@ class LearnersBackpack(RequestIframe):
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
     def post(self, request, **kwargs):
-        try:
-            email = request.POST["email"]
-        except KeyError:
-            return HttpResponseBadRequest(b"Missing email parameter")
-
         if not request.user:
             return HttpResponseForbidden()
 
-        issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
-        if issuers.count == 0:
-            return HttpResponseForbidden()
-
-        instances = []
-        for issuer in issuers:
-            instances += BadgeInstance.objects.filter(
-                issuer=issuer, recipient_identifier=email
-            )
+        instances = get_badgeinstances_from_post(request)
 
         badges = list(
             {
