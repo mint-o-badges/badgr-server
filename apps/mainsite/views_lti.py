@@ -125,7 +125,7 @@ def LtiProfile(request):
     locale = get_lang_for_lti_launch(request.lti_launch)
 
     # try to find a badgeuser by email and get his badgeinstances,
-    # else get badgeinstances by
+    # else get badgeinstances by the recipient (when the user is not registered)
     try:
         email_variant = EmailAddress.objects.get(email__iexact=lti_user.email)
         badgeuser = email_variant.user
@@ -157,7 +157,7 @@ def LtiBadges(request):
     locale = get_lang_for_lti_launch(request.lti_launch)
 
     # try to find a badgeuser by email and get his badgeinstances,
-    # else get badgeinstances by
+    # else get badgeinstances by the recipient (when the user is not registered)
     try:
         email_variant = EmailAddress.objects.get(email__iexact=lti_user.email)
         badgeuser = email_variant.user
@@ -191,7 +191,7 @@ def LtiCompetencies(request):
     locale = get_lang_for_lti_launch(request.lti_launch)
 
     # try to find a badgeuser by email and get his badgeinstances,
-    # else get badgeinstances by
+    # else get badgeinstances by the recipient (when the user is not registered)
     try:
         email_variant = EmailAddress.objects.get(email__iexact=lti_user.email)
         badgeuser = email_variant.user
@@ -225,7 +225,7 @@ def LtiLearningpaths(request):
     locale = get_lang_for_lti_launch(request.lti_launch)
 
     # try to find a badgeuser by email and get his badgeinstances,
-    # else get badgeinstances by
+    # else get badgeinstances by the recipient (when the user is not registered)
     try:
         email_variant = EmailAddress.objects.get(email__iexact=lti_user.email)
         badgeuser = email_variant.user
@@ -270,7 +270,7 @@ def LtiBackpack(request):
     locale = get_lang_for_lti_launch(request.lti_launch)
 
     # try to find a badgeuser by email and get his badgeinstances,
-    # else get badgeinstances by
+    # else get badgeinstances by the recipient (when the user is not registered)
     try:
         email_variant = EmailAddress.objects.get(email__iexact=lti_user.email)
         badgeuser = email_variant.user
