@@ -134,8 +134,7 @@ def iframe_learningpaths(request, learningpaths, language):
     )
 
 
-def iframe_backpack(request, profile, skills, badges, learningpaths, language):
-    profile_json = json.dumps(profile, ensure_ascii=False)
+def iframe_backpack(request, skills, badges, learningpaths, language):
     skill_json = json.dumps(skills, ensure_ascii=False)
     badges_json = json.dumps(badges, ensure_ascii=False)
     learningpaths_json = json.dumps(learningpaths, ensure_ascii=False)
@@ -144,7 +143,6 @@ def iframe_backpack(request, profile, skills, badges, learningpaths, language):
         "iframes/backpack/index.html",
         context={
             "asset_path": settings.WEBCOMPONENTS_ASSETS_PATH,
-            "profile_json": profile_json,
             "skill_json": skill_json,
             "badges_json": badges_json,
             "learningpaths_json": learningpaths_json,

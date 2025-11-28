@@ -29,12 +29,10 @@
                 const learningPaths = JSON.parse(
                     "{{ learningpaths_json | escapejs }}"
                 );
-                const profile = JSON.parse("{{ profile_json | escapejs }}");
 
                 backpack.badges = badges;
                 backpack.skills = skills;
                 backpack.learningPaths = learningPaths;
-                backpack.profile = profile;
             });
         </script>
     </body>

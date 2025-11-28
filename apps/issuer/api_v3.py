@@ -13,8 +13,7 @@ from rest_framework import viewsets, permissions, serializers
 from rest_framework.response import Response
 
 from backpack.api import BackpackAssertionList
-from badgeuser.api import BadgeUserDetail, LearningPathList
-from badgeuser.models import BadgeUser
+from badgeuser.api import LearningPathList
 from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
@@ -510,8 +509,6 @@ class LearnersBackpack(RequestIframe):
         if not request.user:
             return HttpResponseForbidden()
 
-        user = BadgeUser.objects.get(email=email)
-
         issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
         if issuers.count == 0:
             return HttpResponseForbidden()
@@ -545,14 +542,11 @@ class LearnersBackpack(RequestIframe):
         )
 
         tree = get_skills_tree(filtered_instances, language)
-        profile_serializer = BadgeUserDetail.v1_serializer_class(data=user)
-        profile = profile_serializer.to_representation(user)
         badge_serializer = BackpackAssertionList.v1_serializer_class()
         badge_serializer.context["format"] = "plain"
         iframe = IframeUrl.objects.create(
             name="backpack",
             params={
-                "profile": profile,
                 "skills": tree["skills"],
                 "badges": list(
                     badge_serializer.to_representation(i) for i in filtered_instances

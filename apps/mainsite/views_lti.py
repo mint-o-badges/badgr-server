@@ -17,7 +17,6 @@ from lti_tool.models import LtiUser, LtiLaunch
 from pylti1p3.deep_link_resource import DeepLinkResource
 
 from apps.backpack.api import BackpackAssertionList
-from apps.badgeuser.api import BadgeUserDetail
 from apps.mainsite.admin import Application
 from backpack.utils import get_skills_tree
 from issuer.models import BadgeInstance, Issuer, LearningPath, LearningPathBadge
@@ -288,11 +287,8 @@ def LtiBackpack(request):
         ).distinct()
         tree = get_skills_tree(instances, locale)
 
-        profile = BadgeUserDetail.v1_serializer_class().to_representation(badgeuser)
-
         return iframe_backpack(
             request,
-            profile,
             tree["skills"],
             BackpackAssertionList.v1_serializer_class().to_representation(instances),
             lps,
