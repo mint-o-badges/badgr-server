@@ -1067,14 +1067,18 @@ class BadgeClass(
             )
 
     def generate_badge_image(
-        self, category, badge_image, issuer_image=None, network_image=None
+        self,
+        category,
+        badge_image,
+        issuer_image=None,
+        network_image=None,
     ):
         """Generate composed badge image from original image"""
 
         composer = ImageComposer(category=category)
 
         image_b64 = composer.compose_badge_from_uploaded_image(
-            badge_image, issuer_image, network_image
+            badge_image, issuer_image, network_image, draw_frame=self.imageFrame
         )
 
         if not image_b64:
@@ -2592,9 +2596,6 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
     def generate_assertion_image(self, issuer_image=None, network_image=None):
         """Generate composed assertion image"""
 
-        if not self.badgeclass.imageFrame:
-            return
-
         extensions = self.badgeclass.cached_extensions()
         categoryExtension = extensions.get(name="extensions:CategoryExtension")
         category = json_loads(categoryExtension.original_json)["Category"]
@@ -2604,7 +2605,10 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
         composer = ImageComposer(category=category)
 
         image_b64 = composer.compose_badge_from_uploaded_image(
-            original_image, issuer_image, network_image
+            original_image,
+            issuer_image,
+            network_image,
+            draw_frame=self.badgeclass.imageFrame,
         )
 
         if not image_b64:

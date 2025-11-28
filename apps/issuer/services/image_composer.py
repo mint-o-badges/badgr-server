@@ -28,20 +28,30 @@ class ImageComposer:
     def get_canvas_size(self, category):
         return self.CANVAS_SIZES.get(category, self.DEFAULT_CANVAS_SIZE)
 
-    def compose_badge_from_uploaded_image(self, image, issuerImage, networkImage):
+    def compose_badge_from_uploaded_image(
+        self, image, issuerImage, networkImage, draw_frame=True
+    ):
         """
         Compose badge image with issuer logo from image upload
         """
         try:
+            if not draw_frame:
+                # return original image untouched
+                if isinstance(image, str) and image.startswith("data:image/"):
+                    return image
+                else:
+                    return f"data:image/png;base64,{image}"
+
             canvas = Image.new("RGBA", self.CANVAS_SIZE, (255, 255, 255, 0))
 
             ### Frame ###
-            shape_image = self._get_colored_shape_svg()
-            if shape_image:
-                # Center the frame on the canvas
-                frame_x = (self.CANVAS_SIZE[0] - shape_image.width) // 2
-                frame_y = (self.CANVAS_SIZE[1] - shape_image.height) // 2
-                canvas.paste(shape_image, (frame_x, frame_y), shape_image)
+            if draw_frame:
+                shape_image = self._get_colored_shape_svg()
+                if shape_image:
+                    # Center the frame on the canvas
+                    frame_x = (self.CANVAS_SIZE[0] - shape_image.width) // 2
+                    frame_y = (self.CANVAS_SIZE[1] - shape_image.height) // 2
+                    canvas.paste(shape_image, (frame_x, frame_y), shape_image)
 
             ### badge image ###
             badge_img = self._prepare_uploaded_image(image)
@@ -50,11 +60,12 @@ class ImageComposer:
                 y = (self.CANVAS_SIZE[1] - badge_img.height) // 2
                 canvas.paste(badge_img, (x, y), badge_img)
 
-            if issuerImage:
-                canvas = self._add_issuer_logo(canvas, self.category, issuerImage)
+            if draw_frame:
+                if issuerImage:
+                    canvas = self._add_issuer_logo(canvas, self.category, issuerImage)
 
-            if networkImage:
-                canvas = self._add_network_logo(canvas, networkImage)
+                if networkImage:
+                    canvas = self._add_network_logo(canvas, networkImage)
 
             return self._get_image_as_base64(canvas)
 
@@ -87,7 +98,11 @@ class ImageComposer:
                 else:
                     image_bytes = base64.b64decode(image_data)
 
-                img = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
+                if header.startswith("data:image/svg"):
+                    png_bytes = cairosvg.svg2png(bytestring=image_bytes)
+                    img = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
+                else:
+                    img = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
 
             else:
                 raise ValueError("Expected base64 string for image data")
@@ -106,6 +121,7 @@ class ImageComposer:
             result = Image.new("RGBA", target_size, (0, 0, 0, 0))
             x = (target_size[0] - img.width) // 2
             y = (target_size[1] - img.height) // 2
+
             result.paste(img, (x, y), img)
 
             return result

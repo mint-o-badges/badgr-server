@@ -2252,7 +2252,7 @@ class BadgeImageComposition(APIView):
                     network_image = shared_network.network.image
 
             image_url = composer.compose_badge_from_uploaded_image(
-                original_image, issuer_image, network_image
+                original_image, issuer_image, network_image, draw_frame=badge.imageFrame
             )
 
             if not image_url:
