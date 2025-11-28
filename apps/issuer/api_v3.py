@@ -15,6 +15,8 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.pagination import LimitOffsetPagination
 
 
+from backpack.api import BackpackAssertionList
+from badgeuser.api import LearningPathList
 from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
@@ -52,6 +54,7 @@ from .models import (
     Issuer,
     LearningPath,
     BadgeInstanceExtension,
+    LearningPathBadge,
 )
 from django.db.models import Q
 
@@ -318,6 +321,26 @@ class RequestIframe(APIView):
         return HttpResponse()
 
 
+def get_badgeinstances_from_post(request):
+    try:
+        email = request.POST["email"]
+        emails = email.split(",")
+    except KeyError:
+        return HttpResponseBadRequest(b"Missing email parameter")
+
+    issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
+    if issuers.count == 0:
+        return HttpResponseForbidden()
+
+    instances = []
+    for issuer in issuers:
+        instances += BadgeInstance.objects.filter(
+            issuer=issuer, recipient_identifier__in=emails
+        )
+
+    return instances
+
+
 @extend_schema(exclude=True)
 class LearnersProfile(RequestIframe):
     permission_classes = [
@@ -328,23 +351,10 @@ class LearnersProfile(RequestIframe):
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
     def post(self, request, **kwargs):
-        try:
-            email = request.POST["email"]
-        except KeyError:
-            return HttpResponseBadRequest(b"Missing email parameter")
-
         if not request.user:
             return HttpResponseForbidden()
 
-        issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
-        if issuers.count == 0:
-            return HttpResponseForbidden()
-
-        instances = []
-        for issuer in issuers:
-            instances += BadgeInstance.objects.filter(
-                issuer=issuer, recipient_identifier=email
-            )
+        instances = get_badgeinstances_from_post(request)
 
         try:
             language = request.POST["lang"]
@@ -352,11 +362,200 @@ class LearnersProfile(RequestIframe):
         except (KeyError, AssertionError):
             language = "en"
 
-        tree = get_skills_tree(instances, language)
+        tree = get_skills_tree(
+            BackpackAssertionList().get_filtered_objects(instances, True, False, True),
+            language,
+        )
 
         iframe = IframeUrl.objects.create(
             name="profile",
             params={"skills": tree["skills"], "language": language},
+            created_by=request.user,
+        )
+
+        return JsonResponse({"url": iframe.url})
+
+
+@extend_schema(exclude=True)
+class LearnersCompetencies(RequestIframe):
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsStaff & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    def post(self, request, **kwargs):
+        if not request.user:
+            return HttpResponseForbidden()
+
+        instances = get_badgeinstances_from_post(request)
+
+        try:
+            language = request.POST["lang"]
+            assert language in ["de", "en"]
+        except (KeyError, AssertionError):
+            language = "en"
+
+        badge_serializer = BackpackAssertionList.v1_serializer_class()
+        badge_serializer.context["format"] = "plain"
+        iframe = IframeUrl.objects.create(
+            name="competencies",
+            params={
+                "badges": list(
+                    badge_serializer.to_representation(i)
+                    for i in BackpackAssertionList().get_filtered_objects(
+                        instances, True, False, True
+                    )
+                ),
+                "language": language,
+            },
+            created_by=request.user,
+        )
+
+        return JsonResponse({"url": iframe.url})
+
+
+@extend_schema(exclude=True)
+class LearnersBadges(RequestIframe):
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsStaff & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    def post(self, request, **kwargs):
+        if not request.user:
+            return HttpResponseForbidden()
+
+        instances = get_badgeinstances_from_post(request)
+
+        try:
+            language = request.POST["lang"]
+            assert language in ["de", "en"]
+        except (KeyError, AssertionError):
+            language = "en"
+
+        badge_serializer = BackpackAssertionList.v1_serializer_class()
+        badge_serializer.context["format"] = "plain"
+        iframe = IframeUrl.objects.create(
+            name="badges",
+            params={
+                "badges": list(
+                    badge_serializer.to_representation(i)
+                    for i in BackpackAssertionList().get_filtered_objects(
+                        instances, True, False, True
+                    )
+                ),
+                "language": language,
+            },
+            created_by=request.user,
+        )
+
+        return JsonResponse({"url": iframe.url})
+
+
+@extend_schema(exclude=True)
+class LearnersLearningPaths(RequestIframe):
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsStaff & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    def post(self, request, **kwargs):
+        if not request.user:
+            return HttpResponseForbidden()
+
+        instances = get_badgeinstances_from_post(request)
+        badges = list(
+            {
+                badgeinstance.badgeclass
+                for badgeinstance in instances
+                if badgeinstance.revoked is False
+            }
+        )
+        lp_badges = LearningPathBadge.objects.filter(badge__in=badges)
+        lps = LearningPath.objects.filter(
+            activated=True, learningpathbadge__in=lp_badges
+        ).distinct()
+
+        try:
+            language = request.POST["lang"]
+            assert language in ["de", "en"]
+        except (KeyError, AssertionError):
+            language = "en"
+
+        iframe = IframeUrl.objects.create(
+            name="learningpaths",
+            params={
+                "learningpaths": list(
+                    LearningPathList.v1_serializer_class().to_representation(lp)
+                    for lp in lps
+                ),
+                "language": language,
+            },
+            created_by=request.user,
+        )
+
+        return JsonResponse({"url": iframe.url})
+
+
+@extend_schema(exclude=True)
+class LearnersBackpack(RequestIframe):
+    permission_classes = [
+        IsServerAdmin
+        | (AuthenticatedWithVerifiedIdentifier & IsStaff & BadgrOAuthTokenHasScope)
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    valid_scopes = ["rw:issuer", "rw:issuer:*"]
+
+    def post(self, request, **kwargs):
+        if not request.user:
+            return HttpResponseForbidden()
+
+        instances = get_badgeinstances_from_post(request)
+
+        badges = list(
+            {
+                badgeinstance.badgeclass
+                for badgeinstance in instances
+                if badgeinstance.revoked is False
+            }
+        )
+        lp_badges = LearningPathBadge.objects.filter(badge__in=badges)
+        lps = LearningPath.objects.filter(
+            activated=True, learningpathbadge__in=lp_badges
+        ).distinct()
+
+        try:
+            language = request.POST["lang"]
+            assert language in ["de", "en"]
+        except (KeyError, AssertionError):
+            language = "en"
+
+        filtered_instances = BackpackAssertionList().get_filtered_objects(
+            instances, True, False, True
+        )
+
+        tree = get_skills_tree(filtered_instances, language)
+        badge_serializer = BackpackAssertionList.v1_serializer_class()
+        badge_serializer.context["format"] = "plain"
+        iframe = IframeUrl.objects.create(
+            name="backpack",
+            params={
+                "skills": tree["skills"],
+                "badges": list(
+                    badge_serializer.to_representation(i) for i in filtered_instances
+                ),
+                "learningpaths": list(
+                    LearningPathList.v1_serializer_class().to_representation(lp)
+                    for lp in lps
+                ),
+                "language": language,
+            },
             created_by=request.user,
         )
 
