@@ -229,25 +229,26 @@ def LtiLearningpaths(request):
         email_variant = EmailAddress.objects.get(email__iexact=lti_user.email)
         badgeuser = email_variant.user
         instances = BadgeInstance.objects.filter(user=badgeuser)
-        badges = list(
-            {
-                badgeinstance.badgeclass
-                for badgeinstance in instances
-                if badgeinstance.revoked is False
-            }
-        )
-        lp_badges = LearningPathBadge.objects.filter(badge__in=badges)
-        lps = LearningPath.objects.filter(
-            activated=True, learningpathbadge__in=lp_badges
-        ).distinct()
-
-        return iframe_learningpaths(
-            request,
-            lps,
-            locale,
-        )
     except EmailAddress.DoesNotExist:
-        return render(request, "lti/not_logged_in.html")
+        instances = BadgeInstance.objects.filter(recipient_identifier=lti_user.email)
+
+    badges = list(
+        {
+            badgeinstance.badgeclass
+            for badgeinstance in instances
+            if badgeinstance.revoked is False
+        }
+    )
+    lp_badges = LearningPathBadge.objects.filter(badge__in=badges)
+    lps = LearningPath.objects.filter(
+        activated=True, learningpathbadge__in=lp_badges
+    ).distinct()
+
+    return iframe_learningpaths(
+        request,
+        lps,
+        locale,
+    )
 
 
 @xframe_options_exempt
@@ -274,28 +275,28 @@ def LtiBackpack(request):
         email_variant = EmailAddress.objects.get(email__iexact=lti_user.email)
         badgeuser = email_variant.user
         instances = BadgeInstance.objects.filter(user=badgeuser)
-        badges = list(
-            {
-                badgeinstance.badgeclass
-                for badgeinstance in instances
-                if badgeinstance.revoked is False
-            }
-        )
-        lp_badges = LearningPathBadge.objects.filter(badge__in=badges)
-        lps = LearningPath.objects.filter(
-            activated=True, learningpathbadge__in=lp_badges
-        ).distinct()
-        tree = get_skills_tree(instances, locale)
-
-        return iframe_backpack(
-            request,
-            tree["skills"],
-            BackpackAssertionList.v1_serializer_class().to_representation(instances),
-            lps,
-            locale,
-        )
     except EmailAddress.DoesNotExist:
-        return render(request, "lti/not_logged_in.html")
+        instances = BadgeInstance.objects.filter(recipient_identifier=lti_user.email)
+    badges = list(
+        {
+            badgeinstance.badgeclass
+            for badgeinstance in instances
+            if badgeinstance.revoked is False
+        }
+    )
+    lp_badges = LearningPathBadge.objects.filter(badge__in=badges)
+    lps = LearningPath.objects.filter(
+        activated=True, learningpathbadge__in=lp_badges
+    ).distinct()
+    tree = get_skills_tree(instances, locale)
+
+    return iframe_backpack(
+        request,
+        tree["skills"],
+        BackpackAssertionList.v1_serializer_class().to_representation(instances),
+        lps,
+        locale,
+    )
 
 
 @xframe_options_exempt
