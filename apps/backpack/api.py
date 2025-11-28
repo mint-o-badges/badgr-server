@@ -204,18 +204,9 @@ class BackpackAssertionList(BaseEntityListView):
         "include_pending": {"v1": "false", "v2": "false"},
     }
 
-    def get_objects(self, request, **kwargs):
-        version = kwargs.get("version", "v1")
-        include_expired = request.query_params.get(
-            "include_expired", self.include_defaults["include_expired"][version]
-        ).lower() in ["1", "true"]
-        include_revoked = request.query_params.get(
-            "include_revoked", self.include_defaults["include_revoked"][version]
-        ).lower() in ["1", "true"]
-        include_pending = request.query_params.get(
-            "include_pending", self.include_defaults["include_pending"][version]
-        ).lower() in ["1", "true"]
-
+    def get_filtered_objects(
+        self, instances, include_expired, include_revoked, include_pending
+    ):
         def badge_filter(b):
             if (
                 (b.acceptance == BadgeInstance.ACCEPTANCE_REJECTED)
@@ -230,7 +221,26 @@ class BackpackAssertionList(BaseEntityListView):
                 return False
             return True
 
-        return list(filter(badge_filter, self.request.user.cached_badgeinstances()))
+        return list(filter(badge_filter, instances))
+
+    def get_objects(self, request, **kwargs):
+        version = kwargs.get("version", "v1")
+        include_expired = request.query_params.get(
+            "include_expired", self.include_defaults["include_expired"][version]
+        ).lower() in ["1", "true"]
+        include_revoked = request.query_params.get(
+            "include_revoked", self.include_defaults["include_revoked"][version]
+        ).lower() in ["1", "true"]
+        include_pending = request.query_params.get(
+            "include_pending", self.include_defaults["include_pending"][version]
+        ).lower() in ["1", "true"]
+
+        return self.get_filtered_objects(
+            self.request.user.cached_badgeinstances(),
+            include_expired,
+            include_revoked,
+            include_pending,
+        )
 
     def get(self, request, **kwargs):
         mykwargs = kwargs.copy()
