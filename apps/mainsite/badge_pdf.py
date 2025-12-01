@@ -131,12 +131,13 @@ class BadgePDFCreator:
         self.used_space += 43  # spacer and paragraph
 
     def add_title(self, first_page_content, badge_class_name):
+        line_height = 30
         title_style = ParagraphStyle(
             name="Title",
             fontSize=20,
             textColor="#492E98",
             fontName="Rubik-Bold",
-            leading=30,
+            leading=line_height,
             alignment=TA_CENTER,
         )
         first_page_content.append(Spacer(1, 10))
@@ -144,7 +145,9 @@ class BadgePDFCreator:
             Paragraph(f"<strong>{badge_class_name}</strong>", title_style)
         )
         first_page_content.append(Spacer(1, 15))
-        self.used_space += 55  # Two spacers and paragraph
+        line_char_count = 30  # 60 chars is max, two lines should be max
+        num_lines = math.ceil(len(badge_class_name) / line_char_count)
+        self.used_space += num_lines * line_height + 25  # badge class name and spaces
 
     def truncate_text(text, max_words=70):
         words = text.split()
@@ -157,7 +160,7 @@ class BadgePDFCreator:
         line_char_count = 79
         line_height = 16.5
         num_lines = math.ceil(len(text) / line_char_count)
-        spacer_height = 175 - (num_lines - 1) * line_height
+        spacer_height = 160 - (num_lines - 1) * line_height
         spacer_height = max(spacer_height, 0)
         first_page_content.append(Spacer(1, spacer_height))
         self.used_space += spacer_height
