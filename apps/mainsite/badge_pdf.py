@@ -160,7 +160,7 @@ class BadgePDFCreator:
                 p.wrap(width, max_h)
                 if len(p.blPara.lines) <= 2:
                     first_page_content.append(KeepInFrame(width, max_h, [p]))
-                    continue
+                    break
                 words.pop()
         first_page_content.append(Spacer(1, 15))
         self.used_space += (
