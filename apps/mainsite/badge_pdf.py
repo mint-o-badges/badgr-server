@@ -34,6 +34,7 @@ from reportlab.platypus import (
     Spacer,
     Table,
     TableStyle,
+    KeepInFrame,
 )
 
 font_path_rubik_regular = os.path.join(
@@ -131,6 +132,7 @@ class BadgePDFCreator:
         self.used_space += 43  # spacer and paragraph
 
     def add_title(self, first_page_content, badge_class_name):
+        document_width, _ = A4
         line_height = 30
         title_style = ParagraphStyle(
             name="Title",
@@ -141,13 +143,29 @@ class BadgePDFCreator:
             alignment=TA_CENTER,
         )
         first_page_content.append(Spacer(1, 10))
-        first_page_content.append(
-            Paragraph(f"<strong>{badge_class_name}</strong>", title_style)
-        )
+
+        title = badge_class_name
+        width = document_width - 40
+        max_h = line_height * 2
+        p = Paragraph(f"<strong>{title}</strong>", title_style)
+        p.wrap(width, max_h)
+        if len(p.blPara.lines) <= 2:
+            first_page_content.append(KeepInFrame(width, max_h, [p]))
+        else:
+            ellipsis = "\u2026"
+            words = title.split()
+            while words:
+                trial = " ".join(words) + ellipsis
+                p = Paragraph(f"<strong>{trial}</strong>", title_style)
+                p.wrap(width, max_h)
+                if len(p.blPara.lines) <= 2:
+                    first_page_content.append(KeepInFrame(width, max_h, [p]))
+                    break
+                words.pop()
         first_page_content.append(Spacer(1, 15))
-        line_char_count = 30  # 60 chars is max, two lines should be max
-        num_lines = math.ceil(len(badge_class_name) / line_char_count)
-        self.used_space += num_lines * line_height + 25  # badge class name and spaces
+        self.used_space += (
+            len(p.blPara.lines) * line_height + 25
+        )  # badge class name and spaces
 
     def truncate_text(text, max_words=70):
         words = text.split()
