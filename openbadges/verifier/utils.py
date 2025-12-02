@@ -55,7 +55,7 @@ class CachableDocumentLoader(object):
 
             if self.use_cache:
                 doc['from_cache'] = response.from_cache
-                self.session.remove_expired_responses()
+                self.session.cache.remove_expired_responses()
 
             # Save URL for Potential Extension contexts.
             try:
