@@ -16,10 +16,18 @@ from lti_tool.views import LtiLaunchBaseView, OIDCLoginInitView
 from lti_tool.models import LtiUser, LtiLaunch
 from pylti1p3.deep_link_resource import DeepLinkResource
 
+from apps.backpack.api import BackpackAssertionList
 from apps.mainsite.admin import Application
 from backpack.utils import get_skills_tree
-from issuer.models import BadgeInstance, Issuer
-from mainsite.views_iframes import iframe_badge_create_or_edit, iframe_profile
+from issuer.models import BadgeInstance, Issuer, LearningPath, LearningPathBadge
+from mainsite.views_iframes import (
+    iframe_backpack,
+    iframe_badge_create_or_edit,
+    iframe_badges,
+    iframe_competencies,
+    iframe_learningpaths,
+    iframe_profile,
+)
 
 DEFAULT_LOCALE = "en"
 SUPPORTED_LOCALES = Literal["en", "de"]
@@ -55,6 +63,30 @@ class ApplicationLaunchView(LtiLaunchBaseView):
             .set_custom_params({"custom": ""})
             .set_title("Learners Profile")
         )
+        lti_badges = (
+            DeepLinkResource()
+            .set_url(f"{baseUrl}/lti/tools/badges/")
+            .set_custom_params({"custom": ""})
+            .set_title("Earned Badges")
+        )
+        lti_competencies = (
+            DeepLinkResource()
+            .set_url(f"{baseUrl}/lti/tools/competencies/")
+            .set_custom_params({"custom": ""})
+            .set_title("Learners Competencies")
+        )
+        lti_learningpaths = (
+            DeepLinkResource()
+            .set_url(f"{baseUrl}/lti/tools/learningpaths/")
+            .set_custom_params({"custom": ""})
+            .set_title("Learners Learnings Paths")
+        )
+        lti_backpack = (
+            DeepLinkResource()
+            .set_url(f"{baseUrl}/lti/tools/backpack/")
+            .set_custom_params({"custom": ""})
+            .set_title("Learners Backpack")
+        )
         lti_badge_create_or_edit = (
             DeepLinkResource()
             .set_url(f"{baseUrl}/lti/tools/badge-create-or-edit")
@@ -62,7 +94,14 @@ class ApplicationLaunchView(LtiLaunchBaseView):
             .set_title("Create or edit a badge"),
         )
 
-        resources = [lti_profile, lti_badge_create_or_edit]
+        resources = [
+            lti_profile,
+            lti_badges,
+            lti_competencies,
+            lti_learningpaths,
+            lti_backpack,
+            lti_badge_create_or_edit,
+        ]
         return lti_launch.deep_link_response(resources)
 
 
@@ -85,7 +124,7 @@ def LtiProfile(request):
     locale = get_lang_for_lti_launch(request.lti_launch)
 
     # try to find a badgeuser by email and get his badgeinstances,
-    # else get badgeinstances by
+    # else get badgeinstances by the recipient (when the user is not registered)
     try:
         email_variant = EmailAddress.objects.get(email__iexact=lti_user.email)
         badgeuser = email_variant.user
@@ -96,6 +135,168 @@ def LtiProfile(request):
     tree = get_skills_tree(instances, locale)
 
     return iframe_profile(request, tree["skills"], locale)
+
+
+@xframe_options_exempt
+@csrf_exempt
+def LtiBadges(request):
+    if not request.lti_launch.is_present:
+        return HttpResponseNotFound(
+            "Error: no LTI context".encode(), content_type="text/html"
+        )
+
+    # check if the embedding tool provided an email adress
+    lti_user = request.lti_launch.user
+    try:
+        if not lti_user.email:
+            raise LtiUser.DoesNotExist
+    except LtiUser.DoesNotExist:
+        return render(request, "lti/not_logged_in.html")
+
+    locale = get_lang_for_lti_launch(request.lti_launch)
+
+    # try to find a badgeuser by email and get his badgeinstances,
+    # else get badgeinstances by the recipient (when the user is not registered)
+    try:
+        email_variant = EmailAddress.objects.get(email__iexact=lti_user.email)
+        badgeuser = email_variant.user
+        instances = BadgeInstance.objects.filter(user=badgeuser)
+    except EmailAddress.DoesNotExist:
+        instances = BadgeInstance.objects.filter(recipient_identifier=lti_user.email)
+
+    return iframe_badges(
+        request,
+        BackpackAssertionList.v1_serializer_class().to_representation(instances),
+        locale,
+    )
+
+
+@xframe_options_exempt
+@csrf_exempt
+def LtiCompetencies(request):
+    if not request.lti_launch.is_present:
+        return HttpResponseNotFound(
+            "Error: no LTI context".encode(), content_type="text/html"
+        )
+
+    # check if the embedding tool provided an email adress
+    lti_user = request.lti_launch.user
+    try:
+        if not lti_user.email:
+            raise LtiUser.DoesNotExist
+    except LtiUser.DoesNotExist:
+        return render(request, "lti/not_logged_in.html")
+
+    locale = get_lang_for_lti_launch(request.lti_launch)
+
+    # try to find a badgeuser by email and get his badgeinstances,
+    # else get badgeinstances by the recipient (when the user is not registered)
+    try:
+        email_variant = EmailAddress.objects.get(email__iexact=lti_user.email)
+        badgeuser = email_variant.user
+        instances = BadgeInstance.objects.filter(user=badgeuser)
+    except EmailAddress.DoesNotExist:
+        instances = BadgeInstance.objects.filter(recipient_identifier=lti_user.email)
+
+    return iframe_competencies(
+        request,
+        BackpackAssertionList.v1_serializer_class().to_representation(instances),
+        locale,
+    )
+
+
+@xframe_options_exempt
+@csrf_exempt
+def LtiLearningpaths(request):
+    if not request.lti_launch.is_present:
+        return HttpResponseNotFound(
+            "Error: no LTI context".encode(), content_type="text/html"
+        )
+
+    # check if the embedding tool provided an email adress
+    lti_user = request.lti_launch.user
+    try:
+        if not lti_user.email:
+            raise LtiUser.DoesNotExist
+    except LtiUser.DoesNotExist:
+        return render(request, "lti/not_logged_in.html")
+
+    locale = get_lang_for_lti_launch(request.lti_launch)
+
+    # try to find a badgeuser by email and get his badgeinstances,
+    # else get badgeinstances by the recipient (when the user is not registered)
+    try:
+        email_variant = EmailAddress.objects.get(email__iexact=lti_user.email)
+        badgeuser = email_variant.user
+        instances = BadgeInstance.objects.filter(user=badgeuser)
+    except EmailAddress.DoesNotExist:
+        instances = BadgeInstance.objects.filter(recipient_identifier=lti_user.email)
+
+    badges = list(
+        {
+            badgeinstance.badgeclass
+            for badgeinstance in instances
+            if badgeinstance.revoked is False
+        }
+    )
+    lp_badges = LearningPathBadge.objects.filter(badge__in=badges)
+    lps = LearningPath.objects.filter(
+        activated=True, learningpathbadge__in=lp_badges
+    ).distinct()
+
+    return iframe_learningpaths(
+        request,
+        lps,
+        locale,
+    )
+
+
+@xframe_options_exempt
+@csrf_exempt
+def LtiBackpack(request):
+    if not request.lti_launch.is_present:
+        return HttpResponseNotFound(
+            "Error: no LTI context".encode(), content_type="text/html"
+        )
+
+    # check if the embedding tool provided an email adress
+    lti_user = request.lti_launch.user
+    try:
+        if not lti_user.email:
+            raise LtiUser.DoesNotExist
+    except LtiUser.DoesNotExist:
+        return render(request, "lti/not_logged_in.html")
+
+    locale = get_lang_for_lti_launch(request.lti_launch)
+
+    # try to find a badgeuser by email and get his badgeinstances,
+    # else get badgeinstances by the recipient (when the user is not registered)
+    try:
+        email_variant = EmailAddress.objects.get(email__iexact=lti_user.email)
+        badgeuser = email_variant.user
+        instances = BadgeInstance.objects.filter(user=badgeuser)
+    except EmailAddress.DoesNotExist:
+        instances = BadgeInstance.objects.filter(recipient_identifier=lti_user.email)
+    badges = list(
+        {
+            badgeinstance.badgeclass
+            for badgeinstance in instances
+            if badgeinstance.revoked is False
+        }
+    )
+    lp_badges = LearningPathBadge.objects.filter(badge__in=badges)
+    lps = LearningPath.objects.filter(
+        activated=True, learningpathbadge__in=lp_badges
+    ).distinct()
+    tree = get_skills_tree(instances, locale)
+
+    return iframe_backpack(
+        request,
+        tree["skills"],
+        BackpackAssertionList.v1_serializer_class().to_representation(instances),
+        lps,
+        locale,
+    )
 
 
 @xframe_options_exempt

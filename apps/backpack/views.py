@@ -16,8 +16,37 @@ from rest_framework.decorators import (
     permission_classes,
 )
 from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiParameter,
+    OpenApiResponse,
+)
+from drf_spectacular.types import OpenApiTypes
 
 
+@extend_schema(
+    summary="Download Badge PDF",
+    description=(
+        "Returns a PDF version of a badge instance. "
+        "The user must be the badge recipient or issuer owner."
+    ),
+    parameters=[
+        OpenApiParameter(
+            name="slug",
+            type=str,
+            location=OpenApiParameter.PATH,
+            description="Entity ID of the badge instance.",
+        ),
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="PDF file",
+            response=OpenApiTypes.BINARY,
+        ),
+        404: OpenApiResponse(description="Badge not found"),
+        403: OpenApiResponse(description="Permission denied"),
+    },
+)
 @api_view(["GET"])
 @authentication_classes(
     [TokenAuthentication, SessionAuthentication, BasicAuthentication]
@@ -55,6 +84,26 @@ def pdf(request, *args, **kwargs):
     return HttpResponse(pdf_content, content_type="application/pdf")
 
 
+@extend_schema(
+    summary="Download Badge PDF",
+    description=("Returns a PDF version of a collection. "),
+    parameters=[
+        OpenApiParameter(
+            name="slug",
+            type=str,
+            location=OpenApiParameter.PATH,
+            description="Entity ID of the badge collection.",
+        ),
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="PDF file",
+            response=OpenApiTypes.BINARY,
+        ),
+        404: OpenApiResponse(description="Collection not found"),
+        403: OpenApiResponse(description="Permission denied"),
+    },
+)
 @api_view(["GET"])
 @authentication_classes(
     [TokenAuthentication, SessionAuthentication, BasicAuthentication]
