@@ -54,7 +54,7 @@ class ImageComposer:
                     canvas.paste(shape_image, (frame_x, frame_y), shape_image)
 
             ### badge image ###
-            badge_img = self._prepare_uploaded_image(image, apply_padding=draw_frame)
+            badge_img = self._prepare_uploaded_image(image)
             if badge_img:
                 x = (self.CANVAS_SIZE[0] - badge_img.width) // 2
                 y = (self.CANVAS_SIZE[1] - badge_img.height) // 2
@@ -86,7 +86,7 @@ class ImageComposer:
         img_base64 = base64.b64encode(img_buffer.getvalue()).decode("utf-8")
         return f"data:image/png;base64,{img_base64}"
 
-    def _prepare_uploaded_image(self, image_data, apply_padding=True):
+    def _prepare_uploaded_image(self, image_data):
         """
         Prepare uploaded image data (base64 string)
         """
@@ -107,14 +107,15 @@ class ImageComposer:
             else:
                 raise ValueError("Expected base64 string for image data")
 
-            if apply_padding:
-                interior_size = int((self.CANVAS_SIZE[0] * self.FRAME_PADDING) // 2)
+            target_size = (
+                int(((self.CANVAS_SIZE[0] * self.FRAME_PADDING) // 2)),
+                int(((self.CANVAS_SIZE[0] * self.FRAME_PADDING) // 2)),
+            )
+
+            if img.width < target_size[0] or img.height < target_size[1]:
+                # upscale (e.g. nounproject images are 200x200px)
+                img = img.resize(target_size, Image.Resampling.LANCZOS)
             else:
-                interior_size = self.CANVAS_SIZE[0]
-
-            target_size = (interior_size, interior_size)
-
-            if img.width > interior_size or img.height > interior_size:
                 img.thumbnail(target_size, Image.Resampling.LANCZOS)
 
             result = Image.new("RGBA", target_size, (0, 0, 0, 0))
