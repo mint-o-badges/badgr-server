@@ -1065,7 +1065,11 @@ class BadgeClass(
             )
 
     def generate_badge_image(
-        self, category, badge_image, issuer_image=None, network_image=None
+        self,
+        category,
+        badge_image,
+        issuer_image=None,
+        network_image=None,
     ):
         """Generate composed badge image from original image"""
 

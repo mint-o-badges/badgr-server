@@ -125,7 +125,7 @@ class BadgeInstanceV3FilterSet(filters.FilterSet):
         tags=["BadgeClasses"],
     ),
 )
-class Badges(EntityViewSet, TotalCountMixin):
+class Badges(TotalCountMixin, EntityViewSet):
     queryset = BadgeClass.objects.all()
     serializer_class = BadgeClassSerializerV1
     filterset_class = BadgeFilter
@@ -202,7 +202,7 @@ class BadgeTags(viewsets.ViewSet):
         tags=["Issuers"],
     ),
 )
-class Issuers(EntityViewSet, TotalCountMixin):
+class Issuers(TotalCountMixin, EntityViewSet):
     queryset = Issuer.objects.all()
     serializer_class = IssuerSerializerV1
 
@@ -245,7 +245,7 @@ class Issuers(EntityViewSet, TotalCountMixin):
         tags=["Networks"],
     ),
 )
-class Networks(EntityViewSet, TotalCountMixin):
+class Networks(TotalCountMixin, EntityViewSet):
     queryset = Issuer.objects.filter(is_network=True)
     serializer_class = NetworkSerializerV1
 
@@ -302,7 +302,7 @@ class LearningPathFilter(EntityFilter):
         tags=["LearningPaths"],
     ),
 )
-class LearningPaths(EntityViewSet, TotalCountMixin):
+class LearningPaths(TotalCountMixin, EntityViewSet):
     queryset = LearningPath.objects.all()
     serializer_class = LearningPathSerializerV1
     filterset_class = LearningPathFilter

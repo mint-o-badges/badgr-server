@@ -176,6 +176,25 @@ class NetworkList(BaseEntityListView):
         return super(NetworkList, self).post(request, **kwargs)
 
 
+class NetworkDetail(BaseEntityDetailView):
+    model = Issuer
+    v1_serializer_class = NetworkSerializerV1
+    permission_classes = [
+        IsServerAdmin
+        | (
+            AuthenticatedWithVerifiedIdentifier
+            & IsEditorButOwnerForDelete
+            & BadgrOAuthTokenHasScope
+        )
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    valid_scopes = ["rw:issuer", "rw:issuer:*", "rw:serverAdmin"]
+
+    @extend_schema(summary="Get a single Network", tags=["Issuers"])
+    def get(self, request, **kwargs):
+        return super(NetworkDetail, self).get(request, **kwargs)
+
+
 class NetworkUserIssuersList(BaseEntityListView):
     """
     List of issuers within a specific network that the authenticated user is a member in
@@ -2275,7 +2294,7 @@ class BadgeImageComposition(APIView):
                     network_image = shared_network.network.image
 
             image_url = composer.compose_badge_from_uploaded_image(
-                original_image, issuer_image, network_image, badge.imageFrame
+                original_image, issuer_image, network_image, draw_frame=badge.imageFrame
             )
 
             if not image_url:
