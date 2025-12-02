@@ -12,6 +12,7 @@ from issuer.api import (
     NetworkBadgeClassesList,
     NetworkBadgeInstanceList,
     NetworkBadgeQRCodeList,
+    NetworkDetail,
     NetworkInvitation,
     NetworkInvitationConfirm,
     NetworkInvitationList,
@@ -50,10 +51,15 @@ urlpatterns = [
         name="v1_api_find_badgeclass_by_identifier",
     ),
     re_path(r"^issuers$", IssuerList.as_view(), name="v1_api_issuer_list"),
-    re_path(r"^networks$", NetworkList.as_view(), name="v1_api_network_list"),
     re_path(
         r"^issuers/(?P<slug>[^/]+)$",
         IssuerDetail.as_view(),
+        name="v1_api_issuer_detail",
+    ),
+    re_path(r"^networks$", NetworkList.as_view(), name="v1_api_network_list"),
+    re_path(
+        r"^networks/(?P<slug>[^/]+)$",
+        NetworkDetail.as_view(),
         name="v1_api_issuer_detail",
     ),
     re_path(

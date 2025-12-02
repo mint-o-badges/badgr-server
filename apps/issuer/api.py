@@ -176,6 +176,25 @@ class NetworkList(BaseEntityListView):
         return super(NetworkList, self).post(request, **kwargs)
 
 
+class NetworkDetail(BaseEntityDetailView):
+    model = Issuer
+    v1_serializer_class = NetworkSerializerV1
+    permission_classes = [
+        IsServerAdmin
+        | (
+            AuthenticatedWithVerifiedIdentifier
+            & IsEditorButOwnerForDelete
+            & BadgrOAuthTokenHasScope
+        )
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    valid_scopes = ["rw:issuer", "rw:issuer:*", "rw:serverAdmin"]
+
+    @extend_schema(summary="Get a single Network", tags=["Issuers"])
+    def get(self, request, **kwargs):
+        return super(NetworkDetail, self).get(request, **kwargs)
+
+
 class NetworkUserIssuersList(BaseEntityListView):
     """
     List of issuers within a specific network that the authenticated user is a member in
