@@ -179,6 +179,8 @@ class BaseOpenBadgeObjectModel(OriginalJsonMixin, cachemodel.CacheModel):
 
     @cachemodel.cached_method(auto_publish=True)
     def cached_extensions(self):
+        if not self.pk:
+            return []
         return self.get_extensions_manager().all()
 
     @property
@@ -1721,7 +1723,9 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
     ob_json_3_0 = models.TextField(blank=True, null=True, default=None)
 
     class Meta:
-        index_together = (("recipient_identifier", "badgeclass", "revoked"),)
+        indexes = [
+            models.Index(fields=["recipient_identifier", "badgeclass", "revoked"])
+        ]
 
     @property
     def extended_json(self):
@@ -2484,6 +2488,8 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
 
     @cachemodel.cached_method(auto_publish=True)
     def cached_evidence(self):
+        if not self.pk:
+            return []
         return self.badgeinstanceevidence_set.all()
 
     @property
