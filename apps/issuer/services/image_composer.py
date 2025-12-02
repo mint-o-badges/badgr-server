@@ -35,6 +35,13 @@ class ImageComposer:
         Compose badge image with issuer logo from image upload
         """
         try:
+            if not draw_frame:
+                # return original image untouched
+                if isinstance(image, str) and image.startswith("data:image/"):
+                    return image
+                else:
+                    return f"data:image/png;base64,{image}"
+
             canvas = Image.new("RGBA", self.CANVAS_SIZE, (255, 255, 255, 0))
 
             ### Frame ###
@@ -111,8 +118,9 @@ class ImageComposer:
                 img.thumbnail(target_size, Image.Resampling.LANCZOS)
 
             result = Image.new("RGBA", target_size, (0, 0, 0, 0))
-            x = (interior_size - img.width) // 2
-            y = (interior_size - img.height) // 2
+            x = (target_size[0] - img.width) // 2
+            y = (target_size[1] - img.height) // 2
+
             result.paste(img, (x, y), img)
 
             return result

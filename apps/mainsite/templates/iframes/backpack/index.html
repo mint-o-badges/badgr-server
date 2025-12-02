@@ -1,0 +1,39 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-beasties-container>
+    <head>
+        <meta charset="utf-8" />
+        <title>Open Educational Badges Learners Backpack</title>
+        <link rel="stylesheet"
+              href="{{ asset_path }}oeb-backpack/styles.css"
+              media="print"
+              onload="this.media='all'" />
+        <noscript>
+            <link rel="stylesheet" href="{{ asset_path }}oeb-backpack/styles.css" />
+        </noscript>
+        <script>
+            window.OEBWebComponentSettings = {
+                language: "{{ language }}",
+            };
+        </script>
+    </head>
+    <body>
+        <oeb-backpack id="backpack" baseurl="{{ asset_path }}oeb-backpack/" />
+        <script src="{{ asset_path }}oeb-backpack/polyfills.js" type="module"></script>
+        <script src="{{ asset_path }}oeb-backpack/main.js" type="module"></script>
+        <script type="text/javascript">
+            document.addEventListener("DOMContentLoaded", () => {
+                const backpack = document.getElementById("backpack");
+                const badges = JSON.parse("{{ badges_json | escapejs }}");
+                const skills = JSON.parse("{{ skill_json | escapejs }}");
+                const learningPaths = JSON.parse(
+                    "{{ learningpaths_json | escapejs }}"
+                );
+
+                backpack.badges = badges;
+                backpack.skills = skills;
+                backpack.learningPaths = learningPaths;
+            });
+        </script>
+    </body>
+</html>
