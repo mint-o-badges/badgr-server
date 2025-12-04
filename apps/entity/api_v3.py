@@ -61,12 +61,3 @@ class TagFilter(filters.BaseInFilter, filters.CharFilter):
         for tag in value:
             qs = qs.filter(**{f"{self.field_name}__icontains": tag})
         return qs
-
-
-class TotalCountMixin:
-    """Adds total_count to paginated responses"""
-
-    def list(self, request, *args, **kwargs):
-        response = super().list(request, *args, **kwargs)
-        response.data["total_count"] = self.queryset.count()
-        return response
