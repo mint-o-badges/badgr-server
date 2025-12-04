@@ -37,7 +37,6 @@ from entity.api_v3 import (
     EntityFilter,
     EntityViewSet,
     TagFilter,
-    TotalCountMixin,
 )
 
 from .serializers_v1 import (
@@ -125,7 +124,7 @@ class BadgeInstanceV3FilterSet(filters.FilterSet):
         tags=["BadgeClasses"],
     ),
 )
-class Badges(TotalCountMixin, EntityViewSet):
+class Badges(EntityViewSet):
     queryset = BadgeClass.objects.all()
     serializer_class = BadgeClassSerializerV1
     filterset_class = BadgeFilter
@@ -139,7 +138,7 @@ class Badges(TotalCountMixin, EntityViewSet):
         return queryset.distinct()
 
 
-class BadgeInstances(EntityViewSet, TotalCountMixin):
+class BadgeInstances(EntityViewSet):
     queryset = BadgeInstance.objects.filter(revoked=False)
     serializer_class = BadgeInstanceSerializerV1
     pagination_class = LimitOffsetPagination
@@ -147,6 +146,13 @@ class BadgeInstances(EntityViewSet, TotalCountMixin):
     filterset_class = BadgeInstanceV3FilterSet
     ordering_fields = ["created_at", "recipient_identifier"]
     ordering = ["-created_at"]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        badgeclass_param = self.request.query_params.get("badgeclass", None)
+        if badgeclass_param is not None:
+            return queryset.filter(badgeclass__slug=badgeclass_param)
+        return queryset
 
 
 @extend_schema_view(
@@ -202,7 +208,7 @@ class BadgeTags(viewsets.ViewSet):
         tags=["Issuers"],
     ),
 )
-class Issuers(TotalCountMixin, EntityViewSet):
+class Issuers(EntityViewSet):
     queryset = Issuer.objects.all()
     serializer_class = IssuerSerializerV1
 
@@ -245,7 +251,7 @@ class Issuers(TotalCountMixin, EntityViewSet):
         tags=["Networks"],
     ),
 )
-class Networks(TotalCountMixin, EntityViewSet):
+class Networks(EntityViewSet):
     queryset = Issuer.objects.filter(is_network=True)
     serializer_class = NetworkSerializerV1
 
@@ -302,7 +308,7 @@ class LearningPathFilter(EntityFilter):
         tags=["LearningPaths"],
     ),
 )
-class LearningPaths(TotalCountMixin, EntityViewSet):
+class LearningPaths(EntityViewSet):
     queryset = LearningPath.objects.all()
     serializer_class = LearningPathSerializerV1
     filterset_class = LearningPathFilter
