@@ -147,13 +147,6 @@ class BadgeInstances(EntityViewSet):
     ordering_fields = ["created_at", "recipient_identifier"]
     ordering = ["-created_at"]
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        badgeclass_param = self.request.query_params.get("badgeclass", None)
-        if badgeclass_param is not None:
-            return queryset.filter(badgeclass__slug=badgeclass_param)
-        return queryset
-
 
 @extend_schema_view(
     list=extend_schema(
