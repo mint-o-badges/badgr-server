@@ -291,14 +291,6 @@ class BadgePDFCreator:
         paragraph_height = 60
         self.used_space += qr_code_height + paragraph_height
 
-    def add_issuer_image(self, first_page_content, issuerImage):
-        image_width = 60
-        image_height = 60
-        first_page_content.append(
-            Image(issuerImage, width=image_width, height=image_height)
-        )
-        self.used_space += image_height
-
     # draw header with image of institution and a hr
     def header(self, canvas, doc, content, instituteName):
         canvas.saveState()
@@ -477,7 +469,7 @@ class BadgePDFCreator:
                     Story.append(Paragraph(text, text_style))
                     Story.append(Spacer(1, 30))
 
-                img = Image(badges[i].image, width=74, height=74)
+                img = image_file_to_image(badges[i].image, 74)
 
                 lp_badge_info_style = ParagraphStyle(
                     name="Text",
