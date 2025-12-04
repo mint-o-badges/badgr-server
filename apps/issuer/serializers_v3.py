@@ -19,10 +19,10 @@ class BaseRequestIframeSerializer(serializers.Serializer):
     lang = serializers.ChoiceField(choices=LANGUAGES, default="en")
 
 
-class RequestIframeSerializer(serializers.Serializer):
+class RequestIframeSerializer(BaseRequestIframeSerializer):
     email = serializers.CharField()
 
 
 class RequestIframeBadgeProcessSerializer(BaseRequestIframeSerializer):
-    issuer = serializers.CharField(allow_blank=True)
-    badge = serializers.CharField(allow_blank=True)
+    issuer = serializers.CharField(required=False, default=None)
+    badge = serializers.CharField(required=False, default=None)
