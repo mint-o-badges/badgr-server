@@ -187,6 +187,21 @@ class NetworkSerializerV1(BaseIssuerSerializerV1):
 
         return new_network
 
+    def update(self, instance, validated_data):
+        force_image_resize = False
+        instance.name = validated_data.get("name")
+        instance.country = validated_data.get("country")
+        instance.description = validated_data.get("description")
+        instance.url = validated_data.get("url")
+        instance.state = validated_data.get("state")
+
+        if "image" in validated_data:
+            instance.image = validated_data.get("image")
+            force_image_resize = True
+
+        instance.save(force_resize=force_image_resize)
+        return instance
+
     def to_representation(self, instance):
         representation = super(NetworkSerializerV1, self).to_representation(instance)
         representation["json"] = instance.get_json(
@@ -219,6 +234,10 @@ class NetworkSerializerV1(BaseIssuerSerializerV1):
         """Get user's role within this network (either direct or through partner issuer)"""
         direct_staff = network.cached_issuerstaff().filter(user=user).first()
         if direct_staff:
+            # direct owners of networks get a special role assigned
+            # that allows editing of some network properties
+            if direct_staff.role == "owner":
+                return "creator"
             return direct_staff.role
 
         for membership in network.memberships.all():

@@ -194,6 +194,10 @@ class NetworkDetail(BaseEntityDetailView):
     def get(self, request, **kwargs):
         return super(NetworkDetail, self).get(request, **kwargs)
 
+    @extend_schema(summary="Update a single Network", tags=["Issuer"])
+    def put(self, request, **kwargs):
+        return super(NetworkDetail, self).put(request, **kwargs)
+
 
 class NetworkUserIssuersList(BaseEntityListView):
     """
