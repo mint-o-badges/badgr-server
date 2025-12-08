@@ -744,7 +744,7 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
     allow_duplicate_awards = serializers.BooleanField(
         write_only=True, required=False, default=True
     )
-    hashed = serializers.NullBooleanField(default=None, required=False)
+    hashed = serializers.BooleanField(default=None, allow_null=True, required=False)
 
     extensions = serializers.DictField(
         source="extension_items", required=False, validators=[BadgeExtensionValidator()]

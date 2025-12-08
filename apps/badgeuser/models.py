@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.core.validators import URLValidator, RegexValidator
 from django.db import models, transaction
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from rest_framework.authtoken.models import Token
 
 from backpack.models import BackpackCollection
@@ -327,6 +327,8 @@ class BadgeUser(BaseVersionedEntity, AbstractUser, cachemodel.CacheModel):
 
     @cachemodel.cached_method(auto_publish=True)
     def cached_emails(self):
+        if not self.pk:
+            return []
         return CachedEmailAddress.objects.filter(user=self)
 
     @cachemodel.cached_method(auto_publish=True)

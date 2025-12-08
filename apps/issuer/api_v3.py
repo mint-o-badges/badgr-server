@@ -1,3 +1,4 @@
+import json
 from django.conf import settings
 from django.http import (
     HttpResponse,
@@ -12,6 +13,10 @@ from oauthlib.oauth2.rfc6749.tokens import random_token_generator
 from rest_framework import viewsets, permissions, serializers
 from rest_framework.response import Response
 
+from issuer.serializers_v3 import (
+    RequestIframeBadgeProcessSerializer,
+    RequestIframeSerializer,
+)
 from backpack.api import BackpackAssertionList
 from badgeuser.api import LearningPathList
 from drf_spectacular.utils import (
@@ -90,7 +95,7 @@ class BadgeFilter(EntityFilter):
         tags=["BadgeClasses"],
     ),
 )
-class Badges(EntityViewSet, TotalCountMixin):
+class Badges(TotalCountMixin, EntityViewSet):
     queryset = BadgeClass.objects.all()
     serializer_class = BadgeClassSerializerV1
     filterset_class = BadgeFilter
@@ -157,7 +162,7 @@ class BadgeTags(viewsets.ViewSet):
         tags=["Issuers"],
     ),
 )
-class Issuers(EntityViewSet, TotalCountMixin):
+class Issuers(TotalCountMixin, EntityViewSet):
     queryset = Issuer.objects.all()
     serializer_class = IssuerSerializerV1
 
@@ -200,7 +205,7 @@ class Issuers(EntityViewSet, TotalCountMixin):
         tags=["Networks"],
     ),
 )
-class Networks(EntityViewSet, TotalCountMixin):
+class Networks(TotalCountMixin, EntityViewSet):
     queryset = Issuer.objects.filter(is_network=True)
     serializer_class = NetworkSerializerV1
 
@@ -257,15 +262,15 @@ class LearningPathFilter(EntityFilter):
         tags=["LearningPaths"],
     ),
 )
-class LearningPaths(EntityViewSet, TotalCountMixin):
+class LearningPaths(TotalCountMixin, EntityViewSet):
     queryset = LearningPath.objects.all()
     serializer_class = LearningPathSerializerV1
     filterset_class = LearningPathFilter
 
 
 class RequestIframe(APIView):
-    # for easier in-browser testing
     def get(self, request, **kwargs):
+        # for easier in-browser testing
         if settings.DEBUG:
             request._request.POST = request.GET
             return self.post(request, **kwargs)
@@ -275,25 +280,27 @@ class RequestIframe(APIView):
     def post(self, request, **kwargs):
         return HttpResponse()
 
+    def get_badgeinstances_from_post(
+        self, request, serializer: RequestIframeSerializer
+    ):
+        if not request.user:
+            raise Exception("Request must contain a user")
 
-def get_badgeinstances_from_post(request):
-    try:
-        email = request.POST["email"]
-        emails = email.split(",")
-    except KeyError:
-        return HttpResponseBadRequest(b"Missing email parameter")
+        if not serializer.is_valid():
+            raise Exception("Serializer must be valid to obtain badge instances")
 
-    issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
-    if issuers.count == 0:
-        return HttpResponseForbidden()
+        emails = serializer.validated_data.get("email").split(",")
+        issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
+        if issuers.count == 0:
+            return HttpResponseForbidden()
 
-    instances = []
-    for issuer in issuers:
-        instances += BadgeInstance.objects.filter(
-            issuer=issuer, recipient_identifier__in=emails
-        )
+        instances = []
+        for issuer in issuers:
+            instances += BadgeInstance.objects.filter(
+                issuer=issuer, recipient_identifier__in=emails
+            )
 
-    return instances
+        return instances
 
 
 @extend_schema(exclude=True)
@@ -306,17 +313,16 @@ class LearnersProfile(RequestIframe):
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
     def post(self, request, **kwargs):
-        if not request.user:
-            return HttpResponseForbidden()
+        s = RequestIframeSerializer(data=request.data)
 
-        instances = get_badgeinstances_from_post(request)
+        if not s.is_valid():
+            return HttpResponseBadRequest(json.dumps(s.errors))
 
-        try:
-            language = request.POST["lang"]
-            assert language in ["de", "en"]
-        except (KeyError, AssertionError):
-            language = "en"
+        instances = self.get_badgeinstances_from_post(request, s)
+        if instances is HttpResponseForbidden:
+            return instances
 
+        language = s.validated_data.get("lang")
         tree = get_skills_tree(
             BackpackAssertionList().get_filtered_objects(instances, True, False, True),
             language,
@@ -341,17 +347,16 @@ class LearnersCompetencies(RequestIframe):
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
     def post(self, request, **kwargs):
-        if not request.user:
-            return HttpResponseForbidden()
+        s = RequestIframeSerializer(data=request.data)
 
-        instances = get_badgeinstances_from_post(request)
+        if not s.is_valid():
+            return HttpResponseBadRequest(json.dumps(s.errors))
 
-        try:
-            language = request.POST["lang"]
-            assert language in ["de", "en"]
-        except (KeyError, AssertionError):
-            language = "en"
+        instances = self.get_badgeinstances_from_post(request, s)
+        if instances is HttpResponseForbidden:
+            return instances
 
+        language = s.validated_data.get("lang")
         badge_serializer = BackpackAssertionList.v1_serializer_class()
         badge_serializer.context["format"] = "plain"
         iframe = IframeUrl.objects.create(
@@ -381,17 +386,16 @@ class LearnersBadges(RequestIframe):
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
     def post(self, request, **kwargs):
-        if not request.user:
-            return HttpResponseForbidden()
+        s = RequestIframeSerializer(data=request.data)
 
-        instances = get_badgeinstances_from_post(request)
+        if not s.is_valid():
+            return HttpResponseBadRequest(json.dumps(s.errors))
 
-        try:
-            language = request.POST["lang"]
-            assert language in ["de", "en"]
-        except (KeyError, AssertionError):
-            language = "en"
+        instances = self.get_badgeinstances_from_post(request, s)
+        if instances is HttpResponseForbidden:
+            return instances
 
+        language = s.validated_data.get("lang")
         badge_serializer = BackpackAssertionList.v1_serializer_class()
         badge_serializer.context["format"] = "plain"
         iframe = IframeUrl.objects.create(
@@ -421,10 +425,16 @@ class LearnersLearningPaths(RequestIframe):
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
     def post(self, request, **kwargs):
-        if not request.user:
-            return HttpResponseForbidden()
+        s = RequestIframeSerializer(data=request.data)
 
-        instances = get_badgeinstances_from_post(request)
+        if not s.is_valid():
+            return HttpResponseBadRequest(json.dumps(s.errors))
+
+        instances = self.get_badgeinstances_from_post(request, s)
+        if instances is HttpResponseForbidden:
+            return instances
+
+        language = s.validated_data.get("lang")
         badges = list(
             {
                 badgeinstance.badgeclass
@@ -436,12 +446,6 @@ class LearnersLearningPaths(RequestIframe):
         lps = LearningPath.objects.filter(
             activated=True, learningpathbadge__in=lp_badges
         ).distinct()
-
-        try:
-            language = request.POST["lang"]
-            assert language in ["de", "en"]
-        except (KeyError, AssertionError):
-            language = "en"
 
         iframe = IframeUrl.objects.create(
             name="learningpaths",
@@ -468,10 +472,16 @@ class LearnersBackpack(RequestIframe):
     valid_scopes = ["rw:issuer", "rw:issuer:*"]
 
     def post(self, request, **kwargs):
-        if not request.user:
-            return HttpResponseForbidden()
+        s = RequestIframeSerializer(data=request.data)
 
-        instances = get_badgeinstances_from_post(request)
+        if not s.is_valid():
+            return HttpResponseBadRequest(json.dumps(s.errors))
+
+        instances = self.get_badgeinstances_from_post(request, s)
+        if instances is HttpResponseForbidden:
+            return instances
+
+        language = s.validated_data.get("lang")
 
         badges = list(
             {
@@ -484,12 +494,6 @@ class LearnersBackpack(RequestIframe):
         lps = LearningPath.objects.filter(
             activated=True, learningpathbadge__in=lp_badges
         ).distinct()
-
-        try:
-            language = request.POST["lang"]
-            assert language in ["de", "en"]
-        except (KeyError, AssertionError):
-            language = "en"
 
         filtered_instances = BackpackAssertionList().get_filtered_objects(
             instances, True, False, True
@@ -527,14 +531,17 @@ class BadgeCreateEmbed(RequestIframe):
     valid_scopes = ["rw:issuer", "rw:issuer:*", "rw:profile"]
 
     def post(self, request, **kwargs):
-        try:
-            language = request.POST["lang"]
-            assert language in ["de", "en"]
-        except (KeyError, AssertionError):
-            language = "en"
+        if not request.user:
+            return HttpResponseForbidden()
+
+        s = RequestIframeBadgeProcessSerializer(data=request.data)
+
+        if not s.is_valid():
+            return HttpResponseBadRequest(json.dumps(s.errors))
+        language = s.validated_data.get("lang")
 
         try:
-            given_issuer = request.POST["issuer"]
+            given_issuer = s.validated_data.get("issuer")
             issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
             if (
                 issuers.count() == 0
@@ -542,7 +549,7 @@ class BadgeCreateEmbed(RequestIframe):
             ):
                 return HttpResponseForbidden()
             issuer = issuers.get(entity_id=given_issuer)
-        except KeyError:
+        except AttributeError:
             issuer = None
             pass
 
@@ -584,18 +591,21 @@ class BadgeEditEmbed(RequestIframe):
     valid_scopes = ["rw:issuer", "rw:issuer:*", "rw:profile"]
 
     def post(self, request, **kwargs):
-        try:
-            language = request.POST["lang"]
-            assert language in ["de", "en"]
-        except (KeyError, AssertionError):
-            language = "en"
+        if not request.user:
+            return HttpResponseForbidden()
+
+        s = RequestIframeBadgeProcessSerializer(data=request.data)
+
+        if not s.is_valid():
+            return HttpResponseBadRequest(json.dumps(s.errors))
+        language = s.validated_data.get("lang")
 
         issuers = Issuer.objects.filter(staff__id=request.user.id).distinct()
         if issuers.count() == 0:
             return HttpResponseForbidden()
 
         try:
-            badge_id = request.POST["badge"]
+            badge_id = s.validated_data.get("badge")
             badge = (
                 BadgeClass.objects.filter(
                     entity_id=badge_id, issuer__staff__id=request.user.id
