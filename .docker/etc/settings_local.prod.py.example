@@ -82,6 +82,7 @@ ALLOWED_HOSTS = ['*']
 STATIC_URL = HTTP_ORIGIN + '/static/'
 
 CSRF_COOKIE_DOMAIN = ''
+CSRF_TRUSTED_ORIGINS = []
 
 
 # Optionally restrict issuer creation to accounts that have the 'issuer.add_issuer' permission
