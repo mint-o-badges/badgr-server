@@ -237,7 +237,7 @@ class ImageComposer:
 
             if self.category == "participation":
                 frame_bottom_ratio = (
-                    0.85  # bottom frame border at approximately 87% of canvas height
+                    0.85  # bottom frame border at approximately 85% of canvas height
                 )
                 frame_bottom = int(self.CANVAS_SIZE[1] * frame_bottom_ratio)
                 bottom_y = frame_bottom - (network_image_size[1] // 2)
