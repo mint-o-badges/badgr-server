@@ -87,6 +87,7 @@ CORS_ORIGIN_WHITELIST = (
 )
 
 CSRF_COOKIE_DOMAIN = ''
+CSRF_TRUSTED_ORIGINS = []
 
 # Optionally restrict issuer creation to accounts that have the 'issuer.add_issuer' permission
 BADGR_APPROVED_ISSUERS_ONLY = False
