@@ -12,7 +12,6 @@ from django.core.files.storage import default_storage
 from django.conf import settings
 from django.core.validators import URLValidator
 from django.http import HttpResponse
-from django.http.request import HttpHeaders
 from django.utils import timezone
 from django.contrib.auth import logout
 from oauth2_provider.exceptions import OAuthToolkitError
@@ -612,9 +611,7 @@ class RevokeTokenView(OAuth2ProviderRevokeTokenView):
             request.POST["token"] = [access_token]
             request.POST._mutable = False
 
-            headers = dict(request.headers)
-            headers["Content-Length"] = str(len(request.body))
-            request.headers = HttpHeaders(headers)
+            request.META["CONTENT_LENGTH"] = str(len(request.body))
 
         response = super().post(request, *args, **kwargs)
         if response.status_code == 200:
