@@ -5,12 +5,36 @@ from badgeuser.models import UserPreference
 from entity.api_v3 import EntityFilter, EntityViewSet
 from issuer.permissions import BadgrOAuthTokenHasScope
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 
 
 class PreferencesFilter(EntityFilter):
     key = CharFilter(field_name="key", lookup_expr="iexact")
 
 
+@extend_schema_view(
+    retrieve=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="key",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.PATH,
+                description="The preference key",
+            )
+        ]
+    ),
+    destroy=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="key",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.PATH,
+                description="The preference key",
+            )
+        ]
+    ),
+)
 class Preferences(EntityViewSet):
     permission_classes = (
         AuthenticatedWithVerifiedIdentifier,
@@ -23,6 +47,8 @@ class Preferences(EntityViewSet):
     http_method_names = ["get", "head", "options", "post", "delete"]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return UserPreference.objects.none()
         return UserPreference.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):

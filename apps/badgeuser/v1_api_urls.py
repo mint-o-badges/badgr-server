@@ -1,7 +1,6 @@
 from django.conf.urls import url
 
 from badgeuser.api import (
-    BadgeRequestVerification,
     BadgeUserConfirmStaffRequest,
     BadgeUserSaveMicroDegree,
     BadgeUserStaffRequestDetail,
@@ -25,11 +24,6 @@ urlpatterns = [
         r"^forgot-password$",
         BadgeUserForgotPassword.as_view(),
         name="v1_api_auth_forgot_password",
-    ),
-    url(
-        r"^badge-request/verify$",
-        BadgeRequestVerification.as_view(),
-        name="v1_api_badge_request_verification",
     ),
     url(r"^emails$", BadgeUserEmailList.as_view(), name="v1_api_user_emails"),
     url(
