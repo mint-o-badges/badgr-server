@@ -17,7 +17,7 @@ from allauth.socialaccount.providers.oauth2.views import (
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client, OAuth2Error
 
 from django.core.exceptions import ImproperlyConfigured
-from django.utils import timezone
+import datetime
 from django.utils.http import urlencode
 
 from socialauth.providers.log_configuration import debug_requests
@@ -97,7 +97,9 @@ class IdTokenOAuth2Adapter(OAuth2Adapter):
             )
 
         social_token = SocialToken(token=data["id_token"])
-        social_token.expires_at = datetime.fromtimestamp(claims["iat"], tz=timezone.utc)
+        social_token.expires_at = datetime.fromtimestamp(
+            claims["iat"], tz=datetime.timezone.utc
+        )
         return social_token
 
     def complete_login(self, request, app, token, **kwargs):
