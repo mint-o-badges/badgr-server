@@ -17,7 +17,6 @@ from allauth.socialaccount.providers.oauth2.views import (
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client, OAuth2Error
 
 from django.core.exceptions import ImproperlyConfigured
-import datetime
 from django.utils.http import urlencode
 
 from socialauth.providers.log_configuration import debug_requests
