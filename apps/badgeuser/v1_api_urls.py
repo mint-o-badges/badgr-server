@@ -65,6 +65,11 @@ urlpatterns = [
         name="v1_api_user_get_redirect_path",
     ),
     re_path(
+        r"^issuerStaffRequests$",
+        BadgeUserStaffRequestList.as_view(),
+        name="v1_api_user_issuer_staff_requests_list",
+    ),
+    re_path(
         r"^issuerStaffRequest/issuer/(?P<issuer_id>[^/]+)$",
         BadgeUserStaffRequestList.as_view(),
         name="v1_api_user_issuer_staff_requests",
