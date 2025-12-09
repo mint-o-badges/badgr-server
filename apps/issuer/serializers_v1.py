@@ -440,6 +440,9 @@ class BadgeClassSerializerV1(
     image = ValidImageField(required=False)
     imageFrame = serializers.BooleanField(default=True, required=False)
     slug = StripTagsCharField(max_length=255, read_only=True, source="entity_id")
+    course_url = StripTagsCharField(
+        required=False, allow_blank=True, allow_null=True, validators=[URLValidator()]
+    )
     criteria = JSONField(required=False, allow_null=True)
     criteria_text = MarkdownCharField(required=False, allow_null=True, allow_blank=True)
     criteria_url = StripTagsCharField(
@@ -601,7 +604,7 @@ class BadgeClassSerializerV1(
             instance.tag_items = validated_data.get("tag_items")
 
             instance.expiration = validated_data.get("expiration", None)
-
+            instance.course_url = validated_data.get("course_url", "")
             instance.imageFrame = validated_data.get("imageFrame", True)
 
             instance.copy_permissions_list = validated_data.get(

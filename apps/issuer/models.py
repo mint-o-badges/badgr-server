@@ -1018,6 +1018,7 @@ class BadgeClass(
     # TODO: criteria_url and criteria_text are deprecated and should be removed once the migration to the criteria field was done
     criteria_url = models.CharField(max_length=254, blank=True, null=True, default=None)
     criteria_text = models.TextField(blank=True, null=True)
+    course_url = models.CharField(max_length=255, blank=True, null=True, default=None)
     expiration = models.IntegerField(
         blank=True,
         null=True,
