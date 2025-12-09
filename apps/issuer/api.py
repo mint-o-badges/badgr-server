@@ -190,11 +190,11 @@ class NetworkDetail(BaseEntityDetailView):
     ]
     valid_scopes = ["rw:issuer", "rw:issuer:*", "rw:serverAdmin"]
 
-    @extend_schema(summary="Get a single Network", tags=["Issuers"])
+    @extend_schema(summary="Get a single Network", tags=["Networks"])
     def get(self, request, **kwargs):
         return super(NetworkDetail, self).get(request, **kwargs)
 
-    @extend_schema(summary="Update a single Network", tags=["Issuer"])
+    @extend_schema(summary="Update a single Network", tags=["Network"])
     def put(self, request, **kwargs):
         return super(NetworkDetail, self).put(request, **kwargs)
 
