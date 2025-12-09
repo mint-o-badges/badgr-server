@@ -63,11 +63,9 @@ class BadgePDFCreator:
 
     def add_badge_image(self, first_page_content, badgeImage):
         image_width = 180
-        image_height = 180
-        first_page_content.append(
-            Image(badgeImage, width=image_width, height=image_height)
-        )
-        self.used_space += image_height
+        img = image_file_to_image(badgeImage, image_width=image_width)
+        first_page_content.append(img)
+        self.used_space += img.imageHeight if img is not None else 0
 
     def add_recipient_name(
         self,
@@ -293,14 +291,6 @@ class BadgePDFCreator:
         paragraph_height = 60
         self.used_space += qr_code_height + paragraph_height
 
-    def add_issuer_image(self, first_page_content, issuerImage):
-        image_width = 60
-        image_height = 60
-        first_page_content.append(
-            Image(issuerImage, width=image_width, height=image_height)
-        )
-        self.used_space += image_height
-
     # draw header with image of institution and a hr
     def header(self, canvas, doc, content, instituteName):
         canvas.saveState()
@@ -479,7 +469,7 @@ class BadgePDFCreator:
                     Story.append(Paragraph(text, text_style))
                     Story.append(Spacer(1, 30))
 
-                img = Image(badges[i].image, width=74, height=74)
+                img = image_file_to_image(badges[i].image, 74)
 
                 lp_badge_info_style = ParagraphStyle(
                     name="Text",
@@ -702,37 +692,7 @@ class BadgePDFCreator:
         )
 
         try:
-            file_ext = badge_instance.issuer.image.path.split(".")[-1].lower()
-            if file_ext == "svg":
-                storage = DefaultStorage()
-                bio = BytesIO()
-                file_path = badge_instance.issuer.image.name
-                try:
-                    with storage.open(file_path, "rb") as svg_file:
-                        cairosvg.svg2png(file_obj=svg_file, write_to=bio)
-                except IOError:
-                    raise ValueError(
-                        f"Failed to convert SVG to PNG: {badge_instance.issuer.image}"
-                    )
-
-                bio.seek(0)
-                dummy = Image(bio)
-                aspect = dummy.imageHeight / dummy.imageWidth
-                imageContent = Image(bio, width=80, height=80 * aspect)
-            elif file_ext in ["png", "jpg", "jpeg", "gif"]:
-                dummy = Image(badge_instance.issuer.image)
-                aspect = dummy.imageHeight / dummy.imageWidth
-                try:
-                    badge_instance.issuer.image.open()
-                    img_data = BytesIO(badge_instance.issuer.image.read())
-                    badge_instance.issuer.image.close()
-                    imageContent = Image(img_data, width=80, height=80 * aspect)
-                except Exception as e:
-                    print(
-                        f"Unexpected error for image {badge_instance.issuer.image}: {e}"
-                    )
-            else:
-                raise ValueError(f"Unsupported file type: {file_ext}")
+            imageContent = image_file_to_image(badge_instance.issuer.image)
         except Exception:
             imageContent = None
         template = PageTemplate(
@@ -978,3 +938,38 @@ class PageNumCanvas(canvas.Canvas):
         story = [paragraph_with_link]
         story[0].wrapOn(self, page_width - 20, 50)
         story[0].drawOn(self, 10, 40)
+
+
+def image_file_to_image(image, image_width=80):
+    file_ext = image.path.split(".")[-1].lower()
+    imageContent = None
+    if file_ext == "svg":
+        storage = DefaultStorage()
+        bio = BytesIO()
+        file_path = image.name
+        try:
+            with storage.open(file_path, "rb") as svg_file:
+                cairosvg.svg2png(file_obj=svg_file, write_to=bio, dpi=300, scale=4)
+        except IOError:
+            raise ValueError(f"Failed to convert SVG to PNG: {image}")
+
+        bio.seek(0)
+        dummy = Image(bio)
+        aspect = dummy.imageHeight / dummy.imageWidth
+        imageContent = Image(bio, width=image_width, height=image_width * aspect)
+    elif file_ext in ["png", "jpg", "jpeg", "gif"]:
+        dummy = Image(image)
+        aspect = dummy.imageHeight / dummy.imageWidth
+        try:
+            image.open()
+            img_data = BytesIO(image.read())
+            image.close()
+            imageContent = Image(
+                img_data, width=image_width, height=image_width * aspect
+            )
+        except Exception as e:
+            print(f"Unexpected error for image {image}: {e}")
+    else:
+        raise ValueError(f"Unsupported file type: {file_ext}")
+
+    return imageContent
