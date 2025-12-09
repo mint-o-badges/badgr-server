@@ -1001,11 +1001,19 @@ class BadgeUserStaffRequestList(BaseEntityListView):
         description="Get all staff requests created by the authenticated user",
         tags=["BadgeUser StaffRequests"],
     )
-    def get_objects(self, request, **kwargs):
-        return IssuerStaffRequest.objects.filter(
+    def get(self, request, issuer_id=None, **kwargs):
+        return super().get(request, **kwargs)
+
+    def get_objects(self, request, issuer_id=None, **kwargs):
+        queryset = IssuerStaffRequest.objects.filter(
             user=request.user,
             revoked=False,
         )
+
+        if issuer_id:
+            queryset = queryset.filter(issuer__entity_id=issuer_id)
+
+        return queryset
 
     @extend_schema(
         summary="Create a new issuer staff request",
