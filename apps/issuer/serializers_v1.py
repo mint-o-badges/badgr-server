@@ -151,7 +151,9 @@ class BaseIssuerSerializerV1(
 
     is_network = serializers.BooleanField(default=False)
 
-    linkedinId = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    linkedinId = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, default=""
+    )
 
     def get_fields(self):
         fields = super().get_fields()
