@@ -81,12 +81,14 @@ HTTP_ORIGIN = 'http://localhost:8000'
 ALLOWED_HOSTS = ['*']
 STATIC_URL = HTTP_ORIGIN + '/static/'
 
-CORS_ORIGIN_ALLOW_ALL = True
-CORS_ORIGIN_WHITELIST = (
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [
     'http://localhost:4200',
-)
+    'http://localhost:8000',
+]
 
 CSRF_COOKIE_DOMAIN = ''
+CSRF_TRUSTED_ORIGINS = []
 
 # Optionally restrict issuer creation to accounts that have the 'issuer.add_issuer' permission
 BADGR_APPROVED_ISSUERS_ONLY = False
