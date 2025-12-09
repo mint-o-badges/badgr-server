@@ -12,6 +12,9 @@ from oauth2_provider.models import AccessToken, Application
 from oauthlib.oauth2.rfc6749.tokens import random_token_generator
 from rest_framework import viewsets, permissions, serializers
 from rest_framework.response import Response
+from rest_framework.filters import OrderingFilter
+from rest_framework.pagination import LimitOffsetPagination
+
 
 from issuer.serializers_v3 import (
     RequestIframeBadgeProcessSerializer,
@@ -35,10 +38,15 @@ from issuer.permissions import (
     IsStaff,
 )
 from mainsite.permissions import AuthenticatedWithVerifiedIdentifier, IsServerAdmin
-from entity.api_v3 import EntityFilter, EntityViewSet, TagFilter, TotalCountMixin
+from entity.api_v3 import (
+    EntityFilter,
+    EntityViewSet,
+    TagFilter,
+)
 
 from .serializers_v1 import (
     BadgeClassSerializerV1,
+    BadgeInstanceSerializerV1,
     IssuerSerializerV1,
     LearningPathSerializerV1,
     NetworkSerializerV1,
@@ -49,12 +57,38 @@ from .models import (
     BadgeInstance,
     Issuer,
     LearningPath,
+    BadgeInstanceExtension,
     LearningPathBadge,
 )
+from django.db.models import Q
 
 
 class BadgeFilter(EntityFilter):
     tags = TagFilter(field_name="badgeclasstag__name", lookup_expr="icontains")
+
+
+class BadgeInstanceV3FilterSet(filters.FilterSet):
+    issuer = filters.CharFilter(field_name="issuer__entity_id", lookup_expr="exact")
+    badgeclass = filters.CharFilter(
+        field_name="badgeclass__entity_id", lookup_expr="exact"
+    )
+    recipient = filters.CharFilter(method="filter_recipient")
+
+    def filter_recipient(self, queryset, name, value):
+        if not value:
+            return queryset
+
+        matching_extensions = BadgeInstanceExtension.objects.filter(
+            name="extensions:recipientProfile", original_json__icontains=value
+        ).values_list("badgeinstance_id", flat=True)
+
+        return queryset.filter(
+            Q(recipient_identifier__icontains=value) | Q(pk__in=matching_extensions)
+        ).distinct()
+
+    class Meta:
+        model = BadgeInstance
+        fields = ["issuer", "badgeclass", "recipient"]
 
 
 @extend_schema_view(
@@ -95,7 +129,7 @@ class BadgeFilter(EntityFilter):
         tags=["BadgeClasses"],
     ),
 )
-class Badges(TotalCountMixin, EntityViewSet):
+class Badges(EntityViewSet):
     queryset = BadgeClass.objects.all()
     serializer_class = BadgeClassSerializerV1
     filterset_class = BadgeFilter
@@ -107,6 +141,16 @@ class Badges(TotalCountMixin, EntityViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         return queryset.distinct()
+
+
+class BadgeInstances(EntityViewSet):
+    queryset = BadgeInstance.objects.filter(revoked=False)
+    serializer_class = BadgeInstanceSerializerV1
+    pagination_class = LimitOffsetPagination
+    filter_backends = [filters.DjangoFilterBackend, OrderingFilter]
+    filterset_class = BadgeInstanceV3FilterSet
+    ordering_fields = ["created_at", "recipient_identifier"]
+    ordering = ["-created_at"]
 
 
 @extend_schema_view(
@@ -162,7 +206,7 @@ class BadgeTags(viewsets.ViewSet):
         tags=["Issuers"],
     ),
 )
-class Issuers(TotalCountMixin, EntityViewSet):
+class Issuers(EntityViewSet):
     queryset = Issuer.objects.all()
     serializer_class = IssuerSerializerV1
 
@@ -205,7 +249,7 @@ class Issuers(TotalCountMixin, EntityViewSet):
         tags=["Networks"],
     ),
 )
-class Networks(TotalCountMixin, EntityViewSet):
+class Networks(EntityViewSet):
     queryset = Issuer.objects.filter(is_network=True)
     serializer_class = NetworkSerializerV1
 
@@ -262,7 +306,7 @@ class LearningPathFilter(EntityFilter):
         tags=["LearningPaths"],
     ),
 )
-class LearningPaths(TotalCountMixin, EntityViewSet):
+class LearningPaths(EntityViewSet):
     queryset = LearningPath.objects.all()
     serializer_class = LearningPathSerializerV1
     filterset_class = LearningPathFilter
