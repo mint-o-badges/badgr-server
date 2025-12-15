@@ -14,6 +14,7 @@ from django.core.validators import URLValidator
 from django.http import HttpResponse
 from django.utils import timezone
 from django.contrib.auth import logout
+from django.contrib.auth.hashers import check_password
 from oauth2_provider.exceptions import OAuthToolkitError
 from oauth2_provider.models import (
     get_application_model,
@@ -677,7 +678,9 @@ class TokenView(OAuth2ProviderTokenView):
         if client_id:
             try:
                 oauth_app = Application.objects.get(client_id=client_id)
-                if client_secret and oauth_app.client_secret != client_secret:
+                if client_secret and not check_password(
+                    client_secret, oauth_app.client_secret
+                ):
                     return HttpResponse(
                         json.dumps({"error": "invalid client_secret"}),
                         status=HTTP_400_BAD_REQUEST,
