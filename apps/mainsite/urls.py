@@ -209,6 +209,8 @@ urlpatterns = [
     # Social Auth (oAuth2 and SAML)
     re_path(r"^account/", include("badgrsocialauth.urls")),
     # v1 API endpoints
+    # Dashboard endpoints
+    re_path(r"^v1/dashboard/overview/", include("dashboard.urls")),
     re_path(r"^v1/user/", include("badgeuser.v1_api_urls"), kwargs={"version": "v1"}),
     re_path(
         r"^v1/user/", include("badgrsocialauth.v1_api_urls"), kwargs={"version": "v1"}
