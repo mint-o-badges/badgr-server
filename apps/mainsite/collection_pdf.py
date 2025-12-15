@@ -19,7 +19,6 @@ from reportlab.platypus import (
     BaseDocTemplate,
     Flowable,
     Frame,
-    Image,
     PageBreak,
     PageTemplate,
     Paragraph,
@@ -27,6 +26,8 @@ from reportlab.platypus import (
     Table,
     TableStyle,
 )
+
+from apps.mainsite.badge_pdf import image_file_to_image
 
 font_path_rubik_regular = os.path.join(
     os.path.dirname(__file__), "static", "fonts", "Rubik-Regular.ttf"
@@ -355,8 +356,9 @@ class BadgeCard(Flowable):
         img_y = (self.height - img_size) / 2
         try:
             if self.image:
-                img = Image(self.image, width=img_size, height=img_size)
-                img.drawOn(self.canv, img_x, img_y)
+                img = image_file_to_image(self.image, math.ceil(img_size))
+                if img is not None:
+                    img.drawOn(self.canv, img_x, img_y)
         except Exception as e:
             print(e)
 
