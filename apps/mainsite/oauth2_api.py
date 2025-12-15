@@ -450,19 +450,26 @@ class PublicRegistrationSerializer(serializers.Serializer):
     def create(self, validated_data):
         app_model = get_application_model()
         user = self.context["request"].user
-        app = app_model.objects.create(
+        app = app_model(
             name=validated_data["name"],
             user=user,
             authorization_grant_type=app_model.GRANT_CLIENT_CREDENTIALS,
             client_type=Application.CLIENT_CONFIDENTIAL,
         )
-
+        # the client_secret is hashed once saved, to return it
+        # it has to be stored here
+        cleartext_client_secret = app.client_secret
+        app.save()
         app_info = ApplicationInfo(
             application=app,
             allowed_scopes=validated_data["applicationinfo"]["allowed_scopes"],
             issue_refresh_token="refresh_token" in validated_data.get("grant_types"),
         )
         app_info.save()
+
+        # rewrite client_secret (see above)
+        app.client_secret = cleartext_client_secret
+
         return app
 
     def to_representation(self, instance):
