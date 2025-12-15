@@ -14,6 +14,7 @@ from django.core.validators import URLValidator
 from django.http import HttpResponse
 from django.utils import timezone
 from django.contrib.auth import logout
+from django.contrib.auth.hashers import check_password
 from oauth2_provider.exceptions import OAuthToolkitError
 from oauth2_provider.models import (
     get_application_model,
@@ -450,19 +451,26 @@ class PublicRegistrationSerializer(serializers.Serializer):
     def create(self, validated_data):
         app_model = get_application_model()
         user = self.context["request"].user
-        app = app_model.objects.create(
+        app = app_model(
             name=validated_data["name"],
             user=user,
             authorization_grant_type=app_model.GRANT_CLIENT_CREDENTIALS,
             client_type=Application.CLIENT_CONFIDENTIAL,
         )
-
+        # the client_secret is hashed once saved, to return it
+        # it has to be stored here
+        cleartext_client_secret = app.client_secret
+        app.save()
         app_info = ApplicationInfo(
             application=app,
             allowed_scopes=validated_data["applicationinfo"]["allowed_scopes"],
             issue_refresh_token="refresh_token" in validated_data.get("grant_types"),
         )
         app_info.save()
+
+        # rewrite client_secret (see above)
+        app.client_secret = cleartext_client_secret
+
         return app
 
     def to_representation(self, instance):
@@ -670,7 +678,9 @@ class TokenView(OAuth2ProviderTokenView):
         if client_id:
             try:
                 oauth_app = Application.objects.get(client_id=client_id)
-                if client_secret and oauth_app.client_secret != client_secret:
+                if client_secret and not check_password(
+                    client_secret, oauth_app.client_secret
+                ):
                     return HttpResponse(
                         json.dumps({"error": "invalid client_secret"}),
                         status=HTTP_400_BAD_REQUEST,
