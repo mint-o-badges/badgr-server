@@ -939,6 +939,8 @@ class QrCodeSerializerV1(serializers.Serializer):
         required=False, allow_null=True, default_timezone=pytz.utc
     )
 
+    evidence_items = EvidenceItemSerializer(many=True, required=False)
+
     def create(self, validated_data, **kwargs):
         title = validated_data.get("title")
         createdBy = validated_data.get("createdBy")
@@ -979,6 +981,7 @@ class QrCodeSerializerV1(serializers.Serializer):
             activity_city=validated_data.get("activity_city", None),
             activity_zip=validated_data.get("activity_zip", None),
             activity_online=validated_data.get("activity_online", False),
+            evidence_items=validated_data.get("evidence_items", []),
             notifications=notifications,
         )
 
@@ -1001,6 +1004,8 @@ class QrCodeSerializerV1(serializers.Serializer):
             instance.activity_city = validated_data["activity_city"]
         if "activity_online" in validated_data:
             instance.activity_online = validated_data["activity_online"]
+        if "evidence_items" in validated_data:
+            instance.evidence_items = validated_data["evidence_items"]
         instance.notifications = validated_data.get(
             "notifications", instance.notifications
         )
