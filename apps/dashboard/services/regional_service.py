@@ -2,7 +2,7 @@ import csv
 import os
 import logging
 from typing import List, Optional
-from django.conf import settings
+from mainsite import TOP_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ class RegionalService:
         """
         Get or create the singleton instance of RegionalService.
         Loads CSV data on first instantiation.
-        
+
         Returns:
             RegionalService: The singleton instance
         """
@@ -50,10 +50,7 @@ class RegionalService:
         self._plz_to_ort = {}  # Maps full PLZ -> Ort (city name)
         self._ort_to_plz = {}  # Maps Ort (city name) -> Set of PLZ
 
-        csv_path = os.path.join(
-            settings.TOP_DIR,
-            'PLZ_Ort_Landkreis_Bundesland_Mapping_DE.csv'
-        )
+        csv_path = os.path.join(TOP_DIR, "mediafiles", "dashboard", "ger_city_zipcode_mapping.csv")
 
         try:
             if not os.path.exists(csv_path):
