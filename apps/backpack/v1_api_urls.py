@@ -1,4 +1,4 @@
-from django.conf.urls import url
+from django.urls import re_path
 
 from backpack.api import (
     BackpackAssertionList,
@@ -21,70 +21,70 @@ from backpack.api_v1 import (
 from backpack.views import collectionPdf, pdf
 
 urlpatterns = [
-    url(
+    re_path(
         r"^badges$",
         BackpackAssertionList.as_view(),
         name="v1_api_localbadgeinstance_list",
     ),
-    url(
+    re_path(
         r"^badges/(?P<slug>[^/]+)$",
         BackpackAssertionDetail.as_view(),
         name="v1_api_localbadgeinstance_detail",
     ),
-    url(
+    re_path(
         r"^badges/(?P<slug>[^/]+)/image$",
         BackpackAssertionDetailImage.as_view(),
         name="v1_api_localbadgeinstance_image",
     ),
-    url(r"^skills$", BackpackSkillList.as_view(), name="v1_api_skills_list"),
-    url(
+    re_path(r"^skills$", BackpackSkillList.as_view(), name="v1_api_skills_list"),
+    re_path(
         r"^collections$",
         BackpackCollectionList.as_view(),
         name="v1_api_collection_list",
     ),
-    url(
+    re_path(
         r"^collections/(?P<slug>[-\w]+)$",
         BackpackCollectionDetail.as_view(),
         name="v1_api_collection_detail",
     ),
     # legacy v1 endpoints
-    url(
+    re_path(
         r"^collections/(?P<slug>[-\w]+)/badges$",
         CollectionLocalBadgeInstanceList.as_view(),
         name="v1_api_collection_badges",
     ),
-    url(
+    re_path(
         r"^collections/(?P<collection_slug>[-\w]+)/badges/(?P<slug>[^/]+)$",
         CollectionLocalBadgeInstanceDetail.as_view(),
         name="v1_api_collection_localbadgeinstance_detail",
     ),
-    url(
+    re_path(
         r"^collections/(?P<slug>[-\w]+)/share$",
         CollectionGenerateShare.as_view(),
         name="v1_api_collection_generate_share",
     ),
-    url(
+    re_path(
         r"^share/badge/(?P<slug>[^/]+)$",
         ShareBackpackAssertion.as_view(),
         name="v1_api_analytics_share_badge",
     ),
-    url(
+    re_path(
         r"^share/collection/(?P<slug>[^/]+)$",
         ShareBackpackCollection.as_view(),
         name="v1_api_analytics_share_collection",
     ),
-    url(r"^badges/pdf/(?P<slug>[^/]+)$", pdf, name="generate-pdf"),
-    url(
+    re_path(r"^badges/pdf/(?P<slug>[^/]+)$", pdf, name="generate-pdf"),
+    re_path(
         r"^collections/pdf/(?P<slug>[^/]+)$",
         collectionPdf,
         name="generate-collection-pdf",
     ),
-    url(
+    re_path(
         r"^imported-badges$",
         ImportedBadgeInstanceList.as_view(),
         name="v1_api_importedbadge_list",
     ),
-    url(
+    re_path(
         r"^imported-badges/(?P<entity_id>[^/]+)$",
         ImportedBadgeInstanceDetail.as_view(),
         name="v1_api_importedbadge_detail",
