@@ -941,6 +941,9 @@ class QrCodeSerializerV1(serializers.Serializer):
     expires_at = DateTimeWithUtcZAtEndField(
         required=False, allow_null=True, default_timezone=pytz.utc
     )
+    course_url = StripTagsCharField(
+        required=False, allow_blank=True, allow_null=True, validators=[URLValidator()]
+    )
 
     def create(self, validated_data, **kwargs):
         title = validated_data.get("title")
@@ -983,6 +986,7 @@ class QrCodeSerializerV1(serializers.Serializer):
             activity_zip=validated_data.get("activity_zip", None),
             activity_online=validated_data.get("activity_online", False),
             notifications=notifications,
+            course_url=validated_data.get("course_url", ""),
         )
 
         return new_qrcode
@@ -1007,6 +1011,8 @@ class QrCodeSerializerV1(serializers.Serializer):
         instance.notifications = validated_data.get(
             "notifications", instance.notifications
         )
+        if "course_url" in validated_data:
+            instance.course_url = validated_data["course_url"]
         instance.save()
         return instance
 

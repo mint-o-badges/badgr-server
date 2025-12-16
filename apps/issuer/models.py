@@ -1664,6 +1664,7 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
     )
 
     image = models.FileField(upload_to="uploads/badges", blank=True)
+    course_url = models.CharField(max_length=255, blank=True, null=True, default=None)
 
     # slug has been deprecated for now, but preserve existing values
     slug = models.CharField(
@@ -2883,6 +2884,8 @@ class QrCode(BaseVersionedEntity):
     activity_zip = models.CharField(max_length=255, null=True, blank=True)
     activity_city = models.CharField(max_length=255, null=True, blank=True)
     activity_online = models.BooleanField(blank=True, null=False, default=False)
+
+    course_url = models.CharField(max_length=255, blank=True, null=True, default=None)
 
     valid_from = models.DateTimeField(blank=True, null=True, default=None)
 

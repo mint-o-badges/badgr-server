@@ -417,7 +417,9 @@ class BadgeInstanceSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixin)
     allowDuplicateAwards = serializers.BooleanField(
         write_only=True, required=False, default=True
     )
-
+    course_url = StripTagsCharField(
+        required=False, allow_blank=True, allow_null=True, validators=[URLValidator()]
+    )
     extensions = serializers.DictField(
         source="extension_items", required=False, validators=[BadgeExtensionValidator()]
     )
@@ -446,6 +448,7 @@ class BadgeInstanceSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixin)
             "narrative",
             "recipient_identifier",
             "recipient_type",
+            "course_url",
         ]
 
         for field_name in updateable_fields:
