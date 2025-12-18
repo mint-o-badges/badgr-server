@@ -727,7 +727,9 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
     )
     narrative = MarkdownCharField(required=False, allow_blank=True, allow_null=True)
     evidence_items = EvidenceItemSerializer(many=True, required=False)
-
+    course_url = StripTagsCharField(
+        required=False, allow_blank=True, allow_null=True, validators=[URLValidator()]
+    )
     revoked = HumanReadableBooleanField(read_only=True)
     revocation_reason = serializers.CharField(read_only=True)
 
@@ -887,6 +889,7 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
                 activity_online=validated_data.get("activity_online", False),
                 extensions=validated_data.get("extension_items", None),
                 issuerSlug=issuer_slug,
+                course_url=validated_data.get("course_url", ""),
             )
         except DjangoValidationError as e:
             raise serializers.ValidationError(e.message)
@@ -900,6 +903,7 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
             "narrative",
             "recipient_identifier",
             "recipient_type",
+            "course_url",
         ]
 
         for field_name in updateable_fields:

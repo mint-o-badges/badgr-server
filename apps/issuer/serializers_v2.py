@@ -201,7 +201,9 @@ class BadgeClassSerializerV2(DetailSerializerV2, OriginalJsonSerializerMixin):
     name = StripTagsCharField(max_length=1024)
     image = ValidImageField(required=False, use_public=True, source="*")
     description = StripTagsCharField(max_length=16384, required=True, convert_null=True)
-
+    course_url = StripTagsCharField(
+        required=False, allow_blank=True, allow_null=True, validators=[URLValidator()]
+    )
     criteriaUrl = StripTagsCharField(
         source="criteria_url",
         required=False,

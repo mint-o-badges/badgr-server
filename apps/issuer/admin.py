@@ -562,6 +562,7 @@ class BadgeInstanceAdmin(DjangoObjectActions, ModelAdmin):
                     "activity_zip",
                     "activity_city",
                     "activity_online",
+                    "course_url",
                     "narrative",
                 )
             },

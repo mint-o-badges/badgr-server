@@ -1285,6 +1285,7 @@ class BadgeClass(
         activity_zip=None,
         activity_city=None,
         activity_online=False,
+        course_url="",
         **kwargs,
     ):
         return BadgeInstance.objects.create(
@@ -1305,6 +1306,7 @@ class BadgeClass(
             activity_zip=activity_zip,
             activity_city=activity_city,
             activity_online=activity_online,
+            course_url=course_url,
             **kwargs,
         )
 
