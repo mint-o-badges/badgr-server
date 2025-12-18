@@ -60,11 +60,18 @@ from .models import (
     BadgeInstanceExtension,
     LearningPathBadge,
 )
-from django.db.models import Q
+from django.db.models import Q, Count
 
 
 class BadgeFilter(EntityFilter):
     tags = TagFilter(field_name="badgeclasstag__name", lookup_expr="icontains")
+
+
+class IssuerFilter(EntityFilter):
+    category = filters.CharFilter(
+        field_name="category",
+        lookup_expr="icontains",
+    )
 
 
 class BadgeInstanceV3FilterSet(filters.FilterSet):
@@ -209,6 +216,15 @@ class BadgeTags(viewsets.ViewSet):
 class Issuers(EntityViewSet):
     queryset = Issuer.objects.all()
     serializer_class = IssuerSerializerV1
+    filterset_class = IssuerFilter
+
+    ordering_fields = ["name", "created_at", "badge_count"]
+    ordering = ["-badge_count"]
+
+    def get_queryset(self):
+        return Issuer.objects.all().annotate(
+            badge_count=Count("badgeclasses", distinct=True)
+        )
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
