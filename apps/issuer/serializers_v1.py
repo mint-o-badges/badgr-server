@@ -659,6 +659,10 @@ class BadgeClassSerializerV1(
         logger.info("CREATE NEW BADGECLASS")
         logger.debug(validated_data)
 
+        tags = validated_data.pop("tag_items", [])
+        alignments = validated_data.pop("alignment_items", [])
+        extension_data = validated_data.pop("extension_items", [])
+
         with transaction.atomic():
             if "image" not in validated_data:
                 raise serializers.ValidationError({"image": ["This field is required"]})
@@ -668,15 +672,20 @@ class BadgeClassSerializerV1(
 
             new_badgeclass = BadgeClass.objects.create(**validated_data)
 
-            extensions = new_badgeclass.cached_extensions()
+            new_badgeclass.tag_items = tags
+
+            new_badgeclass.alignment_items = alignments
+
+            new_badgeclass.extension_items = extension_data
 
             if new_badgeclass.imageFrame:
                 try:
-                    categoryExtension = extensions.get(
+                    saved_extensions = new_badgeclass.cached_extensions()
+                    categoryExtension = saved_extensions.get(
                         name="extensions:CategoryExtension"
                     )
                     category = json.loads(categoryExtension.original_json)["Category"]
-                    orgImage = extensions.get(name="extensions:OrgImageExtension")
+                    orgImage = saved_extensions.get(name="extensions:OrgImageExtension")
                     original_image = json.loads(orgImage.original_json)["OrgImage"]
                 except BadgeClassExtension.DoesNotExist as e:
                     raise serializers.ValidationError({"extensions": str(e)})
