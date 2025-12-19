@@ -2923,6 +2923,8 @@ class QrCode(BaseVersionedEntity):
 
     expires_at = models.DateTimeField(blank=True, null=True, default=None)
 
+    evidence_items = JSONField(default=list, blank=True)
+
     notifications = models.BooleanField(null=False, default=False)
 
 
