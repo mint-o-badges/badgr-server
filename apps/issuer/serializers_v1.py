@@ -461,6 +461,9 @@ class BadgeClassSerializerV1(
     image = ValidImageField(required=False)
     imageFrame = serializers.BooleanField(default=True, required=False)
     slug = StripTagsCharField(max_length=255, read_only=True, source="entity_id")
+    course_url = StripTagsCharField(
+        required=False, allow_blank=True, allow_null=True, validators=[URLValidator()]
+    )
     criteria = JSONField(required=False, allow_null=True)
     criteria_text = MarkdownCharField(required=False, allow_null=True, allow_blank=True)
     criteria_url = StripTagsCharField(
@@ -622,7 +625,7 @@ class BadgeClassSerializerV1(
             instance.tag_items = validated_data.get("tag_items")
 
             instance.expiration = validated_data.get("expiration", None)
-
+            instance.course_url = validated_data.get("course_url", "")
             instance.imageFrame = validated_data.get("imageFrame", True)
 
             instance.copy_permissions_list = validated_data.get(
@@ -745,7 +748,9 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
     )
     narrative = MarkdownCharField(required=False, allow_blank=True, allow_null=True)
     evidence_items = EvidenceItemSerializer(many=True, required=False)
-
+    course_url = StripTagsCharField(
+        required=False, allow_blank=True, allow_null=True, validators=[URLValidator()]
+    )
     revoked = HumanReadableBooleanField(read_only=True)
     revocation_reason = serializers.CharField(read_only=True)
 
@@ -905,6 +910,7 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
                 activity_online=validated_data.get("activity_online", False),
                 extensions=validated_data.get("extension_items", None),
                 issuerSlug=issuer_slug,
+                course_url=validated_data.get("course_url", ""),
             )
         except DjangoValidationError as e:
             raise serializers.ValidationError(e.message)
@@ -918,6 +924,7 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
             "narrative",
             "recipient_identifier",
             "recipient_type",
+            "course_url",
         ]
 
         for field_name in updateable_fields:
@@ -958,6 +965,9 @@ class QrCodeSerializerV1(serializers.Serializer):
     )
     expires_at = DateTimeWithUtcZAtEndField(
         required=False, allow_null=True, default_timezone=pytz.utc
+    )
+    course_url = StripTagsCharField(
+        required=False, allow_blank=True, allow_null=True, validators=[URLValidator()]
     )
 
     def create(self, validated_data, **kwargs):
@@ -1001,6 +1011,7 @@ class QrCodeSerializerV1(serializers.Serializer):
             activity_zip=validated_data.get("activity_zip", None),
             activity_online=validated_data.get("activity_online", False),
             notifications=notifications,
+            course_url=validated_data.get("course_url", ""),
         )
 
         return new_qrcode
@@ -1025,6 +1036,8 @@ class QrCodeSerializerV1(serializers.Serializer):
         instance.notifications = validated_data.get(
             "notifications", instance.notifications
         )
+        if "course_url" in validated_data:
+            instance.course_url = validated_data["course_url"]
         instance.save()
         return instance
 
