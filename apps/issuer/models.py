@@ -2145,6 +2145,36 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             if expand_badgeclass:
                 json["badge"] = self.cached_badgeclass.get_json(obi_version=obi_version)
                 json["badge"]["slug"] = self.cached_badgeclass.entity_id
+                networkShare = self.cached_badgeclass.network_shares.filter(
+                    is_active=True
+                ).first()
+                if networkShare:
+                    network = networkShare.network
+                    json["badge"]["sharedOnNetwork"] = {
+                        "slug": network.entity_id,
+                        "name": network.name,
+                        "image": network.image.url,
+                        "description": network.description,
+                    }
+                else:
+                    json["badge"]["sharedOnNetwork"] = None
+
+                json["badge"]["isNetworkBadge"] = (
+                    self.cached_badgeclass.cached_issuer.is_network
+                    and json["badge"]["sharedOnNetwork"] is None
+                )
+
+                if json["badge"]["isNetworkBadge"]:
+                    json["badge"]["networkName"] = (
+                        self.cached_badgeclass.cached_issuer.name
+                    )
+                    json["badge"]["networkImage"] = (
+                        self.cached_badgeclass.cached_issuer.image.url
+                    )
+                else:
+                    json["badge"]["networkImage"] = None
+                    json["badge"]["networkName"] = None
+
                 if expand_issuer:
                     json["badge"]["issuer"] = self.cached_issuer.get_json(
                         obi_version=obi_version
