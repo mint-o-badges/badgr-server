@@ -95,7 +95,11 @@ class BadgePDFCreator:
 
         text_style = ParagraphStyle(name="Text_Style", fontSize=18, alignment=TA_CENTER)
 
-        if activityStartDate and activityEndDate:
+        if (
+            activityStartDate
+            and activityEndDate
+            and activityStartDate != activityEndDate
+        ):
             if activityStartDate.year == activityEndDate.year:
                 date_text = (
                     f"<strong>{activityStartDate.strftime('%d.%m.')}"
