@@ -151,7 +151,9 @@ class BaseIssuerSerializerV1(
 
     is_network = serializers.BooleanField(default=False)
 
-    linkedinId = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    linkedinId = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, default=""
+    )
 
     def get_fields(self):
         fields = super().get_fields()
@@ -187,6 +189,21 @@ class NetworkSerializerV1(BaseIssuerSerializerV1):
 
         return new_network
 
+    def update(self, instance, validated_data):
+        force_image_resize = False
+        instance.name = validated_data.get("name")
+        instance.country = validated_data.get("country")
+        instance.description = validated_data.get("description")
+        instance.url = validated_data.get("url")
+        instance.state = validated_data.get("state")
+
+        if "image" in validated_data:
+            instance.image = validated_data.get("image")
+            force_image_resize = True
+
+        instance.save(force_resize=force_image_resize)
+        return instance
+
     def to_representation(self, instance):
         representation = super(NetworkSerializerV1, self).to_representation(instance)
         representation["json"] = instance.get_json(
@@ -219,6 +236,10 @@ class NetworkSerializerV1(BaseIssuerSerializerV1):
         """Get user's role within this network (either direct or through partner issuer)"""
         direct_staff = network.cached_issuerstaff().filter(user=user).first()
         if direct_staff:
+            # direct owners of networks get a special role assigned
+            # that allows editing of some network properties
+            if direct_staff.role == "owner":
+                return "creator"
             return direct_staff.role
 
         for membership in network.memberships.all():
@@ -638,6 +659,10 @@ class BadgeClassSerializerV1(
         logger.info("CREATE NEW BADGECLASS")
         logger.debug(validated_data)
 
+        tags = validated_data.pop("tag_items", [])
+        alignments = validated_data.pop("alignment_items", [])
+        extension_data = validated_data.pop("extension_items", [])
+
         with transaction.atomic():
             if "image" not in validated_data:
                 raise serializers.ValidationError({"image": ["This field is required"]})
@@ -647,15 +672,20 @@ class BadgeClassSerializerV1(
 
             new_badgeclass = BadgeClass.objects.create(**validated_data)
 
-            extensions = new_badgeclass.cached_extensions()
+            new_badgeclass.tag_items = tags
+
+            new_badgeclass.alignment_items = alignments
+
+            new_badgeclass.extension_items = extension_data
 
             if new_badgeclass.imageFrame:
                 try:
-                    categoryExtension = extensions.get(
+                    saved_extensions = new_badgeclass.cached_extensions()
+                    categoryExtension = saved_extensions.get(
                         name="extensions:CategoryExtension"
                     )
                     category = json.loads(categoryExtension.original_json)["Category"]
-                    orgImage = extensions.get(name="extensions:OrgImageExtension")
+                    orgImage = saved_extensions.get(name="extensions:OrgImageExtension")
                     original_image = json.loads(orgImage.original_json)["OrgImage"]
                 except BadgeClassExtension.DoesNotExist as e:
                     raise serializers.ValidationError({"extensions": str(e)})
