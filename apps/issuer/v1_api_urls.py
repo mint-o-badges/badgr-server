@@ -183,7 +183,7 @@ urlpatterns = [
         LearningPathDetail.as_view(),
         name="v1_api_learningpath_detail",
     ),
-    url(
+    re_path(
         r"^issuers/(?P<issuerSlug>[^/]+)/learningpath/(?P<slug>[^/]+)/archive$",
         LearningPathArchive.as_view(),
         name="v1_api_learningpath_archive",
