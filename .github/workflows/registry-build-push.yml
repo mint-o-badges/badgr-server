@@ -27,7 +27,7 @@ jobs:
 
         steps:
             - name: ⬇️ Checkout repository
-              uses: actions/checkout@v5
+              uses: actions/checkout@v6
 
             - name: 🏄 Copy default env vars
               run: cp .docker/etc/settings_local.prod.py.example .docker/etc/settings_local.py
@@ -41,7 +41,7 @@ jobs:
 
             - name: 📋 Extract metadata (tags, labels) for Docker
               id: meta
-              uses: docker/metadata-action@v5.9.0
+              uses: docker/metadata-action@v5.10.0
               with:
                   images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
                   flavor: |

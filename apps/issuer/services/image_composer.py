@@ -1,3 +1,4 @@
+from math import ceil
 from PIL import Image
 import cairosvg
 import io
@@ -28,20 +29,30 @@ class ImageComposer:
     def get_canvas_size(self, category):
         return self.CANVAS_SIZES.get(category, self.DEFAULT_CANVAS_SIZE)
 
-    def compose_badge_from_uploaded_image(self, image, issuerImage, networkImage):
+    def compose_badge_from_uploaded_image(
+        self, image, issuerImage, networkImage, draw_frame=True
+    ):
         """
         Compose badge image with issuer logo from image upload
         """
         try:
+            if not draw_frame:
+                # return original image untouched
+                if isinstance(image, str) and image.startswith("data:image/"):
+                    return image
+                else:
+                    return f"data:image/png;base64,{image}"
+
             canvas = Image.new("RGBA", self.CANVAS_SIZE, (255, 255, 255, 0))
 
             ### Frame ###
-            shape_image = self._get_colored_shape_svg()
-            if shape_image:
-                # Center the frame on the canvas
-                frame_x = (self.CANVAS_SIZE[0] - shape_image.width) // 2
-                frame_y = (self.CANVAS_SIZE[1] - shape_image.height) // 2
-                canvas.paste(shape_image, (frame_x, frame_y), shape_image)
+            if draw_frame:
+                shape_image = self._get_colored_shape_svg()
+                if shape_image:
+                    # Center the frame on the canvas
+                    frame_x = (self.CANVAS_SIZE[0] - shape_image.width) // 2
+                    frame_y = (self.CANVAS_SIZE[1] - shape_image.height) // 2
+                    canvas.paste(shape_image, (frame_x, frame_y), shape_image)
 
             ### badge image ###
             badge_img = self._prepare_uploaded_image(image)
@@ -50,11 +61,12 @@ class ImageComposer:
                 y = (self.CANVAS_SIZE[1] - badge_img.height) // 2
                 canvas.paste(badge_img, (x, y), badge_img)
 
-            if issuerImage:
-                canvas = self._add_issuer_logo(canvas, self.category, issuerImage)
+            if draw_frame:
+                if issuerImage:
+                    canvas = self._add_issuer_logo(canvas, self.category, issuerImage)
 
-            if networkImage:
-                canvas = self._add_network_logo(canvas, networkImage)
+                if networkImage:
+                    canvas = self._add_network_logo(canvas, networkImage)
 
             return self._get_image_as_base64(canvas)
 
@@ -87,7 +99,11 @@ class ImageComposer:
                 else:
                     image_bytes = base64.b64decode(image_data)
 
-                img = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
+                if header.startswith("data:image/svg"):
+                    png_bytes = cairosvg.svg2png(bytestring=image_bytes)
+                    img = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
+                else:
+                    img = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
 
             else:
                 raise ValueError("Expected base64 string for image data")
@@ -106,6 +122,7 @@ class ImageComposer:
             result = Image.new("RGBA", target_size, (0, 0, 0, 0))
             x = (target_size[0] - img.width) // 2
             y = (target_size[1] - img.height) // 2
+
             result.paste(img, (x, y), img)
 
             return result
@@ -183,8 +200,10 @@ class ImageComposer:
                 frame_resized = frame_image.resize(logo_size, Image.Resampling.LANCZOS)
                 canvas.paste(frame_resized, (logo_x, frame_y), frame_resized)
 
-            PADDING_RATIO = 4 / 34  # Figma: 4px padding in 34px frame
-            PADDING = int(round(logo_size[0] * PADDING_RATIO))
+            PADDING_RATIO = (
+                12 / 96
+            )  # Figma: 8px + 4px (inside the white) padding in 96px frame
+            PADDING = int(ceil(logo_size[0] * PADDING_RATIO))
 
             inner_size = (
                 logo_size[0] - PADDING * 2,
@@ -212,14 +231,18 @@ class ImageComposer:
             scale_factor = self.CANVAS_SIZE[0] / base_canvas_size
 
             network_image_size = (
-                int(160 * scale_factor),
+                int(224 * scale_factor),
                 int(96 * scale_factor),
             )
 
             if self.category == "participation":
                 frame_bottom_ratio = (
-                    0.87  # bottom frame border at approximately 87% of canvas height
+                    0.85  # bottom frame border at approximately 85% of canvas height
                 )
+                frame_bottom = int(self.CANVAS_SIZE[1] * frame_bottom_ratio)
+                bottom_y = frame_bottom - (network_image_size[1] // 2)
+            elif self.category == "competency":
+                frame_bottom_ratio = 0.89
                 frame_bottom = int(self.CANVAS_SIZE[1] * frame_bottom_ratio)
                 bottom_y = frame_bottom - (network_image_size[1] // 2)
             else:
@@ -234,7 +257,7 @@ class ImageComposer:
                 )
                 canvas.paste(frame_resized, (bottom_x, bottom_y), frame_resized)
 
-            border_padding = int(4 * scale_factor)
+            border_padding = int(8 * scale_factor)
 
             inner_size = (
                 network_image_size[0] - border_padding * 2,
@@ -261,20 +284,21 @@ class ImageComposer:
 
     def _create_network_logo_with_text(self, network_img, frame_inner_size):
         """
-        Create the 'TEIL VON' + network logo composite inside the inner rectangle frame.
+        Create the 'NETWORK PARTNER' + network logo composite inside the inner rectangle frame.
         """
         from PIL import Image, ImageDraw, ImageFont
 
         composite = Image.new("RGBA", frame_inner_size, (0, 0, 0, 0))
         draw = ImageDraw.Draw(composite)
 
-        figma_inner_width = 56.561
-        figma_inner_height = 31.561
-        figma_logo_size = 23.561
-        figma_font_size = 5.2259
-        figma_gap = 2
+        figma_inner_width = 208
+        figma_inner_height = 80
+        figma_logo_size = 72
+        figma_font_size = 26
+        figma_gap = 8
+        logo_padding = (figma_inner_height - figma_logo_size) // 2
 
-        text_color = (50, 50, 50, 255)  # #323232
+        text_color = (255, 255, 255, 255)  # white
 
         # Use the smaller scale to ensure everything fits
         scale = min(
@@ -288,18 +312,6 @@ class ImageComposer:
         )  # Minimum 8px for readability
         gap = int(round(figma_gap * scale))
 
-        font_path = finders.find("fonts/Rubik-SemiBold.ttf")
-        try:
-            font = ImageFont.truetype(font_path, font_size)
-        except Exception:
-            font = ImageFont.load_default()
-
-        text = "TEIL VON"
-        text_bbox = draw.textbbox((0, 0), text, font=font)
-        text_width = text_bbox[2] - text_bbox[0]
-        text_height = text_bbox[3] - text_bbox[1]
-        text_offset_y = -text_bbox[1]  # Offset to align text baseline properly
-
         network_img = self._trim_transparency(network_img)
 
         aspect = network_img.width / network_img.height
@@ -309,17 +321,31 @@ class ImageComposer:
             (logo_width, logo_height), Image.Resampling.LANCZOS
         )
 
-        total_content_width = text_width + gap + logo_width
+        font_path_regular = finders.find("fonts/Rubik-Regular.ttf")
+        font_path_bold = finders.find("fonts/Rubik-SemiBold.ttf")
+        try:
+            font = ImageFont.truetype(font_path_regular, font_size)
+            font_bold = ImageFont.truetype(font_path_bold, font_size)
+        except Exception:
+            font = ImageFont.load_default()
+            font_bold = ImageFont.load_default()
 
-        start_x = (frame_inner_size[0] - total_content_width) // 2
+        text = "NETWORK"
+        text2 = "\nPARTNER"
+        text_bbox = draw.textbbox((0, 0), text, font=font)
+        text_height = text_bbox[3] - text_bbox[1]
+        text_offset_y = (
+            -text_bbox[1] * 2 + 2
+        )  # Offset to align text baseline properly + line spacing
 
-        text_x = start_x
-        text_y = (frame_inner_size[1] - text_height) // 2 + text_offset_y
+        logo_x = int(logo_padding * scale)
+        logo_y = int(logo_padding * scale)
 
-        logo_x = start_x + text_width + gap
-        logo_y = (frame_inner_size[1] - logo_height) // 2
+        text_x = gap + logo_width + logo_padding * 2
+        text_y = (frame_inner_size[1] - text_height * 2) // 2 + text_offset_y
 
         draw.text((text_x, text_y), text, fill=text_color, font=font)
+        draw.text((text_x, text_y), text2, fill=text_color, font=font_bold)
         composite.paste(network_img, (logo_x, logo_y), network_img)
 
         return composite

@@ -34,6 +34,7 @@ from reportlab.platypus import (
     Spacer,
     Table,
     TableStyle,
+    KeepInFrame,
 )
 
 font_path_rubik_regular = os.path.join(
@@ -62,11 +63,9 @@ class BadgePDFCreator:
 
     def add_badge_image(self, first_page_content, badgeImage):
         image_width = 180
-        image_height = 180
-        first_page_content.append(
-            Image(badgeImage, width=image_width, height=image_height)
-        )
-        self.used_space += image_height
+        img = image_file_to_image(badgeImage, image_width=image_width)
+        first_page_content.append(img)
+        self.used_space += img.imageHeight if img is not None else 0
 
     def add_recipient_name(
         self,
@@ -96,7 +95,11 @@ class BadgePDFCreator:
 
         text_style = ParagraphStyle(name="Text_Style", fontSize=18, alignment=TA_CENTER)
 
-        if activityStartDate and activityEndDate:
+        if (
+            activityStartDate
+            and activityEndDate
+            and activityStartDate != activityEndDate
+        ):
             if activityStartDate.year == activityEndDate.year:
                 date_text = (
                     f"<strong>{activityStartDate.strftime('%d.%m.')}"
@@ -131,20 +134,40 @@ class BadgePDFCreator:
         self.used_space += 43  # spacer and paragraph
 
     def add_title(self, first_page_content, badge_class_name):
+        document_width, _ = A4
+        line_height = 30
         title_style = ParagraphStyle(
             name="Title",
             fontSize=20,
             textColor="#492E98",
             fontName="Rubik-Bold",
-            leading=30,
+            leading=line_height,
             alignment=TA_CENTER,
         )
         first_page_content.append(Spacer(1, 10))
-        first_page_content.append(
-            Paragraph(f"<strong>{badge_class_name}</strong>", title_style)
-        )
+
+        title = badge_class_name
+        width = document_width - 40
+        max_h = line_height * 2
+        p = Paragraph(f"<strong>{title}</strong>", title_style)
+        p.wrap(width, max_h)
+        if len(p.blPara.lines) <= 2:
+            first_page_content.append(KeepInFrame(width, max_h, [p]))
+        else:
+            ellipsis = "\u2026"
+            words = title.split()
+            while words:
+                trial = " ".join(words) + ellipsis
+                p = Paragraph(f"<strong>{trial}</strong>", title_style)
+                p.wrap(width, max_h)
+                if len(p.blPara.lines) <= 2:
+                    first_page_content.append(KeepInFrame(width, max_h, [p]))
+                    break
+                words.pop()
         first_page_content.append(Spacer(1, 15))
-        self.used_space += 55  # Two spacers and paragraph
+        self.used_space += (
+            len(p.blPara.lines) * line_height + 25
+        )  # badge class name and spaces
 
     def truncate_text(text, max_words=70):
         words = text.split()
@@ -157,7 +180,7 @@ class BadgePDFCreator:
         line_char_count = 79
         line_height = 16.5
         num_lines = math.ceil(len(text) / line_char_count)
-        spacer_height = 175 - (num_lines - 1) * line_height
+        spacer_height = 160 - (num_lines - 1) * line_height
         spacer_height = max(spacer_height, 0)
         first_page_content.append(Spacer(1, spacer_height))
         self.used_space += spacer_height
@@ -177,29 +200,6 @@ class BadgePDFCreator:
         line_height = 16.5
         num_lines = math.ceil(len(description) / line_char_count)
         self.used_space += num_lines * line_height
-
-    def add_narrative(self, first_page_content, narrative):
-        if narrative is not None:
-            first_page_content.append(Spacer(1, 10))
-            self.used_space += 10
-
-            narrative_style = ParagraphStyle(
-                name="Narrative",
-                fontName="Rubik-Italic",
-                fontSize=12,
-                textColor="#6B6B6B",
-                leading=16.5,
-                alignment=TA_CENTER,
-                leftIndent=20,
-                rightIndent=20,
-            )
-            narrative = narrative[:280] + "..." if len(narrative) > 280 else narrative
-            first_page_content.append(Paragraph(narrative, narrative_style))
-
-            line_char_count = 79
-            line_height = 16.5
-            num_lines = math.ceil(len(narrative) / line_char_count)
-            self.used_space += num_lines * line_height
 
     def add_issued_by(self, first_page_content, issued_by, qrCodeImage=None):
         issued_by_style = ParagraphStyle(
@@ -271,14 +271,6 @@ class BadgePDFCreator:
 
         paragraph_height = 60
         self.used_space += qr_code_height + paragraph_height
-
-    def add_issuer_image(self, first_page_content, issuerImage):
-        image_width = 60
-        image_height = 60
-        first_page_content.append(
-            Image(issuerImage, width=image_width, height=image_height)
-        )
-        self.used_space += image_height
 
     # draw header with image of institution and a hr
     def header(self, canvas, doc, content, instituteName):
@@ -458,7 +450,7 @@ class BadgePDFCreator:
                     Story.append(Paragraph(text, text_style))
                     Story.append(Spacer(1, 30))
 
-                img = Image(badges[i].image, width=74, height=74)
+                img = image_file_to_image(badges[i].image, 74)
 
                 lp_badge_info_style = ParagraphStyle(
                     name="Text",
@@ -553,7 +545,7 @@ class BadgePDFCreator:
             criteria_space = 15 + 18  # criteria name line height + spacing
 
             # Check if adding criteria would exceed the page
-            if self.used_space + criteria_space > 750:
+            if self.used_space + criteria_space > 680:
                 Story.append(PageBreak())
                 Story.append(Spacer(1, 70))
 
@@ -591,6 +583,113 @@ class BadgePDFCreator:
         Story.append(Spacer(1, 15))
         self.used_space += 15
 
+    def add_evidence(self, Story, evidence_items, narrative, category):
+        """
+        Adds the evidence section to the Story
+
+        evidence_items: list of dicts from JSONField
+        narrative: string (same for all list items)
+        category: badge category
+        """
+
+        if not evidence_items and not narrative:
+            return
+
+        title_style = ParagraphStyle(
+            name="EvidenceTitle",
+            fontSize=20,
+            fontName="Rubik-Medium",
+            textColor="#492E98",
+            alignment=TA_LEFT,
+            textTransform="uppercase",
+        )
+
+        narrative_style = ParagraphStyle(
+            name="Narrative",
+            fontSize=16,
+            leading=18,
+            textColor="#323232",
+            alignment=TA_LEFT,
+        )
+
+        linknote_style = ParagraphStyle(
+            name="LinkNote",
+            fontSize=12,
+            leading=17,
+            textColor="#323232",
+            alignment=TA_LEFT,
+        )
+
+        space_needed = 0
+        title_height = 20 + 15  # font size + spacer
+        space_needed += title_height
+
+        has_evidence_url = any(item.evidence_url for item in (evidence_items or []))
+        if has_evidence_url:
+            space_needed += 10 + 16 + 10  # spacer + icon + spacer
+
+        narratives = [
+            item.narrative for item in (evidence_items or []) if item.narrative
+        ]
+        if narrative or narratives:
+            narrative_text = narratives[0] if narratives else narrative
+            line_char_count = 79
+            line_height = 18
+            num_lines = math.ceil(len(narrative_text) / line_char_count)
+            narrative_height = num_lines * line_height + 15
+            space_needed += narrative_height
+
+        # some top spacing before section
+        space_needed += 30
+
+        if self.used_space + space_needed > 680 or category == "participation":
+            Story.append(PageBreak())
+            Story.append(Spacer(1, 70))
+            self.used_space = 70  # reset used space with header
+        else:
+            self.used_space += 30  # top spacer
+
+        Story.append(Paragraph("Narrativ", title_style))
+        Story.append(Spacer(1, 15))
+        self.used_space += 35  # title + spacer
+
+        if has_evidence_url:
+            Story.append(Spacer(1, 10))
+            icon_path = os.path.join(settings.STATIC_URL, "images/external_link.png")
+            icon_img = Image(icon_path, width=16, height=16)
+
+            t = Table(
+                [
+                    [
+                        icon_img,
+                        Paragraph(
+                            "Auf der Badge-Detail-Seite ist ein Link zum Nachweis hinterlegt (s. QR-Code, Seite 1).",
+                            linknote_style,
+                        ),
+                    ]
+                ],
+                colWidths=[20, 475],
+            )
+            t.setStyle(
+                TableStyle(
+                    [
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                    ]
+                )
+            )
+            Story.append(t)
+            Story.append(Spacer(1, 10))
+            self.used_space += 40
+
+        if narrative or narratives:
+            narrative_text = narratives[0] if narratives else narrative
+            Story.append(Paragraph(narrative_text, narrative_style))
+            Story.append(Spacer(1, 15))
+            self.used_space += narrative_height
+
     def generate_pdf(self, badge_instance, badge_class, origin):
         buffer = BytesIO()
         competencies = badge_class.json["extensions:CompetencyExtension"]
@@ -620,13 +719,7 @@ class BadgePDFCreator:
         self.add_badge_image(first_page_content, badge_instance.image)
         self.add_title(first_page_content, badge_class.name)
         self.add_description(first_page_content, badge_class.description)
-        self.add_narrative(first_page_content, badge_instance.narrative)
-        narrative = badge_instance.narrative
-        if narrative:
-            narrative = narrative[:280] + "..." if len(narrative) > 280 else narrative
-        self.add_dynamic_spacer(
-            first_page_content, (badge_class.description or "") + (narrative or "")
-        )
+        self.add_dynamic_spacer(first_page_content, (badge_class.description or ""))
         self.add_issued_by(
             first_page_content,
             badge_class.issuer.name,
@@ -675,43 +768,19 @@ class BadgePDFCreator:
             self.used_space = 0  # Reset used_space for competencies page
             self.add_competencies(Story, competencies, name, badge_class.name)
             self.add_criteria(Story, criteria)
+            self.add_evidence(
+                Story,
+                evidence_items=badge_instance.evidence_items,
+                narrative=badge_instance.narrative,
+                category=category,
+            )
 
         frame = Frame(
             doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id="normal"
         )
 
         try:
-            file_ext = badge_instance.issuer.image.path.split(".")[-1].lower()
-            if file_ext == "svg":
-                storage = DefaultStorage()
-                bio = BytesIO()
-                file_path = badge_instance.issuer.image.name
-                try:
-                    with storage.open(file_path, "rb") as svg_file:
-                        cairosvg.svg2png(file_obj=svg_file, write_to=bio)
-                except IOError:
-                    raise ValueError(
-                        f"Failed to convert SVG to PNG: {badge_instance.issuer.image}"
-                    )
-
-                bio.seek(0)
-                dummy = Image(bio)
-                aspect = dummy.imageHeight / dummy.imageWidth
-                imageContent = Image(bio, width=80, height=80 * aspect)
-            elif file_ext in ["png", "jpg", "jpeg", "gif"]:
-                dummy = Image(badge_instance.issuer.image)
-                aspect = dummy.imageHeight / dummy.imageWidth
-                try:
-                    badge_instance.issuer.image.open()
-                    img_data = BytesIO(badge_instance.issuer.image.read())
-                    badge_instance.issuer.image.close()
-                    imageContent = Image(img_data, width=80, height=80 * aspect)
-                except Exception as e:
-                    print(
-                        f"Unexpected error for image {badge_instance.issuer.image}: {e}"
-                    )
-            else:
-                raise ValueError(f"Unsupported file type: {file_ext}")
+            imageContent = image_file_to_image(badge_instance.issuer.image)
         except Exception:
             imageContent = None
         template = PageTemplate(
@@ -957,3 +1026,38 @@ class PageNumCanvas(canvas.Canvas):
         story = [paragraph_with_link]
         story[0].wrapOn(self, page_width - 20, 50)
         story[0].drawOn(self, 10, 40)
+
+
+def image_file_to_image(image, image_width=80):
+    file_ext = image.path.split(".")[-1].lower()
+    imageContent = None
+    if file_ext == "svg":
+        storage = DefaultStorage()
+        bio = BytesIO()
+        file_path = image.name
+        try:
+            with storage.open(file_path, "rb") as svg_file:
+                cairosvg.svg2png(file_obj=svg_file, write_to=bio, dpi=300, scale=4)
+        except IOError:
+            raise ValueError(f"Failed to convert SVG to PNG: {image}")
+
+        bio.seek(0)
+        dummy = Image(bio)
+        aspect = dummy.imageHeight / dummy.imageWidth
+        imageContent = Image(bio, width=image_width, height=image_width * aspect)
+    elif file_ext in ["png", "jpg", "jpeg", "gif"]:
+        dummy = Image(image)
+        aspect = dummy.imageHeight / dummy.imageWidth
+        try:
+            image.open()
+            img_data = BytesIO(image.read())
+            image.close()
+            imageContent = Image(
+                img_data, width=image_width, height=image_width * aspect
+            )
+        except Exception as e:
+            print(f"Unexpected error for image {image}: {e}")
+    else:
+        raise ValueError(f"Unsupported file type: {file_ext}")
+
+    return imageContent

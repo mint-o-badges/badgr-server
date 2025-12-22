@@ -133,15 +133,11 @@ class OpenBadgesContextCache(BaseCache):
         if response.status_code == 200:
             cache.set(
                 self.OPEN_BADGE_CONTEXT_CACHE_KEY,
-                {
-                    "keys_map": self.session.cache.keys_map.copy(),  # FIXME: breaks with requests-cache 0.6.0
-                    "response": self.session.cache.responses.copy(),  # FIXME: breaks with requests-cache 0.6.0
-                },
+                {"response": self.session.cache.responses},
                 timeout=self.FORTY_EIGHT_HOURS_IN_SECONDS,
             )
 
     def _intialize_instance_attributes(self, cached):
-        self.keys_map = cached.get("keys_map", None)
         self.responses = cached.get("response", None)
 
 

@@ -20,13 +20,13 @@ jobs:
 
         steps:
             - name: ⬇️ Checkout code
-              uses: actions/checkout@v5
+              uses: actions/checkout@v6
 
             - name: ©️ Copy container settings
               run: cp ./.docker/etc/settings_local.dev.py.example ./.docker/etc/settings_local.dev.py
 
             - name: 🐳 Set up Docker Compose
-              uses: hoverkraft-tech/compose-action@v2.4.1
+              uses: hoverkraft-tech/compose-action@v2.4.2
               with:
                   compose-file: docker-compose.debug.yml
                   up-flags: "--build -d"
@@ -44,7 +44,7 @@ jobs:
 
         steps:
             - name: ⬇️ Checkout code
-              uses: actions/checkout@v5
+              uses: actions/checkout@v6
 
             - name: 👟 Run ruff
               uses: astral-sh/ruff-action@v3

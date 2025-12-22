@@ -176,6 +176,29 @@ class NetworkList(BaseEntityListView):
         return super(NetworkList, self).post(request, **kwargs)
 
 
+class NetworkDetail(BaseEntityDetailView):
+    model = Issuer
+    v1_serializer_class = NetworkSerializerV1
+    permission_classes = [
+        IsServerAdmin
+        | (
+            AuthenticatedWithVerifiedIdentifier
+            & IsEditorButOwnerForDelete
+            & BadgrOAuthTokenHasScope
+        )
+        | BadgrOAuthTokenHasEntityScope
+    ]
+    valid_scopes = ["rw:issuer", "rw:issuer:*", "rw:serverAdmin"]
+
+    @extend_schema(summary="Get a single Network", tags=["Networks"])
+    def get(self, request, **kwargs):
+        return super(NetworkDetail, self).get(request, **kwargs)
+
+    @extend_schema(summary="Update a single Network", tags=["Network"])
+    def put(self, request, **kwargs):
+        return super(NetworkDetail, self).put(request, **kwargs)
+
+
 class NetworkUserIssuersList(BaseEntityListView):
     """
     List of issuers within a specific network that the authenticated user is a member in
@@ -693,37 +716,62 @@ class BadgeClassDetail(BaseEntityDetailView):
         return super(BadgeClassDetail, self).put(request, **kwargs)
 
 
-@shared_task
+@shared_task(bind=True)
 def process_batch_assertions(
-    assertions, user_id, badgeclass_id, issuerSlug, create_notification=False
+    self, assertions, user_id, badgeclass_id, issuerSlug, create_notification=False
 ):
     try:
         User = get_user_model()
         user = User.objects.get(id=user_id)
         badgeclass = BadgeClass.objects.get(id=badgeclass_id)
 
-        # Update assertions with create_notification
-        assertions = [
-            {**assertion, "create_notification": create_notification}
-            for assertion in assertions
-        ]
+        total = len(assertions)
 
-        context = {"badgeclass": badgeclass, "user": user, "issuerSlug": issuerSlug}
-        serializer = BadgeInstanceSerializerV1(
-            many=True, data=assertions, context=context
-        )
-        if not serializer.is_valid():
-            return {
-                "success": False,
-                "status": status.HTTP_400_BAD_REQUEST,
-                "errors": serializer.errors,
-            }
+        processed = 0
+        successful = []
+        errors = []
 
-        serializer.save(created_by=user)
+        for assertion in assertions:
+            assertion["create_notification"] = create_notification
+
+            serializer = BadgeInstanceSerializerV1(
+                data=assertion,
+                context={
+                    "badgeclass": badgeclass,
+                    "user": user,
+                    "issuerSlug": issuerSlug,
+                },
+            )
+
+            if serializer.is_valid():
+                try:
+                    instance = serializer.save(created_by=user)
+                    successful.append(BadgeInstanceSerializerV1(instance).data)
+                except Exception as e:
+                    errors.append({"assertion": assertion, "error": str(e)})
+            else:
+                errors.append({"assertion": assertion, "error": serializer.errors})
+
+            processed += 1
+
+            # Emit progress after each iteration
+            self.update_state(
+                state="PROGRESS",
+                meta={
+                    "processed": processed,
+                    "total": total,
+                    "data": successful,
+                    "errors": errors,
+                },
+            )
+
         return {
-            "success": True,
-            "status": status.HTTP_201_CREATED,
-            "data": serializer.data,
+            "success": len(errors) == 0,
+            "status": status.HTTP_201_CREATED
+            if len(errors) == 0
+            else status.HTTP_207_MULTI_STATUS,
+            "data": successful,
+            "errors": errors,
         }
 
     except Exception as e:
@@ -769,16 +817,14 @@ class BatchAssertionsIssue(VersionedObjectMixin, BaseEntityView):
         ],
     )
     def get(self, request, task_id, **kwargs):
-        task_result = AsyncResult(task_id)
-        result = task_result.result if task_result.ready() else None
-
-        if result and not result.get("success"):
-            return Response(
-                result, status=result.get("status", status.HTTP_400_BAD_REQUEST)
-            )
+        task = AsyncResult(task_id)
 
         return Response(
-            {"task_id": task_id, "status": task_result.status, "result": result}
+            {
+                "task_id": task_id,
+                "status": task.status,
+                "result": task.info,
+            }
         )
 
     @extend_schema(
@@ -2305,7 +2351,7 @@ class BadgeImageComposition(APIView):
                     network_image = shared_network.network.image
 
             image_url = composer.compose_badge_from_uploaded_image(
-                original_image, issuer_image, network_image
+                original_image, issuer_image, network_image, draw_frame=badge.imageFrame
             )
 
             if not image_url:

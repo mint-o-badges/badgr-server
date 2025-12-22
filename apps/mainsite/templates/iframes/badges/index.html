@@ -1,0 +1,34 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-beasties-container>
+    <head>
+        <meta charset="utf-8" />
+        <title>Open Educational Badges Learners Badges</title>
+        <link rel="stylesheet"
+              href="{{ asset_path }}oeb-earned-badges-overview/styles.css"
+              media="print"
+              onload="this.media='all'" />
+        <noscript>
+            <link rel="stylesheet"
+                  href="{{ asset_path }}oeb-earned-badges-overview/styles.css" />
+        </noscript>
+        <script>
+            window.OEBWebComponentSettings = {
+                language: "{{ language }}",
+            };
+        </script>
+    </head>
+    <body>
+        <oeb-earned-badges-overview id="badges" baseurl="{{ asset_path }}oeb-earned-badges-overview/" />
+        <script src="{{ asset_path }}oeb-earned-badges-overview/polyfills.js"
+                type="module"></script>
+        <script src="{{ asset_path }}oeb-earned-badges-overview/main.js"
+                type="module"></script>
+        <script type="text/javascript">
+            document.addEventListener("DOMContentLoaded", () => {
+                const badges = JSON.parse("{{ badges_json | escapejs }}");
+                document.getElementById("badges").badges = badges;
+            });
+        </script>
+    </body>
+</html>

@@ -179,6 +179,8 @@ class BaseOpenBadgeObjectModel(OriginalJsonMixin, cachemodel.CacheModel):
 
     @cachemodel.cached_method(auto_publish=True)
     def cached_extensions(self):
+        if not self.pk:
+            return []
         return self.get_extensions_manager().all()
 
     @property
@@ -1016,6 +1018,7 @@ class BadgeClass(
     # TODO: criteria_url and criteria_text are deprecated and should be removed once the migration to the criteria field was done
     criteria_url = models.CharField(max_length=254, blank=True, null=True, default=None)
     criteria_text = models.TextField(blank=True, null=True)
+    course_url = models.CharField(max_length=255, blank=True, null=True, default=None)
     expiration = models.IntegerField(
         blank=True,
         null=True,
@@ -1065,14 +1068,18 @@ class BadgeClass(
             )
 
     def generate_badge_image(
-        self, category, badge_image, issuer_image=None, network_image=None
+        self,
+        category,
+        badge_image,
+        issuer_image=None,
+        network_image=None,
     ):
         """Generate composed badge image from original image"""
 
         composer = ImageComposer(category=category)
 
         image_b64 = composer.compose_badge_from_uploaded_image(
-            badge_image, issuer_image, network_image
+            badge_image, issuer_image, network_image, draw_frame=self.imageFrame
         )
 
         if not image_b64:
@@ -1278,6 +1285,7 @@ class BadgeClass(
         activity_zip=None,
         activity_city=None,
         activity_online=False,
+        course_url="",
         **kwargs,
     ):
         return BadgeInstance.objects.create(
@@ -1298,6 +1306,7 @@ class BadgeClass(
             activity_zip=activity_zip,
             activity_city=activity_city,
             activity_online=activity_online,
+            course_url=course_url,
             **kwargs,
         )
 
@@ -1657,6 +1666,7 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
     )
 
     image = models.FileField(upload_to="uploads/badges", blank=True)
+    course_url = models.CharField(max_length=255, blank=True, null=True, default=None)
 
     # slug has been deprecated for now, but preserve existing values
     slug = models.CharField(
@@ -1717,7 +1727,9 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
     ob_json_3_0 = models.TextField(blank=True, null=True, default=None)
 
     class Meta:
-        index_together = (("recipient_identifier", "badgeclass", "revoked"),)
+        indexes = [
+            models.Index(fields=["recipient_identifier", "badgeclass", "revoked"])
+        ]
 
     @property
     def extended_json(self):
@@ -2142,6 +2154,36 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             if expand_badgeclass:
                 json["badge"] = self.cached_badgeclass.get_json(obi_version=obi_version)
                 json["badge"]["slug"] = self.cached_badgeclass.entity_id
+                networkShare = self.cached_badgeclass.network_shares.filter(
+                    is_active=True
+                ).first()
+                if networkShare:
+                    network = networkShare.network
+                    json["badge"]["sharedOnNetwork"] = {
+                        "slug": network.entity_id,
+                        "name": network.name,
+                        "image": network.image.url,
+                        "description": network.description,
+                    }
+                else:
+                    json["badge"]["sharedOnNetwork"] = None
+
+                json["badge"]["isNetworkBadge"] = (
+                    self.cached_badgeclass.cached_issuer.is_network
+                    and json["badge"]["sharedOnNetwork"] is None
+                )
+
+                if json["badge"]["isNetworkBadge"]:
+                    json["badge"]["networkName"] = (
+                        self.cached_badgeclass.cached_issuer.name
+                    )
+                    json["badge"]["networkImage"] = (
+                        self.cached_badgeclass.cached_issuer.image.url
+                    )
+                else:
+                    json["badge"]["networkImage"] = None
+                    json["badge"]["networkName"] = None
+
                 if expand_issuer:
                     json["badge"]["issuer"] = self.cached_issuer.get_json(
                         obi_version=obi_version
@@ -2489,6 +2531,8 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
 
     @cachemodel.cached_method(auto_publish=True)
     def cached_evidence(self):
+        if not self.pk:
+            return []
         return self.badgeinstanceevidence_set.all()
 
     @property
@@ -2595,9 +2639,6 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
     def generate_assertion_image(self, issuer_image=None, network_image=None):
         """Generate composed assertion image"""
 
-        if not self.badgeclass.imageFrame:
-            return
-
         extensions = self.badgeclass.cached_extensions()
         categoryExtension = extensions.get(name="extensions:CategoryExtension")
         category = json_loads(categoryExtension.original_json)["Category"]
@@ -2607,7 +2648,10 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
         composer = ImageComposer(category=category)
 
         image_b64 = composer.compose_badge_from_uploaded_image(
-            original_image, issuer_image, network_image
+            original_image,
+            issuer_image,
+            network_image,
+            draw_frame=self.badgeclass.imageFrame,
         )
 
         if not image_b64:
@@ -2882,9 +2926,13 @@ class QrCode(BaseVersionedEntity):
     activity_city = models.CharField(max_length=255, null=True, blank=True)
     activity_online = models.BooleanField(blank=True, null=False, default=False)
 
+    course_url = models.CharField(max_length=255, blank=True, null=True, default=None)
+
     valid_from = models.DateTimeField(blank=True, null=True, default=None)
 
     expires_at = models.DateTimeField(blank=True, null=True, default=None)
+
+    evidence_items = JSONField(default=list, blank=True)
 
     notifications = models.BooleanField(null=False, default=False)
 

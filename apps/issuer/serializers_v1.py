@@ -151,7 +151,9 @@ class BaseIssuerSerializerV1(
 
     is_network = serializers.BooleanField(default=False)
 
-    linkedinId = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    linkedinId = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, default=""
+    )
 
     def get_fields(self):
         fields = super().get_fields()
@@ -187,6 +189,21 @@ class NetworkSerializerV1(BaseIssuerSerializerV1):
 
         return new_network
 
+    def update(self, instance, validated_data):
+        force_image_resize = False
+        instance.name = validated_data.get("name")
+        instance.country = validated_data.get("country")
+        instance.description = validated_data.get("description")
+        instance.url = validated_data.get("url")
+        instance.state = validated_data.get("state")
+
+        if "image" in validated_data:
+            instance.image = validated_data.get("image")
+            force_image_resize = True
+
+        instance.save(force_resize=force_image_resize)
+        return instance
+
     def to_representation(self, instance):
         representation = super(NetworkSerializerV1, self).to_representation(instance)
         representation["json"] = instance.get_json(
@@ -219,6 +236,10 @@ class NetworkSerializerV1(BaseIssuerSerializerV1):
         """Get user's role within this network (either direct or through partner issuer)"""
         direct_staff = network.cached_issuerstaff().filter(user=user).first()
         if direct_staff:
+            # direct owners of networks get a special role assigned
+            # that allows editing of some network properties
+            if direct_staff.role == "owner":
+                return "creator"
             return direct_staff.role
 
         for membership in network.memberships.all():
@@ -440,6 +461,9 @@ class BadgeClassSerializerV1(
     image = ValidImageField(required=False)
     imageFrame = serializers.BooleanField(default=True, required=False)
     slug = StripTagsCharField(max_length=255, read_only=True, source="entity_id")
+    course_url = StripTagsCharField(
+        required=False, allow_blank=True, allow_null=True, validators=[URLValidator()]
+    )
     criteria = JSONField(required=False, allow_null=True)
     criteria_text = MarkdownCharField(required=False, allow_null=True, allow_blank=True)
     criteria_url = StripTagsCharField(
@@ -601,7 +625,7 @@ class BadgeClassSerializerV1(
             instance.tag_items = validated_data.get("tag_items")
 
             instance.expiration = validated_data.get("expiration", None)
-
+            instance.course_url = validated_data.get("course_url", "")
             instance.imageFrame = validated_data.get("imageFrame", True)
 
             instance.copy_permissions_list = validated_data.get(
@@ -638,6 +662,10 @@ class BadgeClassSerializerV1(
         logger.info("CREATE NEW BADGECLASS")
         logger.debug(validated_data)
 
+        tags = validated_data.pop("tag_items", [])
+        alignments = validated_data.pop("alignment_items", [])
+        extension_data = validated_data.pop("extension_items", [])
+
         with transaction.atomic():
             if "image" not in validated_data:
                 raise serializers.ValidationError({"image": ["This field is required"]})
@@ -647,15 +675,20 @@ class BadgeClassSerializerV1(
 
             new_badgeclass = BadgeClass.objects.create(**validated_data)
 
-            extensions = new_badgeclass.cached_extensions()
+            new_badgeclass.tag_items = tags
+
+            new_badgeclass.alignment_items = alignments
+
+            new_badgeclass.extension_items = extension_data
 
             if new_badgeclass.imageFrame:
                 try:
-                    categoryExtension = extensions.get(
+                    saved_extensions = new_badgeclass.cached_extensions()
+                    categoryExtension = saved_extensions.get(
                         name="extensions:CategoryExtension"
                     )
                     category = json.loads(categoryExtension.original_json)["Category"]
-                    orgImage = extensions.get(name="extensions:OrgImageExtension")
+                    orgImage = saved_extensions.get(name="extensions:OrgImageExtension")
                     original_image = json.loads(orgImage.original_json)["OrgImage"]
                 except BadgeClassExtension.DoesNotExist as e:
                     raise serializers.ValidationError({"extensions": str(e)})
@@ -715,7 +748,9 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
     )
     narrative = MarkdownCharField(required=False, allow_blank=True, allow_null=True)
     evidence_items = EvidenceItemSerializer(many=True, required=False)
-
+    course_url = StripTagsCharField(
+        required=False, allow_blank=True, allow_null=True, validators=[URLValidator()]
+    )
     revoked = HumanReadableBooleanField(read_only=True)
     revocation_reason = serializers.CharField(read_only=True)
 
@@ -744,7 +779,7 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
     allow_duplicate_awards = serializers.BooleanField(
         write_only=True, required=False, default=True
     )
-    hashed = serializers.NullBooleanField(default=None, required=False)
+    hashed = serializers.BooleanField(default=None, allow_null=True, required=False)
 
     extensions = serializers.DictField(
         source="extension_items", required=False, validators=[BadgeExtensionValidator()]
@@ -875,6 +910,7 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
                 activity_online=validated_data.get("activity_online", False),
                 extensions=validated_data.get("extension_items", None),
                 issuerSlug=issuer_slug,
+                course_url=validated_data.get("course_url", ""),
             )
         except DjangoValidationError as e:
             raise serializers.ValidationError(e.message)
@@ -888,6 +924,7 @@ class BadgeInstanceSerializerV1(OriginalJsonSerializerMixin, serializers.Seriali
             "narrative",
             "recipient_identifier",
             "recipient_type",
+            "course_url",
         ]
 
         for field_name in updateable_fields:
@@ -929,6 +966,11 @@ class QrCodeSerializerV1(serializers.Serializer):
     expires_at = DateTimeWithUtcZAtEndField(
         required=False, allow_null=True, default_timezone=pytz.utc
     )
+    course_url = StripTagsCharField(
+        required=False, allow_blank=True, allow_null=True, validators=[URLValidator()]
+    )
+
+    evidence_items = EvidenceItemSerializer(many=True, required=False)
 
     def create(self, validated_data, **kwargs):
         title = validated_data.get("title")
@@ -970,7 +1012,9 @@ class QrCodeSerializerV1(serializers.Serializer):
             activity_city=validated_data.get("activity_city", None),
             activity_zip=validated_data.get("activity_zip", None),
             activity_online=validated_data.get("activity_online", False),
+            evidence_items=validated_data.get("evidence_items", []),
             notifications=notifications,
+            course_url=validated_data.get("course_url", ""),
         )
 
         return new_qrcode
@@ -992,9 +1036,13 @@ class QrCodeSerializerV1(serializers.Serializer):
             instance.activity_city = validated_data["activity_city"]
         if "activity_online" in validated_data:
             instance.activity_online = validated_data["activity_online"]
+        if "evidence_items" in validated_data:
+            instance.evidence_items = validated_data["evidence_items"]
         instance.notifications = validated_data.get(
             "notifications", instance.notifications
         )
+        if "course_url" in validated_data:
+            instance.course_url = validated_data["course_url"]
         instance.save()
         return instance
 
