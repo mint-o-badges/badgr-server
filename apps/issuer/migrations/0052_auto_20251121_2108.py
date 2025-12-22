@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('issuer', '0046_alter_badgeclass_expiration'),
+        ("issuer", "0051_qrcode_evidence_items"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='learningpath',
-            name='archived',
+            model_name="learningpath",
+            name="archived",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='learningpath',
-            name='archived_at',
+            model_name="learningpath",
+            name="archived_at",
             field=models.DateTimeField(blank=True, default=None, null=True),
         ),
     ]
