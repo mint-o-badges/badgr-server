@@ -1104,6 +1104,7 @@ class LearningPathSerializerV1(ExcludeFieldsMixin, serializers.Serializer):
 
     required_badges_count = serializers.IntegerField(required=True)
     activated = serializers.BooleanField(required=True)
+    archived = serializers.BooleanField(required=False)
 
     name = StripTagsCharField(max_length=255)
     slug = StripTagsCharField(max_length=255, read_only=True, source="entity_id")
