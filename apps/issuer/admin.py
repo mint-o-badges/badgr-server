@@ -19,6 +19,7 @@ from .models import (
     BadgeInstanceEvidence,
     BadgeClassAlignment,
     BadgeClassTag,
+    BadgeClassArea,
     BadgeClassExtension,
     IssuerExtension,
     BadgeInstanceExtension,
@@ -318,6 +319,13 @@ class BadgeClassTagInline(TabularInline):
     fields = ("name",)
 
 
+# Adding BadgeClassAreaInLine after importing it:
+class BadgeClassAreaInline(TabularInline):
+    model = BadgeClassArea
+    fields = ("name",)
+    extra = 0
+
+
 class BadgeClassExtensionInline(TabularInline):
     model = BadgeClassExtension
     extra = 0
@@ -334,6 +342,8 @@ class BinaryMultipleChoiceField(forms.MultipleChoiceField):
             return sum(map(int, value))
 
     def prepare_value(self, value):
+        if value is None:
+            return []  # add for area task 09.01
         binary = bin(value)[:1:-1]
         ret = [pow(int(x) * 2, i) for i, x in enumerate(binary) if int(x)]
         return ret
@@ -416,6 +426,7 @@ class BadgeClassAdmin(DjangoObjectActions, ModelAdmin):
     inlines = [
         BadgeClassTagInline,
         BadgeClassAlignmentInline,
+        BadgeClassAreaInline,  # adding areas 09.01
         BadgeClassExtensionInline,
     ]
     change_actions = ["redirect_issuer", "redirect_instances"]
