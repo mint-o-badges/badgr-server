@@ -2,6 +2,7 @@ import datetime
 import io
 import math
 import os
+from sqlite3 import IntegrityError
 import urllib.parse
 import uuid
 import base64
@@ -1265,6 +1266,35 @@ class BadgeClass(
                 if tag.name not in new_idx:
                     tag.delete()
 
+    @cachemodel.cached_method(auto_publish=True)
+    def cached_areas(self):
+        return self.badgeclassarea_set.all()
+
+    @property
+    def area_items(self):
+        return self.cached_areas()
+
+    @area_items.setter
+    def area_items(self, value):
+        """Set the area items for this BadgeClass"""
+        if value is None:
+            value = []
+        existing_idx = [a.name for a in self.area_items]
+        new_idx = value
+
+        # add new areas
+        for a in new_idx:
+            if a not in existing_idx:
+                try:  # Add try/except for IntegrityError
+                    area = self.badgeclassarea_set.create(name=a)
+                except IntegrityError:
+                    pass
+
+        # remove areas no longer in list
+        for area in self.area_items:
+            if area.name not in new_idx:
+                area.delete()
+
     def get_extensions_manager(self):
         return self.badgeclassextension_set
 
@@ -1437,6 +1467,10 @@ class BadgeClass(
                 a.get_json(obi_version=obi_version) for a in self.cached_alignments()
             ]
             json["tags"] = list(t.name for t in self.cached_tags())
+            # areas adding 09.01
+            json["area"] = list(
+                a.name for a in self.cached_areas()
+            )  # changed from plural to singular
 
         # extensions
         if len(self.cached_extensions()) > 0:
@@ -2811,6 +2845,25 @@ class BadgeClassTag(cachemodel.CacheModel):
 
     def delete(self, *args, **kwargs):
         super(BadgeClassTag, self).delete(*args, **kwargs)
+        self.badgeclass.publish()
+
+
+# Defining class for area functionality:
+class BadgeClassArea(cachemodel.CacheModel):
+    # Model for badge areas, it should be similar to the tags model
+
+    badgeclass = models.ForeignKey("issuer.BadgeClass", on_delete=models.CASCADE)
+    name = models.CharField(max_length=254, db_index=True)
+
+    def __str__(self):
+        return self.name
+
+    def publish(self):
+        super(BadgeClassArea, self).publish()
+        self.badgeclass.publish()
+
+    def delete(self, *args, **kwargs):
+        super(BadgeClassArea, self).delete(*args, **kwargs)
         self.badgeclass.publish()
 
 

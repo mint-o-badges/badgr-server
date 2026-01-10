@@ -55,7 +55,7 @@ CACHES = {
 # Email Configuration
 #
 ###
-DEFAULT_FROM_EMAIL = ''  # e.g. "noreply@example.com"
+DEFAULT_FROM_EMAIL = 'noreply@example.com'  # e.g. "noreply@example.com"
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # use these settings if you want to use mailhog instead of console backend
@@ -96,9 +96,12 @@ BADGR_APPROVED_ISSUERS_ONLY = False
 # Automatically send an email the first time that recipient identifier (email type) has been used on the system.
 GDPR_COMPLIANCE_NOTIFY_ON_FIRST_AWARD = True
 
-SECRET_KEY = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(40))
-UNSUBSCRIBE_KEY = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(40))
+SECRET_KEY = "TqcyPtHVNAdSu1Jc2HliMc4GDp4YCGAoQ9M7szjE"
+UNSUBSCRIBE_KEY = "pHwMGMGCmF1FfLE9Ml75mCc13uBjWSwdo73W66Nv"
 UNSUBSCRIBE_SECRET_KEY = str(SECRET_KEY)
+AUTHCODE_SECRET_KEY = (
+    b"Wyi-1BFRoScP-vsuqbP_o-ZY-Ud5U5vG3XJ3cZUaXB4="  # added this variable on 09.01.2026
+)
 
 
 ###
