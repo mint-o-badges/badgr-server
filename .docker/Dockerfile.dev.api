@@ -48,9 +48,15 @@ RUN curl -fsSLO "$SUPERCRONIC_URL" \
 # Get node and install mjml for email templates
 ARG NODE_VERSION=v24.6.0
 ARG MJML_VERSION=4.17.1
-RUN curl -fsSL https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-x64.tar.xz -o node.tar.xz \
-    && tar -xf node.tar.xz -C /usr/local --strip-components=1 \
-    && rm node.tar.xz
+# RUN curl -fsSL https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-x64.tar.xz -o node.tar.xz \
+#     && tar -xf node.tar.xz -C /usr/local --strip-components=1 \
+#     && rm node.tar.xz
+# ENV PATH="/usr/local/bin:${PATH}"
+# RUN npm install -g mjml@${MJML_VERSION}
+
+RUN apt-get update && apt-get install -y curl && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs
 ENV PATH="/usr/local/bin:${PATH}"
 RUN npm install -g mjml@${MJML_VERSION}
 
