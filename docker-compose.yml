@@ -4,6 +4,9 @@ services:
         build:
             context: .
             dockerfile: .docker/Dockerfile.dev.api
+
+        env_file:
+            - .env
         depends_on:
             - "db"
             - "memcached"

@@ -55,6 +55,7 @@ from .models import (
     BadgeClass,
     BadgeClassTag,
     BadgeInstance,
+    BadgeClassArea,
     Issuer,
     LearningPath,
     BadgeInstanceExtension,
@@ -185,6 +186,34 @@ class BadgeTags(viewsets.ViewSet):
             .distinct()
         )
         return Response(list(tag_names))
+
+
+# Creating Badge areas viewset 11.01 - Andres
+@extend_schema_view(
+    list=extend_schema(
+        summary="Get a list of all available badge aras",
+        tags=["BadgeClasses"],
+        description="Fetch all available aras that existing badges may be filtered by",
+        responses={
+            200: inline_serializer(
+                name="BadgeAreasResponse",
+                fields={"areas": serializers.ListField(child=serializers.CharField())},
+            )
+        },
+    )
+)
+class BadgeAreas(viewsets.ViewSet):
+    """A ViewSet to fetch all available areas the existing Badges may be filtered by"""
+
+    permission_classes = [permissions.AllowAny]
+
+    def list(self, request, **kwargs):
+        area_names = (
+            BadgeClassArea.objects.order_by("name")
+            .values_list("name", flat=True)
+            .distinct()
+        )
+        return Response(list(area_names))
 
 
 @extend_schema_view(
