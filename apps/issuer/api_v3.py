@@ -10,7 +10,7 @@ from django.utils import timezone
 from django_filters import rest_framework as filters
 from oauth2_provider.models import AccessToken, Application
 from oauthlib.oauth2.rfc6749.tokens import random_token_generator
-from rest_framework import viewsets, permissions, serializers
+from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.filters import OrderingFilter
 from rest_framework.pagination import LimitOffsetPagination
@@ -26,7 +26,6 @@ from badgeuser.api import LearningPathList
 from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
-    inline_serializer,
     OpenApiParameter,
 )
 from rest_framework.views import APIView
