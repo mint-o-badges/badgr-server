@@ -482,7 +482,9 @@ class BadgeClassSerializerV1(
         child=StripTagsCharField(max_length=254), source="tag_items", required=False
     )
 
-    areas = serializers.ListField(
+    # corrected it to be "area" instead of "areas" as it was failing before
+
+    area = serializers.ListField(
         child=StripTagsCharField(max_length=254), source="area_items", required=False
     )
 

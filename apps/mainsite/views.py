@@ -851,6 +851,10 @@ def cms_api_menu_list(request):
 
     # transform menu response
     menus = {"header": {"de": [], "en": []}, "footer": {"de": [], "en": []}}
+
+    """ if the api_data is not a dict, return empty menus. It was failing for me and triggering: AttributeError: 'str' object has no attribute 'items'. Without this "My Institutions" was never visible for me """
+    if not isinstance(api_data, dict):
+        return JsonResponse(menus, safe=False)
     for i, menu in api_data.items():
         all_items = [
             {
