@@ -327,7 +327,8 @@ Returns aggregated key performance indicators for a specific network.
                 badges_created_current, badges_created_previous
             )
 
-            # 3. badges_awarded - Total badge instances
+            # 3. badges_awarded - Total badge instances (all awarded badges)
+            # Includes badges awarded to non-registered users via email (user=null but recipient_identifier set)
             badges_awarded = badge_instances.count()
             badges_awarded_current = badge_instances.filter(
                 created_at__gte=last_month_start
@@ -366,17 +367,16 @@ Returns aggregated key performance indicators for a specific network.
                 competency_hours_current, competency_hours_previous
             )
 
-            # 7. learners_count - Unique users with badges
-            learners_count = badge_instances.exclude(
-                user__isnull=True
-            ).values('user').distinct().count()
+            # 7. learners_count - Unique recipients (by email/recipient_identifier)
+            # Includes both registered users and non-registered email recipients
+            learners_count = badge_instances.values('recipient_identifier').distinct().count()
             learners_current = badge_instances.filter(
                 created_at__gte=last_month_start
-            ).exclude(user__isnull=True).values('user').distinct().count()
+            ).values('recipient_identifier').distinct().count()
             learners_previous = badge_instances.filter(
                 created_at__gte=two_months_ago,
                 created_at__lt=last_month_start
-            ).exclude(user__isnull=True).values('user').distinct().count()
+            ).values('recipient_identifier').distinct().count()
             learners_trend, learners_trend_value = self.calculate_trend(
                 learners_current, learners_previous
             )
@@ -1423,9 +1423,7 @@ competency in the "Am meisten gestärkte Einzelkompetenzen" section.
 
             # Calculate totals
             total_badges = matching_badge_instances.count()
-            total_users = matching_badge_instances.exclude(
-                user__isnull=True
-            ).values('user_id').distinct().count()
+            total_users = matching_badge_instances.values('recipient_identifier').distinct().count()
 
             # Get study load per badge class for hours calculation
             badgeclass_study_load = {}
@@ -1460,14 +1458,14 @@ competency in the "Am meisten gestärkte Einzelkompetenzen" section.
                 if issuer_id not in institution_stats:
                     institution_stats[issuer_id] = {
                         'badge_ids': set(),
-                        'user_ids': set(),
+                        'recipients': set(),
                         'hours': 0,
                         'last_activity': None,
                     }
 
                 institution_stats[issuer_id]['badge_ids'].add(bi.id)
-                if bi.user_id:
-                    institution_stats[issuer_id]['user_ids'].add(bi.user_id)
+                if bi.recipient_identifier:
+                    institution_stats[issuer_id]['recipients'].add(bi.recipient_identifier)
 
                 study_load = badgeclass_study_load.get(bi.badgeclass_id, 0)
                 institution_stats[issuer_id]['hours'] += round(study_load / 60)
@@ -1492,7 +1490,7 @@ competency in the "Am meisten gestärkte Einzelkompetenzen" section.
                         'name': issuer.name,
                         'slug': issuer.entity_id,  # Using entity_id as slug
                         'badgeCount': len(stats['badge_ids']),
-                        'userCount': len(stats['user_ids']),
+                        'userCount': len(stats['recipients']),
                         'competencyHours': stats['hours'],
                         'lastActivity': stats['last_activity'].isoformat() if stats['last_activity'] else None,
                         'logoUrl': issuer.image.url if issuer.image else None,
@@ -1707,13 +1705,11 @@ the frontend must send the list of ESCO URIs that belong to the clicked competen
 
             # Calculate totals
             total_badges = matching_badge_instances.count()
-            total_users = matching_badge_instances.exclude(
-                user__isnull=True
-            ).values('user_id').distinct().count()
+            total_users = matching_badge_instances.values('recipient_identifier').distinct().count()
 
             # Calculate total hours and aggregate by competency
-            competency_stats = {}  # uri -> {hours, badge_count, user_ids}
-            institution_stats = {}  # issuer_id -> {badge_ids, user_ids}
+            competency_stats = {}  # uri -> {hours, badge_count, recipients}
+            institution_stats = {}  # issuer_id -> {badge_ids, recipients}
 
             for bi in matching_badge_instances:
                 # Get competencies for this badge class
@@ -1727,25 +1723,25 @@ the frontend must send the list of ESCO URIs that belong to the clicked competen
                         competency_stats[uri] = {
                             'hours': 0,
                             'badge_ids': set(),
-                            'user_ids': set(),
+                            'recipients': set(),
                         }
 
                     competency_stats[uri]['hours'] += round(study_load / 60)  # Convert minutes to hours
                     competency_stats[uri]['badge_ids'].add(bi.id)
-                    if bi.user_id:
-                        competency_stats[uri]['user_ids'].add(bi.user_id)
+                    if bi.recipient_identifier:
+                        competency_stats[uri]['recipients'].add(bi.recipient_identifier)
 
                 # Aggregate by institution
                 issuer_id = bi.issuer_id
                 if issuer_id not in institution_stats:
                     institution_stats[issuer_id] = {
                         'badge_ids': set(),
-                        'user_ids': set(),
+                        'recipients': set(),
                     }
 
                 institution_stats[issuer_id]['badge_ids'].add(bi.id)
-                if bi.user_id:
-                    institution_stats[issuer_id]['user_ids'].add(bi.user_id)
+                if bi.recipient_identifier:
+                    institution_stats[issuer_id]['recipients'].add(bi.recipient_identifier)
 
             # Calculate total hours
             total_hours = sum(stats['hours'] for stats in competency_stats.values())
@@ -1761,7 +1757,7 @@ the frontend must send the list of ESCO URIs that belong to the clicked competen
                     'escoUri': uri,
                     'hours': stats['hours'],
                     'badgeCount': len(stats['badge_ids']),
-                    'userCount': len(stats['user_ids']),
+                    'userCount': len(stats['recipients']),
                 })
 
             # Sort by hours descending and limit
@@ -1781,7 +1777,7 @@ the frontend must send the list of ESCO URIs that belong to the clicked competen
                         'name': issuer.name,
                         'slug': issuer.entity_id,
                         'badgeCount': len(stats['badge_ids']),
-                        'userCount': len(stats['user_ids']),
+                        'userCount': len(stats['recipients']),
                         'logoUrl': issuer.image.url if issuer.image else None,
                     })
 
@@ -2905,12 +2901,13 @@ Returns comprehensive learner statistics for the Lernende tab.
             # Get badge instances for this network
             badge_instances = self.get_network_badge_instances(network)
 
-            # Get unique learners (users with badges)
+            # Get total unique learners by recipient_identifier (includes non-registered users)
+            total_learners = badge_instances.values('recipient_identifier').distinct().count()
+
+            # Get registered user IDs for residence and gender distribution (need profile data)
             learner_user_ids = badge_instances.exclude(
                 user__isnull=True
             ).values_list('user_id', flat=True).distinct()
-
-            total_learners = len(set(learner_user_ids))
 
             # Calculate total competency hours
             total_competency_hours = self._calculate_total_competency_hours(badge_instances)
@@ -3018,16 +3015,16 @@ Returns comprehensive learner statistics for the Lernende tab.
 
         badge_instances = self.get_network_badge_instances(network)
 
-        # Count unique learners who received badges in the last 30 days
+        # Count unique recipients who received badges in the last 30 days
         learners_current = badge_instances.filter(
             created_at__gte=last_month_start
-        ).exclude(user__isnull=True).values('user').distinct().count()
+        ).values('recipient_identifier').distinct().count()
 
-        # Count unique learners who received badges in the previous 30 days (30-60 days ago)
+        # Count unique recipients who received badges in the previous 30 days (30-60 days ago)
         learners_previous = badge_instances.filter(
             created_at__gte=two_months_ago,
             created_at__lt=last_month_start
-        ).exclude(user__isnull=True).values('user').distinct().count()
+        ).values('recipient_identifier').distinct().count()
 
         # Use the same calculate_trend method as KPIs endpoint
         trend, trend_value = self.calculate_trend(learners_current, learners_previous)
@@ -3751,10 +3748,10 @@ This allows aggregating all learners from a city regardless of their specific ZI
             except (json.JSONDecodeError, AttributeError, TypeError):
                 continue
 
-        # Aggregate competencies - count unique users (learners) per competency
+        # Aggregate competencies - count unique recipients (learners) per competency
         from collections import defaultdict
         competency_stats = defaultdict(lambda: {
-            'user_ids': set(),  # Track unique users per competency
+            'recipients': set(),  # Track unique recipients per competency (by email)
             'hours': 0,
             'badges': 0,
             'escoUri': '',
@@ -3764,7 +3761,7 @@ This allows aggregating all learners from a city regardless of their specific ZI
         for badge in badge_instances:
             competencies = badgeclass_competencies.get(badge.badgeclass_id, [])
             counted_badge_for_comp = set()
-            user_id = badge.user_id  # Get the user ID from the badge instance
+            recipient = badge.recipient_identifier  # Get the recipient email from the badge instance
 
             for comp in competencies:
                 comp_name = comp['name']
@@ -3774,9 +3771,9 @@ This allows aggregating all learners from a city regardless of their specific ZI
                 comp_id = comp_name.lower().replace(' ', '_').replace('-', '_')
 
                 competency_stats[comp_id]['name'] = comp_name
-                # Track unique user IDs instead of incrementing count
-                if user_id:
-                    competency_stats[comp_id]['user_ids'].add(user_id)
+                # Track unique recipients (by email) instead of incrementing count
+                if recipient:
+                    competency_stats[comp_id]['recipients'].add(recipient)
                 competency_stats[comp_id]['hours'] += round(comp['studyLoad'] / 60)
 
                 if comp_id not in counted_badge_for_comp:
@@ -3791,7 +3788,7 @@ This allows aggregating all learners from a city regardless of their specific ZI
         # Sort by unique learner count and limit
         sorted_competencies = sorted(
             competency_stats.items(),
-            key=lambda x: len(x[1]['user_ids']),
+            key=lambda x: len(x[1]['recipients']),
             reverse=True
         )[:limit]
 
@@ -3803,7 +3800,7 @@ This allows aggregating all learners from a city regardless of their specific ZI
                 'competencyKey': f"competency.{comp_id}",
                 'title': stats.get('name', comp_id),
                 'areaKey': stats.get('category', ''),
-                'count': len(stats['user_ids']),  # Count unique users, not badge instances
+                'count': len(stats['recipients']),  # Count unique recipients (by email), not badge instances
                 'hours': stats['hours'],
                 'badges': stats['badges'],
                 'trend': 'stable',  # Simplified - could calculate actual trend
@@ -4852,15 +4849,15 @@ class NetworkDashboardSocialspaceInstitutionsView(NetworkDashboardSocialspaceBas
             ).values('issuer_id').annotate(count=Count('id'))
             badge_count_map = {item['issuer_id']: item['count'] for item in badge_counts}
 
-            # Get active user counts per issuer (unique users with network-relevant badges)
-            active_user_counts = BadgeInstance.objects.filter(
+            # Get active learner counts per issuer (unique recipients with network-relevant badges)
+            active_learner_counts = BadgeInstance.objects.filter(
                 revoked=False,
                 issuer_id__in=issuer_ids,
                 badgeclass_id__in=network_badge_class_ids
-            ).exclude(user__isnull=True).values('issuer_id').annotate(
-                user_count=Count('user_id', distinct=True)
+            ).values('issuer_id').annotate(
+                learner_count=Count('recipient_identifier', distinct=True)
             )
-            active_user_map = {item['issuer_id']: item['user_count'] for item in active_user_counts}
+            active_user_map = {item['issuer_id']: item['learner_count'] for item in active_learner_counts}
 
             # Build institutions list
             regional_service = RegionalService.get_instance()
@@ -5051,8 +5048,8 @@ class NetworkDashboardSocialspaceCityDetailView(NetworkDashboardSocialspaceBaseV
                 badgeclass_id__in=network_badge_class_ids
             )
 
-            # Count unique learners (users with network-relevant badges from city institutions)
-            learner_count = badge_instances.exclude(user__isnull=True).values('user_id').distinct().count()
+            # Count unique recipients (by email) with network-relevant badges from city institutions
+            learner_count = badge_instances.values('recipient_identifier').distinct().count()
 
             # Total badges (only network-relevant)
             total_badges = badge_instances.count()
