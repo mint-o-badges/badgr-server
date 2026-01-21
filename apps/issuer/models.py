@@ -2417,6 +2417,16 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             extension_contexts = list(set(extension_contexts))
             json["@context"] += extension_contexts
 
+        for extension in self.cached_badgeclass.cached_extensions():
+            if extension.name == "extensions:CompetencyExtension":
+                extension_json = json_loads(extension.original_json)
+
+                if isinstance(extension_json, list) and len(extension_json) > 0:
+                    for competency in extension_json:
+                        competency.pop("@context", None)
+
+                    json["extensions:CompetencyExtension"] = extension_json
+
         ##### proof / signing #####
 
         # load private key
