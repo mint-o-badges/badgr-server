@@ -46,6 +46,7 @@ from mainsite.mixins import (
 from mainsite.models import BadgrApp, EmailBlacklist
 from mainsite.utils import OriginSetting, generate_entity_uri, get_name
 from openbadges_bakery import bake
+from dateutil.relativedelta import relativedelta
 
 from .utils import (
     CURRENT_OBI_VERSION,
@@ -302,6 +303,145 @@ class Issuer(
     private_key = models.CharField(
         max_length=512, blank=True, null=True, default=generate_private_key_pem
     )
+
+    class LimitsAccountLevel(models.TextChoices):
+        FREE = ("FREE", "Free",)
+        PRO = ("PRO", "Pro",)
+        ENTERPRISE = ("ENTERPRISE", "Enterprise",)
+
+    LimitKeys = [
+        "BADGE_CREATE",
+        "BADGE_AWARD",
+        "LEARNINGPATH_CREATE",
+        "ACCOUNTS_ADMIN",
+        "ACCOUNTS_MEMBER",
+        "AISKILLS_REQUESTS",
+        "PDFEDITOR",
+    ]
+
+    LimitsDefaults = {
+        "FREE": {
+            "BADGE_CREATE": 5,
+            "BADGE_AWARD": 100,
+            "LEARNINGPATH_CREATE": 1,
+            "ACCOUNTS_ADMIN": 1,
+            "ACCOUNTS_MEMBER": 3,
+            "AISKILLS_REQUESTS": 10,
+            "PDFEDITOR": False,
+        },
+        "PRO": {
+            "BADGE_CREATE": 50,
+            "BADGE_AWARD": 5000,
+            "LEARNINGPATH_CREATE": 10,
+            "ACCOUNTS_ADMIN": 5,
+            "ACCOUNTS_MEMBER": 10,
+            "AISKILLS_REQUESTS": 100,
+            "PDFEDITOR": True,
+        },
+        "ENTERPRISE": {
+            "BADGE_CREATE": 0,
+            "BADGE_AWARD": 30000,
+            "LEARNINGPATH_CREATE": 30,
+            "ACCOUNTS_ADMIN": 10,
+            "ACCOUNTS_MEMBER": 0,
+            "AISKILLS_REQUESTS": 200,
+            "PDFEDITOR": True,
+        },
+        "NETWORK": {
+            "BADGE_CREATE": 0,
+            "BADGE_AWARD": 70000,
+            "LEARNINGPATH_CREATE": 0,
+            "ACCOUNTS_ADMIN": 0,
+            "ACCOUNTS_MEMBER": 0,
+            "AISKILLS_REQUESTS": 500,
+            "PDFEDITOR": True,
+        }
+    }
+
+    limit_account_level = models.CharField(
+        max_length=254, choices=LimitsAccountLevel.choices, default=LimitsAccountLevel.FREE,
+        verbose_name="Account Level"
+    )
+    limit_period_start = models.DateTimeField(blank=False, null=False, default=timezone.now, verbose_name="Period start")
+
+    limit_badge_create = models.PositiveIntegerField(blank=True, null=True, verbose_name="Create Badges")
+    limit_badge_award = models.PositiveIntegerField(blank=True, null=True, verbose_name="Award Badges")
+    limit_learningpaths_create = models.PositiveIntegerField(blank=True, null=True, verbose_name="Create Learningpaths")
+    limit_accounts_admin = models.PositiveIntegerField(blank=True, null=True, verbose_name="Admin Accounts")
+    limit_accounts_member = models.PositiveIntegerField(blank=True, null=True, verbose_name="Member Accounts")
+    limit_aiskills_requests = models.PositiveIntegerField(blank=True, null=True, verbose_name="AI Tool Requests")
+    limit_pdfeditor = models.BooleanField(blank=True, null=True, verbose_name="PDF Editor")
+
+    def get_quota(self, limit_name: str):
+        limit = self.get_limit(limit_name)
+
+        if limit is None:
+            return None
+
+        value = 0
+
+        # find current limit period based on period start
+        dt_end = self.limit_period_start
+        while(dt_end < timezone.now()):
+            dt_end = dt_end + relativedelta(years=1)
+        dt_start = dt_end - relativedelta(years=1)
+
+
+        if limit_name == "BADGE_CREATE":
+            value = len(
+                self.cached_badgeclasses()
+                    .filter(created_at__date__range=(dt_start, dt_end))
+            )
+
+        if limit_name == "BADGE_AWARD":
+            value = len(
+                self.badgeinstance_set.all()
+                    .filter(revoked=False)
+                    .filter(created_at__date__range=(dt_start, dt_end))
+            )
+
+        if limit_name == "LEARNINGPATH_CREATE":
+            value = len(
+                self.cached_learningpaths()
+                    .filter(created_at__date__range=(dt_start, dt_end))
+            )
+
+        staff = self.cached_issuerstaff()
+
+        if limit_name == "ACCOUNTS_ADMIN":
+            value = len(
+                [x for x in staff if x.role == "owner"]
+            )
+        if limit_name == "ACCOUNTS_MEMBER":
+            value = len(
+                [x for x in staff if x.role != "owner"]
+            )
+
+        # TODO
+        if limit_name == "AISKILLS_REQUESTS":
+            pass
+
+        if limit_name == "PDFEDITOR":
+            # print(limit)
+            value = limit
+
+        if type(value) is int:
+            return -1 if limit == 0 else max(0, limit - value)
+        else:
+            return value
+
+    def get_limit(self, limit: str):
+        try:
+            attr = getattr(self, f'limit_{limit.lower()}')
+            if attr is not None:
+                return attr
+        except AttributeError as e:
+            print(e)
+
+        try:
+            return Issuer.LimitsDefaults[str(self.limit_account_level)][limit]
+        except KeyError:
+            return None
 
     def publish(self, publish_staff=True, *args, **kwargs):
         fields_cache = (

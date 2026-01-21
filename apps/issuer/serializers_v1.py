@@ -394,6 +394,7 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
         representation["learningPathCount"] = len(
             instance.cached_learningpaths().filter(activated=True)
         )
+
         representation["recipientGroupCount"] = 0
         representation["recipientCount"] = 0
         representation["pathwayCount"] = 0
@@ -402,6 +403,24 @@ class IssuerSerializerV1(BaseIssuerSerializerV1):
             user.agreed_terms_version == TermsVersion.cached.latest_version()
             for user in instance.owners
         )
+
+        return representation
+
+# serializer including private informationen for members
+class IssuerSerializerPrivateV1(IssuerSerializerV1):
+
+    def to_representation(self, instance):
+        representation = super(IssuerSerializerPrivateV1, self).to_representation(instance)
+
+        representation["quotas"] = {
+            "BADGE_CREATE": instance.get_quota('BADGE_CREATE'),
+            "BADGE_AWARD": instance.get_quota('BADGE_AWARD'),
+            "LEARNINGPATH_CREATE": instance.get_quota('LEARNINGPATH_CREATE'),
+            "ACCOUNTS_ADMIN": instance.get_quota('ACCOUNTS_ADMIN'),
+            "ACCOUNTS_MEMBER": instance.get_quota('ACCOUNTS_MEMBER'),
+            "AISKILLS_REQUESTS": instance.get_quota('AISKILLS_REQUESTS'),
+            "PDFEDITOR": instance.get_quota('PDFEDITOR'),
+        }
 
         return representation
 
