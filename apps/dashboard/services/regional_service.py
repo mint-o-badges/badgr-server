@@ -50,7 +50,7 @@ class RegionalService:
         self._plz_to_ort = {}  # Maps full PLZ -> Ort (city name)
         self._ort_to_plz = {}  # Maps Ort (city name) -> Set of PLZ
 
-        csv_path = os.path.join(TOP_DIR, "mediafiles", "dashboard", "ger_city_zipcode_mapping.csv")
+        csv_path = os.path.join(TOP_DIR, "ger_city_zipcode_mapping.csv")
 
         try:
             if not os.path.exists(csv_path):
