@@ -8,11 +8,11 @@ filtered by a specific network (networkSlug).
 URL Pattern: /v1/issuer/networks/{networkSlug}/dashboard/*
 """
 from django.http import Http404
-from django.db.models import Count, Q, Sum, F
+from django.db.models import Count
 from django.utils import timezone
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-from rest_framework import permissions, status
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
@@ -1975,13 +1975,6 @@ Shows "Vergebene Badges im Jahr" with configurable time grouping.
             trunc_func = TruncWeek('created_at')
         else:  # month
             trunc_func = TruncMonth('created_at')
-
-        # Group by time period
-        time_groups = badge_instances.annotate(
-            period=trunc_func
-        ).values('period').annotate(
-            count=Count('id')
-        ).order_by('period')
 
         # Also get badge class info for type breakdown
         badge_instances_with_period = badge_instances.annotate(
