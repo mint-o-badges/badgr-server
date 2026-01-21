@@ -8,7 +8,7 @@ filtered by a specific network (networkSlug).
 URL Pattern: /v1/issuer/networks/{networkSlug}/dashboard/*
 """
 from django.http import Http404
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.utils import timezone
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
@@ -21,6 +21,7 @@ from issuer.models import (
     BadgeInstance,
     BadgeClass,
     BadgeClassExtension,
+    BadgeClassNetworkShare,
     Issuer,
     NetworkMembership,
     LearningPath,
@@ -92,9 +93,49 @@ class NetworkDashboardBaseView(APIView):
             network=network
         ).values_list('issuer_id', flat=True)
 
+    def get_network_relevant_badge_class_ids(self, network):
+        """
+        Get IDs of badge classes that are relevant for network dashboard analytics.
+
+        Returns IDs for:
+        - Netzwerk-Badges: Badges created by the network itself (issuer=network)
+        - Partner-Badges: Badges shared with the network via BadgeClassNetworkShare
+
+        This is a utility method that can be used for filtering badge instances
+        in various dashboard views.
+
+        Args:
+            network: The network Issuer instance
+
+        Returns:
+            set of BadgeClass IDs
+        """
+        # Get IDs of badges created by the network itself (Netzwerk-Badges)
+        network_badge_ids = set(
+            BadgeClass.objects.filter(issuer=network).values_list('id', flat=True)
+        )
+
+        # Get IDs of badges shared with this network (Partner-Badges)
+        partner_badge_ids = set(
+            BadgeClassNetworkShare.objects.filter(
+                network=network,
+                is_active=True
+            ).values_list('badgeclass_id', flat=True)
+        )
+
+        # Return combined set of all network-relevant badge class IDs
+        return network_badge_ids | partner_badge_ids
+
     def get_network_badge_instances(self, network):
         """
-        Get all non-revoked BadgeInstances from issuers in this network.
+        Get all non-revoked BadgeInstances for network-relevant badges.
+
+        Only includes badge instances where the BadgeClass is either:
+        - Netzwerk-Badges: Created by the network itself (badgeclass.issuer=network)
+        - Partner-Badges: Shared with the network via BadgeClassNetworkShare
+
+        NOTE: This excludes badge instances from partner institutions for badges
+        that have NOT been explicitly shared with the network.
 
         Args:
             network: The network Issuer instance
@@ -102,16 +143,31 @@ class NetworkDashboardBaseView(APIView):
         Returns:
             QuerySet of BadgeInstance
         """
-        issuer_ids = self.get_network_issuer_ids(network)
+        # Get IDs of badges shared with this network (Partner-Badges)
+        partner_badge_ids = BadgeClassNetworkShare.objects.filter(
+            network=network,
+            is_active=True
+        ).values_list('badgeclass_id', flat=True)
 
+        # Return badge instances where the badge class is either:
+        # 1. Created by the network itself (Netzwerk-Badges)
+        # 2. Shared with the network via BadgeClassNetworkShare (Partner-Badges)
         return BadgeInstance.objects.filter(
-            revoked=False,
-            issuer_id__in=issuer_ids
+            revoked=False
+        ).filter(
+            Q(badgeclass__issuer=network) | Q(badgeclass_id__in=partner_badge_ids)
         ).select_related('badgeclass', 'badgeclass__issuer', 'user')
 
     def get_network_badge_classes(self, network):
         """
-        Get all BadgeClasses from issuers in this network.
+        Get BadgeClasses that are relevant for network dashboard analytics.
+
+        Only includes:
+        - Netzwerk-Badges: Badges created by the network itself (issuer=network)
+        - Partner-Badges: Badges shared with the network via BadgeClassNetworkShare
+
+        NOTE: This excludes badges created by partner institutions that have NOT
+        been explicitly shared with the network.
 
         Args:
             network: The network Issuer instance
@@ -119,10 +175,17 @@ class NetworkDashboardBaseView(APIView):
         Returns:
             QuerySet of BadgeClass
         """
-        issuer_ids = self.get_network_issuer_ids(network)
+        # Get IDs of badges shared with this network (Partner-Badges)
+        partner_badge_ids = BadgeClassNetworkShare.objects.filter(
+            network=network,
+            is_active=True
+        ).values_list('badgeclass_id', flat=True)
 
+        # Return badges that are either:
+        # 1. Created by the network itself (Netzwerk-Badges)
+        # 2. Shared with the network via BadgeClassNetworkShare (Partner-Badges)
         return BadgeClass.objects.filter(
-            issuer_id__in=issuer_ids
+            Q(issuer=network) | Q(id__in=partner_badge_ids)
         ).select_related('issuer')
 
     def calculate_trend(self, current_count, previous_count):
@@ -4777,19 +4840,23 @@ class NetworkDashboardSocialspaceInstitutionsView(NetworkDashboardSocialspaceBas
                 issuers = issuers.filter(category=type_filter)
 
             # Count badges issued and active users per issuer
+            # NOTE: Only count network-relevant badges (network badges + partner badges)
             issuer_ids = list(issuers.values_list('id', flat=True))
+            network_badge_class_ids = self.get_network_relevant_badge_class_ids(network)
 
-            # Get badge counts per issuer
+            # Get badge counts per issuer (only network-relevant badges)
             badge_counts = BadgeInstance.objects.filter(
                 revoked=False,
-                issuer_id__in=issuer_ids
+                issuer_id__in=issuer_ids,
+                badgeclass_id__in=network_badge_class_ids
             ).values('issuer_id').annotate(count=Count('id'))
             badge_count_map = {item['issuer_id']: item['count'] for item in badge_counts}
 
-            # Get active user counts per issuer (unique users with badges)
+            # Get active user counts per issuer (unique users with network-relevant badges)
             active_user_counts = BadgeInstance.objects.filter(
                 revoked=False,
-                issuer_id__in=issuer_ids
+                issuer_id__in=issuer_ids,
+                badgeclass_id__in=network_badge_class_ids
             ).exclude(user__isnull=True).values('issuer_id').annotate(
                 user_count=Count('user_id', distinct=True)
             )
@@ -4887,13 +4954,15 @@ class NetworkDashboardSocialspaceCitiesView(NetworkDashboardSocialspaceBaseView)
                             city_issuer_ids[ort] = []
                         city_issuer_ids[ort].append(issuer.id)
 
-            # Count badges per city (badges issued by issuers in that city)
+            # Count badges per city (only network-relevant badges issued by issuers in that city)
+            network_badge_class_ids = self.get_network_relevant_badge_class_ids(network)
             cities = []
             for city, issuer_ids in city_issuer_ids.items():
-                # Count badges issued by issuers in this city
+                # Count network-relevant badges issued by issuers in this city
                 badge_count = BadgeInstance.objects.filter(
                     revoked=False,
-                    issuer_id__in=issuer_ids
+                    issuer_id__in=issuer_ids,
+                    badgeclass_id__in=network_badge_class_ids
                 ).count()
 
                 cities.append({
@@ -4974,16 +5043,18 @@ class NetworkDashboardSocialspaceCityDetailView(NetworkDashboardSocialspaceBaseV
                     if ort and ort.lower() == city_lower:
                         issuer_ids.append(issuer.id)
 
-            # Get badge instances for these issuers
+            # Get badge instances for these issuers (only network-relevant badges)
+            network_badge_class_ids = self.get_network_relevant_badge_class_ids(network)
             badge_instances = BadgeInstance.objects.filter(
                 revoked=False,
-                issuer_id__in=issuer_ids
+                issuer_id__in=issuer_ids,
+                badgeclass_id__in=network_badge_class_ids
             )
 
-            # Count unique learners (users with badges from city institutions)
+            # Count unique learners (users with network-relevant badges from city institutions)
             learner_count = badge_instances.exclude(user__isnull=True).values('user_id').distinct().count()
 
-            # Total badges
+            # Total badges (only network-relevant)
             total_badges = badge_instances.count()
 
             # Institution count
@@ -5019,10 +5090,11 @@ class NetworkDashboardSocialspaceCityDetailView(NetworkDashboardSocialspaceBaseV
                 badge_type = badge_type_mapping.get(bi.badgeclass_id, 'participation')
                 badge_type_counts[badge_type] += 1
 
-            # Top institutions by badge count
+            # Top institutions by badge count (only network-relevant badges)
             top_institutions_data = BadgeInstance.objects.filter(
                 revoked=False,
-                issuer_id__in=issuer_ids
+                issuer_id__in=issuer_ids,
+                badgeclass_id__in=network_badge_class_ids
             ).values('issuer_id').annotate(badge_count=Count('id')).order_by('-badge_count')[:5]
 
             top_institutions = []
@@ -5124,13 +5196,15 @@ class NetworkDashboardSocialspaceLearnersView(NetworkDashboardSocialspaceBaseVie
                     'residenceDistribution': [],
                 })
 
-            # Get badge instances from these city issuers
+            # Get badge instances from these city issuers (only network-relevant badges)
+            network_badge_class_ids = self.get_network_relevant_badge_class_ids(network)
             badge_instances = BadgeInstance.objects.filter(
                 revoked=False,
-                issuer_id__in=issuer_ids
+                issuer_id__in=issuer_ids,
+                badgeclass_id__in=network_badge_class_ids
             )
 
-            # Get unique learners who received badges from city institutions
+            # Get unique learners who received network-relevant badges from city institutions
             user_ids = list(badge_instances.exclude(user__isnull=True).values_list('user_id', flat=True).distinct())
             learners = BadgeUser.objects.filter(id__in=user_ids)
             learner_count = learners.count()
@@ -5301,13 +5375,15 @@ class NetworkDashboardSocialspaceCompetenciesView(NetworkDashboardSocialspaceBas
                     'competencies': [],
                 })
 
-            # Get badge instances from these city issuers
+            # Get badge instances from these city issuers (only network-relevant badges)
+            network_badge_class_ids = self.get_network_relevant_badge_class_ids(network)
             badge_instances = BadgeInstance.objects.filter(
                 revoked=False,
-                issuer_id__in=issuer_ids
+                issuer_id__in=issuer_ids,
+                badgeclass_id__in=network_badge_class_ids
             )
 
-            # Get badge class IDs
+            # Get badge class IDs (already filtered to network-relevant)
             badge_class_ids = list(badge_instances.values_list('badgeclass_id', flat=True).distinct())
 
             # Get competency extensions for these badge classes
