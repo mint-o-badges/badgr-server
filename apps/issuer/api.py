@@ -1322,7 +1322,6 @@ class NetworkBadgeInstanceList(
         response = super().get(request, **kwargs)
         instances = response.data
         badgeclass = self.get_object(request, **kwargs)
-        print(f"badgeclass {badgeclass}")
 
         grouped_data = self.group_instances_by_issuer(instances, request, badgeclass)
 
