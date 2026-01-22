@@ -412,14 +412,30 @@ class IssuerSerializerPrivateV1(IssuerSerializerV1):
     def to_representation(self, instance):
         representation = super(IssuerSerializerPrivateV1, self).to_representation(instance)
 
+        def quota_dict(quota_name: str):
+            quota = instance.get_quota(quota_name)
+            max_quota = instance.get_max_quota(quota_name)
+
+            if type(quota) is int:
+                return {
+                    "used": max_quota - quota,
+                    "quota": quota,
+                    "max": max_quota
+                }
+            else:
+                return {
+                    "quota": quota
+                }
+
+
         representation["quotas"] = {
-            "BADGE_CREATE": instance.get_quota('BADGE_CREATE'),
-            "BADGE_AWARD": instance.get_quota('BADGE_AWARD'),
-            "LEARNINGPATH_CREATE": instance.get_quota('LEARNINGPATH_CREATE'),
-            "ACCOUNTS_ADMIN": instance.get_quota('ACCOUNTS_ADMIN'),
-            "ACCOUNTS_MEMBER": instance.get_quota('ACCOUNTS_MEMBER'),
-            "AISKILLS_REQUESTS": instance.get_quota('AISKILLS_REQUESTS'),
-            "PDFEDITOR": instance.get_quota('PDFEDITOR'),
+            "BADGE_CREATE": quota_dict('BADGE_CREATE'),
+            "BADGE_AWARD": quota_dict('BADGE_AWARD'),
+            "LEARNINGPATH_CREATE": quota_dict('LEARNINGPATH_CREATE'),
+            "ACCOUNTS_ADMIN": quota_dict('ACCOUNTS_ADMIN'),
+            "ACCOUNTS_MEMBER": quota_dict('ACCOUNTS_MEMBER'),
+            "AISKILLS_REQUESTS": quota_dict(quota_name='AISKILLS_REQUESTS'),
+            "PDFEDITOR": quota_dict('PDFEDITOR'),
         }
 
         return representation

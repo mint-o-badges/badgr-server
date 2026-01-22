@@ -7,6 +7,7 @@ from django_object_actions import DjangoObjectActions
 from django.utils.safestring import mark_safe
 from django import forms
 from django.contrib import admin
+from django.conf import settings
 
 from mainsite.admin import badgr_admin
 
@@ -248,17 +249,17 @@ class IssuerAdmin(DjangoObjectActions, ModelAdmin):
         ("JSON", {"fields": ("old_json",)}),
         ("Quotas", {
             "fields": (
-                "limit_account_level",
-                "limit_period_start",
-                "limit_badge_create",
-                "limit_badge_award",
-                "limit_learningpaths_create",
-                "limit_accounts_admin",
-                "limit_accounts_member",
-                "limit_aiskills_requests",
-                "limit_pdfeditor",
+                "quota_account_level",
+                "quota_period_start",
+                "quota_badge_create",
+                "quota_badge_award",
+                "quota_learningpath_create",
+                "quota_accounts_admin",
+                "quota_accounts_member",
+                "quota_aiskills_requests",
+                "quota_pdfeditor",
             )
-        })
+        }) if "ISSUER" in settings.QUOTAS else (None, { "fields": ()})
     )
 
     def get_inlines(self, request, obj):
@@ -311,23 +312,29 @@ class IssuerAdmin(DjangoObjectActions, ModelAdmin):
 
     def render_change_form(self, request, context, *args, **kwargs):
 
-        def help_text_int_fn(limit_name):
-            return f"{( instance.get_limit(limit_name) - instance.get_quota(limit_name))} / {instance.get_limit(limit_name)}"
+        def help_text_int_fn(quota_name):
+            try:
+                return f"{( instance.get_max_quota(quota_name) - instance.get_quota(quota_name))} / {instance.get_max_quota(quota_name)}"
+            except TypeError:
+                return ""
 
         instance = kwargs["obj"]
         form_instance = context['adminform'].form
-        form_instance.fields['limit_badge_create'].widget.attrs['placeholder'] = instance.get_limit('BADGE_CREATE')
-        form_instance.fields['limit_badge_create'].help_text = help_text_int_fn('BADGE_CREATE')
-        form_instance.fields['limit_badge_award'].widget.attrs['placeholder'] = instance.get_limit('BADGE_AWARD')
-        form_instance.fields['limit_badge_award'].help_text = help_text_int_fn('BADGE_AWARD')
-        form_instance.fields['limit_learningpaths_create'].widget.attrs['placeholder'] = instance.get_limit('LEARNINGPATH_CREATE')
-        form_instance.fields['limit_learningpaths_create'].help_text = help_text_int_fn('LEARNINGPATH_CREATE')
-        form_instance.fields['limit_accounts_admin'].widget.attrs['placeholder'] = instance.get_limit('ACCOUNTS_ADMIN')
-        form_instance.fields['limit_accounts_admin'].help_text = help_text_int_fn('ACCOUNTS_ADMIN')
-        form_instance.fields['limit_accounts_member'].widget.attrs['placeholder'] = instance.get_limit('ACCOUNTS_MEMBER')
-        form_instance.fields['limit_accounts_member'].help_text = help_text_int_fn('ACCOUNTS_MEMBER')
-        form_instance.fields['limit_aiskills_requests'].widget.attrs['placeholder'] = instance.get_limit('AISKILLS_REQUESTS')
-        form_instance.fields['limit_pdfeditor'].help_text = f"Value: {'Yes' if instance.get_limit('PDFEDITOR') else 'No'}"
+        try:
+            form_instance.fields['quota_badge_create'].widget.attrs['placeholder'] = instance.get_max_quota('BADGE_CREATE')
+            form_instance.fields['quota_badge_create'].help_text = help_text_int_fn('BADGE_CREATE')
+            form_instance.fields['quota_badge_award'].widget.attrs['placeholder'] = instance.get_max_quota('BADGE_AWARD')
+            form_instance.fields['quota_badge_award'].help_text = help_text_int_fn('BADGE_AWARD')
+            form_instance.fields['quota_learningpath_create'].widget.attrs['placeholder'] = instance.get_max_quota('LEARNINGPATH_CREATE')
+            form_instance.fields['quota_learningpath_create'].help_text = help_text_int_fn('LEARNINGPATH_CREATE')
+            form_instance.fields['quota_accounts_admin'].widget.attrs['placeholder'] = instance.get_max_quota('ACCOUNTS_ADMIN')
+            form_instance.fields['quota_accounts_admin'].help_text = help_text_int_fn('ACCOUNTS_ADMIN')
+            form_instance.fields['quota_accounts_member'].widget.attrs['placeholder'] = instance.get_max_quota('ACCOUNTS_MEMBER')
+            form_instance.fields['quota_accounts_member'].help_text = help_text_int_fn('ACCOUNTS_MEMBER')
+            form_instance.fields['quota_aiskills_requests'].widget.attrs['placeholder'] = instance.get_max_quota('AISKILLS_REQUESTS')
+            form_instance.fields['quota_pdfeditor'].help_text = f"Value: {'Yes' if instance.get_max_quota('PDFEDITOR') else 'No'}"
+        except KeyError:
+            pass
 
         return super().render_change_form(request, context, *args, **kwargs)
 
