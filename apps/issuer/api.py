@@ -1274,15 +1274,22 @@ class NetworkBadgeInstanceList(
     def get_object(self, request=None, **kwargs):
         badgeSlug = kwargs.get("slug")
         badgeclass = BadgeClass.objects.get(entity_id=badgeSlug)
-        if not badgeclass.issuer.is_network:
+        is_network_badge = badgeclass.issuer.is_network
+        is_shared_on_network = badgeclass.network_shares.exists()
+
+        if not (is_network_badge or is_shared_on_network):
             raise ValidationError(
-                "This endpoint is only available for badges created by networks"
+                "This endpoint is only available for badges created by or shared on networks"
             )
         return badgeclass
 
     def get_queryset(self, request=None, **kwargs):
         badgeclass = self.get_object(request, **kwargs)
-        network = badgeclass.issuer
+        if badgeclass.issuer.is_network:
+            network = badgeclass.issuer
+        else:
+            network_share = badgeclass.network_shares.filter(is_active=True).first()
+            network = network_share.network if network_share else None
 
         queryset = BadgeInstance.objects.filter(
             badgeclass=badgeclass, issuer__network_memberships__network=network
@@ -1315,6 +1322,7 @@ class NetworkBadgeInstanceList(
         response = super().get(request, **kwargs)
         instances = response.data
         badgeclass = self.get_object(request, **kwargs)
+        print(f"badgeclass {badgeclass}")
 
         grouped_data = self.group_instances_by_issuer(instances, request, badgeclass)
 
@@ -1329,8 +1337,16 @@ class NetworkBadgeInstanceList(
     def group_instances_by_issuer(self, instances, request, badgeclass):
         grouped = {}
         request_user = request.user
-        network_issuer = badgeclass.issuer
-        partner_issuers = network_issuer.partner_issuers.all()
+
+        if badgeclass.issuer.is_network:
+            network = badgeclass.issuer
+        else:
+            network_share = badgeclass.network_shares.filter(is_active=True).first()
+            network = network_share.network if network_share else None
+
+        if not network:
+            return []
+        partner_issuers = network.partner_issuers.all()
 
         for partner in partner_issuers:
             user_has_access = self.user_has_access_to_issuer(request_user, partner)
