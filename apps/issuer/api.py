@@ -518,19 +518,21 @@ class IssuerAwardableBadgeClassList(
 
         own_badges = BadgeClass.objects.filter(issuer=issuer)
 
-        network_badges = BadgeClass.objects.filter(
-            issuer__is_network=True, issuer__memberships__issuer=issuer
-        )
-
-        # Badges shared with networks where this issuer is a partner
-        shared_badges = BadgeClass.objects.filter(
-            network_shares__network__memberships__issuer=issuer,
-            network_shares__is_active=True,
-        )
-
-        awardable_badges = own_badges.union(network_badges, shared_badges)
-
-        return awardable_badges
+        if issuer.is_network:
+            shared_to_network = BadgeClass.objects.filter(
+                network_shares__network=issuer,
+                network_shares__is_active=True,
+            )
+            return own_badges.union(shared_to_network)
+        else:
+            network_badges = BadgeClass.objects.filter(
+                issuer__is_network=True, issuer__memberships__issuer=issuer
+            )
+            shared_badges = BadgeClass.objects.filter(
+                network_shares__network__memberships__issuer=issuer,
+                network_shares__is_active=True,
+            )
+            return own_badges.union(network_badges, shared_badges)
 
     def get_context_data(self, **kwargs):
         context = super(IssuerAwardableBadgeClassList, self).get_context_data(**kwargs)
