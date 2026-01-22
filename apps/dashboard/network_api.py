@@ -3065,8 +3065,8 @@ Returns comprehensive learner statistics for the Lernende tab.
             )
         )
 
-        # Use the same calculate_trend method as KPIs endpoint
-        trend, trend_value = self.calculate_trend(hours_current, hours_previous)
+        # Use calculate_trend_percent for consistency with KPIs endpoint
+        trend, trend_value = self.calculate_trend_percent(hours_current, hours_previous)
         return {
             'trend': trend,
             'trendValue': trend_value,
