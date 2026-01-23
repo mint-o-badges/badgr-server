@@ -11,6 +11,7 @@ from badgeuser.serializers_v1 import (
     BadgeUserIdentifierFieldV1,
     BadgeUserProfileSerializerV1,
 )
+from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import EmailValidator, URLValidator
 from django.db.models import Q
@@ -251,7 +252,6 @@ class NetworkSerializerV1(BaseIssuerSerializerV1):
 
         return None
 
-
 class IssuerSerializerV1(BaseIssuerSerializerV1):
     email = serializers.EmailField(max_length=255, required=True)
     networks = serializers.SerializerMethodField()
@@ -430,9 +430,23 @@ class IssuerSerializerPrivateV1(IssuerSerializerV1):
                     "custom": custom,
                 }
 
+        nextLevel = instance.get_next_quota_level()
 
         representation["quotas"] = {
             "level": instance.quota_account_level,
+            "nextLevel": {
+                "level": nextLevel,
+                "price": settings.QUOTAS["ISSUER"][nextLevel]["PRICE"],
+                "quotas": {
+                    "BADGE_CREATE": instance.get_max_quota('BADGE_CREATE', nextLevel),
+                    "BADGE_AWARD": instance.get_max_quota('BADGE_AWARD', nextLevel),
+                    "LEARNINGPATH_CREATE": instance.get_max_quota('LEARNINGPATH_CREATE', nextLevel),
+                    "ACCOUNTS_ADMIN": instance.get_max_quota('ACCOUNTS_ADMIN', nextLevel),
+                    "ACCOUNTS_MEMBER": instance.get_max_quota('ACCOUNTS_MEMBER', nextLevel),
+                    "AISKILLS_REQUESTS": instance.get_max_quota('AISKILLS_REQUESTS', nextLevel),
+                    "PDFEDITOR": instance.get_max_quota('PDFEDITOR', nextLevel),
+                } if nextLevel else None
+            },
             "periodStart": instance.quota_period_start,
             "paymentPeriod": "month", # TODO
             "nextPayment": instance.get_next_quota_payment(),
@@ -442,13 +456,15 @@ class IssuerSerializerPrivateV1(IssuerSerializerV1):
                 "LEARNINGPATH_CREATE": quota_dict('LEARNINGPATH_CREATE'),
                 "ACCOUNTS_ADMIN": quota_dict('ACCOUNTS_ADMIN'),
                 "ACCOUNTS_MEMBER": quota_dict('ACCOUNTS_MEMBER'),
-                "AISKILLS_REQUESTS": quota_dict(quota_name='AISKILLS_REQUESTS'),
+                "AISKILLS_REQUESTS": quota_dict('AISKILLS_REQUESTS'),
                 "PDFEDITOR": quota_dict('PDFEDITOR'),
             }
         }
 
         return representation
 
+class NetworkSerializerV1Private(NetworkSerializerV1, IssuerSerializerPrivateV1):
+    pass
 
 class IssuerRoleActionSerializerV1(serializers.Serializer):
     """A serializer used for validating user role change POSTS"""

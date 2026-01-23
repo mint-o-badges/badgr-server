@@ -306,13 +306,13 @@ class Issuer(
 
     def get_quota_choices():
         try:
-            return {x: x.title() for x in settings.QUOTAS["ISSUER"].keys()}
+            return {x: x.title() for x in settings.QUOTAS["ISSUER"]["QUOTAS"].keys()}
         except KeyError:
             return {}
 
     def get_quota_default():
         try:
-            return list(settings.QUOTAS["ISSUER"].keys())[0]
+            return list(settings.QUOTAS["ISSUER"]["QUOTAS"].keys())[0]
         except:
             return None
 
@@ -389,17 +389,20 @@ class Issuer(
         else:
             return value
 
-    def get_max_quota(self, quota_name: str):
-        try:
-            attr = getattr(self, f'quota_{quota_name.lower()}')
-            if attr is not None:
-                return attr
-        except AttributeError as e:
-            print(e)
+    def get_max_quota(self, quota_name: str, level: str|None=None):
+        if level is None:
+            try:
+                attr = getattr(self, f'quota_{quota_name.lower()}')
+                if attr is not None:
+                    return attr
+            except AttributeError as e:
+                print(e)
+            level = str(self.quota_account_level)
+
 
         try:
             key = 'NETWORK' if self.is_network else 'ISSUER'
-            return settings.QUOTAS[key][str(self.quota_account_level)][quota_name]
+            return settings.QUOTAS[key][level]["QUOTAS"][quota_name]
         except KeyError:
             return None
 
@@ -410,7 +413,7 @@ class Issuer(
             if attr is not None:
                 try:
                     key = 'NETWORK' if self.is_network else 'ISSUER'
-                    return settings.QUOTAS[key][str(self.quota_account_level)][quota_name] != attr
+                    return settings.QUOTAS[key][str(self.quota_account_level)]["QUOTAS"][quota_name] != attr
                 except KeyError:
                     return True
         except AttributeError as e:
@@ -425,6 +428,13 @@ class Issuer(
 
         return dt_next
 
+    def get_next_quota_level(self):
+        levelList = list(settings.QUOTAS["ISSUER"].keys())
+        current = levelList.index(self.quota_account_level)
+        try:
+            return levelList[current + 1]
+        except IndexError:
+            return None
 
     def publish(self, publish_staff=True, *args, **kwargs):
         fields_cache = (
@@ -481,6 +491,7 @@ class Issuer(
         if not self.pk:
             self.notify_admins(self)
             should_geocode = True
+
             if not self.verified:
                 badgr_app = BadgrApp.objects.get_current(None)
                 try:
