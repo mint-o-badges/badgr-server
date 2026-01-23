@@ -370,11 +370,11 @@ class Issuer(
 
         if quota_name == "ACCOUNTS_ADMIN":
             value = len(
-                [x for x in staff if x.role == "owner"]
+                [x for x in staff if x.role == "owner" or x.role == "editor"]
             )
         if quota_name == "ACCOUNTS_MEMBER":
             value = len(
-                [x for x in staff if x.role != "owner"]
+                [x for x in staff if x.role != "owner" and x.role != "editor"]
             )
 
         # TODO
@@ -402,6 +402,29 @@ class Issuer(
             return settings.QUOTAS[key][str(self.quota_account_level)][quota_name]
         except KeyError:
             return None
+
+    # check if a custom value has been set and differs from the default value
+    def is_custom_quota(self, quota_name: str):
+        try:
+            attr = getattr(self, f'quota_{quota_name.lower()}')
+            if attr is not None:
+                try:
+                    key = 'NETWORK' if self.is_network else 'ISSUER'
+                    return settings.QUOTAS[key][str(self.quota_account_level)][quota_name] != attr
+                except KeyError:
+                    return True
+        except AttributeError as e:
+            print(e)
+
+        return False
+
+    def get_next_quota_payment(self):
+        dt_next = self.quota_period_start
+        while(dt_next < timezone.now()):
+            dt_next = dt_next + relativedelta(months=1)
+
+        return dt_next
+
 
     def publish(self, publish_staff=True, *args, **kwargs):
         fields_cache = (

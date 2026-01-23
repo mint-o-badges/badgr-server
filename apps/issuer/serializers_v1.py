@@ -415,27 +415,36 @@ class IssuerSerializerPrivateV1(IssuerSerializerV1):
         def quota_dict(quota_name: str):
             quota = instance.get_quota(quota_name)
             max_quota = instance.get_max_quota(quota_name)
+            custom = instance.is_custom_quota(quota_name)
 
             if type(quota) is int:
                 return {
                     "used": max_quota - quota,
                     "quota": quota,
-                    "max": max_quota
+                    "max": max_quota,
+                    "custom": custom,
                 }
             else:
                 return {
-                    "quota": quota
+                    "quota": quota,
+                    "custom": custom,
                 }
 
 
         representation["quotas"] = {
-            "BADGE_CREATE": quota_dict('BADGE_CREATE'),
-            "BADGE_AWARD": quota_dict('BADGE_AWARD'),
-            "LEARNINGPATH_CREATE": quota_dict('LEARNINGPATH_CREATE'),
-            "ACCOUNTS_ADMIN": quota_dict('ACCOUNTS_ADMIN'),
-            "ACCOUNTS_MEMBER": quota_dict('ACCOUNTS_MEMBER'),
-            "AISKILLS_REQUESTS": quota_dict(quota_name='AISKILLS_REQUESTS'),
-            "PDFEDITOR": quota_dict('PDFEDITOR'),
+            "level": instance.quota_account_level,
+            "periodStart": instance.quota_period_start,
+            "paymentPeriod": "month", # TODO
+            "nextPayment": instance.get_next_quota_payment(),
+            "quotas": {
+                "BADGE_CREATE": quota_dict('BADGE_CREATE'),
+                "BADGE_AWARD": quota_dict('BADGE_AWARD'),
+                "LEARNINGPATH_CREATE": quota_dict('LEARNINGPATH_CREATE'),
+                "ACCOUNTS_ADMIN": quota_dict('ACCOUNTS_ADMIN'),
+                "ACCOUNTS_MEMBER": quota_dict('ACCOUNTS_MEMBER'),
+                "AISKILLS_REQUESTS": quota_dict(quota_name='AISKILLS_REQUESTS'),
+                "PDFEDITOR": quota_dict('PDFEDITOR'),
+            }
         }
 
         return representation
