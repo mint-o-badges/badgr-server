@@ -714,6 +714,7 @@ def process_batch_assertions(
         errors = []
 
         for assertion in assertions:
+            request_entity_id = assertion.get("request_entity_id")
             assertion["create_notification"] = create_notification
 
             serializer = BadgeInstanceSerializerV1(
@@ -728,7 +729,12 @@ def process_batch_assertions(
             if serializer.is_valid():
                 try:
                     instance = serializer.save(created_by=user)
-                    successful.append(BadgeInstanceSerializerV1(instance).data)
+                    successful.append(
+                        {
+                            "badge_instance": BadgeInstanceSerializerV1(instance).data,
+                            "request_entity_id": request_entity_id,
+                        }
+                    )
                 except Exception as e:
                     errors.append({"assertion": assertion, "error": str(e)})
             else:
