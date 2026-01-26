@@ -2422,7 +2422,7 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             extension_contexts = []
 
             for extension in badgeclass_extensions:
-                if extension.name == "OrgImageExtension":
+                if extension.name == "extensions:OrgImageExtension":
                     continue
                 extension_json = json_loads(extension.original_json)
                 extension_name = extension.name
