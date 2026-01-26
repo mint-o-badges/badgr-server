@@ -2417,6 +2417,46 @@ class BadgeInstance(BaseAuditedModel, BaseVersionedEntity, BaseOpenBadgeObjectMo
             extension_contexts = list(set(extension_contexts))
             json["@context"] += extension_contexts
 
+        badgeclass_extensions = self.cached_badgeclass.cached_extensions()
+        if badgeclass_extensions:
+            extension_contexts = []
+
+            for extension in badgeclass_extensions:
+                if extension.name == "extensions:OrgImageExtension":
+                    continue
+                extension_json = json_loads(extension.original_json)
+                extension_name = extension.name
+
+                # Extract contexts from extension data
+                items = (
+                    extension_json
+                    if isinstance(extension_json, list)
+                    else [extension_json]
+                )
+                for item in items:
+                    if isinstance(item, dict) and "@context" in item:
+                        ctx = item["@context"]
+                        extension_contexts += ctx if isinstance(ctx, list) else [ctx]
+
+                # Add cleaned extension data to credential
+                if isinstance(extension_json, list):
+                    json[extension_name] = [
+                        {k: v for k, v in item.items() if k not in ["@context", "type"]}
+                        for item in extension_json
+                        if isinstance(item, dict)
+                    ]
+                else:
+                    json[extension_name] = {
+                        k: v
+                        for k, v in extension_json.items()
+                        if k not in ["@context", "type"]
+                    }
+
+            # Add unique contexts to top-level context
+            json["@context"] += [
+                ctx for ctx in set(extension_contexts) if ctx not in json["@context"]
+            ]
+
         ##### proof / signing #####
 
         # load private key
